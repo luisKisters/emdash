@@ -12,7 +12,6 @@ import { Input } from "./components/ui/input";
 import { Spinner } from "./components/ui/spinner";
 import { FolderOpen, Github, Globe, Check } from "lucide-react";
 import RepositoryList from "./components/RepositoryList";
-import { FolderOpen, Github, Globe } from "lucide-react";
 import TerminalPane from "./components/TerminalPane";
 
 const App: React.FC = () => {
