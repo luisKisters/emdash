@@ -47,7 +47,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center">
             <span className="text-white text-xs font-bold">O</span>
           </div>
-          <span className="font-semibold text-white">orchbench</span>
+          <span className="font-semibold text-white">orcbench</span>
         </div>
       </div>
 
@@ -121,7 +121,6 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
       </div>
 
-      {/* Bottom Actions */}
       <div className="p-4 border-t border-gray-700">
         <div className="flex items-center justify-between">
           <button className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">

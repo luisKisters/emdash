@@ -1,8 +1,10 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { isDev } from './utils/dev'
+import { GitHubService } from './services/GitHubService'
 
 let mainWindow: BrowserWindow | null = null
+const githubService = new GitHubService()
 
 const createWindow = (): void => {
   // Create the browser window
@@ -97,15 +99,60 @@ ipcMain.handle('runs:diff', async (_, runId: string) => {
 
 // GitHub integration
 ipcMain.handle('github:auth', async () => {
-  // TODO: Implement GitHub OAuth Device Flow
-  console.log('GitHub auth requested')
-  return { token: 'mock-token' }
+  try {
+    return await githubService.authenticate()
+  } catch (error) {
+    console.error('GitHub authentication failed:', error)
+    return { success: false, error: 'Authentication failed' }
+  }
 })
 
-ipcMain.handle('github:createPR', async (_, config: any) => {
-  // TODO: Implement PR creation
-  console.log('Creating PR:', config)
-  return 'https://github.com/mock/repo/pull/1'
+ipcMain.handle('github:isAuthenticated', async () => {
+  try {
+    return await githubService.isAuthenticated()
+  } catch (error) {
+    console.error('GitHub authentication check failed:', error)
+    return false
+  }
+})
+
+ipcMain.handle('github:getUser', async () => {
+  try {
+    const token = await githubService['getStoredToken']()
+    if (!token) return null
+    return await githubService.getUserInfo(token)
+  } catch (error) {
+    console.error('Failed to get user info:', error)
+    return null
+  }
+})
+
+ipcMain.handle('github:getRepositories', async () => {
+  try {
+    const token = await githubService['getStoredToken']()
+    if (!token) throw new Error('Not authenticated')
+    return await githubService.getRepositories(token)
+  } catch (error) {
+    console.error('Failed to get repositories:', error)
+    return []
+  }
+})
+
+ipcMain.handle('github:cloneRepository', async (_, repoUrl: string, localPath: string) => {
+  try {
+    return await githubService.cloneRepository(repoUrl, localPath)
+  } catch (error) {
+    console.error('Failed to clone repository:', error)
+    return { success: false, error: 'Clone failed' }
+  }
+})
+
+ipcMain.handle('github:logout', async () => {
+  try {
+    await githubService.logout()
+  } catch (error) {
+    console.error('Failed to logout:', error)
+  }
 })
 
 // Settings

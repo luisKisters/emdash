@@ -11,8 +11,12 @@ declare global {
       getRunDiff: (runId: string) => Promise<any>
       onRunEvent: (callback: (event: any) => void) => void
       removeRunEventListeners: () => void
-      githubAuth: () => Promise<any>
-      createPR: (config: any) => Promise<string>
+      githubAuth: () => Promise<{ success: boolean; token?: string; user?: any; error?: string }>
+      githubIsAuthenticated: () => Promise<boolean>
+      githubGetUser: () => Promise<any>
+      githubGetRepositories: () => Promise<any[]>
+      githubCloneRepository: (repoUrl: string, localPath: string) => Promise<{ success: boolean; error?: string }>
+      githubLogout: () => Promise<void>
       getSettings: () => Promise<any>
       updateSettings: (settings: any) => Promise<void>
     }

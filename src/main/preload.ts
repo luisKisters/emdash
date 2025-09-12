@@ -15,10 +15,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   createRun: (config: any) => ipcRenderer.invoke('runs:create', config),
   cancelRun: (runId: string) => ipcRenderer.invoke('runs:cancel', runId),
   getRunDiff: (runId: string) => ipcRenderer.invoke('runs:diff', runId),
+  onRunEvent: (callback: (event: any) => void) => {
+    ipcRenderer.on('run:event', (_, event) => callback(event))
+  },
+  removeRunEventListeners: () => {
+    ipcRenderer.removeAllListeners('run:event')
+  },
   
   // GitHub integration
   githubAuth: () => ipcRenderer.invoke('github:auth'),
-  createPR: (config: any) => ipcRenderer.invoke('github:createPR', config),
+  githubIsAuthenticated: () => ipcRenderer.invoke('github:isAuthenticated'),
+  githubGetUser: () => ipcRenderer.invoke('github:getUser'),
+  githubGetRepositories: () => ipcRenderer.invoke('github:getRepositories'),
+  githubCloneRepository: (repoUrl: string, localPath: string) => ipcRenderer.invoke('github:cloneRepository', repoUrl, localPath),
+  githubLogout: () => ipcRenderer.invoke('github:logout'),
   
   // Settings
   getSettings: () => ipcRenderer.invoke('settings:get'),
@@ -39,10 +49,16 @@ export interface ElectronAPI {
   createRun: (config: any) => Promise<string>
   cancelRun: (runId: string) => Promise<void>
   getRunDiff: (runId: string) => Promise<any>
+  onRunEvent: (callback: (event: any) => void) => void
+  removeRunEventListeners: () => void
   
   // GitHub integration
-  githubAuth: () => Promise<any>
-  createPR: (config: any) => Promise<string>
+  githubAuth: () => Promise<{ success: boolean; token?: string; user?: any; error?: string }>
+  githubIsAuthenticated: () => Promise<boolean>
+  githubGetUser: () => Promise<any>
+  githubGetRepositories: () => Promise<any[]>
+  githubCloneRepository: (repoUrl: string, localPath: string) => Promise<{ success: boolean; error?: string }>
+  githubLogout: () => Promise<void>
   
   // Settings
   getSettings: () => Promise<any>
