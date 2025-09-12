@@ -10,6 +10,7 @@ import {
 import { Input } from "./components/ui/input";
 import { Spinner } from "./components/ui/spinner";
 import { FolderOpen, Github, Globe, Check } from "lucide-react";
+import RepositoryList from "./components/RepositoryList";
 
 const App: React.FC = () => {
   const [version, setVersion] = useState<string>("");
@@ -120,6 +121,26 @@ const App: React.FC = () => {
     }
   };
 
+  const handleImportRepository = async (repo: any) => {
+    try {
+      // TODO: Implement repository cloning
+      alert(`Importing repository: ${repo.name}\n\nThis will clone the repository to your local machine.\n\nClone URL: ${repo.clone_url}`);
+    } catch (error) {
+      console.error("Import repository error:", error);
+      alert("Failed to import repository. Please check the console for details.");
+    }
+  };
+
+  const handleOpenRepository = async (repo: any) => {
+    try {
+      // TODO: Implement repository opening
+      alert(`Opening repository: ${repo.name}\n\nThis will open the repository in your default editor or file manager.\n\nRepository: ${repo.full_name}`);
+    } catch (error) {
+      console.error("Open repository error:", error);
+      alert("Failed to open repository. Please check the console for details.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto px-4 py-8">
@@ -205,37 +226,11 @@ const App: React.FC = () => {
         </div>
 
         {isAuthenticated && repositories.length > 0 && (
-          <div className="max-w-4xl mx-auto">
-            <h2 className="text-2xl font-serif text-center mb-6">
-              Your Repositories
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {repositories.slice(0, 6).map((repo) => (
-                <Card
-                  key={repo.id}
-                  className="hover:shadow-lg transition-shadow"
-                >
-                  <CardHeader>
-                    <CardTitle className="text-lg">{repo.name}</CardTitle>
-                    <CardDescription className="line-clamp-2">
-                      {repo.description || "No description"}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex items-center justify-between text-sm text-gray-500">
-                      <span>{repo.language || "No language"}</span>
-                      <span>{repo.private ? "Private" : "Public"}</span>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-            {repositories.length > 6 && (
-              <p className="text-center text-gray-500 mt-4">
-                And {repositories.length - 6} more repositories...
-              </p>
-            )}
-          </div>
+          <RepositoryList
+            repositories={repositories}
+            onImportRepository={handleImportRepository}
+            onOpenRepository={handleOpenRepository}
+          />
         )}
       </div>
     </div>
