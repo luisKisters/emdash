@@ -2,6 +2,7 @@ import React, { useState } from 'react'
 import { Repo, Run } from '../types'
 import RunLauncher from './RunLauncher'
 import RunList from './RunList'
+import { FolderOpen, Github, Globe } from 'lucide-react'
 
 interface MainContentProps {
   selectedRepo: Repo | null
@@ -43,19 +44,25 @@ const MainContent: React.FC<MainContentProps> = ({
           {/* Action cards */}
           <div className="flex gap-6 justify-center">
             <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 hover:bg-gray-700 transition-colors cursor-pointer">
-              <div className="text-4xl mb-3">📁</div>
+              <div className="flex justify-center mb-3">
+                <FolderOpen className="h-12 w-12 text-blue-400" />
+              </div>
               <h3 className="text-lg font-semibold text-white mb-2">Open Project</h3>
               <p className="text-gray-400 text-sm">Select a repository to get started</p>
             </div>
 
             <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 hover:bg-gray-700 transition-colors cursor-pointer">
-              <div className="text-4xl mb-3">🐙</div>
+              <div className="flex justify-center mb-3">
+                <Github className="h-12 w-12 text-purple-400" />
+              </div>
               <h3 className="text-lg font-semibold text-white mb-2">Clone from GitHub</h3>
               <p className="text-gray-400 text-sm">Import a repository from GitHub</p>
             </div>
 
             <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 hover:bg-gray-700 transition-colors cursor-pointer">
-              <div className="text-4xl mb-3">🌐</div>
+              <div className="flex justify-center mb-3">
+                <Globe className="h-12 w-12 text-green-400" />
+              </div>
               <h3 className="text-lg font-semibold text-white mb-2">Clone from URL</h3>
               <p className="text-gray-400 text-sm">Import from any Git repository</p>
             </div>
