@@ -82,6 +82,44 @@ const App: React.FC = () => {
     }
   };
 
+  const handleOpenProject = async () => {
+    try {
+      const result = await window.electronAPI.openProject();
+      if (result.success && result.path) {
+        // Check if it's a Git repository and connect to GitHub
+        try {
+          const gitInfo = await window.electronAPI.getGitInfo(result.path);
+          if (gitInfo.isGitRepo) {
+            // It's a Git repository - try to connect to GitHub
+            if (isAuthenticated) {
+              // User is authenticated with GitHub CLI
+              const githubInfo = await window.electronAPI.connectToGitHub(result.path);
+              if (githubInfo.success) {
+                alert(`✅ Project connected to GitHub!\n\nRepository: ${githubInfo.repository}\nBranch: ${githubInfo.branch}\nPath: ${result.path}`);
+              } else {
+                alert(`⚠️ Git repository detected but couldn't connect to GitHub:\n\n${githubInfo.error}\n\nPath: ${result.path}`);
+              }
+            } else {
+              // User not authenticated
+              alert(`📁 Git repository detected!\n\nPath: ${result.path}\nRemote: ${gitInfo.remote || 'None'}\n\nConnect to GitHub CLI to enable full integration.`);
+            }
+          } else {
+            // Not a Git repository
+            alert(`📁 Project opened (not a Git repository)\n\nPath: ${result.path}`);
+          }
+        } catch (error) {
+          console.error("Git detection error:", error);
+          alert(`📁 Project opened\n\nPath: ${result.path}\n\nNote: Could not detect Git information.`);
+        }
+      } else if (result.error) {
+        alert(`Failed to open project: ${result.error}`);
+      }
+    } catch (error) {
+      console.error("Open project error:", error);
+      alert("Failed to open project. Please check the console for details.");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="container mx-auto px-4 py-8">
@@ -132,7 +170,11 @@ const App: React.FC = () => {
         )}
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-          <Button size="lg" className="min-w-[200px] bg-black text-white hover:bg-gray-800 hover:text-white border-black font-serif">
+          <Button 
+            onClick={handleOpenProject}
+            size="lg" 
+            className="min-w-[200px] bg-black text-white hover:bg-gray-800 hover:text-white border-black font-serif"
+          >
             <FolderOpen className="mr-2 h-5 w-5" />
             Open Project
           </Button>
@@ -150,19 +192,19 @@ const App: React.FC = () => {
               ) : (
                 <Github className="mr-2 h-5 w-5" />
               )}
-              {isLoading ? "Connecting..." : isAuthenticated ? "Connected" : "Connect GitHub"}
+              {isLoading ? "Connecting..." : isAuthenticated ? "Connected" : "Open from GitHub"}
             </Button>
           <Button
             variant="secondary"
             size="lg"
-            className="min-w-[200px] font-serif"
-          >
-            <Globe className="mr-2 h-5 w-5" />
+            className="min-w-[200px] font-serif bg-black text-white hover:bg-gray-800 hover:text-white border-black"
+            >
+            <Globe className="mr-2 h-5 w-5 text-white" />
             Clone from URL
           </Button>
         </div>
 
-        {/* {isAuthenticated && repositories.length > 0 && (
+        {isAuthenticated && repositories.length > 0 && (
           <div className="max-w-4xl mx-auto">
             <h2 className="text-2xl font-serif text-center mb-6">
               Your Repositories
@@ -194,7 +236,7 @@ const App: React.FC = () => {
               </p>
             )}
           </div>
-        )} */}
+        )}
       </div>
     </div>
   );

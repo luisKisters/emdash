@@ -7,6 +7,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
   getPlatform: () => ipcRenderer.invoke('app:getPlatform'),
   
+  // Project management
+  openProject: () => ipcRenderer.invoke('project:open'),
+  getGitInfo: (projectPath: string) => ipcRenderer.invoke('git:getInfo', projectPath),
+  connectToGitHub: (projectPath: string) => ipcRenderer.invoke('github:connect', projectPath),
+  
   // Repository management
   scanRepos: () => ipcRenderer.invoke('repos:scan'),
   addRepo: (path: string) => ipcRenderer.invoke('repos:add', path),
@@ -40,6 +45,11 @@ export interface ElectronAPI {
   // App info
   getVersion: () => Promise<string>
   getPlatform: () => Promise<string>
+  
+  // Project management
+  openProject: () => Promise<{ success: boolean; path?: string; error?: string }>
+  getGitInfo: (projectPath: string) => Promise<{ isGitRepo: boolean; remote?: string; branch?: string; path?: string; error?: string }>
+  connectToGitHub: (projectPath: string) => Promise<{ success: boolean; repository?: string; branch?: string; error?: string }>
   
   // Repository management
   scanRepos: () => Promise<any[]>
