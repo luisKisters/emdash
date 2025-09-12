@@ -39,7 +39,7 @@ const App: React.FC = () => {
           <h1 className="text-6xl  mb-4 font-serif tracking-wider">
             orchbench
           </h1>
-          <p className="text-lg font-serif text-muted-foreground">
+          <p className="text-lg font-serif text-gray-700 text-muted-foreground">
             Run multiple Codex Agents in parallel
           </p>
         </div>
