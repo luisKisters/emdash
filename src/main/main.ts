@@ -64,3 +64,59 @@ ipcMain.handle('app:getVersion', () => {
 ipcMain.handle('app:getPlatform', () => {
   return process.platform
 })
+
+// Repository management
+ipcMain.handle('repos:scan', async () => {
+  // TODO: Implement repository scanning
+  return []
+})
+
+ipcMain.handle('repos:add', async (_, path: string) => {
+  // TODO: Implement repository addition
+  console.log('Adding repository:', path)
+  return { id: 'mock-repo', path, origin: 'mock-origin', defaultBranch: 'main' }
+})
+
+// Run management
+ipcMain.handle('runs:create', async (_, config: any) => {
+  // TODO: Implement run creation
+  console.log('Creating run:', config)
+  return 'mock-run-id'
+})
+
+ipcMain.handle('runs:cancel', async (_, runId: string) => {
+  // TODO: Implement run cancellation
+  console.log('Cancelling run:', runId)
+})
+
+ipcMain.handle('runs:diff', async (_, runId: string) => {
+  // TODO: Implement diff generation
+  console.log('Getting diff for run:', runId)
+  return { patch: '', stats: {} }
+})
+
+// GitHub integration
+ipcMain.handle('github:auth', async () => {
+  // TODO: Implement GitHub OAuth Device Flow
+  console.log('GitHub auth requested')
+  return { token: 'mock-token' }
+})
+
+ipcMain.handle('github:createPR', async (_, config: any) => {
+  // TODO: Implement PR creation
+  console.log('Creating PR:', config)
+  return 'https://github.com/mock/repo/pull/1'
+})
+
+// Settings
+ipcMain.handle('settings:get', async () => {
+  return {
+    defaultProvider: 'claude-code',
+    maxConcurrentRuns: 3
+  }
+})
+
+ipcMain.handle('settings:update', async (_, settings: any) => {
+  // TODO: Implement settings persistence
+  console.log('Updating settings:', settings)
+})
