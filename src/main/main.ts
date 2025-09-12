@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain } from 'electron'
 import { join } from 'path'
 import { isDev } from './utils/dev'
+import { registerPtyIpc } from './services/ptyIpc'
 
 let mainWindow: BrowserWindow | null = null
 
@@ -41,6 +42,8 @@ const createWindow = (): void => {
 
 // App event handlers
 app.whenReady().then(() => {
+  // Register PTY IPC handlers
+  registerPtyIpc()
   createWindow()
 })
 

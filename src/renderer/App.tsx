@@ -9,6 +9,7 @@ import {
 } from "./components/ui/card";
 import { Input } from "./components/ui/input";
 import { FolderOpen, Github, Globe } from "lucide-react";
+import TerminalPane from "./components/TerminalPane";
 
 const App: React.FC = () => {
   const [version, setVersion] = useState<string>("");
@@ -57,6 +58,10 @@ const App: React.FC = () => {
             <Globe className="mr-2 h-5 w-5" />
             Clone from URL
           </Button>
+        </div>
+
+        <div className="h-[520px] border rounded overflow-hidden">
+          <TerminalPane id="session-1" shell="/bin/zsh" />
         </div>
       </div>
     </div>
