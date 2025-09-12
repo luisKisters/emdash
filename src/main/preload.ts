@@ -7,6 +7,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getVersion: () => ipcRenderer.invoke('app:getVersion'),
   getPlatform: () => ipcRenderer.invoke('app:getPlatform'),
   
+  // PTY management
+  ptyStart: (opts: { id: string; cwd?: string; shell?: string; env?: Record<string, string>; cols?: number; rows?: number; }) =>
+    ipcRenderer.invoke('pty:start', opts),
+  ptyInput: (args: { id: string; data: string }) =>
+    ipcRenderer.send('pty:input', args),
+  ptyResize: (args: { id: string; cols: number; rows: number }) =>
+    ipcRenderer.send('pty:resize', args),
+  ptyKill: (id: string) => ipcRenderer.send('pty:kill', { id }),
+  
+  onPtyData: (id: string, listener: (data: string) => void) => {
+    const channel = `pty:data:${id}`
+    const wrapped = (_: Electron.IpcRendererEvent, data: string) => listener(data)
+    ipcRenderer.on(channel, wrapped)
+    return () => ipcRenderer.removeListener(channel, wrapped)
+  },
+  onPtyExit: (id: string, listener: (info: { exitCode: number; signal?: number }) => void) => {
+    const channel = `pty:exit:${id}`
+    const wrapped = (_: Electron.IpcRendererEvent, info: { exitCode: number; signal?: number }) => listener(info)
+    ipcRenderer.on(channel, wrapped)
+    return () => ipcRenderer.removeListener(channel, wrapped)
+  },
+
   // Project management
   openProject: () => ipcRenderer.invoke('project:open'),
   getGitInfo: (projectPath: string) => ipcRenderer.invoke('git:getInfo', projectPath),
@@ -46,10 +68,19 @@ export interface ElectronAPI {
   getVersion: () => Promise<string>
   getPlatform: () => Promise<string>
   
+  // PTY management
+  ptyStart: (opts: { id: string; cwd?: string; shell?: string; env?: Record<string, string>; cols?: number; rows?: number; }) => Promise<{ ok: boolean }>
+  ptyInput: (args: { id: string; data: string }) => void
+  ptyResize: (args: { id: string; cols: number; rows: number }) => void
+  ptyKill: (id: string) => void
+  onPtyData: (id: string, listener: (data: string) => void) => () => void
+  onPtyExit: (id: string, listener: (info: { exitCode: number; signal?: number }) => void) => () => void
+
   // Project management
   openProject: () => Promise<{ success: boolean; path?: string; error?: string }>
   getGitInfo: (projectPath: string) => Promise<{ isGitRepo: boolean; remote?: string; branch?: string; path?: string; error?: string }>
   connectToGitHub: (projectPath: string) => Promise<{ success: boolean; repository?: string; branch?: string; error?: string }>
+
   
   // Repository management
   scanRepos: () => Promise<any[]>

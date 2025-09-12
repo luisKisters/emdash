@@ -1,12 +1,14 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron'
 import { join } from 'path'
 import { isDev } from './utils/dev'
+
 import { GitHubService } from './services/GitHubService'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import * as fs from 'fs'
 
 const execAsync = promisify(exec)
+import { registerPtyIpc } from './services/ptyIpc'
 
 let mainWindow: BrowserWindow | null = null
 const githubService = new GitHubService()
@@ -48,6 +50,8 @@ const createWindow = (): void => {
 
 // App event handlers
 app.whenReady().then(() => {
+  // Register PTY IPC handlers
+  registerPtyIpc()
   createWindow()
 })
 

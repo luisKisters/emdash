@@ -11,6 +11,7 @@
     "build:main": "tsc -p tsconfig.main.json",
     "build:renderer": "vite build",
     "package": "npm run build && electron-builder",
+    "postinstall": "electron-builder install-app-deps",
     "lint": "eslint . --ext .ts,.tsx",
     "type-check": "tsc --noEmit"
   },
@@ -42,10 +43,12 @@
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.0.2",
+    "@xterm/xterm": "^5.5.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "keytar": "^7.9.0",
     "lucide-react": "^0.294.0",
+    "node-pty": "^1.1.0-beta34",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "tailwind-merge": "^2.0.0",

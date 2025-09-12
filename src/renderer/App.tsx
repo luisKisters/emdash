@@ -8,9 +8,12 @@ import {
   CardTitle,
 } from "./components/ui/card";
 import { Input } from "./components/ui/input";
+
 import { Spinner } from "./components/ui/spinner";
 import { FolderOpen, Github, Globe, Check } from "lucide-react";
 import RepositoryList from "./components/RepositoryList";
+import { FolderOpen, Github, Globe } from "lucide-react";
+import TerminalPane from "./components/TerminalPane";
 
 const App: React.FC = () => {
   const [version, setVersion] = useState<string>("");
@@ -223,6 +226,10 @@ const App: React.FC = () => {
             <Globe className="mr-2 h-5 w-5 text-white" />
             Clone from URL
           </Button>
+        </div>
+
+        <div className="h-[520px] border rounded overflow-hidden">
+          <TerminalPane id="session-1" shell="/bin/zsh" />
         </div>
 
         {isAuthenticated && repositories.length > 0 && (
