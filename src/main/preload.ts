@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   ptyResize: (args: { id: string; cols: number; rows: number }) =>
     ipcRenderer.send('pty:resize', args),
   ptyKill: (id: string) => ipcRenderer.send('pty:kill', { id }),
+  
   onPtyData: (id: string, listener: (data: string) => void) => {
     const channel = `pty:data:${id}`
     const wrapped = (_: Electron.IpcRendererEvent, data: string) => listener(data)
@@ -27,6 +28,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on(channel, wrapped)
     return () => ipcRenderer.removeListener(channel, wrapped)
   },
+
+  // Project management
+  openProject: () => ipcRenderer.invoke('project:open'),
+  getGitInfo: (projectPath: string) => ipcRenderer.invoke('git:getInfo', projectPath),
+  connectToGitHub: (projectPath: string) => ipcRenderer.invoke('github:connect', projectPath),
   
   // Repository management
   scanRepos: () => ipcRenderer.invoke('repos:scan'),
@@ -36,10 +42,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   createRun: (config: any) => ipcRenderer.invoke('runs:create', config),
   cancelRun: (runId: string) => ipcRenderer.invoke('runs:cancel', runId),
   getRunDiff: (runId: string) => ipcRenderer.invoke('runs:diff', runId),
+  onRunEvent: (callback: (event: any) => void) => {
+    ipcRenderer.on('run:event', (_, event) => callback(event))
+  },
+  removeRunEventListeners: () => {
+    ipcRenderer.removeAllListeners('run:event')
+  },
   
   // GitHub integration
   githubAuth: () => ipcRenderer.invoke('github:auth'),
-  createPR: (config: any) => ipcRenderer.invoke('github:createPR', config),
+  githubIsAuthenticated: () => ipcRenderer.invoke('github:isAuthenticated'),
+  githubGetUser: () => ipcRenderer.invoke('github:getUser'),
+  githubGetRepositories: () => ipcRenderer.invoke('github:getRepositories'),
+  githubCloneRepository: (repoUrl: string, localPath: string) => ipcRenderer.invoke('github:cloneRepository', repoUrl, localPath),
+  githubLogout: () => ipcRenderer.invoke('github:logout'),
   
   // Settings
   getSettings: () => ipcRenderer.invoke('settings:get'),
@@ -59,6 +75,12 @@ export interface ElectronAPI {
   ptyKill: (id: string) => void
   onPtyData: (id: string, listener: (data: string) => void) => () => void
   onPtyExit: (id: string, listener: (info: { exitCode: number; signal?: number }) => void) => () => void
+
+  // Project management
+  openProject: () => Promise<{ success: boolean; path?: string; error?: string }>
+  getGitInfo: (projectPath: string) => Promise<{ isGitRepo: boolean; remote?: string; branch?: string; path?: string; error?: string }>
+  connectToGitHub: (projectPath: string) => Promise<{ success: boolean; repository?: string; branch?: string; error?: string }>
+
   
   // Repository management
   scanRepos: () => Promise<any[]>
@@ -68,10 +90,16 @@ export interface ElectronAPI {
   createRun: (config: any) => Promise<string>
   cancelRun: (runId: string) => Promise<void>
   getRunDiff: (runId: string) => Promise<any>
+  onRunEvent: (callback: (event: any) => void) => void
+  removeRunEventListeners: () => void
   
   // GitHub integration
-  githubAuth: () => Promise<any>
-  createPR: (config: any) => Promise<string>
+  githubAuth: () => Promise<{ success: boolean; token?: string; user?: any; error?: string }>
+  githubIsAuthenticated: () => Promise<boolean>
+  githubGetUser: () => Promise<any>
+  githubGetRepositories: () => Promise<any[]>
+  githubCloneRepository: (repoUrl: string, localPath: string) => Promise<{ success: boolean; error?: string }>
+  githubLogout: () => Promise<void>
   
   // Settings
   getSettings: () => Promise<any>

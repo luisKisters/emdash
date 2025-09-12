@@ -36,7 +36,7 @@ const MainContent: React.FC<MainContentProps> = ({
               letterSpacing: '0.1em',
               textShadow: '2px 2px 0px #000'
             }}>
-              orchbench
+              orcbench
             </h1>
             <h2 className="text-2xl text-gray-400">Codex</h2>
           </div>
@@ -74,7 +74,6 @@ const MainContent: React.FC<MainContentProps> = ({
 
   return (
     <div className="flex-1 bg-gray-900 flex flex-col">
-      {/* Header */}
       <div className="p-4 border-b border-gray-700 bg-gray-800">
         <div className="flex items-center justify-between">
           <div>
@@ -97,7 +96,6 @@ const MainContent: React.FC<MainContentProps> = ({
         </div>
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-hidden">
         {runs.length === 0 ? (
           <div className="flex items-center justify-center h-full">
@@ -122,7 +120,6 @@ const MainContent: React.FC<MainContentProps> = ({
         )}
       </div>
 
-      {/* Run Launcher Modal */}
       {showRunLauncher && (
         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <RunLauncher
