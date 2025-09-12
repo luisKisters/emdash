@@ -8,6 +8,7 @@ import {
   CardTitle,
 } from "./components/ui/card";
 import { Input } from "./components/ui/input";
+import { FolderOpen, Github, Globe } from "lucide-react";
 
 const App: React.FC = () => {
   const [version, setVersion] = useState<string>("");
@@ -45,12 +46,15 @@ const App: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
           <Button size="lg" className="min-w-[200px] font-serif">
+            <FolderOpen className="mr-2 h-5 w-5" />
             Open Project
           </Button>
           <Button variant="outline" size="lg" className="min-w-[200px] font-serif">
+            <Github className="mr-2 h-5 w-5" />
             Clone from GitHub
           </Button>
           <Button variant="secondary" size="lg" className="min-w-[200px] font-serif">
+            <Globe className="mr-2 h-5 w-5" />
             Clone from URL
           </Button>
         </div>
