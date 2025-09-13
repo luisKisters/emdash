@@ -7,6 +7,7 @@ import RepositoryList from "./components/RepositoryList";
 import LeftSidebar from "./components/LeftSidebar";
 import ProjectMainView from "./components/ProjectMainView";
 import WorkspaceModal from "./components/WorkspaceModal";
+import TerminalPane from "./components/TerminalPane";
 
 interface Project {
   id: string;
@@ -43,7 +44,7 @@ const App: React.FC = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showWorkspaceModal, setShowWorkspaceModal] = useState<boolean>(false);
-  const [showHomeView, setShowHomeView] = useState<boolean>(false);
+  const [showHomeView, setShowHomeView] = useState<boolean>(true);
 
   useEffect(() => {
     const loadAppData = async () => {
@@ -321,8 +322,7 @@ const App: React.FC = () => {
         onGoHome={handleGoHome}
       />
 
-      {/* Main Content Area */}
-      {showHomeView || projects.length === 0 ? (
+      {showHomeView ? (
         <div className="flex-1 bg-background text-foreground overflow-y-auto">
           <div className="container mx-auto px-4 py-8">
             <div className="text-center mb-12">
@@ -414,7 +414,9 @@ const App: React.FC = () => {
               </Button>
             </div>
 
-            <div className="h-[520px] border rounded overflow-hidden"></div>
+            <div className="h-[520px] border rounded overflow-hidden">
+              <TerminalPane key="main-terminal" id="main" />
+            </div>
 
             {isAuthenticated && repositories.length > 0 && (
               <RepositoryList
