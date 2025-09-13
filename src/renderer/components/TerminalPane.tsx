@@ -1,6 +1,5 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useMemo } from 'react'
 import { Terminal } from '@xterm/xterm'
-import '@xterm/xterm/css/xterm.css'
 
 type Props = {
   id: string
@@ -11,14 +10,25 @@ type Props = {
   className?: string
 }
 
-export const TerminalPane: React.FC<Props> = ({ id, cwd, cols = 80, rows = 24, shell, className }) => {
+const TerminalPaneComponent: React.FC<Props> = ({ id, cwd, cols = 80, rows = 24, shell, className }) => {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const termRef = useRef<Terminal | null>(null)
   const disposeFns = useRef<Array<() => void>>([])
 
   useEffect(() => {
+    
     const el = containerRef.current
-    if (!el) return
+    if (!el) {
+      console.error('TerminalPane: No container element found')
+      return
+    }
+
+    console.log('TerminalPane: Creating terminal, container dimensions:', {
+      width: el.offsetWidth,
+      height: el.offsetHeight,
+      clientWidth: el.clientWidth,
+      clientHeight: el.clientHeight
+    })
 
     const term = new Terminal({
       convertEol: true,
@@ -34,9 +44,7 @@ export const TerminalPane: React.FC<Props> = ({ id, cwd, cols = 80, rows = 24, s
     setTimeout(() => term.focus(), 0)
     term.writeln('\x1b[32m[Terminal ready] Click here and type.\x1b[0m')
 
-    // Wire keystrokes -> PTY
     const keyDisp = term.onData((data) => {
-      // Debug: confirm keystrokes are captured in renderer
       if (process.env.NODE_ENV === 'development') {
         // eslint-disable-next-line no-console
         console.log('xterm onData', JSON.stringify(data))
@@ -87,13 +95,28 @@ export const TerminalPane: React.FC<Props> = ({ id, cwd, cols = 80, rows = 24, s
   return (
     <div
       className={className}
-      style={{ width: '100%', height: '100%' }}
+      style={{ 
+        width: '100%', 
+        height: '100%',
+        minHeight: '400px',
+        backgroundColor: '#0b0e14'
+      }}
       onClick={() => termRef.current?.focus()}
       onMouseDown={() => termRef.current?.focus()}
     >
-      <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
+      <div 
+        ref={containerRef} 
+        style={{ 
+          width: '100%', 
+          height: '100%',
+          minHeight: '400px'
+        }} 
+      />
     </div>
   )
 }
+
+// Memoize the component to prevent unnecessary re-renders
+export const TerminalPane = React.memo(TerminalPaneComponent)
 
 export default TerminalPane

@@ -4,6 +4,13 @@ declare global {
     electronAPI: {
       getVersion: () => Promise<string>
       getPlatform: () => Promise<string>
+      // PTY management
+      ptyStart: (opts: { id: string; cwd?: string; shell?: string; env?: Record<string, string>; cols?: number; rows?: number; }) => Promise<{ ok: boolean }>
+      ptyInput: (args: { id: string; data: string }) => void
+      ptyResize: (args: { id: string; cols: number; rows: number }) => void
+      ptyKill: (id: string) => void
+      onPtyData: (id: string, listener: (data: string) => void) => () => void
+      onPtyExit: (id: string, listener: (info: { exitCode: number; signal?: number }) => void) => () => void
       openProject: () => Promise<{ success: boolean; path?: string; error?: string }>
       getGitInfo: (projectPath: string) => Promise<{ isGitRepo: boolean; remote?: string; branch?: string; path?: string; error?: string }>
       connectToGitHub: (projectPath: string) => Promise<{ success: boolean; repository?: string; branch?: string; error?: string }>
