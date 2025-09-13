@@ -60,6 +60,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Settings
   getSettings: () => ipcRenderer.invoke('settings:get'),
   updateSettings: (settings: any) => ipcRenderer.invoke('settings:update', settings),
+  
+  // Database methods
+  getProjects: () => ipcRenderer.invoke('db:getProjects'),
+  saveProject: (project: any) => ipcRenderer.invoke('db:saveProject', project),
+  getWorkspaces: (projectId?: string) => ipcRenderer.invoke('db:getWorkspaces', projectId),
+  saveWorkspace: (workspace: any) => ipcRenderer.invoke('db:saveWorkspace', workspace),
+  deleteProject: (projectId: string) => ipcRenderer.invoke('db:deleteProject', projectId),
+  deleteWorkspace: (workspaceId: string) => ipcRenderer.invoke('db:deleteWorkspace', workspaceId),
 })
 
 // Type definitions for the exposed API
@@ -104,6 +112,14 @@ export interface ElectronAPI {
   // Settings
   getSettings: () => Promise<any>
   updateSettings: (settings: any) => Promise<void>
+  
+  // Database methods
+  getProjects: () => Promise<any[]>
+  saveProject: (project: any) => Promise<{ success: boolean; error?: string }>
+  getWorkspaces: (projectId?: string) => Promise<any[]>
+  saveWorkspace: (workspace: any) => Promise<{ success: boolean; error?: string }>
+  deleteProject: (projectId: string) => Promise<{ success: boolean; error?: string }>
+  deleteWorkspace: (workspaceId: string) => Promise<{ success: boolean; error?: string }>
 }
 
 declare global {

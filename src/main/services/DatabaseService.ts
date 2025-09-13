@@ -1,0 +1,271 @@
+import sqlite3 from 'sqlite3';
+import { promisify } from 'util';
+import { join } from 'path';
+import { app } from 'electron';
+
+export interface Project {
+  id: string;
+  name: string;
+  path: string;
+  gitInfo: {
+    isGitRepo: boolean;
+    remote?: string;
+    branch?: string;
+  };
+  githubInfo?: {
+    repository: string;
+    connected: boolean;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Workspace {
+  id: string;
+  projectId: string;
+  name: string;
+  branch: string;
+  path: string;
+  status: 'active' | 'idle' | 'running';
+  agentId?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export class DatabaseService {
+  private db: sqlite3.Database | null = null;
+  private dbPath: string;
+
+  constructor() {
+    const userDataPath = app.getPath('userData');
+    this.dbPath = join(userDataPath, 'orcbench.db');
+  }
+
+  async initialize(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.db = new sqlite3.Database(this.dbPath, (err) => {
+        if (err) {
+          reject(err);
+          return;
+        }
+        
+        this.createTables()
+          .then(() => resolve())
+          .catch(reject);
+      });
+    });
+  }
+
+  private async createTables(): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    const runAsync = promisify(this.db.run.bind(this.db));
+
+    // Create projects table
+    await runAsync(`
+      CREATE TABLE IF NOT EXISTS projects (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        path TEXT NOT NULL UNIQUE,
+        git_remote TEXT,
+        git_branch TEXT,
+        github_repository TEXT,
+        github_connected BOOLEAN DEFAULT 0,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create workspaces table
+    await runAsync(`
+      CREATE TABLE IF NOT EXISTS workspaces (
+        id TEXT PRIMARY KEY,
+        project_id TEXT NOT NULL,
+        name TEXT NOT NULL,
+        branch TEXT NOT NULL,
+        path TEXT NOT NULL,
+        status TEXT DEFAULT 'idle',
+        agent_id TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE
+      )
+    `);
+
+    // Create indexes
+    await runAsync(`CREATE INDEX IF NOT EXISTS idx_projects_path ON projects (path)`);
+    await runAsync(`CREATE INDEX IF NOT EXISTS idx_workspaces_project_id ON workspaces (project_id)`);
+  }
+
+  async saveProject(project: Omit<Project, 'createdAt' | 'updatedAt'>): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    return new Promise((resolve, reject) => {
+      this.db!.run(`
+        INSERT OR REPLACE INTO projects 
+        (id, name, path, git_remote, git_branch, github_repository, github_connected, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `, [
+        project.id,
+        project.name,
+        project.path,
+        project.gitInfo.remote || null,
+        project.gitInfo.branch || null,
+        project.githubInfo?.repository || null,
+        project.githubInfo?.connected ? 1 : 0
+      ], (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
+  async getProjects(): Promise<Project[]> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    return new Promise((resolve, reject) => {
+      this.db!.all(`
+        SELECT 
+          id, name, path, git_remote, git_branch, github_repository, github_connected,
+          created_at, updated_at
+        FROM projects 
+        ORDER BY updated_at DESC
+      `, (err, rows: any[]) => {
+        if (err) {
+          reject(err);
+        } else {
+          const projects = rows.map(row => ({
+            id: row.id,
+            name: row.name,
+            path: row.path,
+            gitInfo: {
+              isGitRepo: !!(row.git_remote || row.git_branch),
+              remote: row.git_remote,
+              branch: row.git_branch,
+            },
+            githubInfo: row.github_repository ? {
+              repository: row.github_repository,
+              connected: !!row.github_connected,
+            } : undefined,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+          }));
+          resolve(projects);
+        }
+      });
+    });
+  }
+
+  async saveWorkspace(workspace: Omit<Workspace, 'createdAt' | 'updatedAt'>): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    return new Promise((resolve, reject) => {
+      this.db!.run(`
+        INSERT OR REPLACE INTO workspaces 
+        (id, project_id, name, branch, path, status, agent_id, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+      `, [
+        workspace.id,
+        workspace.projectId,
+        workspace.name,
+        workspace.branch,
+        workspace.path,
+        workspace.status,
+        workspace.agentId || null
+      ], (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
+  async getWorkspaces(projectId?: string): Promise<Workspace[]> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    let query = `
+      SELECT 
+        id, project_id, name, branch, path, status, agent_id,
+        created_at, updated_at
+      FROM workspaces
+    `;
+    const params: any[] = [];
+
+    if (projectId) {
+      query += ' WHERE project_id = ?';
+      params.push(projectId);
+    }
+
+    query += ' ORDER BY updated_at DESC';
+
+    return new Promise((resolve, reject) => {
+      this.db!.all(query, params, (err, rows: any[]) => {
+        if (err) {
+          reject(err);
+        } else {
+          const workspaces = rows.map(row => ({
+            id: row.id,
+            projectId: row.project_id,
+            name: row.name,
+            branch: row.branch,
+            path: row.path,
+            status: row.status,
+            agentId: row.agent_id,
+            createdAt: row.created_at,
+            updatedAt: row.updated_at,
+          }));
+          resolve(workspaces);
+        }
+      });
+    });
+  }
+
+  async deleteProject(projectId: string): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    return new Promise((resolve, reject) => {
+      this.db!.run('DELETE FROM projects WHERE id = ?', [projectId], (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
+  async deleteWorkspace(workspaceId: string): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+
+    return new Promise((resolve, reject) => {
+      this.db!.run('DELETE FROM workspaces WHERE id = ?', [workspaceId], (err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
+  async close(): Promise<void> {
+    if (!this.db) return;
+
+    return new Promise((resolve, reject) => {
+      this.db!.close((err) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+}
+
+export const databaseService = new DatabaseService();

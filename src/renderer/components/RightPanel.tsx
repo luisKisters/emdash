@@ -1,53 +1,55 @@
-import React, { useState, useEffect } from 'react'
-import { Run } from '../types'
+import React, { useState, useEffect } from "react";
+import { Run } from "../types";
 
 interface RightPanelProps {
-  selectedRun: Run | null
+  selectedRun: Run | null;
 }
 
 const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
-  const [activeTab, setActiveTab] = useState<'logs' | 'diff' | 'terminal'>('logs')
-  const [logs, setLogs] = useState<any[]>([])
+  const [activeTab, setActiveTab] = useState<"logs" | "diff" | "terminal">(
+    "logs"
+  );
+  const [logs, setLogs] = useState<any[]>([]);
 
   useEffect(() => {
     if (selectedRun) {
       // Set up event listener for run events
       const handleRunEvent = (event: any) => {
         if (event.runId === selectedRun.id) {
-          setLogs(prev => [...prev, event])
+          setLogs((prev) => [...prev, event]);
         }
-      }
+      };
 
-      window.electronAPI.onRunEvent(handleRunEvent)
+      window.electronAPI.onRunEvent(handleRunEvent);
 
       return () => {
-        window.electronAPI.removeRunEventListeners()
-      }
+        window.electronAPI.removeRunEventListeners();
+      };
     }
-  }, [selectedRun])
+  }, [selectedRun]);
 
   const formatTimestamp = (timestamp: string) => {
-    return new Date(timestamp).toLocaleTimeString()
-  }
+    return new Date(timestamp).toLocaleTimeString();
+  };
 
   const getEventIcon = (kind: string) => {
     switch (kind) {
-      case 'llm':
-        return '🤖'
-      case 'tool':
-        return '🔧'
-      case 'bash':
-        return '💻'
-      case 'git':
-        return '📝'
-      case 'diff':
-        return '📊'
-      case 'error':
-        return '❌'
+      case "llm":
+        return "🤖";
+      case "tool":
+        return "🔧";
+      case "bash":
+        return "💻";
+      case "git":
+        return "📝";
+      case "diff":
+        return "📊";
+      case "error":
+        return "❌";
       default:
-        return '📄'
+        return "📄";
     }
-  }
+  };
 
   if (!selectedRun) {
     return (
@@ -57,7 +59,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
           <p>Select a run to view details</p>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -68,37 +70,37 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
           <div className="flex gap-1">
             <button
               className={`px-2 py-1 text-xs rounded ${
-                activeTab === 'logs'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                activeTab === "logs"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
               }`}
-              onClick={() => setActiveTab('logs')}
+              onClick={() => setActiveTab("logs")}
             >
               Logs
             </button>
             <button
               className={`px-2 py-1 text-xs rounded ${
-                activeTab === 'diff'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                activeTab === "diff"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
               }`}
-              onClick={() => setActiveTab('diff')}
+              onClick={() => setActiveTab("diff")}
             >
               Diff
             </button>
             <button
               className={`px-2 py-1 text-xs rounded ${
-                activeTab === 'terminal'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                activeTab === "terminal"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
               }`}
-              onClick={() => setActiveTab('terminal')}
+              onClick={() => setActiveTab("terminal")}
             >
               Terminal
             </button>
           </div>
         </div>
-        
+
         <div className="text-sm text-gray-400">
           <div>Branch: {selectedRun.branch}</div>
           <div>Provider: {selectedRun.provider}</div>
@@ -108,7 +110,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        {activeTab === 'logs' && (
+        {activeTab === "logs" && (
           <div className="h-full overflow-y-auto p-4">
             <div className="space-y-3">
               {logs.length === 0 ? (
@@ -129,10 +131,9 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
                       </span>
                     </div>
                     <div className="text-sm text-gray-400">
-                      {typeof log.payload === 'string' 
-                        ? log.payload 
-                        : JSON.stringify(log.payload, null, 2)
-                      }
+                      {typeof log.payload === "string"
+                        ? log.payload
+                        : JSON.stringify(log.payload, null, 2)}
                     </div>
                   </div>
                 ))
@@ -141,7 +142,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
           </div>
         )}
 
-        {activeTab === 'diff' && (
+        {activeTab === "diff" && (
           <div className="h-full overflow-y-auto p-4">
             <div className="text-center text-gray-500 py-8">
               <div className="text-2xl mb-2">📊</div>
@@ -150,7 +151,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
           </div>
         )}
 
-        {activeTab === 'terminal' && (
+        {activeTab === "terminal" && (
           <div className="h-full overflow-y-auto p-4">
             <div className="text-center text-gray-500 py-8">
               <div className="text-2xl mb-2">💻</div>
@@ -160,13 +161,12 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
         )}
       </div>
 
-      {/* Actions */}
       <div className="p-4 border-t border-gray-700">
         <div className="flex gap-2">
           <button className="flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm">
             Create PR
           </button>
-          {selectedRun.status === 'running' && (
+          {selectedRun.status === "running" && (
             <button className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm">
               Cancel
             </button>
@@ -174,7 +174,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default RightPanel
+export default RightPanel;

@@ -3,6 +3,7 @@ import { join } from 'path'
 import { isDev } from './utils/dev'
 
 import { GitHubService } from './services/GitHubService'
+import { databaseService } from './services/DatabaseService'
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import * as fs from 'fs'
@@ -49,7 +50,15 @@ const createWindow = (): void => {
 }
 
 // App event handlers
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  // Initialize database
+  try {
+    await databaseService.initialize()
+    console.log('Database initialized successfully')
+  } catch (error) {
+    console.error('Failed to initialize database:', error)
+  }
+
   // Register PTY IPC handlers
   registerPtyIpc()
   createWindow()
@@ -265,4 +274,63 @@ ipcMain.handle('settings:get', async () => {
 ipcMain.handle('settings:update', async (_, settings: any) => {
   // TODO: Implement settings persistence
   console.log('Updating settings:', settings)
+})
+
+// Database IPC handlers
+ipcMain.handle('db:getProjects', async () => {
+  try {
+    return await databaseService.getProjects()
+  } catch (error) {
+    console.error('Failed to get projects:', error)
+    return []
+  }
+})
+
+ipcMain.handle('db:saveProject', async (_, project: any) => {
+  try {
+    await databaseService.saveProject(project)
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to save project:', error)
+    return { success: false, error: (error as Error).message }
+  }
+})
+
+ipcMain.handle('db:getWorkspaces', async (_, projectId?: string) => {
+  try {
+    return await databaseService.getWorkspaces(projectId)
+  } catch (error) {
+    console.error('Failed to get workspaces:', error)
+    return []
+  }
+})
+
+ipcMain.handle('db:saveWorkspace', async (_, workspace: any) => {
+  try {
+    await databaseService.saveWorkspace(workspace)
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to save workspace:', error)
+    return { success: false, error: (error as Error).message }
+  }
+})
+
+ipcMain.handle('db:deleteProject', async (_, projectId: string) => {
+  try {
+    await databaseService.deleteProject(projectId)
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to delete project:', error)
+    return { success: false, error: (error as Error).message }
+  }
+})
+
+ipcMain.handle('db:deleteWorkspace', async (_, workspaceId: string) => {
+  try {
+    await databaseService.deleteWorkspace(workspaceId)
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to delete workspace:', error)
+    return { success: false, error: (error as Error).message }
+  }
 })
