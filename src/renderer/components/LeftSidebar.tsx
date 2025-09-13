@@ -16,7 +16,7 @@ interface Project {
     repository: string;
     connected: boolean;
   };
-  workspaces: Workspace[];
+  workspaces?: Workspace[];
 }
 
 interface Workspace {

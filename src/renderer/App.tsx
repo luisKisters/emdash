@@ -22,7 +22,7 @@ interface Project {
     repository: string;
     connected: boolean;
   };
-  workspaces: Workspace[];
+  workspaces?: Workspace[];
 }
 
 interface Workspace {
@@ -285,7 +285,7 @@ const App: React.FC = () => {
             project.id === selectedProject.id
               ? {
                   ...project,
-                  workspaces: [...project.workspaces, newWorkspace],
+                  workspaces: [...(project.workspaces || []), newWorkspace],
                 }
               : project
           )
@@ -295,7 +295,7 @@ const App: React.FC = () => {
           prev
             ? {
                 ...prev,
-                workspaces: [...prev.workspaces, newWorkspace],
+                workspaces: [...(prev.workspaces || []), newWorkspace],
               }
             : null
         );

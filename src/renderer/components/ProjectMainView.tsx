@@ -16,7 +16,7 @@ interface Project {
     repository: string;
     connected: boolean;
   };
-  workspaces: Workspace[];
+  workspaces?: Workspace[];
 }
 
 interface Workspace {
@@ -104,7 +104,7 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
             </CardContent>
           </Card>
 
-          {project.workspaces.length > 0 && (
+          {project.workspaces && project.workspaces.length > 0 && (
             <div className="mb-6">
               <h2 className="text-lg font-serif font-semibold mb-4">Workspaces</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
