@@ -22,6 +22,13 @@ declare global {
       githubLogout: () => Promise<void>
       getSettings: () => Promise<any>
       updateSettings: (settings: any) => Promise<void>
+      // Database methods
+      getProjects: () => Promise<any[]>
+      saveProject: (project: any) => Promise<{ success: boolean; error?: string }>
+      getWorkspaces: (projectId?: string) => Promise<any[]>
+      saveWorkspace: (workspace: any) => Promise<{ success: boolean; error?: string }>
+      deleteProject: (projectId: string) => Promise<{ success: boolean; error?: string }>
+      deleteWorkspace: (workspaceId: string) => Promise<{ success: boolean; error?: string }>
     }
   }
 }
