@@ -252,12 +252,24 @@ const App: React.FC = () => {
     if (!selectedProject) return;
 
     try {
-      // TODO: Implement Git worktree creation
+      // Create Git worktree
+      const worktreeResult = await window.electronAPI.worktreeCreate({
+        projectPath: selectedProject.path,
+        workspaceName,
+        projectId: selectedProject.id,
+      });
+
+      if (!worktreeResult.success) {
+        throw new Error(worktreeResult.error || 'Failed to create worktree');
+      }
+
+      const worktree = worktreeResult.worktree;
+      
       const newWorkspace: Workspace = {
-        id: Date.now().toString(),
+        id: worktree.id,
         name: workspaceName,
-        branch: `${workspaceName}-${Date.now()}`,
-        path: `${selectedProject.path}/workspaces/${workspaceName}`,
+        branch: worktree.branch,
+        path: worktree.path,
         status: "idle",
       };
 
