@@ -21,7 +21,8 @@
   },
   "include": [
     "src/renderer/**/*",
-    "src/types/**/*"
+    "src/types/**/*",
+    "src/renderer/types/**/*"
   ],
   "exclude": [
     "node_modules",

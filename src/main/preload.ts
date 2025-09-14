@@ -84,6 +84,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveWorkspace: (workspace: any) => ipcRenderer.invoke('db:saveWorkspace', workspace),
   deleteProject: (projectId: string) => ipcRenderer.invoke('db:deleteProject', projectId),
   deleteWorkspace: (workspaceId: string) => ipcRenderer.invoke('db:deleteWorkspace', workspaceId),
+
+  // Codex integration
+  codexCheckInstallation: () => ipcRenderer.invoke('codex:check-installation'),
+  codexCreateAgent: (workspaceId: string, worktreePath: string) => ipcRenderer.invoke('codex:create-agent', workspaceId, worktreePath),
+  codexSendMessage: (workspaceId: string, message: string) => ipcRenderer.invoke('codex:send-message', workspaceId, message),
+  codexGetAgentStatus: (workspaceId: string) => ipcRenderer.invoke('codex:get-agent-status', workspaceId),
+  codexGetAllAgents: () => ipcRenderer.invoke('codex:get-all-agents'),
+  codexRemoveAgent: (workspaceId: string) => ipcRenderer.invoke('codex:remove-agent', workspaceId),
+  codexGetInstallationInstructions: () => ipcRenderer.invoke('codex:get-installation-instructions'),
 })
 
 // Type definitions for the exposed API
@@ -144,6 +153,15 @@ export interface ElectronAPI {
   saveWorkspace: (workspace: any) => Promise<{ success: boolean; error?: string }>
   deleteProject: (projectId: string) => Promise<{ success: boolean; error?: string }>
   deleteWorkspace: (workspaceId: string) => Promise<{ success: boolean; error?: string }>
+
+  // Codex integration
+  codexCheckInstallation: () => Promise<{ success: boolean; isInstalled?: boolean; error?: string }>
+  codexCreateAgent: (workspaceId: string, worktreePath: string) => Promise<{ success: boolean; agent?: any; error?: string }>
+  codexSendMessage: (workspaceId: string, message: string) => Promise<{ success: boolean; response?: any; error?: string }>
+  codexGetAgentStatus: (workspaceId: string) => Promise<{ success: boolean; agent?: any; error?: string }>
+  codexGetAllAgents: () => Promise<{ success: boolean; agents?: any[]; error?: string }>
+  codexRemoveAgent: (workspaceId: string) => Promise<{ success: boolean; removed?: boolean; error?: string }>
+  codexGetInstallationInstructions: () => Promise<{ success: boolean; instructions?: string; error?: string }>
 }
 
 declare global {
