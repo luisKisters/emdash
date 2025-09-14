@@ -41,7 +41,6 @@ const MainContent: React.FC<MainContentProps> = ({
             <h2 className="text-2xl text-gray-400">Codex</h2>
           </div>
 
-          {/* Action cards */}
           <div className="flex gap-6 justify-center">
             <div className="bg-gray-800 p-6 rounded-lg border border-gray-700 hover:bg-gray-700 transition-colors cursor-pointer">
               <div className="flex justify-center mb-3">

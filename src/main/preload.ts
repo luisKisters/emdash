@@ -29,6 +29,22 @@ contextBridge.exposeInMainWorld('electronAPI', {
     return () => ipcRenderer.removeListener(channel, wrapped)
   },
 
+  // Worktree management
+  worktreeCreate: (args: { projectPath: string; workspaceName: string; projectId: string }) =>
+    ipcRenderer.invoke('worktree:create', args),
+  worktreeList: (args: { projectPath: string }) =>
+    ipcRenderer.invoke('worktree:list', args),
+  worktreeRemove: (args: { projectPath: string; worktreeId: string }) =>
+    ipcRenderer.invoke('worktree:remove', args),
+  worktreeStatus: (args: { worktreePath: string }) =>
+    ipcRenderer.invoke('worktree:status', args),
+  worktreeMerge: (args: { projectPath: string; worktreeId: string }) =>
+    ipcRenderer.invoke('worktree:merge', args),
+  worktreeGet: (args: { worktreeId: string }) =>
+    ipcRenderer.invoke('worktree:get', args),
+  worktreeGetAll: () =>
+    ipcRenderer.invoke('worktree:getAll'),
+
   // Project management
   openProject: () => ipcRenderer.invoke('project:open'),
   getGitInfo: (projectPath: string) => ipcRenderer.invoke('git:getInfo', projectPath),
@@ -83,6 +99,14 @@ export interface ElectronAPI {
   ptyKill: (id: string) => void
   onPtyData: (id: string, listener: (data: string) => void) => () => void
   onPtyExit: (id: string, listener: (info: { exitCode: number; signal?: number }) => void) => () => void
+  // Worktree management
+  worktreeCreate: (args: { projectPath: string; workspaceName: string; projectId: string }) => Promise<{ success: boolean; worktree?: any; error?: string }>
+  worktreeList: (args: { projectPath: string }) => Promise<{ success: boolean; worktrees?: any[]; error?: string }>
+  worktreeRemove: (args: { projectPath: string; worktreeId: string }) => Promise<{ success: boolean; error?: string }>
+  worktreeStatus: (args: { worktreePath: string }) => Promise<{ success: boolean; status?: any; error?: string }>
+  worktreeMerge: (args: { projectPath: string; worktreeId: string }) => Promise<{ success: boolean; error?: string }>
+  worktreeGet: (args: { worktreeId: string }) => Promise<{ success: boolean; worktree?: any; error?: string }>
+  worktreeGetAll: () => Promise<{ success: boolean; worktrees?: any[]; error?: string }>
 
   // Project management
   openProject: () => Promise<{ success: boolean; path?: string; error?: string }>

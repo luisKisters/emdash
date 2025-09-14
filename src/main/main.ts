@@ -10,6 +10,7 @@ import * as fs from 'fs'
 
 const execAsync = promisify(exec)
 import { registerPtyIpc } from './services/ptyIpc'
+import { registerWorktreeIpc } from './services/worktreeIpc'
 
 let mainWindow: BrowserWindow | null = null
 const githubService = new GitHubService()
@@ -61,6 +62,9 @@ app.whenReady().then(async () => {
 
   // Register PTY IPC handlers
   registerPtyIpc()
+  
+  // Register worktree IPC handlers
+  registerWorktreeIpc()
   createWindow()
 })
 

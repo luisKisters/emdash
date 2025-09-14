@@ -20,7 +20,8 @@
     }
   },
   "include": [
-    "src/renderer/**/*"
+    "src/renderer/**/*",
+    "src/types/**/*"
   ],
   "exclude": [
     "node_modules",
