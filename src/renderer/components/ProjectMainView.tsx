@@ -31,11 +31,15 @@ interface Workspace {
 interface ProjectMainViewProps {
   project: Project;
   onCreateWorkspace: () => void;
+  activeWorkspace: Workspace | null;
+  onSelectWorkspace: (workspace: Workspace) => void;
 }
 
 const ProjectMainView: React.FC<ProjectMainViewProps> = ({
   project,
   onCreateWorkspace,
+  activeWorkspace,
+  onSelectWorkspace,
 }) => {
   return (
     <div className="flex-1 bg-white dark:bg-gray-800 h-screen overflow-y-auto">
@@ -109,7 +113,15 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
               <h2 className="text-lg font-serif font-semibold mb-4">Workspaces</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {project.workspaces.map((workspace) => (
-                  <Card key={workspace.id} className="hover:shadow-lg transition-shadow">
+                  <Card 
+                    key={workspace.id} 
+                    className={`hover:shadow-lg transition-all cursor-pointer ${
+                      activeWorkspace?.id === workspace.id 
+                        ? 'ring-2 ring-blue-500 border-blue-500' 
+                        : 'hover:shadow-lg'
+                    }`}
+                    onClick={() => onSelectWorkspace(workspace)}
+                  >
                     <CardHeader>
                       <CardTitle className="text-lg">{workspace.name}</CardTitle>
                       <CardDescription>

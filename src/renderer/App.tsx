@@ -8,6 +8,10 @@ import LeftSidebar from "./components/LeftSidebar";
 import ProjectMainView from "./components/ProjectMainView";
 import WorkspaceModal from "./components/WorkspaceModal";
 import TerminalPane from "./components/TerminalPane";
+import ChatInterface from "./components/ChatInterface";
+import WorkspaceTerminalPanel from "./components/WorkspaceTerminalPanel";
+import { Toaster } from "./components/ui/toaster";
+import { useToast } from "./hooks/use-toast";
 
 interface Project {
   id: string;
@@ -35,6 +39,7 @@ interface Workspace {
 }
 
 const App: React.FC = () => {
+  const { toast } = useToast();
   const [version, setVersion] = useState<string>("");
   const [platform, setPlatform] = useState<string>("");
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -45,6 +50,9 @@ const App: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showWorkspaceModal, setShowWorkspaceModal] = useState<boolean>(false);
   const [showHomeView, setShowHomeView] = useState<boolean>(true);
+  const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(
+    null
+  );
 
   useEffect(() => {
     const loadAppData = async () => {
@@ -98,7 +106,6 @@ const App: React.FC = () => {
         const repos = await window.electronAPI.githubGetRepositories();
         setRepositories(repos);
       } else {
-        // Show helpful error message with better formatting
         alert(`GitHub Authentication Failed:\n\n${result.error}`);
       }
     } catch (error) {
@@ -130,12 +137,10 @@ const App: React.FC = () => {
           const gitInfo = await window.electronAPI.getGitInfo(result.path);
           if (gitInfo.isGitRepo) {
             if (isAuthenticated) {
-              // User is authenticated with GitHub CLI
               const githubInfo = await window.electronAPI.connectToGitHub(
                 result.path
               );
               if (githubInfo.success) {
-                // Add project to database and state
                 const projectName =
                   result.path.split("/").pop() || "Unknown Project";
                 const newProject: Project = {
@@ -260,11 +265,11 @@ const App: React.FC = () => {
       });
 
       if (!worktreeResult.success) {
-        throw new Error(worktreeResult.error || 'Failed to create worktree');
+        throw new Error(worktreeResult.error || "Failed to create worktree");
       }
 
       const worktree = worktreeResult.worktree;
-      
+
       const newWorkspace: Workspace = {
         id: worktree.id,
         name: workspaceName,
@@ -300,18 +305,25 @@ const App: React.FC = () => {
             : null
         );
 
-        alert(`Workspace "${workspaceName}" created successfully!`);
+        toast({
+          title: "Workspace Created",
+          description: `"${workspaceName}" workspace created successfully!`,
+        });
       } else {
         console.error("Failed to save workspace:", saveResult.error);
-        alert(
-          "Failed to create workspace. Please check the console for details."
-        );
+        toast({
+          title: "Error",
+          description:
+            "Failed to create workspace. Please check the console for details.",
+        });
       }
     } catch (error) {
       console.error("Failed to create workspace:", error);
-      alert(
-        "Failed to create workspace. Please check the console for details."
-      );
+      toast({
+        title: "Error",
+        description:
+          "Failed to create workspace. Please check the console for details.",
+      });
     }
   };
 
@@ -323,6 +335,11 @@ const App: React.FC = () => {
   const handleSelectProject = (project: Project) => {
     setSelectedProject(project);
     setShowHomeView(false);
+    setActiveWorkspace(null);
+  };
+
+  const handleSelectWorkspace = (workspace: Workspace) => {
+    setActiveWorkspace(workspace);
   };
 
   return (
@@ -426,10 +443,6 @@ const App: React.FC = () => {
               </Button>
             </div>
 
-            <div className="h-[520px] border rounded overflow-hidden">
-              <TerminalPane key="main-terminal" id="main" />
-            </div>
-
             {isAuthenticated && repositories.length > 0 && (
               <RepositoryList
                 repositories={repositories}
@@ -440,10 +453,33 @@ const App: React.FC = () => {
           </div>
         </div>
       ) : selectedProject ? (
-        <ProjectMainView
-          project={selectedProject}
-          onCreateWorkspace={() => setShowWorkspaceModal(true)}
-        />
+        <div className="flex-1 flex bg-background text-foreground">
+          <div className="flex-1">
+            {activeWorkspace ? (
+              <ChatInterface
+                workspace={activeWorkspace}
+                projectName={selectedProject.name}
+                className="h-full"
+              />
+            ) : (
+              <ProjectMainView
+                project={selectedProject}
+                onCreateWorkspace={() => setShowWorkspaceModal(true)}
+                activeWorkspace={activeWorkspace}
+                onSelectWorkspace={handleSelectWorkspace}
+              />
+            )}
+          </div>
+
+          {activeWorkspace && (
+            <div className="w-80 border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+              <WorkspaceTerminalPanel
+                workspace={activeWorkspace}
+                className="h-full"
+              />
+            </div>
+          )}
+        </div>
       ) : (
         <div className="flex-1 bg-background text-foreground overflow-y-auto">
           <div className="container mx-auto px-4 py-8">
@@ -536,8 +572,6 @@ const App: React.FC = () => {
               </Button>
             </div>
 
-            <div className="h-[520px] border rounded overflow-hidden"></div>
-
             {isAuthenticated && repositories.length > 0 && (
               <RepositoryList
                 repositories={repositories}
@@ -556,6 +590,7 @@ const App: React.FC = () => {
         projectName={selectedProject?.name || ""}
         defaultBranch={selectedProject?.gitInfo.branch || "main"}
       />
+      <Toaster />
     </div>
   );
 };

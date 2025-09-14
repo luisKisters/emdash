@@ -34,6 +34,8 @@ const TerminalPaneComponent: React.FC<Props> = ({ id, cwd, cols = 80, rows = 24,
       convertEol: true,
       cursorBlink: true,
       disableStdin: false,
+      cols: cols,
+      rows: rows,
       theme: {
         background: '#0b0e14',
       },
