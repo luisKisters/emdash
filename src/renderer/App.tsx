@@ -107,13 +107,19 @@ const App: React.FC = () => {
         const repos = await window.electronAPI.githubGetRepositories();
         setRepositories(repos);
       } else {
-        alert(`GitHub Authentication Failed:\n\n${result.error}`);
+        toast({
+          title: "GitHub Authentication Failed",
+          description: result.error,
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Authentication error:", error);
-      alert(
-        "Authentication error occurred. Please check the console for details."
-      );
+      toast({
+        title: "Authentication Error",
+        description: "Please check the console for details.",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }
@@ -172,9 +178,11 @@ const App: React.FC = () => {
                 }
                 // alert(`✅ Project connected to GitHub!\n\nRepository: ${githubInfo.repository}\nBranch: ${githubInfo.branch}\nPath: ${result.path}`);
               } else {
-                alert(
-                  `⚠️ Git repository detected but couldn't connect to GitHub:\n\n${githubInfo.error}\n\nPath: ${result.path}`
-                );
+                toast({
+                  title: "GitHub Connection Failed",
+                  description: `Git repository detected but couldn't connect to GitHub: ${githubInfo.error}`,
+                  variant: "destructive",
+                });
               }
             } else {
               // User not authenticated - still save the project
@@ -209,48 +217,68 @@ const App: React.FC = () => {
             }
           } else {
             // Not a Git repository
-            alert(
-              `Project opened (not a Git repository)\n\nPath: ${result.path}`
-            );
+            toast({
+              title: "Project Opened",
+              description: `This directory is not a Git repository. Path: ${result.path}`,
+              variant: "destructive",
+            });
           }
         } catch (error) {
           console.error("Git detection error:", error);
-          alert(
-            `Project opened\n\nPath: ${result.path}\n\nNote: Could not detect Git information.`
-          );
+          toast({
+            title: "Project Opened",
+            description: `Could not detect Git information. Path: ${result.path}`,
+            variant: "destructive",
+          });
         }
       } else if (result.error) {
-        alert(`Failed to open project: ${result.error}`);
+        toast({
+          title: "Failed to Open Project",
+          description: result.error,
+          variant: "destructive",
+        });
       }
     } catch (error) {
       console.error("Open project error:", error);
-      alert("Failed to open project. Please check the console for details.");
+      toast({
+        title: "Failed to Open Project",
+        description: "Please check the console for details.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleImportRepository = async (repo: any) => {
     try {
       // TODO: Implement repository cloning
-      alert(
-        `Importing repository: ${repo.name}\n\nThis will clone the repository to your local machine.\n\nClone URL: ${repo.clone_url}`
-      );
+      toast({
+        title: "Import Repository",
+        description: `Importing ${repo.name} - This will clone the repository to your local machine.`,
+      });
     } catch (error) {
       console.error("Import repository error:", error);
-      alert(
-        "Failed to import repository. Please check the console for details."
-      );
+      toast({
+        title: "Failed to Import Repository",
+        description: "Please check the console for details.",
+        variant: "destructive",
+      });
     }
   };
 
   const handleOpenRepository = async (repo: any) => {
     try {
       // TODO: Implement repository opening
-      alert(
-        `Opening repository: ${repo.name}\n\nThis will open the repository in your default editor or file manager.\n\nRepository: ${repo.full_name}`
-      );
+      toast({
+        title: "Open Repository",
+        description: `Opening ${repo.name} - This will open the repository in your default editor or file manager.`,
+      });
     } catch (error) {
       console.error("Open repository error:", error);
-      alert("Failed to open repository. Please check the console for details.");
+      toast({
+        title: "Failed to Open Repository",
+        description: "Please check the console for details.",
+        variant: "destructive",
+      });
     }
   };
 
