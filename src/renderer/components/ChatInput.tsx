@@ -67,7 +67,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 className="w-4 h-4"
               />
               <span className="text-xs font-medium text-gray-600 dark:text-gray-400 font-serif">
-                OpenAI Codex CLI
+                Codex
               </span>
             </div>
             
