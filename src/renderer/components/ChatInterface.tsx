@@ -318,7 +318,10 @@ export const ChatInterface: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex-1 overflow-y-auto p-6" style={{ 
+        maskImage: 'linear-gradient(to bottom, black 0%, black 85%, transparent 100%)',
+        WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 85%, transparent 100%)'
+      }}>
         <div className="max-w-4xl mx-auto space-y-6">
           {isLoadingMessages ? (
             <div className="flex items-center justify-center py-8">
