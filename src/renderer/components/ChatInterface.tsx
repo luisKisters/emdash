@@ -62,12 +62,69 @@ export const ChatInterface: React.FC<Props> = ({
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [streamingMessage, setStreamingMessage] = useState<string>("");
+  const [isStreaming, setIsStreaming] = useState(false);
   const [isCodexInstalled, setIsCodexInstalled] = useState<boolean | null>(
     null
   );
   const [agentCreated, setAgentCreated] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+
+  // Set up streaming event listeners
+  useEffect(() => {
+    const unsubscribeOutput = (window.electronAPI as any).onCodexStreamOutput((data: { workspaceId: string; output: string; agentId: string }) => {
+      if (data.workspaceId === workspace.id) {
+        setStreamingMessage(prev => prev + data.output);
+      }
+    });
+
+    const unsubscribeError = (window.electronAPI as any).onCodexStreamError((data: { workspaceId: string; error: string; agentId: string }) => {
+      if (data.workspaceId === workspace.id) {
+        console.error('Codex streaming error:', data.error);
+        setIsStreaming(false);
+        setStreamingMessage("");
+      }
+    });
+
+    const unsubscribeComplete = (window.electronAPI as any).onCodexStreamComplete((data: { workspaceId: string; exitCode: number; agentId: string }) => {
+      if (data.workspaceId === workspace.id) {
+        setIsStreaming(false);
+        
+        // Save the complete streaming message
+        if (streamingMessage.trim()) {
+          const agentMessage: Message = {
+            id: Date.now().toString(),
+            content: streamingMessage,
+            sender: "agent",
+            timestamp: new Date(),
+          };
+
+          // Save to database
+          window.electronAPI.saveMessage({
+            id: agentMessage.id,
+            conversationId: conversationId,
+            content: agentMessage.content,
+            sender: agentMessage.sender,
+            metadata: JSON.stringify({
+              workspaceId: workspace.id,
+              isStreaming: true,
+            }),
+          });
+
+          setMessages((prev) => [...prev, agentMessage]);
+        }
+        
+        setStreamingMessage("");
+      }
+    });
+
+    return () => {
+      unsubscribeOutput();
+      unsubscribeError();
+      unsubscribeComplete();
+    };
+  }, [workspace.id, conversationId, streamingMessage]);
 
   // Load conversation and messages on mount
   useEffect(() => {
@@ -197,109 +254,24 @@ export const ChatInterface: React.FC<Props> = ({
     }
 
     setMessages((prev) => [...prev, userMessage]);
+    const messageToSend = inputValue;
     setInputValue("");
-    setIsLoading(true);
+    setIsStreaming(true);
+    setStreamingMessage("");
 
     try {
-      const response = await window.electronAPI.codexSendMessage(
-        workspace.id,
-        inputValue
-      );
+      await (window.electronAPI as any).codexSendMessageStream(workspace.id, messageToSend);
 
-      if (response.success && response.response) {
-        const agentMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: response.response.output || "Codex completed the task.",
-          sender: "agent",
-          timestamp: new Date(),
-        };
-
-        // Save agent message to database
-        try {
-          await window.electronAPI.saveMessage({
-            id: agentMessage.id,
-            conversationId: conversationId,
-            content: agentMessage.content,
-            sender: agentMessage.sender,
-            metadata: JSON.stringify({
-              workspaceId: workspace.id,
-              agentId: response.response.agentId,
-              isCodexResponse: true,
-            }),
-          });
-        } catch (error) {
-          console.error("Failed to save agent message:", error);
-        }
-
-        setMessages((prev) => [...prev, agentMessage]);
-      } else {
-        const errorMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          content: `Error: ${response.error || "Unknown error occurred"}`,
-          sender: "agent",
-          timestamp: new Date(),
-        };
-
-        // Save error message to database
-        try {
-          await window.electronAPI.saveMessage({
-            id: errorMessage.id,
-            conversationId: conversationId,
-            content: errorMessage.content,
-            sender: errorMessage.sender,
-            metadata: JSON.stringify({
-              workspaceId: workspace.id,
-              isError: true,
-              errorType: "codex_error",
-            }),
-          });
-        } catch (error) {
-          console.error("Failed to save error message:", error);
-        }
-
-        setMessages((prev) => [...prev, errorMessage]);
-
-        toast({
-          title: "Codex Error",
-          description: response.error || "Unknown error occurred",
-          variant: "destructive",
-        });
-      }
     } catch (error) {
-      console.error("Error sending message to Codex:", error);
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        content: "Failed to communicate with Codex. Please try again.",
-        sender: "agent",
-        timestamp: new Date(),
-      };
-
-      // Save communication error message to database
-      try {
-        await window.electronAPI.saveMessage({
-          id: errorMessage.id,
-          conversationId: conversationId,
-          content: errorMessage.content,
-          sender: errorMessage.sender,
-          metadata: JSON.stringify({
-            workspaceId: workspace.id,
-            isError: true,
-            errorType: "communication_error",
-          }),
-        });
-      } catch (dbError) {
-        console.error("Failed to save communication error message:", dbError);
-      }
-
-      setMessages((prev) => [...prev, errorMessage]);
-
+      console.error("Error starting Codex stream:", error);
+      setIsStreaming(false);
+      setStreamingMessage("");
+      
       toast({
         title: "Communication Error",
-        description: "Failed to communicate with Codex. Please try again.",
+        description: "Failed to start Codex stream. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
     }
   };
 
@@ -330,7 +302,8 @@ export const ChatInterface: React.FC<Props> = ({
               </div>
             </div>
           ) : (
-            messages.map((message) => (
+            <>
+              {messages.map((message) => (
               <div
                 key={message.id}
                 className="text-gray-900 dark:text-gray-100"
@@ -389,10 +362,118 @@ export const ChatInterface: React.FC<Props> = ({
                   </ReactMarkdown>
                 </div>
               </div>
-            ))
+              ))}
+              
+              {/* Streaming message */}
+              {isStreaming && streamingMessage && (
+                <div className="text-gray-900 dark:text-gray-100">
+                  <div className="text-base leading-relaxed font-serif prose prose-sm max-w-none">
+                    <ReactMarkdown
+                      components={{
+                        code: ({
+                          node,
+                          inline,
+                          className,
+                          children,
+                          ...props
+                        }: any) => {
+                          const match = /language-(\w+)/.exec(className || "");
+                          const language = match ? match[1] : "";
+                          const codeContent = String(children).replace(/\n$/, "");
+
+                          // Special handling for diff output
+                          if (
+                            language === "diff" ||
+                            codeContent.includes("diff --git")
+                          ) {
+                            return (
+                              <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm font-mono">
+                                <code className="text-gray-100" {...props}>
+                                  {codeContent.split("\n").map((line, index) => {
+                                    let lineClass = "text-gray-300";
+                                    if (line.startsWith("+"))
+                                      lineClass = "text-green-400";
+                                    else if (line.startsWith("-"))
+                                      lineClass = "text-red-400";
+                                    else if (line.startsWith("@@"))
+                                      lineClass = "text-blue-400";
+                                    else if (line.startsWith("diff --git"))
+                                      lineClass = "text-yellow-400";
+                                    else if (line.startsWith("index"))
+                                      lineClass = "text-purple-400";
+
+                                    return (
+                                      <div key={index} className={lineClass}>
+                                        {line}
+                                      </div>
+                                    );
+                                  })}
+                                </code>
+                              </pre>
+                            );
+                          }
+
+                          // Regular code blocks with syntax highlighting
+                          if (
+                            !inline &&
+                            (match ||
+                              codeContent.includes("import ") ||
+                              codeContent.includes("function ") ||
+                              codeContent.includes("const ") ||
+                              codeContent.includes("class "))
+                          ) {
+                            return (
+                              <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm font-mono">
+                                <code className="text-gray-100" {...props}>
+                                  {codeContent}
+                                </code>
+                              </pre>
+                            );
+                          }
+
+                          // Inline code
+                          return (
+                            <code
+                              className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded text-sm font-mono text-gray-800 dark:text-gray-200"
+                              {...props}
+                            >
+                              {children}
+                            </code>
+                          );
+                        },
+                        ul: ({ children }) => (
+                          <ul className="list-disc list-inside space-y-1 my-2">
+                            {children}
+                          </ul>
+                        ),
+                        ol: ({ children }) => (
+                          <ol className="list-decimal list-inside space-y-1 my-2">
+                            {children}
+                          </ol>
+                        ),
+                        li: ({ children }) => (
+                          <li className="ml-2">{children}</li>
+                        ),
+                        p: ({ children }) => (
+                          <p className="mb-2 last:mb-0">{children}</p>
+                        ),
+                        strong: ({ children }) => (
+                          <strong className="font-semibold">{children}</strong>
+                        ),
+                        em: ({ children }) => (
+                          <em className="italic">{children}</em>
+                        ),
+                      }}
+                    >
+                      {streamingMessage}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              )}
+            </>
           )}
 
-          {isLoading && (
+          {isStreaming && !streamingMessage && (
             <div className="text-gray-600 dark:text-gray-400">
               <div className="flex space-x-1">
                 <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
@@ -414,7 +495,7 @@ export const ChatInterface: React.FC<Props> = ({
         value={inputValue}
         onChange={setInputValue}
         onSend={handleSendMessage}
-        isLoading={isLoading}
+        isLoading={isStreaming}
         isCodexInstalled={isCodexInstalled}
         agentCreated={agentCreated}
       />

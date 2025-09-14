@@ -32,6 +32,16 @@ export function setupCodexIpc() {
     }
   });
 
+  // Send a message to Codex with streaming
+  ipcMain.handle('codex:send-message-stream', async (event, workspaceId: string, message: string) => {
+    try {
+      await codexService.sendMessageStream(workspaceId, message);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  });
+
   // Get agent status
   ipcMain.handle('codex:get-agent-status', async (event, workspaceId: string) => {
     try {
@@ -70,6 +80,31 @@ export function setupCodexIpc() {
     } catch (error) {
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
+  });
+
+  // Set up event listeners for streaming
+  codexService.on('codex:output', (data) => {
+    // Broadcast to all renderer processes
+    const windows = require('electron').BrowserWindow.getAllWindows();
+    windows.forEach((window: any) => {
+      window.webContents.send('codex:stream-output', data);
+    });
+  });
+
+  codexService.on('codex:error', (data) => {
+    // Broadcast to all renderer processes
+    const windows = require('electron').BrowserWindow.getAllWindows();
+    windows.forEach((window: any) => {
+      window.webContents.send('codex:stream-error', data);
+    });
+  });
+
+  codexService.on('codex:complete', (data) => {
+    // Broadcast to all renderer processes
+    const windows = require('electron').BrowserWindow.getAllWindows();
+    windows.forEach((window: any) => {
+      window.webContents.send('codex:stream-complete', data);
+    });
   });
 
   console.log('✅ Codex IPC handlers registered');

@@ -48,15 +48,26 @@ declare global {
       saveWorkspace: (workspace: any) => Promise<{ success: boolean; error?: string }>
       deleteProject: (projectId: string) => Promise<{ success: boolean; error?: string }>
       deleteWorkspace: (workspaceId: string) => Promise<{ success: boolean; error?: string }>
+      
+      // Message operations
+      saveMessage: (message: any) => Promise<{ success: boolean; error?: string }>
+      getMessages: (conversationId: string) => Promise<{ success: boolean; messages?: any[]; error?: string }>
+      getOrCreateDefaultConversation: (workspaceId: string) => Promise<{ success: boolean; conversation?: any; error?: string }>
 
       // Codex
       codexCheckInstallation: () => Promise<{ success: boolean; isInstalled?: boolean; error?: string }>
       codexCreateAgent: (workspaceId: string, worktreePath: string) => Promise<{ success: boolean; agent?: any; error?: string }>
       codexSendMessage: (workspaceId: string, message: string) => Promise<{ success: boolean; response?: any; error?: string }>
+      codexSendMessageStream: (workspaceId: string, message: string) => Promise<{ success: boolean; error?: string }>
       codexGetAgentStatus: (workspaceId: string) => Promise<{ success: boolean; agent?: any; error?: string }>
       codexGetAllAgents: () => Promise<{ success: boolean; agents?: any[]; error?: string }>
       codexRemoveAgent: (workspaceId: string) => Promise<{ success: boolean; removed?: boolean; error?: string }>
       codexGetInstallationInstructions: () => Promise<{ success: boolean; instructions?: string; error?: string }>
+      
+      // Streaming event listeners
+      onCodexStreamOutput: (listener: (data: { workspaceId: string; output: string; agentId: string }) => void) => () => void
+      onCodexStreamError: (listener: (data: { workspaceId: string; error: string; agentId: string }) => void) => () => void
+      onCodexStreamComplete: (listener: (data: { workspaceId: string; exitCode: number; agentId: string }) => void) => () => void
     }
   }
 }
@@ -107,13 +118,24 @@ export interface ElectronAPI {
   saveWorkspace: (workspace: any) => Promise<{ success: boolean; error?: string }>
   deleteProject: (projectId: string) => Promise<{ success: boolean; error?: string }>
   deleteWorkspace: (workspaceId: string) => Promise<{ success: boolean; error?: string }>
+  
+  // Message operations
+  saveMessage: (message: any) => Promise<{ success: boolean; error?: string }>
+  getMessages: (conversationId: string) => Promise<{ success: boolean; messages?: any[]; error?: string }>
+  getOrCreateDefaultConversation: (workspaceId: string) => Promise<{ success: boolean; conversation?: any; error?: string }>
 
   // Codex
   codexCheckInstallation: () => Promise<{ success: boolean; isInstalled?: boolean; error?: string }>
   codexCreateAgent: (workspaceId: string, worktreePath: string) => Promise<{ success: boolean; agent?: any; error?: string }>
   codexSendMessage: (workspaceId: string, message: string) => Promise<{ success: boolean; response?: any; error?: string }>
+  codexSendMessageStream: (workspaceId: string, message: string) => Promise<{ success: boolean; error?: string }>
   codexGetAgentStatus: (workspaceId: string) => Promise<{ success: boolean; agent?: any; error?: string }>
   codexGetAllAgents: () => Promise<{ success: boolean; agents?: any[]; error?: string }>
   codexRemoveAgent: (workspaceId: string) => Promise<{ success: boolean; removed?: boolean; error?: string }>
   codexGetInstallationInstructions: () => Promise<{ success: boolean; instructions?: string; error?: string }>
+  
+  // Streaming event listeners
+  onCodexStreamOutput: (listener: (data: { workspaceId: string; output: string; agentId: string }) => void) => () => void
+  onCodexStreamError: (listener: (data: { workspaceId: string; error: string; agentId: string }) => void) => () => void
+  onCodexStreamComplete: (listener: (data: { workspaceId: string; exitCode: number; agentId: string }) => void) => () => void
 }

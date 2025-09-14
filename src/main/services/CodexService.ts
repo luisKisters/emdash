@@ -21,11 +21,12 @@ export interface CodexResponse {
   agentId: string;
 }
 
-export class CodexService {
+export class CodexService extends EventEmitter {
   private agents: Map<string, CodexAgent> = new Map();
   private isCodexInstalled: boolean | null = null;
 
   constructor() {
+    super();
     this.checkCodexInstallation();
   }
 
@@ -75,7 +76,73 @@ export class CodexService {
   }
 
   /**
-   * Send a message to a Codex agent
+   * Send message to a Codex agent with streaming output
+   */
+  public async sendMessageStream(workspaceId: string, message: string): Promise<void> {
+    // Find agent for this workspace
+    const agent = Array.from(this.agents.values()).find(a => a.workspaceId === workspaceId);
+    
+    if (!agent) {
+      this.emit('codex:error', { workspaceId, error: 'No agent found for this workspace' });
+      return;
+    }
+
+    if (!this.isCodexInstalled) {
+      this.emit('codex:error', { workspaceId, error: 'Codex CLI is not installed. Please install it with: npm install -g @openai/codex' });
+      return;
+    }
+
+    // Update agent status
+    agent.status = 'running';
+    agent.lastMessage = message;
+
+    try {
+      // Use spawn for streaming output
+      const command = `codex exec --sandbox workspace-write "${message.replace(/"/g, '\\"')}"`;
+      console.log(`Executing: ${command} in ${agent.worktreePath}`);
+
+      const child = spawn('bash', ['-c', command], {
+        cwd: agent.worktreePath,
+        stdio: ['pipe', 'pipe', 'pipe']
+      });
+
+      // Stream stdout
+      child.stdout.on('data', (data) => {
+        const output = data.toString();
+        console.log('Codex stdout chunk:', output);
+        this.emit('codex:output', { workspaceId, output, agentId: agent.id });
+      });
+
+      // Stream stderr
+      child.stderr.on('data', (data) => {
+        const error = data.toString();
+        console.log('Codex stderr chunk:', error);
+        this.emit('codex:error', { workspaceId, error, agentId: agent.id });
+      });
+
+      // Handle completion
+      child.on('close', (code) => {
+        agent.status = 'idle';
+        console.log(`Codex completed with code ${code} in ${agent.worktreePath}`);
+        this.emit('codex:complete', { workspaceId, exitCode: code, agentId: agent.id });
+      });
+
+      // Handle errors
+      child.on('error', (error) => {
+        agent.status = 'error';
+        console.error(`Error executing Codex in ${agent.worktreePath}:`, error.message);
+        this.emit('codex:error', { workspaceId, error: error.message, agentId: agent.id });
+      });
+
+    } catch (error: any) {
+      agent.status = 'error';
+      console.error(`Error executing Codex in ${agent.worktreePath}:`, error.message);
+      this.emit('codex:error', { workspaceId, error: error.message, agentId: agent.id });
+    }
+  }
+
+  /**
+   * Send a message to a Codex agent (legacy method for compatibility)
    */
   public async sendMessage(workspaceId: string, message: string): Promise<CodexResponse> {
     // Find agent for this workspace
