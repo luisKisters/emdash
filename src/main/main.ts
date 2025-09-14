@@ -333,6 +333,67 @@ ipcMain.handle('db:deleteProject', async (_, projectId: string) => {
   }
 })
 
+// Conversation management IPC handlers
+ipcMain.handle('db:saveConversation', async (_, conversation: any) => {
+  try {
+    await databaseService.saveConversation(conversation)
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to save conversation:', error)
+    return { success: false, error: (error as Error).message }
+  }
+})
+
+ipcMain.handle('db:getConversations', async (_, workspaceId: string) => {
+  try {
+    const conversations = await databaseService.getConversations(workspaceId)
+    return { success: true, conversations }
+  } catch (error) {
+    console.error('Failed to get conversations:', error)
+    return { success: false, error: (error as Error).message }
+  }
+})
+
+ipcMain.handle('db:getOrCreateDefaultConversation', async (_, workspaceId: string) => {
+  try {
+    const conversation = await databaseService.getOrCreateDefaultConversation(workspaceId)
+    return { success: true, conversation }
+  } catch (error) {
+    console.error('Failed to get or create default conversation:', error)
+    return { success: false, error: (error as Error).message }
+  }
+})
+
+ipcMain.handle('db:saveMessage', async (_, message: any) => {
+  try {
+    await databaseService.saveMessage(message)
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to save message:', error)
+    return { success: false, error: (error as Error).message }
+  }
+})
+
+ipcMain.handle('db:getMessages', async (_, conversationId: string) => {
+  try {
+    const messages = await databaseService.getMessages(conversationId)
+    return { success: true, messages }
+  } catch (error) {
+    console.error('Failed to get messages:', error)
+    return { success: false, error: (error as Error).message }
+  }
+})
+
+ipcMain.handle('db:deleteConversation', async (_, conversationId: string) => {
+  try {
+    await databaseService.deleteConversation(conversationId)
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to delete conversation:', error)
+    return { success: false, error: (error as Error).message }
+  }
+})
+
 ipcMain.handle('db:deleteWorkspace', async (_, workspaceId: string) => {
   try {
     await databaseService.deleteWorkspace(workspaceId)

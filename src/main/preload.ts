@@ -85,6 +85,14 @@ contextBridge.exposeInMainWorld('electronAPI', {
   deleteProject: (projectId: string) => ipcRenderer.invoke('db:deleteProject', projectId),
   deleteWorkspace: (workspaceId: string) => ipcRenderer.invoke('db:deleteWorkspace', workspaceId),
 
+  // Conversation management
+  saveConversation: (conversation: any) => ipcRenderer.invoke('db:saveConversation', conversation),
+  getConversations: (workspaceId: string) => ipcRenderer.invoke('db:getConversations', workspaceId),
+  getOrCreateDefaultConversation: (workspaceId: string) => ipcRenderer.invoke('db:getOrCreateDefaultConversation', workspaceId),
+  saveMessage: (message: any) => ipcRenderer.invoke('db:saveMessage', message),
+  getMessages: (conversationId: string) => ipcRenderer.invoke('db:getMessages', conversationId),
+  deleteConversation: (conversationId: string) => ipcRenderer.invoke('db:deleteConversation', conversationId),
+
   // Codex integration
   codexCheckInstallation: () => ipcRenderer.invoke('codex:check-installation'),
   codexCreateAgent: (workspaceId: string, worktreePath: string) => ipcRenderer.invoke('codex:create-agent', workspaceId, worktreePath),
@@ -153,6 +161,14 @@ export interface ElectronAPI {
   saveWorkspace: (workspace: any) => Promise<{ success: boolean; error?: string }>
   deleteProject: (projectId: string) => Promise<{ success: boolean; error?: string }>
   deleteWorkspace: (workspaceId: string) => Promise<{ success: boolean; error?: string }>
+
+  // Conversation management
+  saveConversation: (conversation: any) => Promise<{ success: boolean; error?: string }>
+  getConversations: (workspaceId: string) => Promise<{ success: boolean; conversations?: any[]; error?: string }>
+  getOrCreateDefaultConversation: (workspaceId: string) => Promise<{ success: boolean; conversation?: any; error?: string }>
+  saveMessage: (message: any) => Promise<{ success: boolean; error?: string }>
+  getMessages: (conversationId: string) => Promise<{ success: boolean; messages?: any[]; error?: string }>
+  deleteConversation: (conversationId: string) => Promise<{ success: boolean; error?: string }>
 
   // Codex integration
   codexCheckInstallation: () => Promise<{ success: boolean; isInstalled?: boolean; error?: string }>

@@ -1,6 +1,6 @@
 # orcbench
 
-**Agent-agnostic Conductor.build for Codex Agents**
+**Agent-agnostic Orchestration Bench for Codex Agents**
 
 Run multiple Codex Agents in parallel with isolated Git worktrees.
 
@@ -116,3 +116,11 @@ The application provides a comprehensive set of database operations through the 
 - **Efficient Storage**: Minimal storage footprint with normalized data structure
 - **Background Operations**: Database operations run asynchronously to maintain UI responsiveness
 
+### Storage Usage
+
+The application stores conversation history locally, which may consume disk space over time:
+
+**Storage Management:**
+- Conversations are stored per workspace and persist across sessions
+- Database grows with usage but remains manageable for typical development workflows
+- Consider periodic cleanup of old conversations if storage becomes a concern
