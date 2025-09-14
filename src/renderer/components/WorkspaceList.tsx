@@ -1,6 +1,7 @@
 import React from 'react'
 import { Button } from './ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
+import { Spinner } from './ui/spinner'
 import { GitBranch, Bot, Play, Pause, Plus } from 'lucide-react'
 
 interface Workspace {
@@ -16,6 +17,7 @@ interface Props {
   activeWorkspace: Workspace | null
   onSelectWorkspace: (workspace: Workspace) => void
   onCreateWorkspace: () => void
+  isCreatingWorkspace?: boolean
 }
 
 export const WorkspaceList: React.FC<Props> = ({
@@ -23,6 +25,7 @@ export const WorkspaceList: React.FC<Props> = ({
   activeWorkspace,
   onSelectWorkspace,
   onCreateWorkspace,
+  isCreatingWorkspace = false,
 }) => {
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -43,9 +46,19 @@ export const WorkspaceList: React.FC<Props> = ({
           variant="outline"
           size="sm"
           onClick={onCreateWorkspace}
+          disabled={isCreatingWorkspace}
           className="bg-black text-white hover:bg-gray-800 font-serif"
         >
-          <Plus className="w-4 h-4 mr-2" /> New
+          {isCreatingWorkspace ? (
+            <>
+              <Spinner size="sm" className="mr-2" />
+              Creating...
+            </>
+          ) : (
+            <>
+              <Plus className="w-4 h-4 mr-2" /> New
+            </>
+          )}
         </Button>
       </div>
 

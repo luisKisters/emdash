@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Spinner } from "./ui/spinner";
 import { Send, Bot, User, Folder } from "lucide-react";
 import openaiLogo from "../../assets/images/openai.png";
 
@@ -152,7 +153,11 @@ export const ChatInterface: React.FC<Props> = ({
                 disabled={!inputValue.trim() || isLoading}
                 className="w-8 h-8 p-0 bg-gray-600 hover:bg-gray-700 text-white rounded-full disabled:opacity-50"
               >
-                <Send className="w-4 h-4" />
+                {isLoading ? (
+                  <Spinner size="sm" />
+                ) : (
+                  <Send className="w-4 h-4" />
+                )}
               </Button>
             </div>
           </div>

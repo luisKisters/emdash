@@ -1,6 +1,7 @@
 import React from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Spinner } from './ui/spinner';
 import { FolderOpen, GitBranch, Plus, Settings } from 'lucide-react';
 
 interface Project {
@@ -33,6 +34,7 @@ interface ProjectMainViewProps {
   onCreateWorkspace: () => void;
   activeWorkspace: Workspace | null;
   onSelectWorkspace: (workspace: Workspace) => void;
+  isCreatingWorkspace?: boolean;
 }
 
 const ProjectMainView: React.FC<ProjectMainViewProps> = ({
@@ -40,6 +42,7 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
   onCreateWorkspace,
   activeWorkspace,
   onSelectWorkspace,
+  isCreatingWorkspace = false,
 }) => {
   return (
     <div className="flex-1 bg-white dark:bg-gray-800 h-screen overflow-y-auto">
@@ -99,10 +102,20 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
                 </div>
                 <Button
                   onClick={onCreateWorkspace}
+                  disabled={isCreatingWorkspace}
                   className="bg-black text-white hover:bg-gray-800 font-serif"
                 >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Create workspace
+                  {isCreatingWorkspace ? (
+                    <>
+                      <Spinner size="sm" className="mr-2" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create workspace
+                    </>
+                  )}
                 </Button>
               </div>
             </CardContent>

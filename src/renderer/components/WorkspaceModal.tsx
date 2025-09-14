@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
+import { Spinner } from './ui/spinner';
 import { X, GitBranch, Bot } from 'lucide-react';
 
 interface WorkspaceModalProps {
@@ -97,7 +98,14 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                 disabled={!workspaceName.trim() || isCreating}
                 className="bg-black text-white hover:bg-gray-800 font-serif"
               >
-                {isCreating ? 'Creating...' : 'Create workspace'}
+                {isCreating ? (
+                  <>
+                    <Spinner size="sm" className="mr-2" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create workspace'
+                )}
               </Button>
             </div>
           </form>

@@ -50,6 +50,7 @@ const App: React.FC = () => {
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showWorkspaceModal, setShowWorkspaceModal] = useState<boolean>(false);
   const [showHomeView, setShowHomeView] = useState<boolean>(true);
+  const [isCreatingWorkspace, setIsCreatingWorkspace] = useState<boolean>(false);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(
     null
   );
@@ -256,6 +257,7 @@ const App: React.FC = () => {
   const handleCreateWorkspace = async (workspaceName: string) => {
     if (!selectedProject) return;
 
+    setIsCreatingWorkspace(true);
     try {
       // Create Git worktree
       const worktreeResult = await window.electronAPI.worktreeCreate({
@@ -324,6 +326,8 @@ const App: React.FC = () => {
         description:
           "Failed to create workspace. Please check the console for details.",
       });
+    } finally {
+      setIsCreatingWorkspace(false);
     }
   };
 
@@ -467,6 +471,7 @@ const App: React.FC = () => {
                 onCreateWorkspace={() => setShowWorkspaceModal(true)}
                 activeWorkspace={activeWorkspace}
                 onSelectWorkspace={handleSelectWorkspace}
+                isCreatingWorkspace={isCreatingWorkspace}
               />
             )}
           </div>
