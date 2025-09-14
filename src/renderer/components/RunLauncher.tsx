@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { Repo } from '../types'
+import { useToast } from '../hooks/use-toast'
 
 interface RunLauncherProps {
   repo: Repo
@@ -12,6 +13,7 @@ const RunLauncher: React.FC<RunLauncherProps> = ({
   onCreateRun,
   onCancel,
 }) => {
+  const { toast } = useToast()
   const [provider, setProvider] = useState<'claude-code' | 'openai-agents'>('claude-code')
   const [prompt, setPrompt] = useState('')
   const [numAgents, setNumAgents] = useState(1)
@@ -21,7 +23,11 @@ const RunLauncher: React.FC<RunLauncherProps> = ({
     e.preventDefault()
     
     if (!prompt.trim()) {
-      alert('Please enter a prompt')
+      toast({
+        title: "Validation Error",
+        description: "Please enter a prompt",
+        variant: "destructive",
+      })
       return
     }
 
