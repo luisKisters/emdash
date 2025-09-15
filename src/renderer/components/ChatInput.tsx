@@ -77,7 +77,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               placeholder={getPlaceholder()}
-              className="w-full resize-none border-none outline-none bg-transparent text-gray-900 dark:text-gray-100 text-sm placeholder:text-xs placeholder-gray-500 dark:placeholder-gray-400"
+              className="w-full resize-none border-none outline-none bg-transparent text-gray-900 dark:text-gray-100 text-sm placeholder-gray-500 dark:placeholder-gray-400"
               rows={2}
               disabled={isDisabled}
               style={{ minHeight: "56px" }}
