@@ -206,7 +206,7 @@ export const ChatInterface: React.FC<Props> = ({
             if (loadedMessages.length === 0) {
               const welcomeMessage: Message = {
                 id: `welcome-${Date.now()}`,
-                content: `Hello! I'm Codex and I'm ready to help you work on ${workspace.name}. What would you like me to do?`,
+                content: `You're in ${workspace.name}. What can I help you with?`,
                 sender: "agent",
                 timestamp: new Date(),
               };
@@ -335,7 +335,7 @@ export const ChatInterface: React.FC<Props> = ({
         <div className="flex items-center space-x-3">
           <Folder className="w-5 h-5 text-gray-600" />
           <div>
-            <h3 className="font-serif font-medium text-gray-900 dark:text-gray-100">
+            <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm">
               {projectName}
             </h3>
           </div>
@@ -353,23 +353,34 @@ export const ChatInterface: React.FC<Props> = ({
         <div className="max-w-4xl mx-auto space-y-6">
           {isLoadingMessages ? (
             <div className="flex items-center justify-center py-8">
-              <div className="text-gray-500 dark:text-gray-400 font-serif">
+              <div className="text-gray-500 dark:text-gray-400 text-sm">
                 Loading conversation...
               </div>
             </div>
           ) : (
             <>
-              {messages.map((message) => (
-              <div
-                key={message.id}
-                className="text-gray-900 dark:text-gray-100"
-              >
-                <div className="text-base leading-relaxed font-serif prose prose-sm max-w-none">
-                  <ReactMarkdown
-                    components={{
-                      code: ({
-                        node,
-                        inline,
+              {messages.map((message) => {
+                const isUserMessage = message.sender === "user";
+                return (
+                  <div
+                    key={message.id}
+                    className={`flex ${
+                      isUserMessage ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`max-w-[80%] rounded-md px-4 py-3 text-sm leading-relaxed font-sans ${
+                        isUserMessage
+                          ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                      }`}
+                    >
+                      <div className="prose prose-sm max-w-none">
+                        <ReactMarkdown
+                          components={{
+                            code: ({
+                              node,
+                              inline,
                         className,
                         children,
                         ...props
@@ -413,16 +424,19 @@ export const ChatInterface: React.FC<Props> = ({
                         <em className="italic">{children}</em>
                       ),
                     }}
-                  >
-                    {message.content}
-                  </ReactMarkdown>
-                </div>
-              </div>
-              ))}
+                        >
+                          {message.content}
+                        </ReactMarkdown>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
               
               {isStreaming && streamingMessage && (
-                <div className="text-gray-900 dark:text-gray-100">
-                  <div className="text-base leading-relaxed font-serif prose prose-sm max-w-none">
+                <div className="flex justify-start">
+                  <div className="max-w-[80%] rounded-md px-4 py-3 text-sm leading-relaxed font-sans bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm">
+                    <div className="prose prose-sm max-w-none">
                     <ReactMarkdown
                       components={{
                         code: ({
@@ -521,6 +535,7 @@ export const ChatInterface: React.FC<Props> = ({
                     >
                       {streamingMessage}
                     </ReactMarkdown>
+                    </div>
                   </div>
                 </div>
               )}
