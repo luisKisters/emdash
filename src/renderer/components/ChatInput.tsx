@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Button } from "./ui/button";
 import { Spinner } from "./ui/spinner";
 import { ChevronsUpDown, ArrowRight } from "lucide-react";
@@ -28,6 +29,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [isProviderOpen, setIsProviderOpen] = useState(false);
   const [provider, setProvider] = useState<"codex" | "claude-code">("codex");
   const providerRef = useRef<HTMLDivElement>(null);
+  const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
     const handleClickOutside = (e: MouseEvent) => {
@@ -53,7 +55,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     if (!agentCreated) {
       return "Initializing...";
     }
-    return "Prompt agent";
+    return "Tell agent what to do...";
   };
 
   const isDisabled =
@@ -84,10 +86,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
           <div className="flex items-center justify-between px-4 py-3 rounded-b-xl">
             <div className="relative inline-block w-[9.5rem]" ref={providerRef}>
-              <button
+              <motion.button
                 type="button"
                 onClick={() => setIsProviderOpen((o) => !o)}
                 className="flex items-center gap-2 h-9 px-3 w-full rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                whileHover={
+                  shouldReduceMotion ? undefined : { scale: 1.03 }
+                }
+                whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
               >
                 <img
                   src={provider === "claude-code" ? claudeLogo : openaiLogo}
@@ -98,38 +104,64 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                   {provider === "claude-code" ? "Claude Code" : "Codex"}
                 </span>
                 <ChevronsUpDown className="w-4 h-4 text-gray-500 shrink-0 ml-auto" />
-              </button>
+              </motion.button>
 
-              {isProviderOpen && (
-                <div className="absolute left-0 bottom-full mb-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-md overflow-hidden z-10">
-                  {provider !== "codex" && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProvider("codex");
-                        setIsProviderOpen(false);
-                      }}
-                      className="w-full h-9 flex items-center gap-2 px-3 text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer text-left"
-                    >
-                      <img src={openaiLogo} alt="Codex" className="w-4 h-4" />
-                      <span className="text-gray-700 dark:text-gray-200">Codex</span>
-                    </button>
-                  )}
-                  {provider !== "claude-code" && (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setProvider("claude-code");
-                        setIsProviderOpen(false);
-                      }}
-                      className="w-full h-9 flex items-center gap-2 px-3 text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer text-left"
-                    >
-                      <img src={claudeLogo} alt="Claude Code" className="w-4 h-4" />
-                      <span className="text-gray-700 dark:text-gray-200">Claude Code</span>
-                    </button>
-                  )}
-                </div>
-              )}
+              <AnimatePresence>
+                {isProviderOpen && (
+                  <motion.div
+                    className="absolute left-0 bottom-full mb-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-md overflow-hidden z-10"
+                    initial={
+                      shouldReduceMotion
+                        ? false
+                        : { opacity: 0, scale: 0.98, y: 4 }
+                    }
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={
+                      shouldReduceMotion
+                        ? { opacity: 1, scale: 1, y: 0 }
+                        : { opacity: 0, scale: 0.98, y: 4 }
+                    }
+                    transition={
+                      shouldReduceMotion
+                        ? { duration: 0 }
+                        : { duration: 0.15, ease: "easeOut" }
+                    }
+                  >
+                    {provider !== "codex" && (
+                      <motion.button
+                        type="button"
+                        onClick={() => {
+                          setProvider("codex");
+                          setIsProviderOpen(false);
+                        }}
+                        className="w-full h-9 flex items-center gap-2 px-3 text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer text-left"
+                        whileHover={
+                          shouldReduceMotion ? undefined : { x: 2 }
+                        }
+                      >
+                        <img src={openaiLogo} alt="Codex" className="w-4 h-4" />
+                        <span className="text-gray-700 dark:text-gray-200">Codex</span>
+                      </motion.button>
+                    )}
+                    {provider !== "claude-code" && (
+                      <motion.button
+                        type="button"
+                        onClick={() => {
+                          setProvider("claude-code");
+                          setIsProviderOpen(false);
+                        }}
+                        className="w-full h-9 flex items-center gap-2 px-3 text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer text-left"
+                        whileHover={
+                          shouldReduceMotion ? undefined : { x: 2 }
+                        }
+                      >
+                        <img src={claudeLogo} alt="Claude Code" className="w-4 h-4" />
+                        <span className="text-gray-700 dark:text-gray-200">Claude Code</span>
+                      </motion.button>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             <Button
