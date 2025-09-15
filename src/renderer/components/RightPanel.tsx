@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+import { useToast } from "../hooks/use-toast";
+import { Spinner } from "./ui/spinner";
 import { Run } from "../types";
 
 interface RightPanelProps {
@@ -6,6 +8,8 @@ interface RightPanelProps {
 }
 
 const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
+  const { toast } = useToast();
+  const [isCreatingPR, setIsCreatingPR] = useState(false);
   const [activeTab, setActiveTab] = useState<"logs" | "diff" | "terminal">(
     "logs"
   );
@@ -163,8 +167,42 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
 
       <div className="p-4 border-t border-gray-700">
         <div className="flex gap-2">
-          <button className="flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm">
-            Create PR
+          <button
+            className="flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isCreatingPR}
+            onClick={async () => {
+              if (!selectedRun) return;
+              setIsCreatingPR(true);
+              try {
+                const res = await window.electronAPI.createPullRequest({
+                  workspacePath: selectedRun.worktreePath,
+                  fill: true,
+                });
+                if (res?.success) {
+                  toast({
+                    title: "Pull Request Created",
+                    description: res.url || "PR created successfully.",
+                  });
+                } else {
+                  toast({
+                    title: "Failed to Create PR",
+                    description: res?.error || "Unknown error",
+                    variant: "destructive",
+                  });
+                }
+              } finally {
+                setIsCreatingPR(false);
+              }
+            }}
+          >
+            {isCreatingPR ? (
+              <>
+                <Spinner size="sm" className="mr-2" />
+                Creating...
+              </>
+            ) : (
+              "Create PR"
+            )}
           </button>
           {selectedRun.status === "running" && (
             <button className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm">

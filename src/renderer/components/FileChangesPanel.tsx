@@ -9,6 +9,8 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { Button } from "./ui/button";
+import { Spinner } from "./ui/spinner";
+import { useToast } from "../hooks/use-toast";
 import { useFileChanges, type FileChange } from "../hooks/useFileChanges";
 
 interface FileChangesPanelProps {
@@ -21,8 +23,10 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
   className,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
+  const [isCreatingPR, setIsCreatingPR] = useState(false);
   const { fileChanges, isLoading, error, refreshChanges } =
     useFileChanges(workspaceId);
+  const { toast } = useToast();
 
   const getStatusIcon = (status: FileChange["status"]) => {
     switch (status) {
@@ -111,8 +115,43 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
                 }`}
               />
             </Button>
-            <Button variant="outline" size="sm" className="text-xs">
-              Create PR
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs"
+              disabled={isCreatingPR}
+              onClick={async () => {
+                setIsCreatingPR(true);
+                try {
+                  const res = await window.electronAPI.createPullRequest({
+                    workspacePath: workspaceId,
+                    fill: true,
+                  });
+                  if (res?.success) {
+                    toast({
+                      title: "Pull Request Created",
+                      description: res.url || "PR created successfully.",
+                    });
+                  } else {
+                    toast({
+                      title: "Failed to Create PR",
+                      description: res?.error || "Unknown error",
+                      variant: "destructive",
+                    });
+                  }
+                } finally {
+                  setIsCreatingPR(false);
+                }
+              }}
+            >
+              {isCreatingPR ? (
+                <>
+                  <Spinner size="sm" className="mr-2" />
+                  Creating...
+                </>
+              ) : (
+                "Create PR"
+              )}
             </Button>
           </div>
         </div>
