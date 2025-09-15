@@ -35,7 +35,6 @@ const createWindow = (): void => {
   // Load the app
   if (isDev) {
     mainWindow.loadURL('http://localhost:3000')
-    mainWindow.webContents.openDevTools()
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
