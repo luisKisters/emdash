@@ -90,10 +90,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 type="button"
                 onClick={() => setIsProviderOpen((o) => !o)}
                 className="flex items-center gap-2 h-9 px-3 w-full rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                whileHover={
-                  shouldReduceMotion ? undefined : { scale: 1.03 }
-                }
-                whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
               >
                 <img
                   src={provider === "claude-code" ? claudeLogo : openaiLogo}
@@ -135,9 +131,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                           setIsProviderOpen(false);
                         }}
                         className="w-full h-9 flex items-center gap-2 px-3 text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer text-left"
-                        whileHover={
-                          shouldReduceMotion ? undefined : { x: 2 }
-                        }
                       >
                         <img src={openaiLogo} alt="Codex" className="w-4 h-4" />
                         <span className="text-gray-700 dark:text-gray-200">Codex</span>
@@ -151,9 +144,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                           setIsProviderOpen(false);
                         }}
                         className="w-full h-9 flex items-center gap-2 px-3 text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer text-left"
-                        whileHover={
-                          shouldReduceMotion ? undefined : { x: 2 }
-                        }
                       >
                         <img src={claudeLogo} alt="Claude Code" className="w-4 h-4" />
                         <span className="text-gray-700 dark:text-gray-200">Claude Code</span>
