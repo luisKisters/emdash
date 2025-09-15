@@ -1,7 +1,8 @@
 import React from "react";
 import { Button } from "./ui/button";
 import { Card } from "./ui/card";
-import { FolderOpen, GitBranch, Bot, Play, Pause, Home } from "lucide-react";
+import { FolderOpen, Home } from "lucide-react";
+import { WorkspaceItem } from "./WorkspaceItem";
 
 interface Project {
   id: string;
@@ -41,31 +42,6 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   onSelectProject,
   onGoHome,
 }) => {
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "running":
-        return <Play className="w-3 h-3 text-gray-500" />;
-      case "active":
-        return <Pause className="w-3 h-3 text-gray-500" />;
-      default:
-        return <div className="w-3 h-3 rounded-sm bg-gray-300" />;
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    const baseClasses = "px-2 py-1 rounded-sm text-xs font-medium";
-    switch (status) {
-      case "running":
-        return `${baseClasses} bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200`;
-      case "active":
-        return `${baseClasses} bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200`;
-      case "idle":
-        return `${baseClasses} bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200`;
-      default:
-        return `${baseClasses} bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-400`;
-    }
-  };
-
   return (
     <div className="w-80 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-screen overflow-y-auto">
       <div className="p-4">
@@ -107,23 +83,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                 {project.workspaces && project.workspaces.length > 0 && (
                   <div className="mt-3 ml-7 space-y-2">
                     {project.workspaces.map((workspace) => (
-                      <div
-                        key={workspace.id}
-                        className="flex items-center justify-between"
-                      >
-                        <div className="flex items-center space-x-2 flex-1 min-w-0">
-                          <GitBranch className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                          <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
-                            {workspace.name}
-                          </span>
-                          {workspace.agentId && (
-                            <Bot className="w-3 h-3 text-purple-500 flex-shrink-0" />
-                          )}
-                        </div>
-                        <div className={getStatusBadge(workspace.status)}>
-                          {workspace.status}
-                        </div>
-                      </div>
+                      <WorkspaceItem key={workspace.id} workspace={workspace} />
                     ))}
                   </div>
                 )}
