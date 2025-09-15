@@ -10,6 +10,7 @@ import WorkspaceModal from "./components/WorkspaceModal";
 import TerminalPane from "./components/TerminalPane";
 import ChatInterface from "./components/ChatInterface";
 import WorkspaceTerminalPanel from "./components/WorkspaceTerminalPanel";
+import FileChangesPanel from "./components/FileChangesPanel";
 import { Toaster } from "./components/ui/toaster";
 import { useToast } from "./hooks/use-toast";
 
@@ -505,10 +506,14 @@ const App: React.FC = () => {
           </div>
 
           {activeWorkspace && (
-            <div className="w-80 border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+            <div className="w-80 border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex flex-col h-screen max-h-screen">
+              <FileChangesPanel
+                workspaceId={activeWorkspace.path}
+                className="flex-shrink-0"
+              />
               <WorkspaceTerminalPanel
                 workspace={activeWorkspace}
-                className="h-full"
+                className="flex-1 min-h-0"
               />
             </div>
           )}
