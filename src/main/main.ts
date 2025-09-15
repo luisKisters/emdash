@@ -284,6 +284,36 @@ ipcMain.handle('settings:update', async (_, settings: any) => {
   console.log('Updating settings:', settings)
 })
 
+// Git: Create Pull Request via GitHub CLI
+ipcMain.handle('git:create-pr', async (_, args: { workspacePath: string; title?: string; body?: string; base?: string; head?: string; draft?: boolean; web?: boolean; fill?: boolean }) => {
+  const { workspacePath, title, body, base, head, draft, web, fill } = args || ({} as any)
+  try {
+    // Build gh pr create command
+    const flags: string[] = []
+    if (title) flags.push(`--title ${JSON.stringify(title)}`)
+    if (body) flags.push(`--body ${JSON.stringify(body)}`)
+    if (base) flags.push(`--base ${JSON.stringify(base)}`)
+    if (head) flags.push(`--head ${JSON.stringify(head)}`)
+    if (draft) flags.push('--draft')
+    if (web) flags.push('--web')
+    if (fill) flags.push('--fill')
+
+    const cmd = `gh pr create ${flags.join(' ')}`.trim()
+
+    const { stdout, stderr } = await execAsync(cmd, { cwd: workspacePath })
+    const out = (stdout || '').trim() || (stderr || '').trim()
+
+    // Try to extract PR URL from output
+    const urlMatch = out.match(/https?:\/\/\S+/)
+    const url = urlMatch ? urlMatch[0] : null
+
+    return { success: true, url, output: out }
+  } catch (error: any) {
+    console.error('Failed to create PR:', error)
+    return { success: false, error: error?.message || String(error) }
+  }
+})
+
 // Database IPC handlers
 ipcMain.handle('db:getProjects', async () => {
   try {

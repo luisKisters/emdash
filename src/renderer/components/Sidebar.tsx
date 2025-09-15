@@ -120,19 +120,6 @@ const Sidebar: React.FC<SidebarProps> = ({
           )}
         </div>
       </div>
-
-      <div className="p-4 border-t border-gray-700">
-        <div className="flex items-center justify-between">
-          <button className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
-            <span>⚙️</span>
-            <span className="text-sm">Settings</span>
-          </button>
-          <button className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
-            <span>❓</span>
-            <span className="text-sm">Help</span>
-          </button>
-        </div>
-      </div>
     </div>
   )
 }

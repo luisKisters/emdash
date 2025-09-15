@@ -87,6 +87,18 @@ export class WorktreeService {
       this.worktrees.set(worktreeInfo.id, worktreeInfo);
 
       console.log(`Created worktree: ${workspaceName} -> ${branchName}`);
+
+      // Push the new branch to origin and set upstream so PRs work out of the box
+      try {
+        await execAsync(`git push --set-upstream origin ${JSON.stringify(branchName)}`, {
+          cwd: worktreePath,
+        });
+        console.log(`Pushed branch ${branchName} to origin with upstream tracking`);
+      } catch (pushErr) {
+        console.warn('Initial push of worktree branch failed:', pushErr);
+        // Don't fail worktree creation if push fails - user can push manually later
+      }
+
       return worktreeInfo;
     } catch (error) {
       console.error("Failed to create worktree:", error);
