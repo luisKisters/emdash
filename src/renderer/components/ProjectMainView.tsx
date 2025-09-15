@@ -55,16 +55,6 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
                 {project.path}
               </p>
             </div>
-            <div className="flex space-x-2">
-              <Button variant="outline" size="sm" className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600">
-                <Settings className="w-4 h-4 mr-2" />
-                Settings
-              </Button>
-              <Button variant="outline" size="sm" className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600">
-                <GitBranch className="w-4 h-4 mr-2" />
-                View on GitHub
-              </Button>
-            </div>
           </div>
           
           {project.gitInfo.branch && (
@@ -162,37 +152,6 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
               </div>
             </div>
           )}
-
-          {/* Script Management
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-serif">Setup Script</CardTitle>
-                <CardDescription>
-                  Runs when a workspace is created. Use for copying .env files and installing dependencies.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" className="w-full">
-                  Add setup script
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-serif">Run Script</CardTitle>
-                <CardDescription>
-                  Run tests or a development server to test changes in a workspace.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" className="w-full">
-                  Add run script
-                </Button>
-              </CardContent>
-            </Card>
-          </div> */}
         </div>
       </div>
     </div>

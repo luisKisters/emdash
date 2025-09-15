@@ -110,24 +110,6 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
             </div>
           </form>
 
-          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-            <div className="text-xs text-gray-500 dark:text-gray-400">
-              <p className="mb-2">
-                <strong>Linear Integration:</strong> You can create workspaces from Linear issues.
-              </p>
-              <Button variant="ghost" size="sm" className="text-xs p-0 h-auto">
-                Link Linear →
-              </Button>
-            </div>
-          </div>
-
-          <div className="mt-4">
-            <h4 className="text-sm font-medium mb-2">Pull requests</h4>
-            <p className="text-xs text-gray-500 dark:text-gray-400">
-              No open pull requests found
-            </p>
-          </div>
-
           <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
             <p className="text-xs text-gray-500 dark:text-gray-400">
               orcbench runs a <strong>setup script</strong> each time you create a new workspace.
