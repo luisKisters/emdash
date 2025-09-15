@@ -1,8 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Button } from "./ui/button";
 import { Spinner } from "./ui/spinner";
-import { Send } from "lucide-react";
+import { ChevronsUpDown, ArrowRight } from "lucide-react";
 import openaiLogo from "../../assets/images/openai.png";
+import claudeLogo from "../../assets/images/claude.png";
 
 interface ChatInputProps {
   value: string;
@@ -24,6 +25,19 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   disabled = false,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
+  const [isProviderOpen, setIsProviderOpen] = useState(false);
+  const [provider, setProvider] = useState<"codex" | "claude-code">("codex");
+  const providerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (providerRef.current && !providerRef.current.contains(e.target as Node)) {
+        setIsProviderOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -37,9 +51,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       return "Codex CLI not installed...";
     }
     if (!agentCreated) {
-      return "Initializing Codex...";
+      return "Initializing...";
     }
-    return "Ask Codex anything...";
+    return "Prompt agent";
   };
 
   const isDisabled =
@@ -49,7 +63,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     <div className="p-6">
       <div className="max-w-4xl mx-auto">
         <div
-          className={`relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl transition-shadow duration-200 ${
+          className={`relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md transition-shadow duration-200 ${
             isFocused ? "shadow-2xl" : "shadow-lg"
           }`}
         >
@@ -61,27 +75,70 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               onFocus={() => setIsFocused(true)}
               onBlur={() => setIsFocused(false)}
               placeholder={getPlaceholder()}
-              className="w-full resize-none border-none outline-none bg-transparent text-gray-900 dark:text-gray-100 font-serif text-base placeholder-gray-500 dark:placeholder-gray-400"
-              rows={1}
+              className="w-full resize-none border-none outline-none bg-transparent text-gray-900 dark:text-gray-100 text-sm placeholder:text-xs placeholder-gray-500 dark:placeholder-gray-400"
+              rows={2}
               disabled={isDisabled}
-              style={{ minHeight: "24px" }}
+              style={{ minHeight: "56px" }}
             />
           </div>
 
-          <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 rounded-b-xl">
-            <div className="flex items-center space-x-2 px-3 py-1 bg-gray-100 dark:bg-gray-700 rounded-full">
-              <img src={openaiLogo} alt="OpenAI" className="w-4 h-4" />
-              <span className="text-xs font-medium text-gray-600 dark:text-gray-400 font-serif">
-                Codex
-              </span>
+          <div className="flex items-center justify-between px-4 py-3 rounded-b-xl">
+            <div className="relative inline-block w-[9.5rem]" ref={providerRef}>
+              <button
+                type="button"
+                onClick={() => setIsProviderOpen((o) => !o)}
+                className="flex items-center gap-2 h-9 px-3 w-full rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+              >
+                <img
+                  src={provider === "claude-code" ? claudeLogo : openaiLogo}
+                  alt={provider === "claude-code" ? "Claude" : "OpenAI"}
+                  className="w-4 h-4 shrink-0"
+                />
+                <span className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate text-left">
+                  {provider === "claude-code" ? "Claude Code" : "Codex"}
+                </span>
+                <ChevronsUpDown className="w-4 h-4 text-gray-500 shrink-0 ml-auto" />
+              </button>
+
+              {isProviderOpen && (
+                <div className="absolute left-0 bottom-full mb-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-md overflow-hidden z-10">
+                  {provider !== "codex" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProvider("codex");
+                        setIsProviderOpen(false);
+                      }}
+                      className="w-full h-9 flex items-center gap-2 px-3 text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer text-left"
+                    >
+                      <img src={openaiLogo} alt="Codex" className="w-4 h-4" />
+                      <span className="text-gray-700 dark:text-gray-200">Codex</span>
+                    </button>
+                  )}
+                  {provider !== "claude-code" && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setProvider("claude-code");
+                        setIsProviderOpen(false);
+                      }}
+                      className="w-full h-9 flex items-center gap-2 px-3 text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer text-left"
+                    >
+                      <img src={claudeLogo} alt="Claude Code" className="w-4 h-4" />
+                      <span className="text-gray-700 dark:text-gray-200">Claude Code</span>
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
             <Button
               onClick={onSend}
               disabled={!value.trim() || isDisabled}
-              className="w-8 h-8 p-0 bg-gray-600 hover:bg-gray-700 text-white rounded-full disabled:opacity-50"
+              className="h-9 w-9 p-0 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-50"
+              aria-label="Send"
             >
-              {isLoading ? <Spinner size="sm" /> : <Send className="w-4 h-4" />}
+              {isLoading ? <Spinner size="sm" /> : <ArrowRight className="w-4 h-4" />}
             </Button>
           </div>
         </div>
