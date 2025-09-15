@@ -39,6 +39,8 @@ const TerminalPaneComponent: React.FC<Props> = ({ id, cwd, cols = 80, rows = 24,
       theme: {
         background: '#0b0e14',
       },
+      allowTransparency: false,
+      scrollback: 1000,
     })
     termRef.current = term
     term.open(el)
@@ -80,10 +82,29 @@ const TerminalPaneComponent: React.FC<Props> = ({ id, cwd, cols = 80, rows = 24,
       term.write(`\r\n\x1b[31m[process exited with code ${exitCode}]\x1b[0m\r\n`)
     })
 
+    // Handle resize events
+    const handleResize = () => {
+      if (termRef.current && el) {
+        const { width, height } = el.getBoundingClientRect()
+        const newCols = Math.max(20, Math.floor(width / 8)) 
+        const newRows = Math.max(10, Math.floor(height / 16))
+        
+        if (newCols !== cols || newRows !== rows) {
+          termRef.current.resize(newCols, newRows)
+          // Update PTY size
+          window.electronAPI.ptyResize({ id, cols: newCols, rows: newRows })
+        }
+      }
+    }
+
+    const resizeObserver = new ResizeObserver(handleResize)
+    resizeObserver.observe(el)
+
     disposeFns.current.push(() => keyDisp.dispose())
     disposeFns.current.push(offData)
     disposeFns.current.push(offExit)
     disposeFns.current.push(() => keyDisp2.dispose())
+    disposeFns.current.push(() => resizeObserver.disconnect())
 
     return () => {
       // Kill PTY and cleanup
@@ -101,7 +122,8 @@ const TerminalPaneComponent: React.FC<Props> = ({ id, cwd, cols = 80, rows = 24,
         width: '100%', 
         height: '100%',
         minHeight: '400px',
-        backgroundColor: '#0b0e14'
+        backgroundColor: '#0b0e14',
+        overflow: 'hidden'
       }}
       onClick={() => termRef.current?.focus()}
       onMouseDown={() => termRef.current?.focus()}
@@ -111,7 +133,8 @@ const TerminalPaneComponent: React.FC<Props> = ({ id, cwd, cols = 80, rows = 24,
         style={{ 
           width: '100%', 
           height: '100%',
-          minHeight: '400px'
+          minHeight: '400px',
+          overflow: 'hidden'
         }} 
       />
     </div>

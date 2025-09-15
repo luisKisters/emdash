@@ -57,7 +57,7 @@ export const WorkspaceTerminalPanel: React.FC<Props> = ({ workspace, className }
           id={`workspace-${workspace.id}`}
           cwd={workspace.path}
           className="h-full w-full"
-          cols={60}
+          cols={40}
         />
       </div>
     </div>

@@ -48,6 +48,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Project management
   openProject: () => ipcRenderer.invoke('project:open'),
   getGitInfo: (projectPath: string) => ipcRenderer.invoke('git:getInfo', projectPath),
+  getGitStatus: (workspacePath: string) => ipcRenderer.invoke('git:get-status', workspacePath),
   connectToGitHub: (projectPath: string) => ipcRenderer.invoke('github:connect', projectPath),
   
   // Repository management
@@ -84,6 +85,41 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveWorkspace: (workspace: any) => ipcRenderer.invoke('db:saveWorkspace', workspace),
   deleteProject: (projectId: string) => ipcRenderer.invoke('db:deleteProject', projectId),
   deleteWorkspace: (workspaceId: string) => ipcRenderer.invoke('db:deleteWorkspace', workspaceId),
+
+  // Conversation management
+  saveConversation: (conversation: any) => ipcRenderer.invoke('db:saveConversation', conversation),
+  getConversations: (workspaceId: string) => ipcRenderer.invoke('db:getConversations', workspaceId),
+  getOrCreateDefaultConversation: (workspaceId: string) => ipcRenderer.invoke('db:getOrCreateDefaultConversation', workspaceId),
+  saveMessage: (message: any) => ipcRenderer.invoke('db:saveMessage', message),
+  getMessages: (conversationId: string) => ipcRenderer.invoke('db:getMessages', conversationId),
+  deleteConversation: (conversationId: string) => ipcRenderer.invoke('db:deleteConversation', conversationId),
+
+  // Codex integration
+  codexCheckInstallation: () => ipcRenderer.invoke('codex:check-installation'),
+  codexCreateAgent: (workspaceId: string, worktreePath: string) => ipcRenderer.invoke('codex:create-agent', workspaceId, worktreePath),
+  codexSendMessage: (workspaceId: string, message: string) => ipcRenderer.invoke('codex:send-message', workspaceId, message),
+  codexSendMessageStream: (workspaceId: string, message: string) => ipcRenderer.invoke('codex:send-message-stream', workspaceId, message),
+  codexGetAgentStatus: (workspaceId: string) => ipcRenderer.invoke('codex:get-agent-status', workspaceId),
+  codexGetAllAgents: () => ipcRenderer.invoke('codex:get-all-agents'),
+  codexRemoveAgent: (workspaceId: string) => ipcRenderer.invoke('codex:remove-agent', workspaceId),
+  codexGetInstallationInstructions: () => ipcRenderer.invoke('codex:get-installation-instructions'),
+  
+  // Streaming event listeners
+  onCodexStreamOutput: (listener: (data: { workspaceId: string; output: string; agentId: string }) => void) => {
+    const wrapped = (_: Electron.IpcRendererEvent, data: { workspaceId: string; output: string; agentId: string }) => listener(data)
+    ipcRenderer.on('codex:stream-output', wrapped)
+    return () => ipcRenderer.removeListener('codex:stream-output', wrapped)
+  },
+  onCodexStreamError: (listener: (data: { workspaceId: string; error: string; agentId: string }) => void) => {
+    const wrapped = (_: Electron.IpcRendererEvent, data: { workspaceId: string; error: string; agentId: string }) => listener(data)
+    ipcRenderer.on('codex:stream-error', wrapped)
+    return () => ipcRenderer.removeListener('codex:stream-error', wrapped)
+  },
+  onCodexStreamComplete: (listener: (data: { workspaceId: string; exitCode: number; agentId: string }) => void) => {
+    const wrapped = (_: Electron.IpcRendererEvent, data: { workspaceId: string; exitCode: number; agentId: string }) => listener(data)
+    ipcRenderer.on('codex:stream-complete', wrapped)
+    return () => ipcRenderer.removeListener('codex:stream-complete', wrapped)
+  },
 })
 
 // Type definitions for the exposed API
@@ -111,6 +147,7 @@ export interface ElectronAPI {
   // Project management
   openProject: () => Promise<{ success: boolean; path?: string; error?: string }>
   getGitInfo: (projectPath: string) => Promise<{ isGitRepo: boolean; remote?: string; branch?: string; path?: string; error?: string }>
+  getGitStatus: (workspacePath: string) => Promise<{ success: boolean; changes?: Array<{ path: string; status: string; additions: number; deletions: number; diff?: string }>; error?: string }>
   connectToGitHub: (projectPath: string) => Promise<{ success: boolean; repository?: string; branch?: string; error?: string }>
 
   
@@ -144,6 +181,29 @@ export interface ElectronAPI {
   saveWorkspace: (workspace: any) => Promise<{ success: boolean; error?: string }>
   deleteProject: (projectId: string) => Promise<{ success: boolean; error?: string }>
   deleteWorkspace: (workspaceId: string) => Promise<{ success: boolean; error?: string }>
+
+  // Conversation management
+  saveConversation: (conversation: any) => Promise<{ success: boolean; error?: string }>
+  getConversations: (workspaceId: string) => Promise<{ success: boolean; conversations?: any[]; error?: string }>
+  getOrCreateDefaultConversation: (workspaceId: string) => Promise<{ success: boolean; conversation?: any; error?: string }>
+  saveMessage: (message: any) => Promise<{ success: boolean; error?: string }>
+  getMessages: (conversationId: string) => Promise<{ success: boolean; messages?: any[]; error?: string }>
+  deleteConversation: (conversationId: string) => Promise<{ success: boolean; error?: string }>
+
+  // Codex integration
+  codexCheckInstallation: () => Promise<{ success: boolean; isInstalled?: boolean; error?: string }>
+  codexCreateAgent: (workspaceId: string, worktreePath: string) => Promise<{ success: boolean; agent?: any; error?: string }>
+  codexSendMessage: (workspaceId: string, message: string) => Promise<{ success: boolean; response?: any; error?: string }>
+  codexSendMessageStream: (workspaceId: string, message: string) => Promise<{ success: boolean; error?: string }>
+  codexGetAgentStatus: (workspaceId: string) => Promise<{ success: boolean; agent?: any; error?: string }>
+  codexGetAllAgents: () => Promise<{ success: boolean; agents?: any[]; error?: string }>
+  codexRemoveAgent: (workspaceId: string) => Promise<{ success: boolean; removed?: boolean; error?: string }>
+  codexGetInstallationInstructions: () => Promise<{ success: boolean; instructions?: string; error?: string }>
+  
+  // Streaming event listeners
+  onCodexStreamOutput: (listener: (data: { workspaceId: string; output: string; agentId: string }) => void) => () => void
+  onCodexStreamError: (listener: (data: { workspaceId: string; error: string; agentId: string }) => void) => () => void
+  onCodexStreamComplete: (listener: (data: { workspaceId: string; exitCode: number; agentId: string }) => void) => () => void
 }
 
 declare global {
