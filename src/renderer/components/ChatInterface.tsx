@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Folder } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
 import ReactMarkdown from "react-markdown";
@@ -70,6 +70,58 @@ export const ChatInterface: React.FC<Props> = ({
   const [agentCreated, setAgentCreated] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+  
+  // Auto-scroll state
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const [isUserScrolling, setIsUserScrolling] = useState(false);
+  const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+
+  // Auto-scroll to bottom function
+  const scrollToBottom = () => {
+    if (messagesEndRef.current && shouldAutoScroll) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
+  // Check if user is near bottom of scroll area
+  const isNearBottom = () => {
+    if (!scrollContainerRef.current) return true;
+    const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+    const threshold = 100; // pixels from bottom
+    return scrollHeight - scrollTop - clientHeight < threshold;
+  };
+
+  // Handle scroll events
+  const handleScroll = () => {
+    if (!scrollContainerRef.current) return;
+    
+    const nearBottom = isNearBottom();
+    setShouldAutoScroll(nearBottom);
+    
+    // If user scrolls up significantly, disable auto-scroll
+    if (!nearBottom) {
+      setIsUserScrolling(true);
+    } else {
+      setIsUserScrolling(false);
+    }
+  };
+
+  // Set up scroll event listener
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (scrollContainer) {
+      scrollContainer.addEventListener('scroll', handleScroll);
+      return () => {
+        scrollContainer.removeEventListener('scroll', handleScroll);
+      };
+    }
+  }, []);
+
+  // Auto-scroll when messages change or streaming updates
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages, streamingMessage, shouldAutoScroll]);
 
   // Set up streaming event listeners
   useEffect(() => {
@@ -290,10 +342,14 @@ export const ChatInterface: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-6" style={{ 
-        maskImage: 'linear-gradient(to bottom, black 0%, black 85%, transparent 100%)',
-        WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 85%, transparent 100%)'
-      }}>
+      <div 
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto p-6" 
+        style={{ 
+          maskImage: 'linear-gradient(to bottom, black 0%, black 85%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 85%, transparent 100%)'
+        }}
+      >
         <div className="max-w-4xl mx-auto space-y-6">
           {isLoadingMessages ? (
             <div className="flex items-center justify-center py-8">
@@ -364,7 +420,6 @@ export const ChatInterface: React.FC<Props> = ({
               </div>
               ))}
               
-              {/* Streaming message */}
               {isStreaming && streamingMessage && (
                 <div className="text-gray-900 dark:text-gray-100">
                   <div className="text-base leading-relaxed font-serif prose prose-sm max-w-none">
@@ -381,7 +436,6 @@ export const ChatInterface: React.FC<Props> = ({
                           const language = match ? match[1] : "";
                           const codeContent = String(children).replace(/\n$/, "");
 
-                          // Special handling for diff output
                           if (
                             language === "diff" ||
                             codeContent.includes("diff --git")
@@ -488,6 +542,9 @@ export const ChatInterface: React.FC<Props> = ({
               </div>
             </div>
           )}
+          
+          {/* Scroll target element */}
+          <div ref={messagesEndRef} />
         </div>
       </div>
 
