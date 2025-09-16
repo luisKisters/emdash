@@ -1,6 +1,5 @@
 import React from "react";
 import { Button } from "./ui/button";
-import { Card } from "./ui/card";
 import { FolderOpen, Home } from "lucide-react";
 import { WorkspaceItem } from "./WorkspaceItem";
 
@@ -43,7 +42,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   onGoHome,
 }) => {
   return (
-    <div className="flex-shrink-0 w-16 sm:w-64 lg:w-80 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-screen overflow-y-auto overscroll-contain">
+    <div className="flex-shrink-0 w-16 sm:w-64 lg:w-80 bg-gray-50 dark:bg-gray-900  h-screen overflow-y-auto overscroll-contain">
       <div className="p-2 sm:p-4">
         <div className="mb-6">
           <Button
@@ -60,11 +59,11 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
         <div className="mb-6">
           <div className="space-y-2">
             {projects.map((project) => (
-              <Card
+              <div
                 key={project.id}
                 className={`p-2 sm:p-3 cursor-pointer transition-colors ${
                   selectedProject?.id === project.id
-                    ? "bg-gray-100 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800"
+                    ? "bg-gray-100 dark:bg-gray-900/20 "
                     : "hover:bg-gray-100 dark:hover:shadow-lg"
                 }`}
                 onClick={() => onSelectProject(project)}
@@ -87,7 +86,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                     ))}
                   </div>
                 )}
-              </Card>
+              </div>
             ))}
           </div>
         </div>
