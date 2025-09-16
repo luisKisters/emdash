@@ -25,6 +25,8 @@ declare global {
       connectToGitHub: (projectPath: string) => Promise<{ success: boolean; repository?: string; branch?: string; error?: string }>
       scanRepos: () => Promise<any[]>
       addRepo: (path: string) => Promise<any>
+      // Filesystem
+      fsList: (root: string, opts?: { includeDirs?: boolean; maxEntries?: number }) => Promise<{ success: boolean; items?: Array<{ path: string; type: 'file' | 'dir' }>; error?: string }>
       createRun: (config: any) => Promise<string>
       cancelRun: (runId: string) => Promise<void>
       getRunDiff: (runId: string) => Promise<any>

@@ -570,6 +570,7 @@ export const ChatInterface: React.FC<Props> = ({
         isLoading={isStreaming}
         isCodexInstalled={isCodexInstalled}
         agentCreated={agentCreated}
+        workspacePath={workspace.path}
       />
     </div>
   );
