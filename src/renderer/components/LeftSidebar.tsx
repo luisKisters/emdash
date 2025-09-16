@@ -1,6 +1,5 @@
 import React from "react";
 import { Button } from "./ui/button";
-import { Card } from "./ui/card";
 import { FolderOpen, Home } from "lucide-react";
 import { WorkspaceItem } from "./WorkspaceItem";
 
@@ -34,6 +33,8 @@ interface LeftSidebarProps {
   selectedProject: Project | null;
   onSelectProject: (project: Project) => void;
   onGoHome: () => void;
+  onSelectWorkspace?: (workspace: Workspace) => void;
+  activeWorkspace?: Workspace | null;
 }
 
 const LeftSidebar: React.FC<LeftSidebarProps> = ({
@@ -41,39 +42,47 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   selectedProject,
   onSelectProject,
   onGoHome,
+  onSelectWorkspace,
+  activeWorkspace,
 }) => {
   return (
-    <div className="w-80 bg-gray-50 dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 h-screen overflow-y-auto">
-      <div className="p-4">
+    <div className="flex-shrink-0 w-16 sm:w-64 lg:w-80 bg-gray-50 dark:bg-gray-900  h-screen overflow-y-auto overscroll-contain">
+      <div className="p-2 sm:p-4">
         <div className="mb-6">
           <Button
             variant="ghost"
             onClick={onGoHome}
-            className="w-full justify-start mt-5 p-3 h-auto font-serif"
+            className="w-full justify-center sm:justify-start mt-5 p-3 h-auto font-serif"
+            aria-label="Home"
           >
-            <Home className="w-4 h-4 mr-3 text-gray-600 dark:text-gray-400" />
-            <span className="text-sm font-medium">Home</span>
+            <Home className="w-5 h-5 sm:w-4 sm:h-4 sm:mr-3 text-gray-600 dark:text-gray-400" />
+            <span className="hidden sm:inline text-sm font-medium">Home</span>
           </Button>
         </div>
 
         <div className="mb-6">
-          <div className="space-y-2">
+          <div className="space-y-1">
             {projects.map((project) => (
-              <Card
+              <div
                 key={project.id}
-                className={`p-3 cursor-pointer transition-colors ${
-                  selectedProject?.id === project.id
-                    ? "bg-gray-100 dark:bg-gray-900/20 border-gray-200 dark:border-gray-800"
-                    : "hover:bg-gray-100 dark:hover:shadow-lg"
-                }`}
+                className="group p-2 sm:p-3 cursor-pointer rounded-md"
                 onClick={() => onSelectProject(project)}
+                title={project.name}
               >
-                <div className="flex items-center space-x-3">
-                  <FolderOpen className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-sm truncate">
+                <div className="flex items-center sm:items-start sm:space-x-3">
+                  <FolderOpen className="w-5 h-5 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400 flex-shrink-0" />
+                  <div className="hidden sm:block flex-1 min-w-0">
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSelectProject(project);
+                      }}
+                      className="block w-full text-left font-medium text-sm truncate rounded-sm hover:underline hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none focus:underline"
+                      title={project.name}
+                    >
                       {project.name}
-                    </h4>
+                    </button>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                       {project.githubInfo?.repository || project.path}
                     </p>
@@ -81,13 +90,31 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                 </div>
 
                 {project.workspaces && project.workspaces.length > 0 && (
-                  <div className="mt-3 ml-7 space-y-2">
-                    {project.workspaces.map((workspace) => (
-                      <WorkspaceItem key={workspace.id} workspace={workspace} />
-                    ))}
+                  <div className="hidden sm:block mt-2 ml-7 space-y-1">
+                    {project.workspaces.map((workspace) => {
+                      const isActive = activeWorkspace?.id === workspace.id;
+                      return (
+                        <div
+                          key={workspace.id}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onSelectProject && selectedProject?.id !== project.id) {
+                              onSelectProject(project);
+                            }
+                            onSelectWorkspace && onSelectWorkspace(workspace);
+                          }}
+                          className={`-mx-2 px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 ${
+                            isActive ? "bg-black/5 dark:bg-white/5" : ""
+                          }`}
+                          title={workspace.name}
+                        >
+                          <WorkspaceItem workspace={workspace} />
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
-              </Card>
+              </div>
             ))}
           </div>
         </div>

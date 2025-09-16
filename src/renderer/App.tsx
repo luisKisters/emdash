@@ -382,6 +382,8 @@ const App: React.FC = () => {
         selectedProject={selectedProject}
         onSelectProject={handleSelectProject}
         onGoHome={handleGoHome}
+        onSelectWorkspace={handleSelectWorkspace}
+        activeWorkspace={activeWorkspace || undefined}
       />
 
       {showHomeView ? (
