@@ -61,9 +61,9 @@ export const ChatInterface: React.FC<Props> = ({
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [streamingMessage, setStreamingMessage] = useState<string>("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [loadingSeconds, setLoadingSeconds] = useState(0);
   const [isCodexInstalled, setIsCodexInstalled] = useState<boolean | null>(
     null
   );
@@ -122,6 +122,25 @@ export const ChatInterface: React.FC<Props> = ({
   useEffect(() => {
     scrollToBottom();
   }, [messages, streamingMessage, shouldAutoScroll]);
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | undefined;
+
+    if (isStreaming) {
+      setLoadingSeconds(0);
+      interval = setInterval(() => {
+        setLoadingSeconds((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setLoadingSeconds(0);
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isStreaming]);
 
   // Set up streaming event listeners
   useEffect(() => {
@@ -553,6 +572,7 @@ export const ChatInterface: React.FC<Props> = ({
         onChange={setInputValue}
         onSend={handleSendMessage}
         isLoading={isStreaming}
+        loadingSeconds={loadingSeconds}
         isCodexInstalled={isCodexInstalled}
         agentCreated={agentCreated}
       />

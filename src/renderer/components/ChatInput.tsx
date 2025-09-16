@@ -11,6 +11,7 @@ interface ChatInputProps {
   onChange: (value: string) => void;
   onSend: () => void;
   isLoading: boolean;
+  loadingSeconds: number;
   isCodexInstalled: boolean | null;
   agentCreated: boolean;
   disabled?: boolean;
@@ -21,6 +22,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   onChange,
   onSend,
   isLoading,
+  loadingSeconds,
   isCodexInstalled,
   agentCreated,
   disabled = false,
@@ -154,14 +156,21 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               </AnimatePresence>
             </div>
 
-            <Button
-              onClick={onSend}
-              disabled={!value.trim() || isDisabled}
-              className="h-9 w-9 p-0 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-50"
-              aria-label="Send"
-            >
-              {isLoading ? <Spinner size="sm" /> : <ArrowRight className="w-4 h-4" />}
-            </Button>
+            <div className="flex items-center gap-2">
+              {isLoading && (
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium w-8 text-right tabular-nums">
+                  {`${loadingSeconds}s`}
+                </span>
+              )}
+              <Button
+                onClick={onSend}
+                disabled={!value.trim() || isDisabled}
+                className="h-9 w-9 p-0 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-50"
+                aria-label="Send"
+              >
+                {isLoading ? <Spinner size="sm" /> : <ArrowRight className="w-4 h-4" />}
+              </Button>
+            </div>
           </div>
         </div>
       </div>
