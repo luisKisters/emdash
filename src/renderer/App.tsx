@@ -56,6 +56,29 @@ const App: React.FC = () => {
     null
   );
 
+  // Persist and apply custom project order (by id)
+  const ORDER_KEY = "sidebarProjectOrder";
+  const applyProjectOrder = (list: Project[]) => {
+    try {
+      const raw = localStorage.getItem(ORDER_KEY);
+      if (!raw) return list;
+      const order: string[] = JSON.parse(raw);
+      const indexOf = (id: string) => {
+        const idx = order.indexOf(id);
+        return idx === -1 ? Number.MAX_SAFE_INTEGER : idx;
+      };
+      return [...list].sort((a, b) => indexOf(a.id) - indexOf(b.id));
+    } catch {
+      return list;
+    }
+  };
+  const saveProjectOrder = (list: Project[]) => {
+    try {
+      const ids = list.map((p) => p.id);
+      localStorage.setItem(ORDER_KEY, JSON.stringify(ids));
+    } catch {}
+  };
+
   useEffect(() => {
     const loadAppData = async () => {
       try {
@@ -70,7 +93,7 @@ const App: React.FC = () => {
         setVersion(appVersion);
         setPlatform(appPlatform);
         setIsAuthenticated(authStatus);
-        setProjects(projects);
+        setProjects(applyProjectOrder(projects));
 
         if (authStatus) {
           const [userInfo, repos] = await Promise.all([
@@ -89,7 +112,8 @@ const App: React.FC = () => {
             return { ...project, workspaces };
           })
         );
-        setProjects(projectsWithWorkspaces);
+        const ordered = applyProjectOrder(projectsWithWorkspaces);
+        setProjects(ordered);
       } catch (error) {
         console.error("Failed to load app data:", error);
       }
@@ -375,6 +399,27 @@ const App: React.FC = () => {
     setActiveWorkspace(workspace);
   };
 
+  const handleReorderProjects = (sourceId: string, targetId: string) => {
+    setProjects((prev) => {
+      const list = [...prev];
+      const fromIdx = list.findIndex((p) => p.id === sourceId);
+      const toIdx = list.findIndex((p) => p.id === targetId);
+      if (fromIdx === -1 || toIdx === -1 || fromIdx === toIdx) return prev;
+      const [moved] = list.splice(fromIdx, 1);
+      list.splice(toIdx, 0, moved);
+      saveProjectOrder(list);
+      return list;
+    });
+  };
+
+  const handleReorderProjectsFull = (newOrder: Project[]) => {
+    setProjects(() => {
+      const list = [...newOrder];
+      saveProjectOrder(list);
+      return list;
+    });
+  };
+
   return (
     <div className="h-screen flex bg-background text-foreground">
       <LeftSidebar
@@ -384,6 +429,8 @@ const App: React.FC = () => {
         onGoHome={handleGoHome}
         onSelectWorkspace={handleSelectWorkspace}
         activeWorkspace={activeWorkspace || undefined}
+        onReorderProjects={handleReorderProjects}
+        onReorderProjectsFull={handleReorderProjectsFull}
       />
 
       {showHomeView ? (
