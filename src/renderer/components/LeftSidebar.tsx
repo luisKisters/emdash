@@ -1,4 +1,5 @@
 import React from "react";
+import ReorderList from "./ReorderList";
 import { Button } from "./ui/button";
 import { FolderOpen, Home } from "lucide-react";
 import { WorkspaceItem } from "./WorkspaceItem";
@@ -35,6 +36,8 @@ interface LeftSidebarProps {
   onGoHome: () => void;
   onSelectWorkspace?: (workspace: Workspace) => void;
   activeWorkspace?: Workspace | null;
+  onReorderProjects?: (sourceId: string, targetId: string) => void;
+  onReorderProjectsFull?: (newOrder: Project[]) => void;
 }
 
 const LeftSidebar: React.FC<LeftSidebarProps> = ({
@@ -44,6 +47,8 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   onGoHome,
   onSelectWorkspace,
   activeWorkspace,
+  onReorderProjects,
+  onReorderProjectsFull,
 }) => {
   return (
     <div className="flex-shrink-0 w-16 sm:w-64 lg:w-80 bg-gray-50 dark:bg-gray-900  h-screen overflow-y-auto overscroll-contain">
@@ -61,14 +66,34 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
         </div>
 
         <div className="mb-6">
-          <div className="space-y-1">
-            {projects.map((project) => (
-              <div
-                key={project.id}
-                className="group p-2 sm:p-3 cursor-pointer rounded-md"
-                onClick={() => onSelectProject(project)}
-                title={project.name}
-              >
+          <ReorderList
+            as="div"
+            axis="y"
+            items={projects}
+            onReorder={(newOrder) => {
+              if (onReorderProjectsFull) {
+                onReorderProjectsFull(newOrder as Project[]);
+              } else if (onReorderProjects) {
+                const oldIds = projects.map((p) => p.id);
+                const newIds = (newOrder as Project[]).map((p) => p.id);
+                for (let i = 0; i < newIds.length; i++) {
+                  if (newIds[i] !== oldIds[i]) {
+                    const sourceId = newIds.find((id) => id === oldIds[i]);
+                    const targetId = newIds[i];
+                    if (sourceId && targetId && sourceId !== targetId) {
+                      onReorderProjects(sourceId, targetId);
+                    }
+                    break;
+                  }
+                }
+              }
+            }}
+            className="space-y-1 list-none p-0 m-0"
+            itemClassName="relative group p-2 sm:p-3 cursor-pointer rounded-md list-none"
+            getKey={(p) => (p as Project).id}
+          >
+            {(project) => (
+              <div onClick={() => onSelectProject(project as Project)}>
                 <div className="flex items-center sm:items-start sm:space-x-3">
                   <FolderOpen className="w-5 h-5 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400 flex-shrink-0" />
                   <div className="hidden sm:block flex-1 min-w-0">
@@ -76,30 +101,31 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onSelectProject(project);
+                        onSelectProject(project as Project);
                       }}
                       className="block w-full text-left font-medium text-sm truncate rounded-sm hover:underline hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none focus:underline"
-                      title={project.name}
+                      title={(project as Project).name}
                     >
-                      {project.name}
+                      {(project as Project).name
+                        }
                     </button>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {project.githubInfo?.repository || project.path}
+                      {(project as Project).githubInfo?.repository || (project as Project).path}
                     </p>
                   </div>
                 </div>
 
-                {project.workspaces && project.workspaces.length > 0 && (
+                {(project as Project).workspaces && (project as Project).workspaces!.length > 0 && (
                   <div className="hidden sm:block mt-2 ml-7 space-y-1">
-                    {project.workspaces.map((workspace) => {
+                    {(project as Project).workspaces!.map((workspace) => {
                       const isActive = activeWorkspace?.id === workspace.id;
                       return (
                         <div
                           key={workspace.id}
                           onClick={(e) => {
                             e.stopPropagation();
-                            if (onSelectProject && selectedProject?.id !== project.id) {
-                              onSelectProject(project);
+                            if (onSelectProject && selectedProject?.id !== (project as Project).id) {
+                              onSelectProject(project as Project);
                             }
                             onSelectWorkspace && onSelectWorkspace(workspace);
                           }}
@@ -115,8 +141,8 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                   </div>
                 )}
               </div>
-            ))}
-          </div>
+            )}
+          </ReorderList>
         </div>
       </div>
     </div>
