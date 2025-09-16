@@ -11,22 +11,22 @@ const filterCodexOutput = (markdown: string): string => {
   if (!markdown) return "";
 
   const lines = markdown.split(/\r?\n/);
-  const filtered: string[] = [];
   let collectingList = false;
+  let latestSection: string[] = [];
 
   for (const line of lines) {
     const trimmed = line.trim();
 
     if (!trimmed) {
-      if (collectingList) {
-        filtered.push("");
+      if (collectingList && latestSection.length > 0) {
+        latestSection.push("");
       }
       continue;
     }
 
     const boldMatch = trimmed.match(/\*\*([^*]+)\*\*/);
     if (boldMatch) {
-      filtered.push(boldMatch[0]);
+      latestSection = [boldMatch[0]];
 
       const heading = boldMatch[1].toLowerCase().trim();
       collectingList = LIST_HEADING_KEYWORDS.some((keyword) => heading === keyword);
@@ -37,7 +37,7 @@ const filterCodexOutput = (markdown: string): string => {
       collectingList &&
       (trimmed.startsWith("- ") || /^(\d+\.|[a-z]\))/i.test(trimmed))
     ) {
-      filtered.push(line);
+      latestSection.push(line);
       continue;
     }
 
@@ -46,7 +46,7 @@ const filterCodexOutput = (markdown: string): string => {
     }
   }
 
-  return filtered.join("\n").trim();
+  return latestSection.join("\n").trim();
 };
 
 // Type assertion for electronAPI
@@ -115,6 +115,10 @@ export const ChatInterface: React.FC<Props> = ({
   const [agentCreated, setAgentCreated] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+  const [activeStreamingHeadline, setActiveStreamingHeadline] = useState<string | null>(
+    null
+  );
+  const [isStreamingHeadlineVisible, setIsStreamingHeadlineVisible] = useState(false);
   
   // Auto-scroll state
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -211,6 +215,50 @@ export const ChatInterface: React.FC<Props> = ({
   useEffect(() => {
     scrollToBottom();
   }, [messages, streamingMessage, shouldAutoScroll]);
+
+  useEffect(() => {
+    let frame: number | null = null;
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+
+    if (isStreaming && filteredStreamingMessage) {
+      if (!activeStreamingHeadline) {
+        setActiveStreamingHeadline(filteredStreamingMessage);
+        frame = requestAnimationFrame(() => {
+          setIsStreamingHeadlineVisible(true);
+        });
+      } else if (filteredStreamingMessage !== activeStreamingHeadline) {
+        frame = requestAnimationFrame(() => {
+          setIsStreamingHeadlineVisible(false);
+        });
+        timeout = setTimeout(() => {
+          setActiveStreamingHeadline(filteredStreamingMessage);
+          setIsStreamingHeadlineVisible(true);
+        }, 260);
+      } else {
+        frame = requestAnimationFrame(() => {
+          setIsStreamingHeadlineVisible(true);
+        });
+      }
+    } else if (activeStreamingHeadline) {
+      frame = requestAnimationFrame(() => {
+        setIsStreamingHeadlineVisible(false);
+      });
+      timeout = setTimeout(() => {
+        setActiveStreamingHeadline(null);
+      }, 260);
+    } else {
+      setIsStreamingHeadlineVisible(false);
+    }
+
+    return () => {
+      if (frame !== null) {
+        cancelAnimationFrame(frame);
+      }
+      if (timeout) {
+        clearTimeout(timeout);
+      }
+    };
+  }, [isStreaming, filteredStreamingMessage, activeStreamingHeadline]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
@@ -575,14 +623,23 @@ export const ChatInterface: React.FC<Props> = ({
                 );
               })}
               
-              {isStreaming && filteredStreamingMessage && (
-                <div className="flex justify-start">
-                  <div className="max-w-[80%] rounded-md px-4 py-3 text-sm leading-relaxed font-sans bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm">
+              {activeStreamingHeadline && (
+                <div
+                  className={`flex justify-start transition-all duration-300 ease-out ${
+                    isStreamingHeadlineVisible
+                      ? "opacity-100 translate-y-0"
+                      : "opacity-0 -translate-y-1"
+                  }`}
+                >
+                  <div
+                    key={activeStreamingHeadline}
+                    className="max-w-[80%] rounded-md px-4 py-3 text-sm leading-relaxed font-sans bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all duration-300 ease-out"
+                  >
                     <div className="prose prose-sm max-w-none">
                       <ReactMarkdown
-                        components={{
-                          code: ({
-                            node,
+                          components={{
+                            code: ({
+                              node,
                             inline,
                             className,
                             children,
@@ -666,14 +723,16 @@ export const ChatInterface: React.FC<Props> = ({
                             <p className="mb-2 last:mb-0">{children}</p>
                           ),
                           strong: ({ children }) => (
-                            <strong className="font-semibold">{children}</strong>
+                            <strong className="font-semibold text-gray-900 dark:text-gray-100">
+                              {children}
+                            </strong>
                           ),
                           em: ({ children }) => (
                             <em className="italic">{children}</em>
                           ),
                         }}
                       >
-                        {filteredStreamingMessage}
+                        {activeStreamingHeadline}
                       </ReactMarkdown>
                     </div>
                   </div>

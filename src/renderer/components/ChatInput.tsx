@@ -18,6 +18,30 @@ interface ChatInputProps {
   workspacePath?: string;
 }
 
+const MAX_LOADING_SECONDS = 60 * 60; // 60 minutes
+
+const formatLoadingTime = (seconds: number): string => {
+  if (seconds <= 0) return "0s";
+
+  const clamped = Math.min(seconds, MAX_LOADING_SECONDS);
+  const minutes = Math.floor(clamped / 60);
+  const remainingSeconds = clamped % 60;
+
+  if (minutes >= 60) {
+    return "60m";
+  }
+
+  if (minutes === 0) {
+    return `${clamped}s`;
+  }
+
+  if (remainingSeconds === 0) {
+    return `${minutes}m`;
+  }
+
+  return `${minutes}m ${remainingSeconds}s`;
+};
+
 export const ChatInput: React.FC<ChatInputProps> = ({
   value,
   onChange,
@@ -159,8 +183,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
             <div className="flex items-center gap-2">
               {isLoading && (
-                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium w-8 text-right tabular-nums">
-                  {`${loadingSeconds}s`}
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium w-16 text-right tabular-nums">
+                  {formatLoadingTime(loadingSeconds)}
                 </span>
               )}
               <Button
