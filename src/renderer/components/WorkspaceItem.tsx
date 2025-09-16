@@ -33,7 +33,7 @@ export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({ workspace }) => {
           <Bot className="w-3 h-3 text-purple-500 flex-shrink-0" />
         )}
       </div>
-      <div className="flex items-center space-x-2">
+      <div className="hidden sm:flex items-center space-x-2">
         {!isLoading && (totalAdditions > 0 || totalDeletions > 0) && (
           <ChangesBadge additions={totalAdditions} deletions={totalDeletions} />
         )}
