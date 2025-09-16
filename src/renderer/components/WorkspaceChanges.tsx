@@ -16,7 +16,7 @@ export const ChangesBadge: React.FC<ChangesBadgeProps> = ({
   }
 
   return (
-    <div className={`inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300 ${className}`}>
+    <div className={`inline-flex items-center rounded text-xs font-medium text-gray-700 dark:bg-gray-700 dark:text-gray-300 ${className}`}>
       {additions > 0 && (
         <span className="text-green-600 dark:text-green-400 mr-1">
           +{additions}
