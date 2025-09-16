@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useToast } from "../hooks/use-toast";
 import { Spinner } from "./ui/spinner";
+import { useCreatePR } from "../hooks/useCreatePR";
 import { Run } from "../types";
 
 interface RightPanelProps {
@@ -9,7 +10,7 @@ interface RightPanelProps {
 
 const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
   const { toast } = useToast();
-  const [isCreatingPR, setIsCreatingPR] = useState(false);
+  const { isCreating: isCreatingPR, createPR } = useCreatePR();
   const [activeTab, setActiveTab] = useState<"logs" | "diff" | "terminal">(
     "logs"
   );
@@ -17,7 +18,6 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
 
   useEffect(() => {
     if (selectedRun) {
-      // Set up event listener for run events
       const handleRunEvent = (event: any) => {
         if (event.runId === selectedRun.id) {
           setLogs((prev) => [...prev, event]);
@@ -112,7 +112,6 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
         </div>
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-hidden">
         {activeTab === "logs" && (
           <div className="h-full overflow-y-auto p-4">
@@ -172,27 +171,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
             disabled={isCreatingPR}
             onClick={async () => {
               if (!selectedRun) return;
-              setIsCreatingPR(true);
-              try {
-                const res = await window.electronAPI.createPullRequest({
-                  workspacePath: selectedRun.worktreePath,
-                  fill: true,
-                });
-                if (res?.success) {
-                  toast({
-                    title: "Pull Request Created",
-                    description: res.url || "PR created successfully.",
-                  });
-                } else {
-                  toast({
-                    title: "Failed to Create PR",
-                    description: res?.error || "Unknown error",
-                    variant: "destructive",
-                  });
-                }
-              } finally {
-                setIsCreatingPR(false);
-              }
+              await createPR({ workspacePath: selectedRun.worktreePath })
             }}
           >
             {isCreatingPR ? (

@@ -1,8 +1,16 @@
 import React, { useState } from "react";
-import { GitBranch, Plus, Minus, FileText, ChevronDown, ChevronRight } from "lucide-react";
+import {
+  GitBranch,
+  Plus,
+  Minus,
+  FileText,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 import { Button } from "./ui/button";
 import { Spinner } from "./ui/spinner";
 import { useToast } from "../hooks/use-toast";
+import { useCreatePR } from "../hooks/useCreatePR";
 import { useFileChanges, type FileChange } from "../hooks/useFileChanges";
 import FileTypeIcon from "./ui/file-type-icon";
 
@@ -16,13 +24,16 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
   className,
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
-  const [isCreatingPR, setIsCreatingPR] = useState(false);
+  const { isCreating: isCreatingPR, createPR } = useCreatePR();
   const { fileChanges, isLoading, error, refreshChanges } =
     useFileChanges(workspaceId);
   const { toast } = useToast();
 
   const getStatusChip = (status: FileChange["status"]) => {
-    const map: Record<FileChange["status"], { text: string; cls: string; icon: JSX.Element }> = {
+    const map: Record<
+      FileChange["status"],
+      { text: string; cls: string; icon: JSX.Element }
+    > = {
       added: {
         text: "added",
         cls: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
@@ -46,7 +57,9 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
     };
     const v = map[status];
     return (
-      <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] ${v.cls}`}>
+      <span
+        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] ${v.cls}`}
+      >
         {v.icon}
         {v.text}
       </span>
@@ -60,7 +73,9 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
     return (
       <span className="truncate">
         {dir && <span className="text-gray-500 dark:text-gray-400">{dir}</span>}
-        <span className="text-gray-900 dark:text-gray-100 font-medium">{base}</span>
+        <span className="text-gray-900 dark:text-gray-100 font-medium">
+          {base}
+        </span>
       </span>
     );
   };
@@ -82,9 +97,7 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
   }
 
   return (
-    <div
-      className={`bg-white dark:bg-gray-800 shadow-sm ${className}`}
-    >
+    <div className={`bg-white dark:bg-gray-800 shadow-sm ${className}`}>
       <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
@@ -122,33 +135,17 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
               className="text-xs border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200"
               disabled={isCreatingPR}
               onClick={async () => {
-                setIsCreatingPR(true);
-                try {
-                  const res = await window.electronAPI.createPullRequest({
-                    workspacePath: workspaceId,
-                    fill: true,
-                  });
-                  if (res?.success) {
-                    toast({
-                      title: "Pull Request Created",
-                      description: res.url || "PR created successfully.",
-                    });
-                  } else {
-                    toast({
-                      title: "Failed to Create PR",
-                      description: res?.error || "Unknown error",
-                      variant: "destructive",
-                    });
-                  }
-                } finally {
-                  setIsCreatingPR(false);
-                }
+                await createPR({
+                  workspacePath: workspaceId,
+                  onSuccess: async () => {
+                    await refreshChanges();
+                  },
+                });
               }}
             >
               {isCreatingPR ? (
                 <>
-                  <Spinner size="sm" className="mr-2" />
-                  Creating...
+                  <Spinner size="sm" />
                 </>
               ) : (
                 "Create PR"
@@ -167,7 +164,11 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <span className="inline-flex items-center justify-center w-4 h-4 text-gray-500">
-                  <FileTypeIcon path={change.path} type={change.status === 'deleted' ? 'file' : 'file'} size={14} />
+                  <FileTypeIcon
+                    path={change.path}
+                    type={change.status === "deleted" ? "file" : "file"}
+                    size={14}
+                  />
                 </span>
                 <div className="flex-1 min-w-0">
                   <div className="text-sm truncate">
