@@ -31,6 +31,10 @@ declare global {
       getGitStatus: (workspacePath: string) => Promise<{ success: boolean; changes?: Array<{ path: string; status: string; additions: number; deletions: number; diff?: string }>; error?: string }>
       connectToGitHub: (projectPath: string) => Promise<{ success: boolean; repository?: string; branch?: string; error?: string }>
 
+      // Filesystem helpers
+      fsList: (root: string, opts?: { includeDirs?: boolean; maxEntries?: number }) => Promise<{ success: boolean; items?: Array<{ path: string; type: 'file' | 'dir' }>; error?: string }>
+      fsRead: (root: string, relPath: string, maxBytes?: number) => Promise<{ success: boolean; path?: string; size?: number; truncated?: boolean; content?: string; error?: string }>
+
       // Run events
       onRunEvent: (callback: (event: any) => void) => void
       removeRunEventListeners: () => void
@@ -54,6 +58,9 @@ declare global {
       saveMessage: (message: any) => Promise<{ success: boolean; error?: string }>
       getMessages: (conversationId: string) => Promise<{ success: boolean; messages?: any[]; error?: string }>
       getOrCreateDefaultConversation: (workspaceId: string) => Promise<{ success: boolean; conversation?: any; error?: string }>
+
+      // Debug helpers
+      debugAppendLog: (filePath: string, content: string, options?: { reset?: boolean }) => Promise<{ success: boolean; error?: string }>
 
       // Codex
       codexCheckInstallation: () => Promise<{ success: boolean; isInstalled?: boolean; error?: string }>
@@ -101,6 +108,10 @@ export interface ElectronAPI {
   getGitInfo: (projectPath: string) => Promise<{ isGitRepo: boolean; remote?: string; branch?: string; path?: string; error?: string }>
   connectToGitHub: (projectPath: string) => Promise<{ success: boolean; repository?: string; branch?: string; error?: string }>
 
+  // Filesystem helpers
+  fsList: (root: string, opts?: { includeDirs?: boolean; maxEntries?: number }) => Promise<{ success: boolean; items?: Array<{ path: string; type: 'file' | 'dir' }>; error?: string }>
+  fsRead: (root: string, relPath: string, maxBytes?: number) => Promise<{ success: boolean; path?: string; size?: number; truncated?: boolean; content?: string; error?: string }>
+
   // Run events
   onRunEvent: (callback: (event: any) => void) => void
   removeRunEventListeners: () => void
@@ -124,6 +135,9 @@ export interface ElectronAPI {
   saveMessage: (message: any) => Promise<{ success: boolean; error?: string }>
   getMessages: (conversationId: string) => Promise<{ success: boolean; messages?: any[]; error?: string }>
   getOrCreateDefaultConversation: (workspaceId: string) => Promise<{ success: boolean; conversation?: any; error?: string }>
+
+  // Debug helpers
+  debugAppendLog: (filePath: string, content: string, options?: { reset?: boolean }) => Promise<{ success: boolean; error?: string }>
 
   // Codex
   codexCheckInstallation: () => Promise<{ success: boolean; isInstalled?: boolean; error?: string }>

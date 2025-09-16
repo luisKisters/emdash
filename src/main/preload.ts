@@ -45,6 +45,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   worktreeGetAll: () =>
     ipcRenderer.invoke('worktree:getAll'),
 
+  // Filesystem helpers
+  fsList: (root: string, opts?: { includeDirs?: boolean; maxEntries?: number }) =>
+    ipcRenderer.invoke('fs:list', { root, ...(opts || {}) }),
+  fsRead: (root: string, relPath: string, maxBytes?: number) =>
+    ipcRenderer.invoke('fs:read', { root, relPath, maxBytes }),
+
   // Project management
   openProject: () => ipcRenderer.invoke('project:open'),
   getGitInfo: (projectPath: string) => ipcRenderer.invoke('git:getInfo', projectPath),
@@ -93,6 +99,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   saveMessage: (message: any) => ipcRenderer.invoke('db:saveMessage', message),
   getMessages: (conversationId: string) => ipcRenderer.invoke('db:getMessages', conversationId),
   deleteConversation: (conversationId: string) => ipcRenderer.invoke('db:deleteConversation', conversationId),
+
+  // Debug helpers
+  debugAppendLog: (filePath: string, content: string, options?: { reset?: boolean }) =>
+    ipcRenderer.invoke('debug:append-log', filePath, content, options ?? {}),
 
   // Codex integration
   codexCheckInstallation: () => ipcRenderer.invoke('codex:check-installation'),
@@ -154,6 +164,10 @@ export interface ElectronAPI {
   // Repository management
   scanRepos: () => Promise<any[]>
   addRepo: (path: string) => Promise<any>
+  
+  // Filesystem helpers
+  fsList: (root: string, opts?: { includeDirs?: boolean; maxEntries?: number }) => Promise<{ success: boolean; items?: Array<{ path: string; type: 'file' | 'dir' }>; error?: string }>
+  fsRead: (root: string, relPath: string, maxBytes?: number) => Promise<{ success: boolean; path?: string; size?: number; truncated?: boolean; content?: string; error?: string }>
   
   // Run management
   createRun: (config: any) => Promise<string>
