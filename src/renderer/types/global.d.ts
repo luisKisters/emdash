@@ -27,6 +27,7 @@ declare global {
       addRepo: (path: string) => Promise<any>
       // Filesystem
       fsList: (root: string, opts?: { includeDirs?: boolean; maxEntries?: number }) => Promise<{ success: boolean; items?: Array<{ path: string; type: 'file' | 'dir' }>; error?: string }>
+      fsRead: (root: string, relPath: string, maxBytes?: number) => Promise<{ success: boolean; path?: string; size?: number; truncated?: boolean; content?: string; error?: string }>
       createRun: (config: any) => Promise<string>
       cancelRun: (runId: string) => Promise<void>
       getRunDiff: (runId: string) => Promise<any>

@@ -3,6 +3,7 @@ import { Folder } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import ChatInput from "./ChatInput";
+import { buildAttachmentsSection } from "../lib/attachments";
 
 // Type assertion for electronAPI
 declare const window: Window & {
@@ -306,7 +307,12 @@ export const ChatInterface: React.FC<Props> = ({
     }
 
     setMessages((prev) => [...prev, userMessage]);
-    const messageToSend = inputValue;
+    // Build message to send with inline attachments for @mentions
+    const attachmentsSection = await buildAttachmentsSection(workspace.path, inputValue, {
+      maxFiles: 6,
+      maxBytesPerFile: 200 * 1024,
+    });
+    const messageToSend = inputValue + attachmentsSection;
     setInputValue("");
     setIsStreaming(true);
     setStreamingMessage("");

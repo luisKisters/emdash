@@ -34,6 +34,7 @@ declare global {
 
       // Filesystem
       fsList: (root: string, opts?: { includeDirs?: boolean; maxEntries?: number }) => Promise<{ success: boolean; items?: Array<{ path: string; type: 'file' | 'dir' }>; error?: string }>
+      fsRead: (root: string, relPath: string, maxBytes?: number) => Promise<{ success: boolean; path?: string; size?: number; truncated?: boolean; content?: string; error?: string }>
 
       // Run events
       onRunEvent: (callback: (event: any) => void) => void
@@ -108,6 +109,7 @@ export interface ElectronAPI {
 
   // Filesystem
   fsList: (root: string, opts?: { includeDirs?: boolean; maxEntries?: number }) => Promise<{ success: boolean; items?: Array<{ path: string; type: 'file' | 'dir' }>; error?: string }>
+  fsRead: (root: string, relPath: string, maxBytes?: number) => Promise<{ success: boolean; path?: string; size?: number; truncated?: boolean; content?: string; error?: string }>
 
   // Run events
   onRunEvent: (callback: (event: any) => void) => void

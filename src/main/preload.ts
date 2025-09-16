@@ -60,6 +60,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Filesystem
   fsList: (root: string, opts?: { includeDirs?: boolean; maxEntries?: number }) =>
     ipcRenderer.invoke('fs:list', { root, ...(opts || {}) }),
+  fsRead: (root: string, relPath: string, maxBytes?: number) =>
+    ipcRenderer.invoke('fs:read', { root, relPath, maxBytes }),
   
   // Run management
   createRun: (config: any) => ipcRenderer.invoke('runs:create', config),
@@ -164,6 +166,7 @@ export interface ElectronAPI {
   
   // Filesystem
   fsList: (root: string, opts?: { includeDirs?: boolean; maxEntries?: number }) => Promise<{ success: boolean; items?: Array<{ path: string; type: 'file' | 'dir' }>; error?: string }>
+  fsRead: (root: string, relPath: string, maxBytes?: number) => Promise<{ success: boolean; path?: string; size?: number; truncated?: boolean; content?: string; error?: string }>
   
   // Run management
   createRun: (config: any) => Promise<string>

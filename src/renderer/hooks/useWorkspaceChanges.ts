@@ -72,12 +72,10 @@ export function useWorkspaceChanges(workspacePath: string, workspaceId: string) 
     
     // Poll for changes every 10 seconds without loading state
     const interval = setInterval(() => fetchChanges(false), 10000);
-    
     return () => clearInterval(interval);
   }, [workspacePath, workspaceId]);
 
   return {
     ...changes,
-    refetch: fetchChanges,
   };
 }
