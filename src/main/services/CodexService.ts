@@ -1,6 +1,5 @@
-import { spawn, exec } from 'child_process';
+import { spawn, exec, execFile } from 'child_process';
 import { promisify } from 'util';
-import path from 'path';
 import { EventEmitter } from 'events';
 
 const execAsync = promisify(exec);
@@ -61,17 +60,17 @@ export class CodexService extends EventEmitter {
    */
   public async createAgent(workspaceId: string, worktreePath: string): Promise<CodexAgent> {
     const agentId = `agent-${workspaceId}-${Date.now()}`;
-    
+
     const agent: CodexAgent = {
       id: agentId,
       workspaceId,
       worktreePath,
-      status: 'idle'
+      status: 'idle',
     };
 
     this.agents.set(agentId, agent);
     console.log(`Created Codex agent ${agentId} for workspace ${workspaceId}`);
-    
+
     return agent;
   }
 
@@ -80,15 +79,18 @@ export class CodexService extends EventEmitter {
    */
   public async sendMessageStream(workspaceId: string, message: string): Promise<void> {
     // Find agent for this workspace
-    const agent = Array.from(this.agents.values()).find(a => a.workspaceId === workspaceId);
-    
+    const agent = Array.from(this.agents.values()).find((a) => a.workspaceId === workspaceId);
+
     if (!agent) {
       this.emit('codex:error', { workspaceId, error: 'No agent found for this workspace' });
       return;
     }
 
     if (!this.isCodexInstalled) {
-      this.emit('codex:error', { workspaceId, error: 'Codex CLI is not installed. Please install it with: npm install -g @openai/codex' });
+      this.emit('codex:error', {
+        workspaceId,
+        error: 'Codex CLI is not installed. Please install it with: npm install -g @openai/codex',
+      });
       return;
     }
 
@@ -97,13 +99,15 @@ export class CodexService extends EventEmitter {
     agent.lastMessage = message;
 
     try {
-      // Use spawn for streaming output
-      const command = `codex exec --sandbox workspace-write "${message.replace(/"/g, '\\"')}"`;
-      console.log(`Executing: ${command} in ${agent.worktreePath}`);
+      // Spawn codex directly with args to avoid shell quoting issues (backticks, quotes, etc.)
+      const args = ['exec', '--sandbox', 'workspace-write', message];
+      console.log(
+        `Executing: codex ${args.map((a) => (a.includes(' ') ? '"' + a + '"' : a)).join(' ')} in ${agent.worktreePath}`
+      );
 
-      const child = spawn('bash', ['-c', command], {
+      const child = spawn('codex', args, {
         cwd: agent.worktreePath,
-        stdio: ['pipe', 'pipe', 'pipe']
+        stdio: ['ignore', 'pipe', 'pipe'],
       });
 
       // Stream stdout
@@ -133,7 +137,6 @@ export class CodexService extends EventEmitter {
         console.error(`Error executing Codex in ${agent.worktreePath}:`, error.message);
         this.emit('codex:error', { workspaceId, error: error.message, agentId: agent.id });
       });
-
     } catch (error: any) {
       agent.status = 'error';
       console.error(`Error executing Codex in ${agent.worktreePath}:`, error.message);
@@ -142,17 +145,17 @@ export class CodexService extends EventEmitter {
   }
 
   /**
-   * Send a message to a Codex agent (legacy method for compatibility)
+   * Send a message to a Codex agent (non-streaming)
    */
   public async sendMessage(workspaceId: string, message: string): Promise<CodexResponse> {
     // Find agent for this workspace
-    const agent = Array.from(this.agents.values()).find(a => a.workspaceId === workspaceId);
-    
+    const agent = Array.from(this.agents.values()).find((a) => a.workspaceId === workspaceId);
+
     if (!agent) {
       return {
         success: false,
         error: 'No agent found for this workspace',
-        agentId: ''
+        agentId: '',
       };
     }
 
@@ -160,7 +163,7 @@ export class CodexService extends EventEmitter {
       return {
         success: false,
         error: 'Codex CLI is not installed. Please install it with: npm install -g @openai/codex',
-        agentId: agent.id
+        agentId: agent.id,
       };
     }
 
@@ -169,13 +172,21 @@ export class CodexService extends EventEmitter {
     agent.lastMessage = message;
 
     try {
-      // Use exec with workspace-write sandbox (allows file modifications)
-      const command = `codex exec --sandbox workspace-write "${message.replace(/"/g, '\\"')}"`;
-      console.log(`Executing: ${command} in ${agent.worktreePath}`);
+      const args = ['exec', '--sandbox', 'workspace-write', message];
+      console.log(
+        `Executing: codex ${args.map((a) => (a.includes(' ') ? '"' + a + '"' : a)).join(' ')} in ${agent.worktreePath}`
+      );
 
-      const { stdout, stderr } = await execAsync(command, {
-        cwd: agent.worktreePath,
-        timeout: 60000 // 60 second timeout
+      const { stdout, stderr } = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
+        execFile('codex', args, { cwd: agent.worktreePath, timeout: 60000 }, (error, stdout, stderr) => {
+          if (error) {
+            (error as any).stderr = stderr;
+            (error as any).stdout = stdout;
+            reject(error);
+          } else {
+            resolve({ stdout, stderr });
+          }
+        });
       });
 
       agent.status = 'idle';
@@ -188,12 +199,11 @@ export class CodexService extends EventEmitter {
       return {
         success: true,
         output: stdout,
-        agentId: agent.id
+        agentId: agent.id,
       };
-
     } catch (error: any) {
       agent.status = 'error';
-      
+
       let errorMessage = 'Unknown error occurred';
       if (error.code === 'ENOENT') {
         errorMessage = 'Codex CLI not found. Please install it with: npm install -g @openai/codex';
@@ -210,17 +220,16 @@ export class CodexService extends EventEmitter {
       return {
         success: false,
         error: errorMessage,
-        agentId: agent.id
+        agentId: agent.id,
       };
     }
   }
-
 
   /**
    * Get agent status
    */
   public getAgentStatus(workspaceId: string): CodexAgent | null {
-    return Array.from(this.agents.values()).find(a => a.workspaceId === workspaceId) || null;
+    return Array.from(this.agents.values()).find((a) => a.workspaceId === workspaceId) || null;
   }
 
   /**
@@ -234,7 +243,7 @@ export class CodexService extends EventEmitter {
    * Remove an agent
    */
   public removeAgent(workspaceId: string): boolean {
-    const agent = Array.from(this.agents.values()).find(a => a.workspaceId === workspaceId);
+    const agent = Array.from(this.agents.values()).find((a) => a.workspaceId === workspaceId);
     if (agent) {
       this.agents.delete(agent.id);
       console.log(`Removed agent ${agent.id} for workspace ${workspaceId}`);
@@ -264,3 +273,4 @@ Then try again!`;
 
 // Singleton instance
 export const codexService = new CodexService();
+

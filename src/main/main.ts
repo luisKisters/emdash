@@ -11,6 +11,7 @@ import * as fs from 'fs'
 const execAsync = promisify(exec)
 import { registerPtyIpc } from './services/ptyIpc'
 import { registerWorktreeIpc } from './services/worktreeIpc'
+import { registerFsIpc } from './services/fsIpc'
 import { setupCodexIpc } from './services/codexIpc'
 
 let mainWindow: BrowserWindow | null = null
@@ -65,6 +66,9 @@ app.whenReady().then(async () => {
   
   // Register worktree IPC handlers
   registerWorktreeIpc()
+  
+  // Register filesystem IPC handlers
+  registerFsIpc()
   
   // Register Codex IPC handlers
   setupCodexIpc()

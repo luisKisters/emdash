@@ -148,11 +148,16 @@ async function getGitStatus(workspacePath: string): Promise<Array<{ path: string
 
     for (const line of statusLines) {
       const statusCode = line.substring(0, 2);
-      const filePath = line.substring(3);
-      
+      let filePath = line.substring(3);
+      // Handle rename lines like: "R  old/path -> new/path"
+      if (statusCode.includes('R') && filePath.includes('->')) {
+        const parts = filePath.split('->');
+        filePath = parts[parts.length - 1].trim();
+      }
+
       // Parse status code
       let status = 'modified';
-      if (statusCode.includes('A')) {
+      if (statusCode.includes('A') || statusCode.includes('?')) {
         status = 'added';
       } else if (statusCode.includes('D')) {
         status = 'deleted';
@@ -162,36 +167,40 @@ async function getGitStatus(workspacePath: string): Promise<Array<{ path: string
         status = 'modified';
       }
 
-      // Get diff statistics for the file
+      // Get diff statistics for the file using --numstat (more reliable)
       let additions = 0;
       let deletions = 0;
-      
       try {
-        const { stdout: diffStats } = await execAsync(`git diff --stat --cached -- "${filePath}"`, { cwd: workspacePath });
-        if (diffStats.trim()) {
-          const stats = parseDiffStats(diffStats);
-          additions = stats.additions;
-          deletions = stats.deletions;
-        } else {
-          // Check unstaged changes
-          const { stdout: unstagedStats } = await execAsync(`git diff --stat -- "${filePath}"`, { cwd: workspacePath });
-          if (unstagedStats.trim()) {
-            const stats = parseDiffStats(unstagedStats);
-            additions = stats.additions;
-            deletions = stats.deletions;
+        // Staged first
+        let { stdout } = await execAsync(`git diff --numstat --cached -- "${filePath}"`, { cwd: workspacePath });
+        if (!stdout.trim()) {
+          // Unstaged
+          const res2 = await execAsync(`git diff --numstat -- "${filePath}"`, { cwd: workspacePath });
+          stdout = res2.stdout;
+        }
+
+        // Parse numstat: additions<TAB>deletions<TAB>path
+        const lineNum = stdout.trim().split('\n').find(l => l.trim().length > 0);
+        if (lineNum) {
+          const parts = lineNum.split('\t');
+          if (parts.length >= 3) {
+            const addStr = parts[0];
+            const delStr = parts[1];
+            additions = addStr === '-' ? 0 : parseInt(addStr, 10) || 0;
+            deletions = delStr === '-' ? 0 : parseInt(delStr, 10) || 0;
           }
+        } else if (statusCode.includes('?')) {
+          // Untracked file: numstat returns empty. Approximate additions as line count.
+          try {
+            const { stdout: wc } = await execAsync(`wc -l < "${filePath}"`, { cwd: workspacePath });
+            additions = parseInt(wc.trim(), 10) || 0;
+          } catch {}
         }
       } catch (diffError) {
-        // If diff fails, just use 0 for stats
-        console.warn(`Failed to get diff stats for ${filePath}:`, diffError);
+        console.warn(`Failed to get numstat for ${filePath}:`, diffError);
       }
 
-      changes.push({
-        path: filePath,
-        status,
-        additions,
-        deletions,
-      });
+      changes.push({ path: filePath, status, additions, deletions });
     }
 
     return changes;
@@ -201,35 +210,4 @@ async function getGitStatus(workspacePath: string): Promise<Array<{ path: string
   }
 }
 
-// Helper function to parse git diff --stat output
-function parseDiffStats(diffOutput: string): { additions: number; deletions: number } {
-  const lines = diffOutput.trim().split('\n');
-  const lastLine = lines[lines.length - 1];
-  
-  // Parse the summary line like " 2 files changed, 3 insertions(+), 1 deletion(-)"
-  const match = lastLine.match(/(\d+) insertions?\(\+\).*?(\d+) deletions?\(-\)/);
-  
-  if (match) {
-    return {
-      additions: parseInt(match[1], 10),
-      deletions: parseInt(match[2], 10),
-    };
-  }
-  
-  // Fallback: try to parse individual file stats
-  let totalAdditions = 0;
-  let totalDeletions = 0;
-  
-  for (const line of lines) {
-    const fileMatch = line.match(/\|\s*(\d+)\s*[+-]*\s*(\d+)\s*[+-]*/);
-    if (fileMatch) {
-      totalAdditions += parseInt(fileMatch[1], 10);
-      totalDeletions += parseInt(fileMatch[2], 10);
-    }
-  }
-  
-  return {
-    additions: totalAdditions,
-    deletions: totalDeletions,
-  };
-}
+// Note: --numstat parsing moved inline above for accuracy.

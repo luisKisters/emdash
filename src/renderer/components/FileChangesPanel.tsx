@@ -87,7 +87,7 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
                 <ChevronRight className="w-4 h-4 text-gray-600" />
               )}
             </Button>
-            <GitBranch className="w-4 h-4 text-gray-600" />
+            <div className="flex items-center space-x-2">
             <span className="text-sm font-medium text-gray-900">
               {fileChanges.length} files changed
             </span>
@@ -100,21 +100,9 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
                 -{totalChanges.deletions}
               </span>
             </div>
+            </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={refreshChanges}
-              disabled={isLoading}
-              className="p-1 h-auto"
-            >
-              <RefreshCw
-                className={`w-4 h-4 text-gray-600 ${
-                  isLoading ? "animate-spin" : ""
-                }`}
-              />
-            </Button>
             <Button
               variant="outline"
               size="sm"
