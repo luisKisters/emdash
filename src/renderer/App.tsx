@@ -362,7 +362,7 @@ const App: React.FC = () => {
           <div className="container mx-auto px-4 py-8">
             <div className="text-center mb-12">
               <h1 className="text-6xl tracking-wider mb-4">
-                orcbench
+                emdash
               </h1>
               <p className="text-lg text-gray-700 text-muted-foreground mb-4">
                 Run multiple Codex Agents in parallel
@@ -450,7 +450,7 @@ const App: React.FC = () => {
           <div className="container mx-auto px-4 py-8">
             <div className="text-center mb-12">
               <h1 className="text-6xl tracking-wider mb-4">
-                orcbench
+                emdash
               </h1>
               <p className="text-lg text-gray-700 text-muted-foreground mb-4">
                 Run multiple Codex Agents in parallel

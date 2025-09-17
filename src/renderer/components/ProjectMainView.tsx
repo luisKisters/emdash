@@ -70,7 +70,7 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
             <CardHeader>
               <CardTitle className="text-xl">What's a workspace?</CardTitle>
               <CardDescription>
-                Each workspace is an isolated copy and branch of your Git repo. orcbench only copies files tracked in Git.
+                Each workspace is an isolated copy and branch of your Git repo. emdash only copies files tracked in Git.
               </CardDescription>
             </CardHeader>
             <CardContent>

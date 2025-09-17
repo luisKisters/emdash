@@ -1,4 +1,4 @@
-# orcbench
+# emdash
 
 **Agent-agnostic Orchestration Bench for Codex Agents**
 
@@ -9,7 +9,7 @@ Run multiple Codex Agents in parallel with isolated Git worktrees.
 ## Requirements
 
 ### GitHub CLI
-orcbench requires GitHub CLI to be installed and authenticated:
+emdash requires GitHub CLI to be installed and authenticated:
 
 **Install GitHub CLI:**
 - **macOS:** `brew install gh`
@@ -33,7 +33,7 @@ Follow the prompts to authenticate with your GitHub account.
 
 ## Data Persistence
 
-orcbench uses SQLite for local data persistence, ensuring your projects and workspaces are maintained across application sessions. All data is stored locally on your machine, providing privacy and offline functionality.
+emdash uses SQLite for local data persistence, ensuring your projects and workspaces are maintained across application sessions. All data is stored locally on your machine, providing privacy and offline functionality.
 
 ### Database Architecture
 
@@ -90,9 +90,9 @@ CREATE TABLE workspaces (
 
 The SQLite database is automatically created in your system's application data directory:
 
-- **macOS**: `~/Library/Application Support/orcbench/database.sqlite`
-- **Windows**: `%APPDATA%/orcbench/database.sqlite`
-- **Linux**: `~/.config/orcbench/database.sqlite`
+- **macOS**: `~/Library/Application Support/emdash/emdash.db`
+- **Windows**: `%APPDATA%/emdash/emdash.db`
+- **Linux**: `~/.config/emdash/emdash.db`
 
 ### Database Operations
 
@@ -130,11 +130,11 @@ The application stores conversation history locally, which may consume disk spac
 If you want to reset or reclaim space, you can delete the app's database file. This removes saved conversations and resets projects and workspaces.
 
 **Before you start:**
-- Quit orcbench to ensure files are not in use.
+- Quit emdash to ensure files are not in use.
 
 **Delete the database file:**
-- macOS: `~/Library/Application Support/orcbench/database.sqlite`
-- Windows: `%APPDATA%/orcbench/database.sqlite`
-- Linux: `~/.config/orcbench/database.sqlite`
+- macOS: `~/Library/Application Support/emdash/emdash.db`
+- Windows: `%APPDATA%/emdash/emdash.db`
+- Linux: `~/.config/emdash/emdash.db`
 
-After deletion, restart orcbench — the database will be re‑initialized on launch.
+After deletion, restart emdash — the database will be re‑initialized on launch.
