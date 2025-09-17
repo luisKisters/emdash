@@ -97,6 +97,7 @@ export class CodexService extends EventEmitter {
     // Update agent status
     agent.status = 'running';
     agent.lastMessage = message;
+    agent.lastResponse = agent.lastResponse || '';
 
     try {
       // Spawn codex directly with args to avoid shell quoting issues (backticks, quotes, etc.)
@@ -114,6 +115,8 @@ export class CodexService extends EventEmitter {
       child.stdout.on('data', (data) => {
         const output = data.toString();
         console.log('Codex stdout chunk:', output);
+        // Accumulate latest streaming output so late subscribers can recover state
+        agent.lastResponse = (agent.lastResponse || '') + output;
         this.emit('codex:output', { workspaceId, output, agentId: agent.id });
       });
 
@@ -273,4 +276,3 @@ Then try again!`;
 
 // Singleton instance
 export const codexService = new CodexService();
-

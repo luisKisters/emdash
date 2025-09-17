@@ -70,6 +70,10 @@ export const ChatInterface: React.FC<Props> = ({
   );
   const [agentCreated, setAgentCreated] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const conversationIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    conversationIdRef.current = conversationId;
+  }, [conversationId]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
   
   // Auto-scroll state
@@ -140,10 +144,10 @@ export const ChatInterface: React.FC<Props> = ({
       }
     });
 
-    const unsubscribeComplete = (window.electronAPI as any).onCodexStreamComplete((data: { workspaceId: string; exitCode: number; agentId: string }) => {
+    const unsubscribeComplete = (window.electronAPI as any).onCodexStreamComplete(async (data: { workspaceId: string; exitCode: number; agentId: string }) => {
       if (data.workspaceId === workspace.id) {
         setIsStreaming(false);
-        
+
         // Save the complete streaming message
         if (streamingMessage.trim()) {
           const agentMessage: Message = {
@@ -167,7 +171,7 @@ export const ChatInterface: React.FC<Props> = ({
 
           setMessages((prev) => [...prev, agentMessage]);
         }
-        
+
         setStreamingMessage("");
       }
     });
@@ -178,6 +182,20 @@ export const ChatInterface: React.FC<Props> = ({
       unsubscribeComplete();
     };
   }, [workspace.id, conversationId, streamingMessage]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const status = await (window as any).electronAPI.codexGetAgentStatus(workspace.id);
+        if (status?.success && status.agent) {
+          if (status.agent.status === 'running' && status.agent.lastResponse) {
+            setIsStreaming(true);
+            setStreamingMessage(status.agent.lastResponse);
+          }
+        }
+      } catch {}
+    })();
+  }, [workspace.id]);
 
   // Load conversation and messages on mount
   useEffect(() => {
