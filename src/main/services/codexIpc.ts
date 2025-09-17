@@ -161,6 +161,23 @@ export function setupCodexIpc() {
     }
   });
 
+  // Get per-file diff
+  ipcMain.handle(
+    "git:get-file-diff",
+    async (event, args: { workspacePath: string; filePath: string }) => {
+      try {
+        const { workspacePath, filePath } = args
+        const diff = await getFileDiff(workspacePath, filePath)
+        return { success: true, diff }
+      } catch (error) {
+        return {
+          success: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        }
+      }
+    }
+  )
+
   console.log("✅ Codex IPC handlers registered");
 }
 
@@ -299,3 +316,102 @@ async function getGitStatus(workspacePath: string): Promise<
 }
 
 // Note: --numstat parsing moved inline above for accuracy.
+
+// Get per-file diff (HEAD vs working tree) for a specific file
+export async function getFileDiff(
+  workspacePath: string,
+  filePath: string
+): Promise<{
+  lines: Array<{ left?: string; right?: string; type: 'context' | 'add' | 'del' }>
+}> {
+  // Use unified diff from HEAD to working tree to include staged + unstaged
+  const cmd = `git diff --no-color --unified=2000 HEAD -- "${filePath}"`
+  try {
+    const { stdout } = await execAsync(cmd, { cwd: workspacePath })
+    const linesRaw = stdout.split("\n")
+    const result: Array<{ left?: string; right?: string; type: 'context' | 'add' | 'del' }> = []
+
+    // Parse unified diff: skip headers (diff --, index, ---/+++), parse hunks @@
+    for (const line of linesRaw) {
+      if (!line) continue
+      if (line.startsWith('diff ') || line.startsWith('index ') || line.startsWith('--- ') || line.startsWith('+++ ') || line.startsWith('@@')) {
+        continue
+      }
+      const prefix = line[0]
+      const content = line.slice(1)
+      if (prefix === ' ') {
+        result.push({ left: content, right: content, type: 'context' })
+      } else if (prefix === '-') {
+        result.push({ left: content, type: 'del' })
+      } else if (prefix === '+') {
+        result.push({ right: content, type: 'add' })
+      } else {
+        // Fallback treat as context
+        result.push({ left: line, right: line, type: 'context' })
+      }
+    }
+
+    // If parsing yielded no content (e.g., brand-new file or edge case), fall back gracefully
+    if (result.length === 0) {
+      try {
+        const fs = require('fs') as typeof import('fs')
+        const p = require('path') as typeof import('path')
+        const abs = p.join(workspacePath, filePath)
+        if (fs.existsSync(abs)) {
+          const content = fs.readFileSync(abs, 'utf8')
+          return { lines: content.split('\n').map((l: string) => ({ right: l, type: 'add' as const })) }
+        } else {
+          // File missing in working tree: try to show previous content from HEAD as deletions
+          try {
+            const { stdout: prev } = await execAsync(`git show HEAD:"${filePath}"`, { cwd: workspacePath })
+            return { lines: prev.split('\n').map((l: string) => ({ left: l, type: 'del' as const })) }
+          } catch {
+            return { lines: [] }
+          }
+        }
+      } catch {
+        // ignore and return empty
+      }
+    }
+
+    return { lines: result }
+  } catch (error) {
+    // If the file is untracked, show full content as additions
+    try {
+      const { stdout: cat } = await execAsync(`cat -- "${filePath}"`, { cwd: workspacePath })
+      const lines = cat.split('\n')
+      return {
+        lines: lines.map((l) => ({ right: l, type: 'add' as const }))
+      }
+    } catch (e) {
+      // Deleted file or inaccessible: try diff cached vs HEAD
+      try {
+        const { stdout } = await execAsync(`git diff --no-color --unified=2000 HEAD -- "${filePath}"`, { cwd: workspacePath })
+        const linesRaw = stdout.split('\n')
+        const result: Array<{ left?: string; right?: string; type: 'context' | 'add' | 'del' }> = []
+        for (const line of linesRaw) {
+          if (!line) continue
+          if (line.startsWith('diff ') || line.startsWith('index ') || line.startsWith('--- ') || line.startsWith('+++ ') || line.startsWith('@@')) continue
+          const prefix = line[0]
+          const content = line.slice(1)
+          if (prefix === ' ') result.push({ left: content, right: content, type: 'context' })
+          else if (prefix === '-') result.push({ left: content, type: 'del' })
+          else if (prefix === '+') result.push({ right: content, type: 'add' })
+          else result.push({ left: line, right: line, type: 'context' })
+        }
+        if (result.length === 0) {
+          // As a last resort, try to show HEAD content as deletions
+          try {
+            const { stdout: prev } = await execAsync(`git show HEAD:"${filePath}"`, { cwd: workspacePath })
+            return { lines: prev.split('\n').map((l: string) => ({ left: l, type: 'del' as const })) }
+          } catch {
+            return { lines: [] }
+          }
+        }
+        return { lines: result }
+      } catch {
+        return { lines: [] }
+      }
+    }
+  }
+}
