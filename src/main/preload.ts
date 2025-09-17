@@ -67,12 +67,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   scanRepos: () => ipcRenderer.invoke('repos:scan'),
   addRepo: (path: string) => ipcRenderer.invoke('repos:add', path),
   
-  // Filesystem
-  fsList: (root: string, opts?: { includeDirs?: boolean; maxEntries?: number }) =>
-    ipcRenderer.invoke('fs:list', { root, ...(opts || {}) }),
-  fsRead: (root: string, relPath: string, maxBytes?: number) =>
-    ipcRenderer.invoke('fs:read', { root, relPath, maxBytes }),
-  
   // Run management
   createRun: (config: any) => ipcRenderer.invoke('runs:create', config),
   cancelRun: (runId: string) => ipcRenderer.invoke('runs:cancel', runId),

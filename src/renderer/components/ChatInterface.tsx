@@ -224,7 +224,7 @@ export const ChatInterface: React.FC<Props> = ({
         streamOutputRef.current = '';
         setStreamingOutput('');
         cancelledStreamRef.current = false;
-        setStreamingMessage("");
+        setStreamingOutput("");
       }
     );
 
@@ -245,7 +245,7 @@ export const ChatInterface: React.FC<Props> = ({
         if (status?.success && status.agent) {
           if (status.agent.status === 'running' && status.agent.lastResponse) {
             setIsStreaming(true);
-            setStreamingMessage(status.agent.lastResponse);
+            setStreamingOutput(status.agent.lastResponse);
           }
         }
       } catch {}
@@ -559,5 +559,6 @@ export const ChatInterface: React.FC<Props> = ({
     </div>
   );
 
+};
 
 export default ChatInterface;

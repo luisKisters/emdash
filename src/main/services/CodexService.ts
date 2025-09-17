@@ -1,7 +1,8 @@
-import { spawn, exec, execFile, ChildProcessWithoutNullStreams } from 'child_process';
+import { spawn, exec, execFile, ChildProcessWithoutNullStreams, ChildProcess } from 'child_process';
 import { promisify } from 'util';
 import { EventEmitter } from 'events';
 import { createWriteStream, existsSync, mkdirSync, WriteStream } from 'fs';
+import path from 'path';
 
 const execAsync = promisify(exec);
 
@@ -24,7 +25,7 @@ export interface CodexResponse {
 export class CodexService extends EventEmitter {
   private agents: Map<string, CodexAgent> = new Map();
   private isCodexInstalled: boolean | null = null;
-  private runningProcesses: Map<string, ChildProcessWithoutNullStreams> = new Map();
+  private runningProcesses: Map<string, ChildProcess> = new Map();
   private streamLogWriters: Map<string, WriteStream> = new Map();
   private pendingCancellationLogs: Set<string> = new Set();
 

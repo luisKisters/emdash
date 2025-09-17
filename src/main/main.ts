@@ -13,7 +13,6 @@ import { registerPtyIpc } from './services/ptyIpc'
 import { registerWorktreeIpc } from './services/worktreeIpc'
 import { registerFsIpc } from './services/fsIpc'
 import { setupCodexIpc } from './services/codexIpc'
-import { registerFsIpc } from './services/fsIpc'
 
 let mainWindow: BrowserWindow | null = null
 const githubService = new GitHubService()
