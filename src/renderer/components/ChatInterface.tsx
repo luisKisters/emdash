@@ -466,21 +466,22 @@ export const ChatInterface: React.FC<Props> = ({
                   return null;
                 }
 
+                if (!isUserMessage) {
+                  return (
+                    <div key={message.id} className="flex justify-start">
+                      <div className="max-w-[80%] px-4 py-3 text-sm leading-relaxed font-sans text-gray-900 dark:text-gray-100">
+                        <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm">
+                          {messageContent}
+                        </pre>
+                      </div>
+                    </div>
+                  );
+                }
+
                 return (
-                  <div
-                    key={message.id}
-                    className={`flex ${
-                      isUserMessage ? "justify-end" : "justify-start"
-                    }`}
-                  >
-                    <div
-                      className={`max-w-[80%] rounded-md px-4 py-3 text-sm leading-relaxed font-sans ${
-                        isUserMessage
-                          ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                          : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
-                      }`}
-                    >
-                      <div className="prose prose-sm max-w-none">
+                  <div key={message.id} className="flex justify-end">
+                    <div className="max-w-[80%] rounded-md px-4 py-3 text-sm leading-relaxed font-sans bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
+                      <div className="text-sm leading-relaxed space-y-2">
                         <ReactMarkdown
                           components={{
                             code: ({
@@ -491,43 +492,30 @@ export const ChatInterface: React.FC<Props> = ({
                               ...props
                             }: any) => {
                               const match = /language-(\w+)/.exec(className || "");
-                              return !inline && match ? (
-                                <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md overflow-x-auto">
-                                  <code className={className} {...props}>
-                                    {children}
-                                  </code>
-                                </pre>
-                              ) : (
-                                <code
-                                  className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm"
-                                  {...props}
-                                >
+                              if (!inline && match) {
+                                return (
+                                  <pre className="overflow-x-auto text-sm whitespace-pre-wrap">
+                                    <code className={className} {...props}>
+                                      {children}
+                                    </code>
+                                  </pre>
+                                );
+                              }
+
+                              return (
+                                <code className="font-mono text-sm" {...props}>
                                   {children}
                                 </code>
                               );
                             },
-                            ul: ({ children }) => (
-                              <ul className="list-disc list-inside space-y-1 my-2">
-                                {children}
-                              </ul>
-                            ),
-                            ol: ({ children }) => (
-                              <ol className="list-decimal list-inside space-y-1 my-2">
-                                {children}
-                              </ol>
-                            ),
-                            li: ({ children }) => (
-                              <li className="ml-2">{children}</li>
-                            ),
-                            p: ({ children }) => (
-                              <p className="mb-2 last:mb-0">{children}</p>
-                            ),
+                            ul: ({ children }) => <div className="space-y-1">{children}</div>,
+                            ol: ({ children }) => <div className="space-y-1">{children}</div>,
+                            li: ({ children }) => <div className="pl-0">{children}</div>,
+                            p: ({ children }) => <p className="m-0">{children}</p>,
                             strong: ({ children }) => (
                               <strong className="font-semibold">{children}</strong>
                             ),
-                            em: ({ children }) => (
-                              <em className="italic">{children}</em>
-                            ),
+                            em: ({ children }) => <em className="italic">{children}</em>,
                           }}
                         >
                           {messageContent}
@@ -540,8 +528,8 @@ export const ChatInterface: React.FC<Props> = ({
               
               {(isStreaming || streamingOutput) && (
                 <div className="flex justify-start">
-                  <div className="max-w-[80%] rounded-md px-4 py-3 text-sm leading-relaxed font-sans bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
-                    <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm text-gray-900 dark:text-gray-100">
+                  <div className="max-w-[80%] px-4 py-3 text-sm leading-relaxed font-sans text-gray-900 dark:text-gray-100">
+                    <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm">
                       {streamingOutput}
                     </pre>
                   </div>
