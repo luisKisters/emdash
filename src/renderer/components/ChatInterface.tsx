@@ -4,6 +4,7 @@ import { useToast } from "../hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import ChatInput from "./ChatInput";
 import MessageList from "./MessageList";
+import useCodexStream from "../hooks/useCodexStream";
 import { buildAttachmentsSection } from "../lib/attachments";
 import { Workspace, Message } from "../types/chat";
 
@@ -43,7 +44,7 @@ interface Props {
 
 const REFAC_ENABLED = true;
 
-const LegacyChatInterface: React.FC<Props> = ({
+const ChatInterfaceImpl: React.FC<Props> = ({
   workspace,
   projectName,
   className,
@@ -51,8 +52,8 @@ const LegacyChatInterface: React.FC<Props> = ({
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
-  const [isStreaming, setIsStreaming] = useState(false);
-  const [loadingSeconds, setLoadingSeconds] = useState(0);
+  const [legacyIsStreaming, setLegacyIsStreaming] = useState(false);
+  const [legacySeconds, setLegacySeconds] = useState(0);
   const [isCodexInstalled, setIsCodexInstalled] = useState<boolean | null>(
     null
   );
@@ -63,9 +64,10 @@ const LegacyChatInterface: React.FC<Props> = ({
     conversationIdRef.current = conversationId;
   }, [conversationId]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
-  const [streamingOutput, setStreamingOutput] = useState("");
-  const streamOutputRef = useRef("");
-  const cancelledStreamRef = useRef(false);
+  const [legacyStreamingOutput, setLegacyStreamingOutput] = useState("");
+  const legacyStreamOutputRef = useRef("");
+  const legacyCancelledStreamRef = useRef(false);
+  const initializedConversationRef = useRef<string | null>(null);
 
   // Auto-scroll state
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -75,7 +77,6 @@ const LegacyChatInterface: React.FC<Props> = ({
 
   // Auto-scroll to bottom function
   const scrollToBottom = () => {
-    if (REFAC_ENABLED) return;
     if (messagesEndRef.current && shouldAutoScroll) {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
@@ -106,7 +107,6 @@ const LegacyChatInterface: React.FC<Props> = ({
 
   // Set up scroll event listener
   useEffect(() => {
-    if (REFAC_ENABLED) return;
     const scrollContainer = scrollContainerRef.current;
     if (scrollContainer) {
       scrollContainer.addEventListener('scroll', handleScroll);
@@ -116,22 +116,24 @@ const LegacyChatInterface: React.FC<Props> = ({
     }
   }, []);
 
-  // Auto-scroll when messages change or streaming updates
+  // Auto-scroll when messages change or streaming updates (legacy path)
   useEffect(() => {
     if (REFAC_ENABLED) return;
     scrollToBottom();
-  }, [messages, streamingOutput, shouldAutoScroll]);
+  }, [messages, legacyStreamingOutput, shouldAutoScroll]);
 
   useEffect(() => {
+    if (REFAC_ENABLED) return;
+
     let interval: ReturnType<typeof setInterval> | undefined;
 
-    if (isStreaming) {
-      setLoadingSeconds(0);
+    if (legacyIsStreaming) {
+      setLegacySeconds(0);
       interval = setInterval(() => {
-        setLoadingSeconds((prev) => prev + 1);
+        setLegacySeconds((prev) => prev + 1);
       }, 1000);
     } else {
-      setLoadingSeconds(0);
+      setLegacySeconds(0);
     }
 
     return () => {
@@ -139,19 +141,21 @@ const LegacyChatInterface: React.FC<Props> = ({
         clearInterval(interval);
       }
     };
-  }, [isStreaming]);
+  }, [legacyIsStreaming]);
 
-  // Set up streaming event listeners
+  // Legacy streaming event listeners
   useEffect(() => {
+    if (REFAC_ENABLED) return;
+
     const unsubscribeOutput = (window.electronAPI as any).onCodexStreamOutput(
       (data: { workspaceId: string; output: string; agentId: string }) => {
         if (data.workspaceId !== workspace.id) return;
 
-        streamOutputRef.current += data.output;
-        setStreamingOutput(streamOutputRef.current);
+        legacyStreamOutputRef.current += data.output;
+        setLegacyStreamingOutput(legacyStreamOutputRef.current);
 
-        if (!cancelledStreamRef.current) {
-          setIsStreaming(true);
+        if (!legacyCancelledStreamRef.current) {
+          setLegacyIsStreaming(true);
         }
       }
     );
@@ -160,10 +164,10 @@ const LegacyChatInterface: React.FC<Props> = ({
       (data: { workspaceId: string; error: string; agentId: string }) => {
         if (data.workspaceId === workspace.id) {
           console.error('Codex streaming error:', data.error);
-          setIsStreaming(false);
-          streamOutputRef.current = '';
-          setStreamingOutput('');
-          cancelledStreamRef.current = false;
+          setLegacyIsStreaming(false);
+          legacyStreamOutputRef.current = '';
+          setLegacyStreamingOutput('');
+          legacyCancelledStreamRef.current = false;
         }
       }
     );
@@ -171,15 +175,15 @@ const LegacyChatInterface: React.FC<Props> = ({
     const unsubscribeComplete = (window.electronAPI as any).onCodexStreamComplete(
       (data: { workspaceId: string; exitCode: number; agentId: string }) => {
         if (data.workspaceId !== workspace.id) return;
-        setIsStreaming(false);
-        setLoadingSeconds(0);
+        setLegacyIsStreaming(false);
+        setLegacySeconds(0);
 
-        if (cancelledStreamRef.current) {
-          cancelledStreamRef.current = false;
+        if (legacyCancelledStreamRef.current) {
+          legacyCancelledStreamRef.current = false;
           return;
         }
 
-        const rawOutput = streamOutputRef.current;
+        const rawOutput = legacyStreamOutputRef.current;
         const trimmed = rawOutput.trim();
 
         if (trimmed) {
@@ -204,10 +208,9 @@ const LegacyChatInterface: React.FC<Props> = ({
           setMessages((prev) => [...prev, agentMessage]);
         }
 
-        streamOutputRef.current = '';
-        setStreamingOutput('');
-        cancelledStreamRef.current = false;
-        setStreamingOutput("");
+        legacyStreamOutputRef.current = '';
+        setLegacyStreamingOutput('');
+        legacyCancelledStreamRef.current = false;
       }
     );
 
@@ -215,20 +218,21 @@ const LegacyChatInterface: React.FC<Props> = ({
       unsubscribeOutput();
       unsubscribeError();
       unsubscribeComplete();
-      streamOutputRef.current = '';
-      setStreamingOutput('');
-      cancelledStreamRef.current = false;
+      legacyStreamOutputRef.current = '';
+      setLegacyStreamingOutput('');
+      legacyCancelledStreamRef.current = false;
     };
   }, [workspace.id, conversationId]);
 
   useEffect(() => {
+    if (REFAC_ENABLED) return;
     (async () => {
       try {
         const status = await (window as any).electronAPI.codexGetAgentStatus(workspace.id);
         if (status?.success && status.agent) {
           if (status.agent.status === 'running' && status.agent.lastResponse) {
-            setIsStreaming(true);
-            setStreamingOutput(status.agent.lastResponse);
+            setLegacyIsStreaming(true);
+            setLegacyStreamingOutput(status.agent.lastResponse);
           }
         }
       } catch {}
@@ -237,6 +241,9 @@ const LegacyChatInterface: React.FC<Props> = ({
 
   // Load conversation and messages on mount
   useEffect(() => {
+    if (REFAC_ENABLED) {
+      return;
+    }
     const loadConversation = async () => {
       try {
         setIsLoadingMessages(true);
@@ -298,6 +305,83 @@ const LegacyChatInterface: React.FC<Props> = ({
     loadConversation();
   }, [workspace.id, workspace.name]);
 
+  const codexStream = useCodexStream(
+    REFAC_ENABLED
+      ? {
+          workspaceId: workspace.id,
+          workspacePath: workspace.path,
+        }
+      : null
+  );
+
+  useEffect(() => {
+    if (!REFAC_ENABLED) return;
+    setIsLoadingMessages(codexStream.isLoading);
+  }, [codexStream.isLoading]);
+
+  const activeStreamingOutput = REFAC_ENABLED
+    ? codexStream.streamingOutput
+    : legacyStreamingOutput;
+  const activeIsStreaming = REFAC_ENABLED
+    ? codexStream.isStreaming
+    : legacyIsStreaming;
+  const activeSeconds = REFAC_ENABLED ? codexStream.seconds : legacySeconds;
+
+  useEffect(() => {
+    if (!REFAC_ENABLED) return;
+    initializedConversationRef.current = null;
+  }, [workspace.id]);
+
+  useEffect(() => {
+    if (!REFAC_ENABLED) return;
+    if (!codexStream.isReady) return;
+
+    const convoId = codexStream.conversationId;
+    if (!convoId) return;
+
+    if (initializedConversationRef.current === convoId) {
+      return;
+    }
+
+    initializedConversationRef.current = convoId;
+    setConversationId(convoId);
+
+    if (codexStream.messages.length === 0) {
+      const welcomeMessage: Message = {
+        id: `welcome-${Date.now()}`,
+        content: `Hello! You're working in workspace **${workspace.name}**. What can the agent do for you?`,
+        sender: "agent",
+        timestamp: new Date(),
+      };
+
+      window.electronAPI
+        .saveMessage({
+          id: welcomeMessage.id,
+          conversationId: convoId,
+          content: welcomeMessage.content,
+          sender: welcomeMessage.sender,
+          metadata: JSON.stringify({ isWelcome: true }),
+        })
+        .catch((error: unknown) => {
+          console.error("Failed to save welcome message:", error);
+        })
+        .finally(() => {
+          codexStream.appendMessage(welcomeMessage);
+        });
+    }
+  }, [
+    codexStream.isReady,
+    codexStream.conversationId,
+    codexStream.messages.length,
+    codexStream.appendMessage,
+    workspace.name,
+  ]);
+
+  useEffect(() => {
+    if (!REFAC_ENABLED) return;
+    setMessages(codexStream.messages);
+  }, [codexStream.messages]);
+
   // Check Codex installation and create agent on mount
   useEffect(() => {
     const initializeCodex = async () => {
@@ -340,7 +424,39 @@ const LegacyChatInterface: React.FC<Props> = ({
   }, [workspace.id, workspace.path, workspace.name, toast]);
 
   const handleSendMessage = async () => {
-    if (!inputValue.trim() || !conversationId) return;
+    if (!inputValue.trim()) return;
+
+    if (REFAC_ENABLED) {
+      if (!codexStream.conversationId) return;
+    } else if (!conversationId) {
+      return;
+    }
+
+    const attachmentsSection = await buildAttachmentsSection(
+      workspace.path,
+      inputValue,
+      {
+        maxFiles: 6,
+        maxBytesPerFile: 200 * 1024,
+      }
+    );
+
+    if (REFAC_ENABLED) {
+      const result = await codexStream.send(inputValue, attachmentsSection);
+      if (!result.success) {
+        if (result.error && result.error !== "stream-in-progress") {
+          toast({
+            title: "Communication Error",
+            description: "Failed to start Codex stream. Please try again.",
+            variant: "destructive",
+          });
+        }
+        return;
+      }
+
+      setInputValue("");
+      return;
+    }
 
     const userMessage: Message = {
       id: Date.now().toString(),
@@ -349,7 +465,6 @@ const LegacyChatInterface: React.FC<Props> = ({
       timestamp: new Date(),
     };
 
-    // Save user message to database
     try {
       await window.electronAPI.saveMessage({
         id: userMessage.id,
@@ -363,26 +478,24 @@ const LegacyChatInterface: React.FC<Props> = ({
     }
 
     setMessages((prev) => [...prev, userMessage]);
-    // Build message to send with inline attachments for @mentions
-    const attachmentsSection = await buildAttachmentsSection(workspace.path, inputValue, {
-      maxFiles: 6,
-      maxBytesPerFile: 200 * 1024,
-    });
+
     const messageToSend = inputValue + attachmentsSection;
     setInputValue("");
-    streamOutputRef.current = "";
-    setStreamingOutput("");
-    setIsStreaming(true);
-    cancelledStreamRef.current = false;
+    legacyStreamOutputRef.current = "";
+    setLegacyStreamingOutput("");
+    setLegacyIsStreaming(true);
+    legacyCancelledStreamRef.current = false;
 
     try {
-      await (window.electronAPI as any).codexSendMessageStream(workspace.id, messageToSend);
-
+      await (window.electronAPI as any).codexSendMessageStream(
+        workspace.id,
+        messageToSend
+      );
     } catch (error) {
       console.error("Error starting Codex stream:", error);
-      setIsStreaming(false);
-      streamOutputRef.current = "";
-      setStreamingOutput("");
+      setLegacyIsStreaming(false);
+      legacyStreamOutputRef.current = "";
+      setLegacyStreamingOutput("");
 
       toast({
         title: "Communication Error",
@@ -393,7 +506,19 @@ const LegacyChatInterface: React.FC<Props> = ({
   };
 
   const handleCancelStream = async () => {
-    if (!isStreaming) return;
+    if (!activeIsStreaming) return;
+
+    if (REFAC_ENABLED) {
+      const result = await codexStream.cancel();
+      if (!result.success) {
+        toast({
+          title: "Cancel Failed",
+          description: "Unable to stop Codex stream. Please try again.",
+          variant: "destructive",
+        });
+      }
+      return;
+    }
 
     try {
       const result = await window.electronAPI.codexStopStream(workspace.id);
@@ -405,7 +530,7 @@ const LegacyChatInterface: React.FC<Props> = ({
         });
         return;
       }
-      cancelledStreamRef.current = true;
+      legacyCancelledStreamRef.current = true;
     } catch (error) {
       console.error("Failed to stop Codex stream:", error);
       toast({
@@ -416,13 +541,15 @@ const LegacyChatInterface: React.FC<Props> = ({
       return;
     }
 
-    setIsStreaming(false);
-    setLoadingSeconds(0);
-    setStreamingOutput(streamOutputRef.current);
+    setLegacyIsStreaming(false);
+    setLegacySeconds(0);
+    setLegacyStreamingOutput(legacyStreamOutputRef.current);
   };
 
   const streamingOutputForList =
-    isStreaming || streamingOutput ? streamingOutput : null;
+    activeIsStreaming || activeStreamingOutput
+      ? activeStreamingOutput
+      : null;
 
   return (
     <div
@@ -560,11 +687,11 @@ const LegacyChatInterface: React.FC<Props> = ({
                   );
                 })}
 
-                {(isStreaming || streamingOutput) && (
+                {(legacyIsStreaming || legacyStreamingOutput) && (
                   <div className="flex justify-start">
                     <div className="max-w-[80%] px-4 py-3 text-sm leading-relaxed font-sans text-gray-900 dark:text-gray-100">
                       <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm">
-                        {streamingOutput ?? ""}
+                        {legacyStreamingOutput ?? ""}
                       </pre>
                     </div>
                   </div>
@@ -583,8 +710,8 @@ const LegacyChatInterface: React.FC<Props> = ({
         onChange={setInputValue}
         onSend={handleSendMessage}
         onCancel={handleCancelStream}
-        isLoading={isStreaming}
-        loadingSeconds={loadingSeconds}
+        isLoading={activeIsStreaming}
+        loadingSeconds={activeSeconds}
         isCodexInstalled={isCodexInstalled}
         agentCreated={agentCreated}
         workspacePath={workspace.path}
@@ -595,11 +722,7 @@ const LegacyChatInterface: React.FC<Props> = ({
 };
 
 export const ChatInterface: React.FC<Props> = (props) => {
-  if (!REFAC_ENABLED) {
-    return <LegacyChatInterface {...props} />;
-  }
-
-  return <LegacyChatInterface {...props} />;
+  return <ChatInterfaceImpl {...props} />;
 };
 
 export default ChatInterface;
