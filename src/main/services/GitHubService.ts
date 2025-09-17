@@ -37,7 +37,7 @@ export interface AuthResult {
 }
 
 export class GitHubService {
-  private readonly SERVICE_NAME = 'orcbench-github';
+  private readonly SERVICE_NAME = 'emdash-github';
   private readonly ACCOUNT_NAME = 'github-token';
 
   /**

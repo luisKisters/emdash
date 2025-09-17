@@ -47,7 +47,7 @@ const Sidebar: React.FC<SidebarProps> = ({
           <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center">
             <span className="text-white text-xs font-bold">O</span>
           </div>
-          <span className="font-semibold text-white">orcbench</span>
+          <span className="font-semibold text-white">emdash</span>
         </div>
       </div>
 
