@@ -26,7 +26,9 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
 }) => {
   const [isExpanded, setIsExpanded] = useState(true);
   const [showDiffModal, setShowDiffModal] = useState(false);
-  const [selectedPath, setSelectedPath] = useState<string | undefined>(undefined);
+  const [selectedPath, setSelectedPath] = useState<string | undefined>(
+    undefined
+  );
   const { isCreating: isCreatingPR, createPR } = useCreatePR();
   const { fileChanges, isLoading, error, refreshChanges } =
     useFileChanges(workspaceId);
@@ -136,17 +138,6 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
               variant="outline"
               size="sm"
               className="text-xs border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200"
-              onClick={() => {
-                setSelectedPath(fileChanges[0]?.path);
-                setShowDiffModal(true);
-              }}
-            >
-              Review Changes
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              className="text-xs border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200"
               disabled={isCreatingPR}
               onClick={async () => {
                 await createPR({
@@ -175,7 +166,10 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
             <div
               key={index}
               className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-900/40 border-b border-gray-100 dark:border-gray-700 last:border-b-0 cursor-pointer"
-              onClick={() => { setSelectedPath(change.path); setShowDiffModal(true); }}
+              onClick={() => {
+                setSelectedPath(change.path);
+                setShowDiffModal(true);
+              }}
             >
               <div className="flex items-center gap-3 flex-1 min-w-0">
                 <span className="inline-flex items-center justify-center w-4 h-4 text-gray-500">

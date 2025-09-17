@@ -95,7 +95,6 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
             {(project) => (
               <div onClick={() => onSelectProject(project as Project)}>
                 <div className="flex items-center sm:items-start sm:space-x-3">
-                  <FolderOpen className="w-5 h-5 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400 flex-shrink-0" />
                   <div className="hidden sm:block flex-1 min-w-0">
                     <button
                       type="button"
