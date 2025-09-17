@@ -46,7 +46,6 @@ function listFiles(root: string, includeDirs: boolean, maxEntries: number): Item
     if (!stat) continue
 
     if (stat.isDirectory()) {
-      // Skip ignored directories (only at directory boundaries)
       const name = path.basename(abs)
       if (rel !== '.' && DEFAULT_IGNORES.has(name)) continue
 

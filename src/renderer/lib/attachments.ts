@@ -5,7 +5,7 @@ export function extractMentions(text: string): string[] {
   const set = new Set<string>();
   let m: RegExpExecArray | null;
   while ((m = re.exec(text))) {
-    const token = m[0].slice(1); // drop leading '@'
+    const token = m[0].slice(1);
     if (token) set.add(token);
   }
   return Array.from(set);
@@ -26,11 +26,11 @@ export function getFenceLang(p: string): string {
   return '';
 }
 
-/**
- * Build an attachments section by reading unique @mentions from text.
- * Reads via window.electronAPI.fsRead and returns a markdown section string.
- */
-export async function buildAttachmentsSection(rootPath: string, text: string, opts?: { maxFiles?: number; maxBytesPerFile?: number }): Promise<string> {
+export async function buildAttachmentsSection(
+  rootPath: string,
+  text: string,
+  opts?: { maxFiles?: number; maxBytesPerFile?: number }
+): Promise<string> {
   const mentions = extractMentions(text);
   const MAX_FILES = Math.max(1, Math.min(opts?.maxFiles ?? 6, 20));
   const MAX_BYTES_PER_FILE = Math.max(1024, Math.min(opts?.maxBytesPerFile ?? 200 * 1024, 5 * 1024 * 1024));
@@ -46,11 +46,10 @@ export async function buildAttachmentsSection(rootPath: string, text: string, op
         parts.push(`${header}\n\n\`\`\`${lang}\n${res.content}\n\`\`\``);
       }
     } catch {
-      // Skip unreadable
+      // Ignore unreadable files
     }
   }
 
   if (parts.length === 0) return '';
   return `\n\n---\nAttached files (from workspace):\n\n${parts.join('\n\n')}\n`;
 }
-

@@ -34,7 +34,7 @@ declare global {
       createPullRequest: (args: { workspacePath: string; title?: string; body?: string; base?: string; head?: string; draft?: boolean; web?: boolean; fill?: boolean }) => Promise<{ success: boolean; url?: string; output?: string; error?: string }>
       connectToGitHub: (projectPath: string) => Promise<{ success: boolean; repository?: string; branch?: string; error?: string }>
 
-      // Filesystem
+      // Filesystem helpers
       fsList: (root: string, opts?: { includeDirs?: boolean; maxEntries?: number }) => Promise<{ success: boolean; items?: Array<{ path: string; type: 'file' | 'dir' }>; error?: string }>
       fsRead: (root: string, relPath: string, maxBytes?: number) => Promise<{ success: boolean; path?: string; size?: number; truncated?: boolean; content?: string; error?: string }>
 
@@ -63,11 +63,15 @@ declare global {
       getMessages: (conversationId: string) => Promise<{ success: boolean; messages?: any[]; error?: string }>
       getOrCreateDefaultConversation: (workspaceId: string) => Promise<{ success: boolean; conversation?: any; error?: string }>
 
+      // Debug helpers
+      debugAppendLog: (filePath: string, content: string, options?: { reset?: boolean }) => Promise<{ success: boolean; error?: string }>
+
       // Codex
       codexCheckInstallation: () => Promise<{ success: boolean; isInstalled?: boolean; error?: string }>
       codexCreateAgent: (workspaceId: string, worktreePath: string) => Promise<{ success: boolean; agent?: any; error?: string }>
       codexSendMessage: (workspaceId: string, message: string) => Promise<{ success: boolean; response?: any; error?: string }>
       codexSendMessageStream: (workspaceId: string, message: string) => Promise<{ success: boolean; error?: string }>
+      codexStopStream: (workspaceId: string) => Promise<{ success: boolean; stopped?: boolean; error?: string }>
       codexGetAgentStatus: (workspaceId: string) => Promise<{ success: boolean; agent?: any; error?: string }>
       codexGetAllAgents: () => Promise<{ success: boolean; agents?: any[]; error?: string }>
       codexRemoveAgent: (workspaceId: string) => Promise<{ success: boolean; removed?: boolean; error?: string }>
@@ -138,11 +142,15 @@ export interface ElectronAPI {
   getMessages: (conversationId: string) => Promise<{ success: boolean; messages?: any[]; error?: string }>
   getOrCreateDefaultConversation: (workspaceId: string) => Promise<{ success: boolean; conversation?: any; error?: string }>
 
+  // Debug helpers
+  debugAppendLog: (filePath: string, content: string, options?: { reset?: boolean }) => Promise<{ success: boolean; error?: string }>
+
   // Codex
   codexCheckInstallation: () => Promise<{ success: boolean; isInstalled?: boolean; error?: string }>
   codexCreateAgent: (workspaceId: string, worktreePath: string) => Promise<{ success: boolean; agent?: any; error?: string }>
   codexSendMessage: (workspaceId: string, message: string) => Promise<{ success: boolean; response?: any; error?: string }>
   codexSendMessageStream: (workspaceId: string, message: string) => Promise<{ success: boolean; error?: string }>
+  codexStopStream: (workspaceId: string) => Promise<{ success: boolean; stopped?: boolean; error?: string }>
   codexGetAgentStatus: (workspaceId: string) => Promise<{ success: boolean; agent?: any; error?: string }>
   codexGetAllAgents: () => Promise<{ success: boolean; agents?: any[]; error?: string }>
   codexRemoveAgent: (workspaceId: string) => Promise<{ success: boolean; removed?: boolean; error?: string }>

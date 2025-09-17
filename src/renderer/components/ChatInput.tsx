@@ -1,30 +1,57 @@
 import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Button } from "./ui/button";
-import { Spinner } from "./ui/spinner";
 import { ChevronsUpDown, ArrowRight } from "lucide-react";
 import openaiLogo from "../../assets/images/openai.png";
 import claudeLogo from "../../assets/images/claude.png";
+import { useFileIndex } from "../hooks/useFileIndex";
+import FileTypeIcon from "./ui/file-type-icon";
 
 interface ChatInputProps {
   value: string;
   onChange: (value: string) => void;
   onSend: () => void;
+  onCancel: () => void;
   isLoading: boolean;
+  loadingSeconds: number;
   isCodexInstalled: boolean | null;
   agentCreated: boolean;
   disabled?: boolean;
   workspacePath?: string;
 }
 
-import { useFileIndex } from "../hooks/useFileIndex";
-import FileTypeIcon from "./ui/file-type-icon";
+const MAX_LOADING_SECONDS = 60 * 60; // 60 minutes
+
+const formatLoadingTime = (seconds: number): string => {
+  if (seconds <= 0) return "0s";
+
+  const clamped = Math.min(seconds, MAX_LOADING_SECONDS);
+  const minutes = Math.floor(clamped / 60);
+  const remainingSeconds = clamped % 60;
+
+  if (minutes >= 60) {
+    return "60m";
+  }
+
+  if (minutes === 0) {
+    return `${clamped}s`;
+  }
+
+  if (remainingSeconds === 0) {
+    return `${minutes}m`;
+  }
+
+  return `${minutes}m ${remainingSeconds}s`;
+};
+
 
 export const ChatInput: React.FC<ChatInputProps> = ({
   value,
   onChange,
   onSend,
+  onCancel,
   isLoading,
+  loadingSeconds,
   isCodexInstalled,
   agentCreated,
   disabled = false,
@@ -57,37 +84,37 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   }, []);
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    // Send on Enter (unless Shift)
-    if (e.key === "Enter" && !e.shiftKey && !mentionOpen) {
-      e.preventDefault();
-      onSend();
-      return;
-    }
+  // Send on Enter (unless Shift) when mention is closed
+  if (e.key === "Enter" && !e.shiftKey && !mentionOpen) {
+  e.preventDefault();
+  if (!isLoading) onSend();
+  return;
+  }
 
-    // Mention navigation
-    if (mentionOpen) {
-      if (e.key === "ArrowDown") {
-        e.preventDefault();
-        setMentionIndex((i) => Math.min(i + 1, Math.max(mentionResults.length - 1, 0)));
-        return;
-      }
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        setMentionIndex((i) => Math.max(i - 1, 0));
-        return;
-      }
-      if (e.key === "Enter") {
-        e.preventDefault();
-        const pick = mentionResults[mentionIndex];
-        if (pick) applyMention(pick.path);
-        return;
-      }
-      if (e.key === "Escape") {
-        e.preventDefault();
-        closeMention();
-        return;
-      }
-    }
+  // Mention navigation
+  if (mentionOpen) {
+  if (e.key === "ArrowDown") {
+  e.preventDefault();
+  setMentionIndex((i) => Math.min(i + 1, Math.max(mentionResults.length - 1, 0)));
+  return;
+  }
+  if (e.key === "ArrowUp") {
+  e.preventDefault();
+  setMentionIndex((i) => Math.max(i - 1, 0));
+  return;
+  }
+  if (e.key === "Enter") {
+  e.preventDefault();
+  const pick = mentionResults[mentionIndex];
+  if (pick) applyMention(pick.path);
+  return;
+  }
+  if (e.key === "Escape") {
+  e.preventDefault();
+  closeMention();
+  return;
+  }
+  }
   };
 
   function openMention(start: number, query: string) {
@@ -151,11 +178,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     return "Tell agent what to do...";
   };
 
-  const isDisabled =
-    disabled || isLoading || !isCodexInstalled || !agentCreated;
+  const trimmedValue = value.trim();
+  const baseDisabled = disabled || !isCodexInstalled || !agentCreated;
+  const textareaDisabled = baseDisabled || isLoading;
+  const sendDisabled = isLoading ? baseDisabled : baseDisabled || !trimmedValue;
 
   return (
-    <div className="p-6">
+    <div className="px-6 pt-4 pb-6">
       <div className="max-w-4xl mx-auto">
         <div
           className={`relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md transition-shadow duration-200 ${
@@ -178,7 +207,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               onBlur={() => setIsFocused(false)}
               placeholder={getPlaceholder()}
               rows={2}
-              disabled={isDisabled}
+              disabled={textareaDisabled}
               style={{ minHeight: "56px" }}
             />
             {/* Mention dropdown */}
@@ -281,14 +310,32 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               </AnimatePresence>
             </div>
 
-            <Button
-              onClick={onSend}
-              disabled={!value.trim() || isDisabled}
-              className="h-9 w-9 p-0 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-50"
-              aria-label="Send"
-            >
-              {isLoading ? <Spinner size="sm" /> : <ArrowRight className="w-4 h-4" />}
-            </Button>
+            <div className="flex items-center gap-2">
+              {isLoading && (
+                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium w-16 text-right tabular-nums">
+                  {formatLoadingTime(loadingSeconds)}
+                </span>
+              )}
+              <Button
+                type="button"
+                onClick={isLoading ? onCancel : onSend}
+                disabled={sendDisabled}
+                className={`group relative h-9 w-9 p-0 rounded-md text-gray-600 dark:text-gray-300 transition-colors disabled:opacity-50 disabled:pointer-events-none ${
+                  isLoading
+                    ? "bg-gray-200 dark:bg-gray-700 hover:bg-red-300 hover:text-white dark:hover:text-white"
+                    : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+                }`}
+                aria-label={isLoading ? "Stop Codex" : "Send"}
+              >
+                {isLoading ? (
+                  <div className="flex items-center justify-center w-full h-full">
+                    <div className="w-3.5 h-3.5 rounded-[3px] bg-gray-500 dark:bg-gray-300 transition-colors duration-150 group-hover:bg-red-500" />
+                  </div>
+                ) : (
+                  <ArrowRight className="w-4 h-4" />
+                )}
+              </Button>
+            </div>
           </div>
         </div>
       </div>

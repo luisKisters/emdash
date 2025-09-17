@@ -5,6 +5,15 @@ import ReactMarkdown from "react-markdown";
 import ChatInput from "./ChatInput";
 import { buildAttachmentsSection } from "../lib/attachments";
 
+const filterCodexOutput = (markdown: string): string => {
+  if (!markdown) return "";
+
+  if (markdown.includes("<!-- stream-cleaned -->")) {
+    return markdown.replace(/<!-- stream-cleaned -->\s*/i, "").trim();
+  }
+  return markdown;
+};
+
 // Type assertion for electronAPI
 declare const window: Window & {
   electronAPI: {
@@ -62,9 +71,8 @@ export const ChatInterface: React.FC<Props> = ({
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
-  const [streamingMessage, setStreamingMessage] = useState<string>("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [loadingSeconds, setLoadingSeconds] = useState(0);
   const [isCodexInstalled, setIsCodexInstalled] = useState<boolean | null>(
     null
   );
@@ -75,7 +83,10 @@ export const ChatInterface: React.FC<Props> = ({
     conversationIdRef.current = conversationId;
   }, [conversationId]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
-  
+  const [streamingOutput, setStreamingOutput] = useState("");
+  const streamOutputRef = useRef("");
+  const cancelledStreamRef = useRef(false);
+
   // Auto-scroll state
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -126,41 +137,79 @@ export const ChatInterface: React.FC<Props> = ({
   // Auto-scroll when messages change or streaming updates
   useEffect(() => {
     scrollToBottom();
-  }, [messages, streamingMessage, shouldAutoScroll]);
+  }, [messages, streamingOutput, shouldAutoScroll]);
+
+  useEffect(() => {
+    let interval: ReturnType<typeof setInterval> | undefined;
+
+    if (isStreaming) {
+      setLoadingSeconds(0);
+      interval = setInterval(() => {
+        setLoadingSeconds((prev) => prev + 1);
+      }, 1000);
+    } else {
+      setLoadingSeconds(0);
+    }
+
+    return () => {
+      if (interval) {
+        clearInterval(interval);
+      }
+    };
+  }, [isStreaming]);
 
   // Set up streaming event listeners
   useEffect(() => {
-    const unsubscribeOutput = (window.electronAPI as any).onCodexStreamOutput((data: { workspaceId: string; output: string; agentId: string }) => {
-      if (data.workspaceId === workspace.id) {
-        setStreamingMessage(prev => prev + data.output);
+    const unsubscribeOutput = (window.electronAPI as any).onCodexStreamOutput(
+      (data: { workspaceId: string; output: string; agentId: string }) => {
+        if (data.workspaceId !== workspace.id) return;
+
+        streamOutputRef.current += data.output;
+        setStreamingOutput(streamOutputRef.current);
+
+        if (!cancelledStreamRef.current) {
+          setIsStreaming(true);
+        }
       }
-    });
+    );
 
-    const unsubscribeError = (window.electronAPI as any).onCodexStreamError((data: { workspaceId: string; error: string; agentId: string }) => {
-      if (data.workspaceId === workspace.id) {
-        console.error('Codex streaming error:', data.error);
-        setIsStreaming(false);
-        setStreamingMessage("");
+    const unsubscribeError = (window.electronAPI as any).onCodexStreamError(
+      (data: { workspaceId: string; error: string; agentId: string }) => {
+        if (data.workspaceId === workspace.id) {
+          console.error('Codex streaming error:', data.error);
+          setIsStreaming(false);
+          streamOutputRef.current = '';
+          setStreamingOutput('');
+          cancelledStreamRef.current = false;
+        }
       }
-    });
+    );
 
-    const unsubscribeComplete = (window.electronAPI as any).onCodexStreamComplete(async (data: { workspaceId: string; exitCode: number; agentId: string }) => {
-      if (data.workspaceId === workspace.id) {
+    const unsubscribeComplete = (window.electronAPI as any).onCodexStreamComplete(
+      (data: { workspaceId: string; exitCode: number; agentId: string }) => {
+        if (data.workspaceId !== workspace.id) return;
         setIsStreaming(false);
+        setLoadingSeconds(0);
 
-        // Save the complete streaming message
-        if (streamingMessage.trim()) {
+        if (cancelledStreamRef.current) {
+          cancelledStreamRef.current = false;
+          return;
+        }
+
+        const rawOutput = streamOutputRef.current;
+        const trimmed = rawOutput.trim();
+
+        if (trimmed) {
           const agentMessage: Message = {
             id: Date.now().toString(),
-            content: streamingMessage,
-            sender: "agent",
+            content: trimmed,
+            sender: 'agent',
             timestamp: new Date(),
           };
 
-          // Save to database
           window.electronAPI.saveMessage({
             id: agentMessage.id,
-            conversationId: conversationId,
+            conversationId,
             content: agentMessage.content,
             sender: agentMessage.sender,
             metadata: JSON.stringify({
@@ -172,16 +221,22 @@ export const ChatInterface: React.FC<Props> = ({
           setMessages((prev) => [...prev, agentMessage]);
         }
 
+        streamOutputRef.current = '';
+        setStreamingOutput('');
+        cancelledStreamRef.current = false;
         setStreamingMessage("");
       }
-    });
+    );
 
     return () => {
       unsubscribeOutput();
       unsubscribeError();
       unsubscribeComplete();
+      streamOutputRef.current = '';
+      setStreamingOutput('');
+      cancelledStreamRef.current = false;
     };
-  }, [workspace.id, conversationId, streamingMessage]);
+  }, [workspace.id, conversationId]);
 
   useEffect(() => {
     (async () => {
@@ -225,7 +280,7 @@ export const ChatInterface: React.FC<Props> = ({
             if (loadedMessages.length === 0) {
               const welcomeMessage: Message = {
                 id: `welcome-${Date.now()}`,
-                content: `You're in ${workspace.name}. What can I help you with?`,
+                content: `Hello! You're working in workspace **${workspace.name}**. What can the agent do for you?`,
                 sender: "agent",
                 timestamp: new Date(),
               };
@@ -332,8 +387,10 @@ export const ChatInterface: React.FC<Props> = ({
     });
     const messageToSend = inputValue + attachmentsSection;
     setInputValue("");
+    streamOutputRef.current = "";
+    setStreamingOutput("");
     setIsStreaming(true);
-    setStreamingMessage("");
+    cancelledStreamRef.current = false;
 
     try {
       await (window.electronAPI as any).codexSendMessageStream(workspace.id, messageToSend);
@@ -341,14 +398,44 @@ export const ChatInterface: React.FC<Props> = ({
     } catch (error) {
       console.error("Error starting Codex stream:", error);
       setIsStreaming(false);
-      setStreamingMessage("");
-      
+      streamOutputRef.current = "";
+      setStreamingOutput("");
+
       toast({
         title: "Communication Error",
         description: "Failed to start Codex stream. Please try again.",
         variant: "destructive",
       });
     }
+  };
+
+  const handleCancelStream = async () => {
+    if (!isStreaming) return;
+
+    try {
+      const result = await window.electronAPI.codexStopStream(workspace.id);
+      if (!result?.success) {
+        toast({
+          title: "Cancel Failed",
+          description: result?.error || "Unable to stop Codex stream.",
+          variant: "destructive",
+        });
+        return;
+      }
+      cancelledStreamRef.current = true;
+    } catch (error) {
+      console.error("Failed to stop Codex stream:", error);
+      toast({
+        title: "Cancel Failed",
+        description: "Unable to stop Codex stream. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsStreaming(false);
+    setLoadingSeconds(0);
+    setStreamingOutput(streamOutputRef.current);
   };
 
   return (
@@ -359,25 +446,25 @@ export const ChatInterface: React.FC<Props> = ({
         <div className="flex items-center space-x-3">
           <Folder className="w-5 h-5 text-gray-600" />
           <div>
-            <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm">
+            <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm font-sans">
               {projectName}
             </h3>
           </div>
         </div>
       </div>
 
-      <div 
+      <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto p-6" 
-        style={{ 
-          maskImage: 'linear-gradient(to bottom, black 0%, black 85%, transparent 100%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 85%, transparent 100%)'
+        className="flex-1 overflow-y-auto px-6 pt-6 pb-2"
+        style={{
+          maskImage: 'linear-gradient(to bottom, black 0%, black 93%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 93%, transparent 100%)'
         }}
       >
         <div className="max-w-4xl mx-auto space-y-6">
           {isLoadingMessages ? (
             <div className="flex items-center justify-center py-8">
-              <div className="text-gray-500 dark:text-gray-400 text-sm">
+              <div className="text-gray-500 dark:text-gray-400 text-sm font-sans">
                 Loading conversation...
               </div>
             </div>
@@ -385,203 +472,74 @@ export const ChatInterface: React.FC<Props> = ({
             <>
               {messages.map((message) => {
                 const isUserMessage = message.sender === "user";
+                const raw = message.content ?? "";
+                const messageContent = isUserMessage ? raw : filterCodexOutput(raw);
+                if (!isUserMessage && !messageContent) return null;
+
                 return (
                   <div
                     key={message.id}
-                    className={`flex ${
-                      isUserMessage ? "justify-end" : "justify-start"
-                    }`}
+                    className={`flex ${isUserMessage ? "justify-end" : "justify-start"}`}
                   >
                     <div
                       className={`max-w-[80%] rounded-md px-4 py-3 text-sm leading-relaxed font-sans ${
                         isUserMessage
                           ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                          : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100"
+                          : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm"
                       }`}
                     >
                       <div className="prose prose-sm max-w-none">
                         <ReactMarkdown
                           components={{
-                            code: ({
-                              node,
-                              inline,
-                        className,
-                        children,
-                        ...props
-                      }: any) => {
-                        const match = /language-(\w+)/.exec(className || "");
-                        return !inline && match ? (
-                          <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md overflow-x-auto">
-                            <code className={className} {...props}>
-                              {children}
-                            </code>
-                          </pre>
-                        ) : (
-                          <code
-                            className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm"
-                            {...props}
-                          >
-                            {children}
-                          </code>
-                        );
-                      },
-                      ul: ({ children }) => (
-                        <ul className="list-disc list-inside space-y-1 my-2">
-                          {children}
-                        </ul>
-                      ),
-                      ol: ({ children }) => (
-                        <ol className="list-decimal list-inside space-y-1 my-2">
-                          {children}
-                        </ol>
-                      ),
-                      li: ({ children }) => (
-                        <li className="ml-2">{children}</li>
-                      ),
-                      p: ({ children }) => (
-                        <p className="mb-2 last:mb-0">{children}</p>
-                      ),
-                      strong: ({ children }) => (
-                        <strong className="font-semibold">{children}</strong>
-                      ),
-                      em: ({ children }) => (
-                        <em className="italic">{children}</em>
-                      ),
-                    }}
+                            code: ({ inline, className, children, ...props }: any) => {
+                              const match = /language-(\w+)/.exec(className || "");
+                              return !inline && match ? (
+                                <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md overflow-x-auto">
+                                  <code className={className} {...props}>
+                                    {children}
+                                  </code>
+                                </pre>
+                              ) : (
+                                <code
+                                  className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm"
+                                  {...props}
+                                >
+                                  {children}
+                                </code>
+                              );
+                            },
+                            ul: ({ children }) => (
+                              <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>
+                            ),
+                            ol: ({ children }) => (
+                              <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>
+                            ),
+                            li: ({ children }) => <li className="ml-2">{children}</li>,
+                            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                            strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                            em: ({ children }) => <em className="italic">{children}</em>,
+                          }}
                         >
-                          {message.content}
+                          {messageContent}
                         </ReactMarkdown>
                       </div>
                     </div>
                   </div>
                 );
               })}
-              
-              {isStreaming && streamingMessage && (
+
+              {(isStreaming || streamingOutput) && (
                 <div className="flex justify-start">
-                  <div className="max-w-[80%] rounded-md px-4 py-3 text-sm leading-relaxed font-sans bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm">
-                    <div className="prose prose-sm max-w-none">
-                    <ReactMarkdown
-                      components={{
-                        code: ({
-                          node,
-                          inline,
-                          className,
-                          children,
-                          ...props
-                        }: any) => {
-                          const match = /language-(\w+)/.exec(className || "");
-                          const language = match ? match[1] : "";
-                          const codeContent = String(children).replace(/\n$/, "");
-
-                          if (
-                            language === "diff" ||
-                            codeContent.includes("diff --git")
-                          ) {
-                            return (
-                              <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm font-mono">
-                                <code className="text-gray-100" {...props}>
-                                  {codeContent.split("\n").map((line, index) => {
-                                    let lineClass = "text-gray-300";
-                                    if (line.startsWith("+"))
-                                      lineClass = "text-green-400";
-                                    else if (line.startsWith("-"))
-                                      lineClass = "text-red-400";
-                                    else if (line.startsWith("@@"))
-                                      lineClass = "text-blue-400";
-                                    else if (line.startsWith("diff --git"))
-                                      lineClass = "text-yellow-400";
-                                    else if (line.startsWith("index"))
-                                      lineClass = "text-purple-400";
-
-                                    return (
-                                      <div key={index} className={lineClass}>
-                                        {line}
-                                      </div>
-                                    );
-                                  })}
-                                </code>
-                              </pre>
-                            );
-                          }
-
-                          // Regular code blocks with syntax highlighting
-                          if (
-                            !inline &&
-                            (match ||
-                              codeContent.includes("import ") ||
-                              codeContent.includes("function ") ||
-                              codeContent.includes("const ") ||
-                              codeContent.includes("class "))
-                          ) {
-                            return (
-                              <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm font-mono">
-                                <code className="text-gray-100" {...props}>
-                                  {codeContent}
-                                </code>
-                              </pre>
-                            );
-                          }
-
-                          // Inline code
-                          return (
-                            <code
-                              className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded text-sm font-mono text-gray-800 dark:text-gray-200"
-                              {...props}
-                            >
-                              {children}
-                            </code>
-                          );
-                        },
-                        ul: ({ children }) => (
-                          <ul className="list-disc list-inside space-y-1 my-2">
-                            {children}
-                          </ul>
-                        ),
-                        ol: ({ children }) => (
-                          <ol className="list-decimal list-inside space-y-1 my-2">
-                            {children}
-                          </ol>
-                        ),
-                        li: ({ children }) => (
-                          <li className="ml-2">{children}</li>
-                        ),
-                        p: ({ children }) => (
-                          <p className="mb-2 last:mb-0">{children}</p>
-                        ),
-                        strong: ({ children }) => (
-                          <strong className="font-semibold">{children}</strong>
-                        ),
-                        em: ({ children }) => (
-                          <em className="italic">{children}</em>
-                        ),
-                      }}
-                    >
-                      {streamingMessage}
-                    </ReactMarkdown>
-                    </div>
+                  <div className="max-w-[80%] px-4 py-3 text-sm leading-relaxed font-sans text-gray-900 dark:text-gray-100">
+                    <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm">
+                      {streamingOutput ?? ""}
+                    </pre>
                   </div>
                 </div>
               )}
             </>
           )}
 
-          {isStreaming && !streamingMessage && (
-            <div className="text-gray-600 dark:text-gray-400">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                <div
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0.1s" }}
-                ></div>
-                <div
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0.2s" }}
-                ></div>
-              </div>
-            </div>
-          )}
-          
           {/* Scroll target element */}
           <div ref={messagesEndRef} />
         </div>
@@ -591,13 +549,15 @@ export const ChatInterface: React.FC<Props> = ({
         value={inputValue}
         onChange={setInputValue}
         onSend={handleSendMessage}
+        onCancel={handleCancelStream}
         isLoading={isStreaming}
+        loadingSeconds={loadingSeconds}
         isCodexInstalled={isCodexInstalled}
         agentCreated={agentCreated}
         workspacePath={workspace.path}
       />
     </div>
   );
-};
+
 
 export default ChatInterface;

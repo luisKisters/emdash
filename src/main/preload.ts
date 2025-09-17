@@ -45,6 +45,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   worktreeGetAll: () =>
     ipcRenderer.invoke('worktree:getAll'),
 
+  // Filesystem helpers
+  fsList: (root: string, opts?: { includeDirs?: boolean; maxEntries?: number }) =>
+    ipcRenderer.invoke('fs:list', { root, ...(opts || {}) }),
+  fsRead: (root: string, relPath: string, maxBytes?: number) =>
+    ipcRenderer.invoke('fs:read', { root, relPath, maxBytes }),
+
   // Project management
   openProject: () => ipcRenderer.invoke('project:open'),
   getGitInfo: (projectPath: string) => ipcRenderer.invoke('git:getInfo', projectPath),
@@ -107,11 +113,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getMessages: (conversationId: string) => ipcRenderer.invoke('db:getMessages', conversationId),
   deleteConversation: (conversationId: string) => ipcRenderer.invoke('db:deleteConversation', conversationId),
 
+  // Debug helpers
+  debugAppendLog: (filePath: string, content: string, options?: { reset?: boolean }) =>
+    ipcRenderer.invoke('debug:append-log', filePath, content, options ?? {}),
+
   // Codex integration
   codexCheckInstallation: () => ipcRenderer.invoke('codex:check-installation'),
   codexCreateAgent: (workspaceId: string, worktreePath: string) => ipcRenderer.invoke('codex:create-agent', workspaceId, worktreePath),
   codexSendMessage: (workspaceId: string, message: string) => ipcRenderer.invoke('codex:send-message', workspaceId, message),
   codexSendMessageStream: (workspaceId: string, message: string) => ipcRenderer.invoke('codex:send-message-stream', workspaceId, message),
+  codexStopStream: (workspaceId: string) => ipcRenderer.invoke('codex:stop-stream', workspaceId),
   codexGetAgentStatus: (workspaceId: string) => ipcRenderer.invoke('codex:get-agent-status', workspaceId),
   codexGetAllAgents: () => ipcRenderer.invoke('codex:get-all-agents'),
   codexRemoveAgent: (workspaceId: string) => ipcRenderer.invoke('codex:remove-agent', workspaceId),
@@ -171,7 +182,7 @@ export interface ElectronAPI {
   scanRepos: () => Promise<any[]>
   addRepo: (path: string) => Promise<any>
   
-  // Filesystem
+  // Filesystem helpers
   fsList: (root: string, opts?: { includeDirs?: boolean; maxEntries?: number }) => Promise<{ success: boolean; items?: Array<{ path: string; type: 'file' | 'dir' }>; error?: string }>
   fsRead: (root: string, relPath: string, maxBytes?: number) => Promise<{ success: boolean; path?: string; size?: number; truncated?: boolean; content?: string; error?: string }>
   
@@ -216,6 +227,7 @@ export interface ElectronAPI {
   codexCreateAgent: (workspaceId: string, worktreePath: string) => Promise<{ success: boolean; agent?: any; error?: string }>
   codexSendMessage: (workspaceId: string, message: string) => Promise<{ success: boolean; response?: any; error?: string }>
   codexSendMessageStream: (workspaceId: string, message: string) => Promise<{ success: boolean; error?: string }>
+  codexStopStream: (workspaceId: string) => Promise<{ success: boolean; stopped?: boolean; error?: string }>
   codexGetAgentStatus: (workspaceId: string) => Promise<{ success: boolean; agent?: any; error?: string }>
   codexGetAllAgents: () => Promise<{ success: boolean; agents?: any[]; error?: string }>
   codexRemoveAgent: (workspaceId: string) => Promise<{ success: boolean; removed?: boolean; error?: string }>

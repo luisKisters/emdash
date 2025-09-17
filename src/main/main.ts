@@ -1,5 +1,5 @@
 import { app, BrowserWindow, ipcMain, dialog } from 'electron'
-import { join } from 'path'
+import { join, dirname } from 'path'
 import { isDev } from './utils/dev'
 
 import { GitHubService } from './services/GitHubService'
@@ -13,6 +13,7 @@ import { registerPtyIpc } from './services/ptyIpc'
 import { registerWorktreeIpc } from './services/worktreeIpc'
 import { registerFsIpc } from './services/fsIpc'
 import { setupCodexIpc } from './services/codexIpc'
+import { registerFsIpc } from './services/fsIpc'
 
 let mainWindow: BrowserWindow | null = null
 const githubService = new GitHubService()
@@ -94,6 +95,31 @@ ipcMain.handle('app:getVersion', () => {
 
 ipcMain.handle('app:getPlatform', () => {
   return process.platform
+})
+
+ipcMain.handle('debug:append-log', async (_,
+  filePath: string,
+  content: string,
+  options: { reset?: boolean } = {}
+) => {
+  try {
+    if (!filePath) {
+      throw new Error('filePath is required')
+    }
+
+    const dir = dirname(filePath)
+    await fs.promises.mkdir(dir, { recursive: true })
+
+    const flag = options.reset ? 'w' : 'a'
+    await fs.promises.writeFile(filePath, content, { flag, encoding: 'utf8' })
+    return { success: true }
+  } catch (error) {
+    console.error('Failed to append debug log:', error)
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : 'Unknown error',
+    }
+  }
 })
 
 // Project management
