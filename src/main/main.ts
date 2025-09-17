@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, BrowserWindow, ipcMain, dialog, shell } from 'electron'
 import { join, dirname } from 'path'
 import { isDev } from './utils/dev'
 
@@ -13,12 +13,12 @@ import { registerPtyIpc } from './services/ptyIpc'
 import { registerWorktreeIpc } from './services/worktreeIpc'
 import { registerFsIpc } from './services/fsIpc'
 import { setupCodexIpc } from './services/codexIpc'
+import { registerExternalLinkHandlers } from './utils/externalLinks'
 
 let mainWindow: BrowserWindow | null = null
 const githubService = new GitHubService()
 
 const createWindow = (): void => {
-  // Create the browser window
   mainWindow = new BrowserWindow({
     width: 1400,
     height: 900,
@@ -39,6 +39,9 @@ const createWindow = (): void => {
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
+
+  // Route external links to the user’s default browser
+  registerExternalLinkHandlers(mainWindow, isDev)
 
   // Show window when ready
   mainWindow.once('ready-to-show', () => {
@@ -78,6 +81,17 @@ app.whenReady().then(async () => {
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit()
+  }
+})
+
+// Open external links in default browser
+ipcMain.handle('app:openExternal', async (_event, url: string) => {
+  try {
+    if (!url || typeof url !== 'string') throw new Error('Invalid URL')
+    await shell.openExternal(url)
+    return { success: true }
+  } catch (error: any) {
+    return { success: false, error: error?.message || String(error) }
   }
 })
 
@@ -416,6 +430,53 @@ ipcMain.handle('git:create-pr', async (_, args: { workspacePath: string; title?:
     return { success: false, error: error?.message || String(error) }
   }
 })
+
+// Git: Get PR status for current branch via GitHub CLI
+ipcMain.handle(
+  'git:get-pr-status',
+  async (
+    _,
+    args: { workspacePath: string }
+  ) => {
+    const { workspacePath } = args || ({} as any)
+    try {
+      // Ensure we're in a git repo
+      await execAsync('git rev-parse --is-inside-work-tree', { cwd: workspacePath })
+
+      // Ask gh for PR tied to current branch; if none exists, gh exits non‑zero
+      // We request a compact JSON payload that covers typical status needs
+      const queryFields = [
+        'number',
+        'url',
+        'state',
+        'isDraft',
+        'mergeStateStatus',
+        'headRefName',
+        'baseRefName',
+        'title',
+        'author',
+      ]
+      const cmd = `gh pr view --json ${queryFields.join(',')} -q .`
+      try {
+        const { stdout } = await execAsync(cmd, { cwd: workspacePath })
+        const json = (stdout || '').trim()
+        const data = json ? JSON.parse(json) : null
+        if (!data) return { success: false, error: 'No PR data returned' }
+        return { success: true, pr: data }
+      } catch (err: any) {
+        const msg = String(err?.stderr || err?.message || '')
+        // If gh indicates no pull requests found, return a clean empty state
+        if (/no pull requests? found/i.test(msg) || /not found/i.test(msg)) {
+          return { success: true, pr: null }
+        }
+        // If repo not authenticated or gh missing, surface as error
+        return { success: false, error: msg || 'Failed to query PR status' }
+      }
+    } catch (error: any) {
+      return { success: false, error: error?.message || String(error) }
+    }
+  }
+)
 
 // Git: Commit all changes and push current branch (create feature branch if on default)
 ipcMain.handle(
