@@ -1,18 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "./components/ui/button";
 
-import { Spinner } from "./components/ui/spinner";
-import { FolderOpen, Github, Globe, Check } from "lucide-react";
-import RepositoryList from "./components/RepositoryList";
+import { FolderOpen } from "lucide-react";
 import LeftSidebar from "./components/LeftSidebar";
 import ProjectMainView from "./components/ProjectMainView";
 import WorkspaceModal from "./components/WorkspaceModal";
-import TerminalPane from "./components/TerminalPane";
 import ChatInterface from "./components/ChatInterface";
 import WorkspaceTerminalPanel from "./components/WorkspaceTerminalPanel";
 import FileChangesPanel from "./components/FileChangesPanel";
 import { Toaster } from "./components/ui/toaster";
 import { useToast } from "./hooks/use-toast";
+import { useGithubAuth } from "./hooks/useGithubAuth";
 
 interface Project {
   id: string;
@@ -43,15 +41,21 @@ const App: React.FC = () => {
   const { toast } = useToast();
   const [version, setVersion] = useState<string>("");
   const [platform, setPlatform] = useState<string>("");
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [user, setUser] = useState<any>(null);
-  const [repositories, setRepositories] = useState<any[]>([]);
+  const {
+    installed: ghInstalled,
+    authenticated: isAuthenticated,
+    user,
+    isLoading,
+    login: handleGitHubAuth,
+    logout: handleLogout,
+    checkStatus,
+  } = useGithubAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [showWorkspaceModal, setShowWorkspaceModal] = useState<boolean>(false);
   const [showHomeView, setShowHomeView] = useState<boolean>(true);
-  const [isCreatingWorkspace, setIsCreatingWorkspace] = useState<boolean>(false);
+  const [isCreatingWorkspace, setIsCreatingWorkspace] =
+    useState<boolean>(false);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(
     null
   );
@@ -82,27 +86,18 @@ const App: React.FC = () => {
   useEffect(() => {
     const loadAppData = async () => {
       try {
-        const [appVersion, appPlatform, authStatus, projects] =
-          await Promise.all([
-            window.electronAPI.getVersion(),
-            window.electronAPI.getPlatform(),
-            window.electronAPI.githubIsAuthenticated(),
-            window.electronAPI.getProjects(),
-          ]);
+        const [appVersion, appPlatform, projects] = await Promise.all([
+          window.electronAPI.getVersion(),
+          window.electronAPI.getPlatform(),
+          window.electronAPI.getProjects(),
+        ]);
 
         setVersion(appVersion);
         setPlatform(appPlatform);
-        setIsAuthenticated(authStatus);
         setProjects(applyProjectOrder(projects));
 
-        if (authStatus) {
-          const [userInfo, repos] = await Promise.all([
-            window.electronAPI.githubGetUser(),
-            window.electronAPI.githubGetRepositories(),
-          ]);
-          setUser(userInfo);
-          setRepositories(repos);
-        }
+        // Non-blocking: refresh GH status via hook
+        checkStatus();
 
         const projectsWithWorkspaces = await Promise.all(
           projects.map(async (project) => {
@@ -122,44 +117,7 @@ const App: React.FC = () => {
     loadAppData();
   }, []);
 
-  const handleGitHubAuth = async () => {
-    setIsLoading(true);
-    try {
-      const result = await window.electronAPI.githubAuth();
-      if (result.success) {
-        setIsAuthenticated(true);
-        setUser(result.user);
-        const repos = await window.electronAPI.githubGetRepositories();
-        setRepositories(repos);
-      } else {
-        toast({
-          title: "GitHub Authentication Failed",
-          description: result.error,
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      console.error("Authentication error:", error);
-      toast({
-        title: "Authentication Error",
-        description: "Please check the console for details.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await window.electronAPI.githubLogout();
-      setIsAuthenticated(false);
-      setUser(null);
-      setRepositories([]);
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
-  };
+  // handleGitHubAuth, handleLogout come from hook; toasts handled by callers as needed
 
   const handleOpenProject = async () => {
     try {
@@ -267,40 +225,6 @@ const App: React.FC = () => {
       console.error("Open project error:", error);
       toast({
         title: "Failed to Open Project",
-        description: "Please check the console for details.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleImportRepository = async (repo: any) => {
-    try {
-      // TODO: Implement repository cloning
-      toast({
-        title: "Import Repository",
-        description: `Importing ${repo.name} - This will clone the repository to your local machine.`,
-      });
-    } catch (error) {
-      console.error("Import repository error:", error);
-      toast({
-        title: "Failed to Import Repository",
-        description: "Please check the console for details.",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const handleOpenRepository = async (repo: any) => {
-    try {
-      // TODO: Implement repository opening
-      toast({
-        title: "Open Repository",
-        description: `Opening ${repo.name} - This will open the repository in your default editor or file manager.`,
-      });
-    } catch (error) {
-      console.error("Open repository error:", error);
-      toast({
-        title: "Failed to Open Repository",
         description: "Please check the console for details.",
         variant: "destructive",
       });
@@ -443,48 +367,36 @@ const App: React.FC = () => {
               <p className="text-lg font-serif text-gray-700 text-muted-foreground mb-4">
                 Run multiple Codex Agents in parallel
               </p>
-              {!isAuthenticated && (
+              {(!ghInstalled || !isAuthenticated) && (
                 <div className="text-sm text-gray-500 max-w-2xl mx-auto">
-                  <p className="mb-2">
-                    <strong>Requirements:</strong> GitHub CLI must be installed
-                    and authenticated
-                  </p>
-                  <p className="text-xs">
-                    Install:{" "}
-                    <code className="bg-gray-100 px-1 rounded">
-                      brew install gh
-                    </code>{" "}
-                    • Authenticate:{" "}
-                    <code className="bg-gray-100 px-1 rounded">
-                      gh auth login
-                    </code>
-                  </p>
+                  {!ghInstalled ? (
+                    <>
+                      <p className="mb-2">
+                        <strong>Requirements:</strong> Install GitHub CLI
+                      </p>
+                      <p className="text-xs">
+                        Install:{" "}
+                        <code className="bg-gray-100 px-1 rounded">
+                          brew install gh
+                        </code>
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="mb-2">
+                        <strong>Requirements:</strong> Authenticate GitHub CLI
+                      </p>
+                      <p className="text-xs">
+                        Authenticate:{" "}
+                        <code className="bg-gray-100 px-1 rounded">
+                          gh auth login
+                        </code>
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
             </div>
-
-            {isAuthenticated && user && (
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center bg-green-50 border border-green-200 rounded-lg px-4 py-2">
-                  <img
-                    src={user.avatar_url}
-                    alt={user.name}
-                    className="w-8 h-8 rounded-full mr-3"
-                  />
-                  <span className="text-green-800 font-medium">
-                    Signed in as {user.name} (@{user.login})
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleLogout}
-                    className="ml-3 text-green-600 hover:text-green-800"
-                  >
-                    Sign out
-                  </Button>
-                </div>
-              </div>
-            )}
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Button
@@ -495,43 +407,9 @@ const App: React.FC = () => {
                 <FolderOpen className="mr-2 h-5 w-5" />
                 Open Project
               </Button>
-              <Button
-                onClick={isAuthenticated ? handleLogout : handleGitHubAuth}
-                disabled={isLoading}
-                variant="outline"
-                size="lg"
-                className="min-w-[200px] font-serif bg-black text-white hover:bg-gray-800 hover:text-white border-black"
-              >
-                {isLoading ? (
-                  <Spinner size="sm" className="mr-2" />
-                ) : isAuthenticated ? (
-                  <Check className="mr-2 h-5 w-5" />
-                ) : (
-                  <Github className="mr-2 h-5 w-5" />
-                )}
-                {isLoading
-                  ? "Connecting..."
-                  : isAuthenticated
-                  ? "Connected"
-                  : "Open from GitHub"}
-              </Button>
-              <Button
-                variant="secondary"
-                size="lg"
-                className="min-w-[200px] font-serif bg-black text-white hover:bg-gray-800 hover:text-white border-black"
-              >
-                <Globe className="mr-2 h-5 w-5 text-white" />
-                Clone from URL
-              </Button>
             </div>
 
-            {isAuthenticated && repositories.length > 0 && (
-              <RepositoryList
-                repositories={repositories}
-                onImportRepository={handleImportRepository}
-                onOpenRepository={handleOpenRepository}
-              />
-            )}
+            {null}
           </div>
         </div>
       ) : selectedProject ? (
@@ -577,48 +455,36 @@ const App: React.FC = () => {
               <p className="text-lg font-serif text-gray-700 text-muted-foreground mb-4">
                 Run multiple Codex Agents in parallel
               </p>
-              {!isAuthenticated && (
+              {(!ghInstalled || !isAuthenticated) && (
                 <div className="text-sm text-gray-500 max-w-2xl mx-auto">
-                  <p className="mb-2">
-                    <strong>Requirements:</strong> GitHub CLI must be installed
-                    and authenticated
-                  </p>
-                  <p className="text-xs">
-                    Install:{" "}
-                    <code className="bg-gray-100 px-1 rounded">
-                      brew install gh
-                    </code>{" "}
-                    • Authenticate:{" "}
-                    <code className="bg-gray-100 px-1 rounded">
-                      gh auth login
-                    </code>
-                  </p>
+                  {!ghInstalled ? (
+                    <>
+                      <p className="mb-2">
+                        <strong>Requirements:</strong> Install GitHub CLI
+                      </p>
+                      <p className="text-xs">
+                        Install:{" "}
+                        <code className="bg-gray-100 px-1 rounded">
+                          brew install gh
+                        </code>
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="mb-2">
+                        <strong>Requirements:</strong> Authenticate GitHub CLI
+                      </p>
+                      <p className="text-xs">
+                        Authenticate:{" "}
+                        <code className="bg-gray-100 px-1 rounded">
+                          gh auth login
+                        </code>
+                      </p>
+                    </>
+                  )}
                 </div>
               )}
             </div>
-
-            {isAuthenticated && user && (
-              <div className="text-center mb-8">
-                <div className="inline-flex items-center bg-green-50 border border-green-200 rounded-lg px-4 py-2">
-                  <img
-                    src={user.avatar_url}
-                    alt={user.name}
-                    className="w-8 h-8 rounded-full mr-3"
-                  />
-                  <span className="text-green-800 font-medium">
-                    Signed in as {user.name} (@{user.login})
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={handleLogout}
-                    className="ml-3 text-green-600 hover:text-green-800"
-                  >
-                    Sign out
-                  </Button>
-                </div>
-              </div>
-            )}
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
               <Button
@@ -629,43 +495,9 @@ const App: React.FC = () => {
                 <FolderOpen className="mr-2 h-5 w-5" />
                 Open Project
               </Button>
-              <Button
-                onClick={isAuthenticated ? handleLogout : handleGitHubAuth}
-                disabled={isLoading}
-                variant="outline"
-                size="lg"
-                className="min-w-[200px] font-serif bg-black text-white hover:bg-gray-800 hover:text-white border-black"
-              >
-                {isLoading ? (
-                  <Spinner size="sm" className="mr-2" />
-                ) : isAuthenticated ? (
-                  <Check className="mr-2 h-5 w-5" />
-                ) : (
-                  <Github className="mr-2 h-5 w-5" />
-                )}
-                {isLoading
-                  ? "Connecting..."
-                  : isAuthenticated
-                  ? "Connected"
-                  : "Open from GitHub"}
-              </Button>
-              <Button
-                variant="secondary"
-                size="lg"
-                className="min-w-[200px] font-serif bg-black text-white hover:bg-gray-800 hover:text-white border-black"
-              >
-                <Globe className="mr-2 h-5 w-5 text-white" />
-                Clone from URL
-              </Button>
             </div>
 
-            {isAuthenticated && repositories.length > 0 && (
-              <RepositoryList
-                repositories={repositories}
-                onImportRepository={handleImportRepository}
-                onOpenRepository={handleOpenRepository}
-              />
-            )}
+            {null}
           </div>
         </div>
       )}
