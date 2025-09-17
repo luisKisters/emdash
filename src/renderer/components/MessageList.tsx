@@ -7,6 +7,7 @@ import {
   ReasoningContent,
   ReasoningTrigger,
 } from "@/components/ai-elements/reasoning";
+import { CodeBlock, CodeBlockCopyButton } from "@/components/ai-elements/code-block";
 
 interface MessageListProps {
   messages: Message[];
@@ -159,9 +160,35 @@ const MessageList: React.FC<MessageListProps> = ({
                         <ReasoningContent>{parsed.reasoning}</ReasoningContent>
                       </Reasoning>
                     ) : null}
-                    <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm">
-                      {parsed ? parsed.response : trimmedContent}
-                    </pre>
+                    <div className="prose prose-sm max-w-none">
+                      <ReactMarkdown
+                        components={{
+                          code: ({ inline, className, children, ...props }: any) => {
+                            const match = /language-(\w+)/.exec(className || "");
+                            if (!inline && match) {
+                              return (
+                                <CodeBlock code={String(children).replace(/\n$/, '')} language={match[1]}>
+                                  <CodeBlockCopyButton />
+                                </CodeBlock>
+                              );
+                            }
+                            return (
+                              <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm" {...props}>
+                                {children}
+                              </code>
+                            );
+                          },
+                          ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>,
+                          ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>,
+                          li: ({ children }) => <li className="ml-2">{children}</li>,
+                          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                          em: ({ children }) => <em className="italic">{children}</em>,
+                        }}
+                      >
+                        {parsed ? parsed.response : trimmedContent}
+                      </ReactMarkdown>
+                    </div>
                   </div>
                 )}
               </div>
@@ -182,9 +209,35 @@ const MessageList: React.FC<MessageListProps> = ({
                         <ReasoningContent>{parsed.reasoning}</ReasoningContent>
                       </Reasoning>
                     ) : null}
-                    <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm">
-                      {parsed.response}
-                    </pre>
+                    <div className="prose prose-sm max-w-none">
+                      <ReactMarkdown
+                        components={{
+                          code: ({ inline, className, children, ...props }: any) => {
+                            const match = /language-(\w+)/.exec(className || "");
+                            if (!inline && match) {
+                              return (
+                                <CodeBlock code={String(children).replace(/\n$/, '')} language={match[1]}>
+                                  <CodeBlockCopyButton />
+                                </CodeBlock>
+                              );
+                            }
+                            return (
+                              <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm" {...props}>
+                                {children}
+                              </code>
+                            );
+                          },
+                          ul: ({ children }) => <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>,
+                          ol: ({ children }) => <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>,
+                          li: ({ children }) => <li className="ml-2">{children}</li>,
+                          p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                          strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+                          em: ({ children }) => <em className="italic">{children}</em>,
+                        }}
+                      >
+                        {parsed.response}
+                      </ReactMarkdown>
+                    </div>
                   </div>
                 )
               })()}
