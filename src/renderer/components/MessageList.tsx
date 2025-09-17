@@ -1,15 +1,23 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Message } from "../types/chat";
+import { parseCodexOutput } from "../lib/codexParse";
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from "@/components/ai-elements/reasoning";
 
 interface MessageListProps {
   messages: Message[];
   streamingOutput: string | null;
+  isStreaming?: boolean;
 }
 
 const MessageList: React.FC<MessageListProps> = ({
   messages,
   streamingOutput,
+  isStreaming = false,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -72,6 +80,11 @@ const MessageList: React.FC<MessageListProps> = ({
           const content = message.content ?? "";
           const trimmedContent = content.trim();
           if (!isUserMessage && !trimmedContent) return null;
+
+          // Parse agent outputs for reasoning blocks
+          const parsed = !isUserMessage && trimmedContent
+            ? parseCodexOutput(trimmedContent)
+            : null
 
           return (
             <div
@@ -139,9 +152,17 @@ const MessageList: React.FC<MessageListProps> = ({
                     </ReactMarkdown>
                   </div>
                 ) : (
-                  <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm">
-                    {trimmedContent}
-                  </pre>
+                  <div className="space-y-3">
+                    {parsed?.reasoning ? (
+                      <Reasoning className="w-full" isStreaming={false} defaultOpen={false}>
+                        <ReasoningTrigger />
+                        <ReasoningContent>{parsed.reasoning}</ReasoningContent>
+                      </Reasoning>
+                    ) : null}
+                    <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm">
+                      {parsed ? parsed.response : trimmedContent}
+                    </pre>
+                  </div>
                 )}
               </div>
             </div>
@@ -151,9 +172,22 @@ const MessageList: React.FC<MessageListProps> = ({
         {streamingOutput !== null && (
           <div className="flex justify-start">
             <div className="max-w-[80%] px-4 py-3 text-sm leading-relaxed font-sans text-gray-900 dark:text-gray-100">
-              <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm">
-                {streamingOutput ?? ""}
-              </pre>
+              {(() => {
+                const parsed = parseCodexOutput(streamingOutput || "")
+                return (
+                  <div className="space-y-3">
+                    {parsed.reasoning ? (
+                      <Reasoning className="w-full" isStreaming={!!isStreaming} defaultOpen={false}>
+                        <ReasoningTrigger />
+                        <ReasoningContent>{parsed.reasoning}</ReasoningContent>
+                      </Reasoning>
+                    ) : null}
+                    <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm">
+                      {parsed.response}
+                    </pre>
+                  </div>
+                )
+              })()}
             </div>
           </div>
         )}

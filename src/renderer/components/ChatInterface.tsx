@@ -205,6 +205,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
         <MessageList
           messages={codexStream.messages}
           streamingOutput={streamingOutputForList}
+          isStreaming={codexStream.isStreaming}
         />
       )}
 
