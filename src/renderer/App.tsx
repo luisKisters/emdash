@@ -11,6 +11,7 @@ import FileChangesPanel from "./components/FileChangesPanel";
 import { Toaster } from "./components/ui/toaster";
 import { useToast } from "./hooks/use-toast";
 import { useGithubAuth } from "./hooks/useGithubAuth";
+import emdashLogo from "../assets/images/emdash/emdash_logo.svg";
 
 interface Project {
   id: string;
@@ -361,9 +362,13 @@ const App: React.FC = () => {
         <div className="flex-1 bg-background text-foreground overflow-y-auto">
           <div className="container mx-auto px-4 py-8">
             <div className="text-center mb-12">
-              <h1 className="text-6xl tracking-wider mb-4">
-                emdash
-              </h1>
+              <div className="flex items-center justify-center mb-4">
+                <img
+                  src={emdashLogo}
+                  alt="emdash"
+                  className="h-16"
+                />
+              </div>
               <p className="text-lg text-gray-700 text-muted-foreground mb-4">
                 Run multiple Codex Agents in parallel
               </p>
@@ -449,9 +454,13 @@ const App: React.FC = () => {
         <div className="flex-1 bg-background text-foreground overflow-y-auto">
           <div className="container mx-auto px-4 py-8">
             <div className="text-center mb-12">
-              <h1 className="text-6xl tracking-wider mb-4">
-                emdash
-              </h1>
+              <div className="flex items-center justify-center mb-4">
+                <img
+                  src={emdashLogo}
+                  alt="emdash"
+                  className="h-16"
+                />
+              </div>
               <p className="text-lg text-gray-700 text-muted-foreground mb-4">
                 Run multiple Codex Agents in parallel
               </p>
