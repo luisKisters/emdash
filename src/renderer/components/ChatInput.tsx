@@ -1,10 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Button } from "./ui/button";
-import { ChevronsUpDown, ArrowRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import openaiLogo from "../../assets/images/openai.png";
-import claudeLogo from "../../assets/images/claude.png";
-import geminiLogo from "../../assets/images/gemini.png";
 import { useFileIndex } from "../hooks/useFileIndex";
 import FileTypeIcon from "./ui/file-type-icon";
 
@@ -59,9 +57,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   workspacePath,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
-  const [isProviderOpen, setIsProviderOpen] = useState(false);
-  const [provider, setProvider] = useState<"codex" | "claude-code" | "gemini">("codex");
-  const providerRef = useRef<HTMLDivElement>(null);
+  // Only Codex is supported for now; keep UI element but disable switching
+  const provider = "codex" as const;
   const shouldReduceMotion = useReducedMotion();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -74,15 +71,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   const mentionResults = mentionOpen ? search(mentionQuery, 12) : [];
 
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (providerRef.current && !providerRef.current.contains(e.target as Node)) {
-        setIsProviderOpen(false);
-      }
-    };
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  // No provider dropdown needed when only Codex is supported
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
   // Send on Enter (unless Shift) when mention is closed
@@ -242,86 +231,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           </div>
 
           <div className="flex items-center justify-between px-4 py-3 rounded-b-xl">
-            <div className="relative inline-block w-[9.5rem]" ref={providerRef}>
-              <motion.button
-                type="button"
-                onClick={() => setIsProviderOpen((o) => !o)}
-                className="flex items-center gap-2 h-9 px-3 w-full rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-              >
-                <img
-                  src={provider === "claude-code" ? claudeLogo : provider === "gemini" ? geminiLogo : openaiLogo}
-                  alt={provider === "claude-code" ? "Claude" : "OpenAI"}
-                  className="w-4 h-4 shrink-0"
-                />
+            <div className="relative inline-block w-[9.5rem]">
+              <div className="flex items-center gap-2 h-9 px-3 w-full rounded-md bg-gray-100 dark:bg-gray-700 select-none">
+                <img src={openaiLogo} alt="Codex" className="w-4 h-4 shrink-0" />
                 <span className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate text-left">
-                  {provider === "claude-code" ? "Claude Code" : provider === "gemini" ? "Gemini" : "Codex"}
+                  Codex
                 </span>
-                <ChevronsUpDown className="w-4 h-4 text-gray-500 shrink-0 ml-auto" />
-              </motion.button>
-
-              <AnimatePresence>
-                {isProviderOpen && (
-                  <motion.div
-                    className="absolute left-0 bottom-full mb-2 w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-md overflow-hidden z-10"
-                    initial={
-                      shouldReduceMotion
-                        ? false
-                        : { opacity: 0, scale: 0.98, y: 4 }
-                    }
-                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                    exit={
-                      shouldReduceMotion
-                        ? { opacity: 1, scale: 1, y: 0 }
-                        : { opacity: 0, scale: 0.98, y: 4 }
-                    }
-                    transition={
-                      shouldReduceMotion
-                        ? { duration: 0 }
-                        : { duration: 0.15, ease: "easeOut" }
-                    }
-                  >
-                    {provider !== "codex" && (
-                      <motion.button
-                        type="button"
-                        onClick={() => {
-                          setProvider("codex");
-                          setIsProviderOpen(false);
-                        }}
-                        className="w-full h-9 flex items-center gap-2 px-3 text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer text-left"
-                      >
-                        <img src={openaiLogo} alt="Codex" className="w-4 h-4" />
-                        <span className="text-gray-700 dark:text-gray-200">Codex</span>
-                      </motion.button>
-                    )}
-                    {provider !== "claude-code" && (
-                      <motion.button
-                        type="button"
-                        onClick={() => {
-                          setProvider("claude-code");
-                          setIsProviderOpen(false);
-                        }}
-                        className="w-full h-9 flex items-center gap-2 px-3 text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer text-left"
-                      >
-                        <img src={claudeLogo} alt="Claude Code" className="w-4 h-4" />
-                        <span className="text-gray-700 dark:text-gray-200">Claude Code</span>
-                      </motion.button>
-                    )}
-                    {provider !== "gemini" && (
-                      <motion.button
-                        type="button"
-                        onClick={() => {
-                          setProvider("gemini");
-                          setIsProviderOpen(false);
-                        }}
-                        className="w-full h-9 flex items-center gap-2 px-3 text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer text-left"
-                      >
-                        <img src={geminiLogo} alt="Gemini" className="w-4 h-4" />
-                        <span className="text-gray-700 dark:text-gray-200">Gemini</span>
-                      </motion.button>
-                    )}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              </div>
             </div>
 
             <div className="flex items-center gap-2">
