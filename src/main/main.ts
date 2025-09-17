@@ -235,6 +235,36 @@ ipcMain.handle('github:isAuthenticated', async () => {
   }
 })
 
+// GitHub status: installed + authenticated + user
+ipcMain.handle('github:getStatus', async () => {
+  try {
+    let installed = true
+    try {
+      await execAsync('gh --version')
+    } catch {
+      installed = false
+    }
+
+    let authenticated = false
+    let user: any = null
+    if (installed) {
+      try {
+        const { stdout } = await execAsync('gh api user')
+        user = JSON.parse(stdout)
+        authenticated = true
+      } catch {
+        authenticated = false
+        user = null
+      }
+    }
+
+    return { installed, authenticated, user }
+  } catch (error) {
+    console.error('GitHub status check failed:', error)
+    return { installed: false, authenticated: false }
+  }
+})
+
 ipcMain.handle('github:getUser', async () => {
   try {
     const token = await githubService['getStoredToken']()

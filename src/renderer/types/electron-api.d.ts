@@ -44,6 +44,7 @@ declare global {
       // GitHub integration
       githubAuth: () => Promise<{ success: boolean; token?: string; user?: any; error?: string }>
       githubIsAuthenticated: () => Promise<boolean>
+      githubGetStatus: () => Promise<{ installed: boolean; authenticated: boolean; user?: any }>
       githubGetUser: () => Promise<any>
       githubGetRepositories: () => Promise<any[]>
       githubLogout: () => Promise<void>

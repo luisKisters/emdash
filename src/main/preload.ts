@@ -79,6 +79,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // GitHub integration
   githubAuth: () => ipcRenderer.invoke('github:auth'),
   githubIsAuthenticated: () => ipcRenderer.invoke('github:isAuthenticated'),
+  githubGetStatus: () => ipcRenderer.invoke('github:getStatus'),
   githubGetUser: () => ipcRenderer.invoke('github:getUser'),
   githubGetRepositories: () => ipcRenderer.invoke('github:getRepositories'),
   githubCloneRepository: (repoUrl: string, localPath: string) => ipcRenderer.invoke('github:cloneRepository', repoUrl, localPath),
@@ -181,6 +182,7 @@ export interface ElectronAPI {
   // GitHub integration
   githubAuth: () => Promise<{ success: boolean; token?: string; user?: any; error?: string }>
   githubIsAuthenticated: () => Promise<boolean>
+  githubGetStatus: () => Promise<{ installed: boolean; authenticated: boolean; user?: any }>
   githubGetUser: () => Promise<any>
   githubGetRepositories: () => Promise<any[]>
   githubCloneRepository: (repoUrl: string, localPath: string) => Promise<{ success: boolean; error?: string }>
