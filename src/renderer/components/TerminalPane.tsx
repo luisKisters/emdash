@@ -52,7 +52,6 @@ const TerminalPaneComponent: React.FC<Props> = ({
     term.open(el);
     term.focus();
     setTimeout(() => term.focus(), 0);
-    term.writeln("\x1b[32m[Terminal ready] Click here and type.\x1b[0m");
 
     const keyDisp = term.onData((data) => {
       if (process.env.NODE_ENV === "development") {
@@ -93,12 +92,6 @@ const TerminalPaneComponent: React.FC<Props> = ({
     const offData = window.electronAPI.onPtyData(id, (data) => {
       term.write(data);
     });
-    const offExit = window.electronAPI.onPtyExit(id, ({ exitCode }) => {
-      term.write(
-        `\r\n\x1b[31m[process exited with code ${exitCode}]\x1b[0m\r\n`
-      );
-    });
-
     const handleResize = () => {
       if (termRef.current && el) {
         const { width, height } = el.getBoundingClientRect();
@@ -117,7 +110,6 @@ const TerminalPaneComponent: React.FC<Props> = ({
 
     disposeFns.current.push(() => keyDisp.dispose());
     disposeFns.current.push(offData);
-    disposeFns.current.push(offExit);
     disposeFns.current.push(() => keyDisp2.dispose());
     disposeFns.current.push(() => resizeObserver.disconnect());
 
@@ -135,7 +127,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
       style={{
         width: "100%",
         height: "100%",
-        minHeight: "400px",
+        minHeight: "0",
         backgroundColor: "#0b0e14",
         overflow: "hidden",
       }}
@@ -147,7 +139,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
         style={{
           width: "100%",
           height: "100%",
-          minHeight: "400px",
+          minHeight: "0",
           overflow: "hidden",
         }}
       />

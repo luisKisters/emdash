@@ -436,7 +436,7 @@ const App: React.FC = () => {
             <div className="w-80 border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex flex-col h-screen max-h-screen">
               <FileChangesPanel
                 workspaceId={activeWorkspace.path}
-                className="flex-shrink-0"
+                className="flex-1 min-h-0"
               />
               <WorkspaceTerminalPanel
                 workspace={activeWorkspace}

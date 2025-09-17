@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { ChevronsUpDown, ArrowRight } from "lucide-react";
 import openaiLogo from "../../assets/images/openai.png";
 import claudeLogo from "../../assets/images/claude.png";
+import geminiLogo from "../../assets/images/gemini.png";
 import { useFileIndex } from "../hooks/useFileIndex";
 import FileTypeIcon from "./ui/file-type-icon";
 
@@ -59,7 +60,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   const [isProviderOpen, setIsProviderOpen] = useState(false);
-  const [provider, setProvider] = useState<"codex" | "claude-code">("codex");
+  const [provider, setProvider] = useState<"codex" | "claude-code" | "gemini">("codex");
   const providerRef = useRef<HTMLDivElement>(null);
   const shouldReduceMotion = useReducedMotion();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -248,12 +249,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 className="flex items-center gap-2 h-9 px-3 w-full rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
               >
                 <img
-                  src={provider === "claude-code" ? claudeLogo : openaiLogo}
+                  src={provider === "claude-code" ? claudeLogo : provider === "gemini" ? geminiLogo : openaiLogo}
                   alt={provider === "claude-code" ? "Claude" : "OpenAI"}
                   className="w-4 h-4 shrink-0"
                 />
                 <span className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate text-left">
-                  {provider === "claude-code" ? "Claude Code" : "Codex"}
+                  {provider === "claude-code" ? "Claude Code" : provider === "gemini" ? "Gemini" : "Codex"}
                 </span>
                 <ChevronsUpDown className="w-4 h-4 text-gray-500 shrink-0 ml-auto" />
               </motion.button>
@@ -303,6 +304,19 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                       >
                         <img src={claudeLogo} alt="Claude Code" className="w-4 h-4" />
                         <span className="text-gray-700 dark:text-gray-200">Claude Code</span>
+                      </motion.button>
+                    )}
+                    {provider !== "gemini" && (
+                      <motion.button
+                        type="button"
+                        onClick={() => {
+                          setProvider("gemini");
+                          setIsProviderOpen(false);
+                        }}
+                        className="w-full h-9 flex items-center gap-2 px-3 text-xs font-medium hover:bg-gray-200 dark:hover:bg-gray-600 cursor-pointer text-left"
+                      >
+                        <img src={geminiLogo} alt="Gemini" className="w-4 h-4" />
+                        <span className="text-gray-700 dark:text-gray-200">Gemini</span>
                       </motion.button>
                     )}
                   </motion.div>
