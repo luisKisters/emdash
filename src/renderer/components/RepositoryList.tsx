@@ -57,7 +57,7 @@ const RepositoryList: React.FC<RepositoryListProps> = ({
   return (
     <div className="w-full max-w-[600px] mx-auto">
       <div className="mb-6">
-        <h2 className="text-2xl font-serif text-center mb-2">Your Repositories</h2>
+        <h2 className="text-2xl text-center mb-2">Your Repositories</h2>
         <p className="text-sm text-gray-500 text-center">
           {repositories.length} repositories found
         </p>

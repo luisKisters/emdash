@@ -25,7 +25,7 @@ export const WorkspaceTerminalPanel: React.FC<Props> = ({
         className={`flex flex-col items-center justify-center h-full bg-gray-50 dark:bg-gray-900 ${className}`}
       >
         <Bot className="w-8 h-8 text-gray-400 mb-2" />
-        <h3 className="text-sm font-serif text-gray-600 dark:text-gray-400 mb-1">
+        <h3 className="text-sm text-gray-600 dark:text-gray-400 mb-1">
           No Workspace Selected
         </h3>
         <p className="text-xs text-gray-500 dark:text-gray-500 text-center">
@@ -41,9 +41,8 @@ export const WorkspaceTerminalPanel: React.FC<Props> = ({
     >
       <div className="flex items-center px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
         <div className="flex items-center space-x-2 min-w-0">
-          {" "}
           <h3
-            className="text-sm font-serif font-medium text-gray-900 dark:text-gray-100 truncate max-w-[220px]"
+            className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[220px]"
             title={workspace.name}
           >
             Terminal

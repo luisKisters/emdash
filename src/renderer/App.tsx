@@ -361,10 +361,10 @@ const App: React.FC = () => {
         <div className="flex-1 bg-background text-foreground overflow-y-auto">
           <div className="container mx-auto px-4 py-8">
             <div className="text-center mb-12">
-              <h1 className="text-6xl font-serif tracking-wider mb-4">
+              <h1 className="text-6xl tracking-wider mb-4">
                 orcbench
               </h1>
-              <p className="text-lg font-serif text-gray-700 text-muted-foreground mb-4">
+              <p className="text-lg text-gray-700 text-muted-foreground mb-4">
                 Run multiple Codex Agents in parallel
               </p>
               {(!ghInstalled || !isAuthenticated) && (
@@ -402,7 +402,7 @@ const App: React.FC = () => {
               <Button
                 onClick={handleOpenProject}
                 size="lg"
-                className="min-w-[200px] bg-black text-white hover:bg-gray-800 hover:text-white border-black font-serif"
+                className="min-w-[200px] bg-black text-white hover:bg-gray-800 hover:text-white border-black"
               >
                 <FolderOpen className="mr-2 h-5 w-5" />
                 Open Project
@@ -449,10 +449,10 @@ const App: React.FC = () => {
         <div className="flex-1 bg-background text-foreground overflow-y-auto">
           <div className="container mx-auto px-4 py-8">
             <div className="text-center mb-12">
-              <h1 className="text-6xl font-serif tracking-wider mb-4">
+              <h1 className="text-6xl tracking-wider mb-4">
                 orcbench
               </h1>
-              <p className="text-lg font-serif text-gray-700 text-muted-foreground mb-4">
+              <p className="text-lg text-gray-700 text-muted-foreground mb-4">
                 Run multiple Codex Agents in parallel
               </p>
               {(!ghInstalled || !isAuthenticated) && (
@@ -490,7 +490,7 @@ const App: React.FC = () => {
               <Button
                 onClick={handleOpenProject}
                 size="lg"
-                className="min-w-[200px] bg-black text-white hover:bg-gray-800 hover:text-white border-black font-serif"
+                className="min-w-[200px] bg-black text-white hover:bg-gray-800 hover:text-white border-black"
               >
                 <FolderOpen className="mr-2 h-5 w-5" />
                 Open Project

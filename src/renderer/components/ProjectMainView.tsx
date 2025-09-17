@@ -50,7 +50,7 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
         <div className="mb-8">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h1 className="text-3xl font-serif font-bold">{project.name}</h1>
+              <h1 className="text-3xl font-bold">{project.name}</h1>
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 {project.path}
               </p>
@@ -68,7 +68,7 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
         <div className="max-w-4xl">
           <Card className="mb-6">
             <CardHeader>
-              <CardTitle className="text-xl font-serif">What's a workspace?</CardTitle>
+              <CardTitle className="text-xl">What's a workspace?</CardTitle>
               <CardDescription>
                 Each workspace is an isolated copy and branch of your Git repo. orcbench only copies files tracked in Git.
               </CardDescription>
@@ -93,7 +93,7 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
                 <Button
                   onClick={onCreateWorkspace}
                   disabled={isCreatingWorkspace}
-                  className="bg-black text-white hover:bg-gray-800 font-serif"
+                  className="bg-black text-white hover:bg-gray-800"
                 >
                   {isCreatingWorkspace ? (
                     <>
@@ -113,7 +113,7 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
 
           {project.workspaces && project.workspaces.length > 0 && (
             <div className="mb-6">
-              <h2 className="text-lg font-serif font-semibold mb-4">Workspaces</h2>
+              <h2 className="text-lg font-semibold mb-4">Workspaces</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {project.workspaces.map((workspace) => (
                   <Card 

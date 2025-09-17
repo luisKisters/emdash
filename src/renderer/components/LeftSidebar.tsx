@@ -57,7 +57,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
           <Button
             variant="ghost"
             onClick={onGoHome}
-            className="w-full justify-center sm:justify-start mt-5 p-3 h-auto font-serif"
+            className="w-full justify-center sm:justify-start mt-5 p-3 h-auto"
             aria-label="Home"
           >
             <Home className="w-5 h-5 sm:w-4 sm:h-4 sm:mr-3 text-gray-600 dark:text-gray-400" />
