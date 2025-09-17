@@ -67,6 +67,7 @@ declare global {
       codexCreateAgent: (workspaceId: string, worktreePath: string) => Promise<{ success: boolean; agent?: any; error?: string }>
       codexSendMessage: (workspaceId: string, message: string) => Promise<{ success: boolean; response?: any; error?: string }>
       codexSendMessageStream: (workspaceId: string, message: string) => Promise<{ success: boolean; error?: string }>
+      codexStopStream: (workspaceId: string) => Promise<{ success: boolean; stopped?: boolean; error?: string }>
       codexGetAgentStatus: (workspaceId: string) => Promise<{ success: boolean; agent?: any; error?: string }>
       codexGetAllAgents: () => Promise<{ success: boolean; agents?: any[]; error?: string }>
       codexRemoveAgent: (workspaceId: string) => Promise<{ success: boolean; removed?: boolean; error?: string }>
@@ -144,6 +145,7 @@ export interface ElectronAPI {
   codexCreateAgent: (workspaceId: string, worktreePath: string) => Promise<{ success: boolean; agent?: any; error?: string }>
   codexSendMessage: (workspaceId: string, message: string) => Promise<{ success: boolean; response?: any; error?: string }>
   codexSendMessageStream: (workspaceId: string, message: string) => Promise<{ success: boolean; error?: string }>
+  codexStopStream: (workspaceId: string) => Promise<{ success: boolean; stopped?: boolean; error?: string }>
   codexGetAgentStatus: (workspaceId: string) => Promise<{ success: boolean; agent?: any; error?: string }>
   codexGetAllAgents: () => Promise<{ success: boolean; agents?: any[]; error?: string }>
   codexRemoveAgent: (workspaceId: string) => Promise<{ success: boolean; removed?: boolean; error?: string }>

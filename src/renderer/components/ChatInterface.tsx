@@ -1,52 +1,17 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Folder } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
 import ReactMarkdown from "react-markdown";
 import ChatInput from "./ChatInput";
 import { buildAttachmentsSection } from "../lib/attachments";
 
-const LIST_HEADING_KEYWORDS = ["tasks", "task", "todo", "to do", "steps", "plan", "plans"];
-
 const filterCodexOutput = (markdown: string): string => {
   if (!markdown) return "";
 
-  const lines = markdown.split(/\r?\n/);
-  let collectingList = false;
-  let latestSection: string[] = [];
-
-  for (const line of lines) {
-    const trimmed = line.trim();
-
-    if (!trimmed) {
-      if (collectingList && latestSection.length > 0) {
-        latestSection.push("");
-      }
-      continue;
-    }
-
-    const boldMatch = trimmed.match(/\*\*([^*]+)\*\*/);
-    if (boldMatch) {
-      latestSection = [boldMatch[0]];
-
-      const heading = boldMatch[1].toLowerCase().trim();
-      collectingList = LIST_HEADING_KEYWORDS.some((keyword) => heading === keyword);
-      continue;
-    }
-
-    if (
-      collectingList &&
-      (trimmed.startsWith("- ") || /^(\d+\.|[a-z]\))/i.test(trimmed))
-    ) {
-      latestSection.push(line);
-      continue;
-    }
-
-    if (collectingList) {
-      collectingList = false;
-    }
+  if (markdown.includes("<!-- stream-cleaned -->")) {
+    return markdown.replace(/<!-- stream-cleaned -->\s*/i, "").trim();
   }
-
-  return latestSection.join("\n").trim();
+  return markdown;
 };
 
 // Type assertion for electronAPI
@@ -106,7 +71,6 @@ export const ChatInterface: React.FC<Props> = ({
   const { toast } = useToast();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState("");
-  const [streamingMessage, setStreamingMessage] = useState<string>("");
   const [isStreaming, setIsStreaming] = useState(false);
   const [loadingSeconds, setLoadingSeconds] = useState(0);
   const [isCodexInstalled, setIsCodexInstalled] = useState<boolean | null>(
@@ -115,60 +79,15 @@ export const ChatInterface: React.FC<Props> = ({
   const [agentCreated, setAgentCreated] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
-  const [activeStreamingHeadline, setActiveStreamingHeadline] = useState<string | null>(
-    null
-  );
-  const [isStreamingHeadlineVisible, setIsStreamingHeadlineVisible] = useState(false);
-  
+  const [streamingOutput, setStreamingOutput] = useState("");
+  const streamOutputRef = useRef("");
+  const cancelledStreamRef = useRef(false);
+
   // Auto-scroll state
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isUserScrolling, setIsUserScrolling] = useState(false);
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
-
-  const streamLogPath = useMemo(
-    () => `${workspace.path}/codex-stream.log`,
-    [workspace.path]
-  );
-
-  const filteredStreamingMessage = useMemo(
-    () => filterCodexOutput(streamingMessage),
-    [streamingMessage]
-  );
-
-  const resetStreamLog = useCallback(
-    async (content: string) => {
-      try {
-        const result = await window.electronAPI.debugAppendLog(
-          streamLogPath,
-          content,
-          { reset: true }
-        );
-        if (!result.success) {
-          console.error("Failed to reset Codex stream log:", result.error);
-        }
-      } catch (error) {
-        console.error("Failed to reset Codex stream log:", error);
-      }
-    },
-    [streamLogPath]
-  );
-
-  const appendToStreamLog = useCallback(
-    (content: string) => {
-      window.electronAPI
-        .debugAppendLog(streamLogPath, content, { reset: false })
-        .then((result) => {
-          if (!result.success) {
-            console.error("Failed to append to Codex stream log:", result.error);
-          }
-        })
-        .catch((error) => {
-          console.error("Failed to append to Codex stream log:", error);
-        });
-    },
-    [streamLogPath]
-  );
 
   // Auto-scroll to bottom function
   const scrollToBottom = () => {
@@ -214,51 +133,7 @@ export const ChatInterface: React.FC<Props> = ({
   // Auto-scroll when messages change or streaming updates
   useEffect(() => {
     scrollToBottom();
-  }, [messages, streamingMessage, shouldAutoScroll]);
-
-  useEffect(() => {
-    let frame: number | null = null;
-    let timeout: ReturnType<typeof setTimeout> | null = null;
-
-    if (isStreaming && filteredStreamingMessage) {
-      if (!activeStreamingHeadline) {
-        setActiveStreamingHeadline(filteredStreamingMessage);
-        frame = requestAnimationFrame(() => {
-          setIsStreamingHeadlineVisible(true);
-        });
-      } else if (filteredStreamingMessage !== activeStreamingHeadline) {
-        frame = requestAnimationFrame(() => {
-          setIsStreamingHeadlineVisible(false);
-        });
-        timeout = setTimeout(() => {
-          setActiveStreamingHeadline(filteredStreamingMessage);
-          setIsStreamingHeadlineVisible(true);
-        }, 260);
-      } else {
-        frame = requestAnimationFrame(() => {
-          setIsStreamingHeadlineVisible(true);
-        });
-      }
-    } else if (activeStreamingHeadline) {
-      frame = requestAnimationFrame(() => {
-        setIsStreamingHeadlineVisible(false);
-      });
-      timeout = setTimeout(() => {
-        setActiveStreamingHeadline(null);
-      }, 260);
-    } else {
-      setIsStreamingHeadlineVisible(false);
-    }
-
-    return () => {
-      if (frame !== null) {
-        cancelAnimationFrame(frame);
-      }
-      if (timeout) {
-        clearTimeout(timeout);
-      }
-    };
-  }, [isStreaming, filteredStreamingMessage, activeStreamingHeadline]);
+  }, [messages, streamingOutput, shouldAutoScroll]);
 
   useEffect(() => {
     let interval: ReturnType<typeof setInterval> | undefined;
@@ -281,40 +156,56 @@ export const ChatInterface: React.FC<Props> = ({
 
   // Set up streaming event listeners
   useEffect(() => {
-    const unsubscribeOutput = (window.electronAPI as any).onCodexStreamOutput((data: { workspaceId: string; output: string; agentId: string }) => {
-      if (data.workspaceId === workspace.id) {
-        setStreamingMessage(prev => prev + data.output);
-        appendToStreamLog(data.output);
-      }
-    });
+    const unsubscribeOutput = (window.electronAPI as any).onCodexStreamOutput(
+      (data: { workspaceId: string; output: string; agentId: string }) => {
+        if (data.workspaceId !== workspace.id) return;
 
-    const unsubscribeError = (window.electronAPI as any).onCodexStreamError((data: { workspaceId: string; error: string; agentId: string }) => {
-      if (data.workspaceId === workspace.id) {
-        console.error('Codex streaming error:', data.error);
-        setIsStreaming(false);
-        setStreamingMessage("");
-        appendToStreamLog(`\n[ERROR] ${data.error}\n`);
-      }
-    });
+        streamOutputRef.current += data.output;
+        setStreamingOutput(streamOutputRef.current);
 
-    const unsubscribeComplete = (window.electronAPI as any).onCodexStreamComplete((data: { workspaceId: string; exitCode: number; agentId: string }) => {
-      if (data.workspaceId === workspace.id) {
+        if (!cancelledStreamRef.current) {
+          setIsStreaming(true);
+        }
+      }
+    );
+
+    const unsubscribeError = (window.electronAPI as any).onCodexStreamError(
+      (data: { workspaceId: string; error: string; agentId: string }) => {
+        if (data.workspaceId === workspace.id) {
+          console.error('Codex streaming error:', data.error);
+          setIsStreaming(false);
+          streamOutputRef.current = '';
+          setStreamingOutput('');
+          cancelledStreamRef.current = false;
+        }
+      }
+    );
+
+    const unsubscribeComplete = (window.electronAPI as any).onCodexStreamComplete(
+      (data: { workspaceId: string; exitCode: number; agentId: string }) => {
+        if (data.workspaceId !== workspace.id) return;
         setIsStreaming(false);
-        appendToStreamLog(`\n[COMPLETE] exit code ${data.exitCode}\n`);
-        
-        // Save the complete streaming message
-        if (streamingMessage.trim()) {
+        setLoadingSeconds(0);
+
+        if (cancelledStreamRef.current) {
+          cancelledStreamRef.current = false;
+          return;
+        }
+
+        const rawOutput = streamOutputRef.current;
+        const trimmed = rawOutput.trim();
+
+        if (trimmed) {
           const agentMessage: Message = {
             id: Date.now().toString(),
-            content: streamingMessage,
-            sender: "agent",
+            content: trimmed,
+            sender: 'agent',
             timestamp: new Date(),
           };
 
-          // Save to database
           window.electronAPI.saveMessage({
             id: agentMessage.id,
-            conversationId: conversationId,
+            conversationId,
             content: agentMessage.content,
             sender: agentMessage.sender,
             metadata: JSON.stringify({
@@ -325,17 +216,22 @@ export const ChatInterface: React.FC<Props> = ({
 
           setMessages((prev) => [...prev, agentMessage]);
         }
-        
-        setStreamingMessage("");
+
+        streamOutputRef.current = '';
+        setStreamingOutput('');
+        cancelledStreamRef.current = false;
       }
-    });
+    );
 
     return () => {
       unsubscribeOutput();
       unsubscribeError();
       unsubscribeComplete();
+      streamOutputRef.current = '';
+      setStreamingOutput('');
+      cancelledStreamRef.current = false;
     };
-  }, [workspace.id, conversationId, streamingMessage, appendToStreamLog]);
+  }, [workspace.id, conversationId]);
 
   // Load conversation and messages on mount
   useEffect(() => {
@@ -365,7 +261,7 @@ export const ChatInterface: React.FC<Props> = ({
             if (loadedMessages.length === 0) {
               const welcomeMessage: Message = {
                 id: `welcome-${Date.now()}`,
-                content: `Hello! I'm Codex and I'm ready to help you work on ${workspace.name}. What would you like me to do?`,
+                content: `Hello! You're working in workspace **${workspace.name}**. What can the agent do for you?`,
                 sender: "agent",
                 timestamp: new Date(),
               };
@@ -477,20 +373,10 @@ export const ChatInterface: React.FC<Props> = ({
 
     const messageToSend = inputValue + attachmentsSection;
     setInputValue("");
+    streamOutputRef.current = "";
+    setStreamingOutput("");
     setIsStreaming(true);
-    setStreamingMessage("");
-
-    await resetStreamLog(
-      [
-        `=== Codex Stream ${new Date().toISOString()} ===`,
-        `Workspace: ${workspace.name} (${workspace.id})`,
-        "Prompt:",
-        messageToSend,
-        "",
-        "--- Output ---",
-        "",
-      ].join("\n")
-    );
+    cancelledStreamRef.current = false;
 
     try {
       await (window.electronAPI as any).codexSendMessageStream(workspace.id, messageToSend);
@@ -498,15 +384,44 @@ export const ChatInterface: React.FC<Props> = ({
     } catch (error) {
       console.error("Error starting Codex stream:", error);
       setIsStreaming(false);
-      setStreamingMessage("");
-      appendToStreamLog(`\n[STREAM_ERROR] ${error instanceof Error ? error.message : String(error)}\n`);
-      
+      streamOutputRef.current = "";
+      setStreamingOutput("");
+
       toast({
         title: "Communication Error",
         description: "Failed to start Codex stream. Please try again.",
         variant: "destructive",
       });
     }
+  };
+
+  const handleCancelStream = async () => {
+    if (!isStreaming) return;
+
+    try {
+      const result = await window.electronAPI.codexStopStream(workspace.id);
+      if (!result?.success) {
+        toast({
+          title: "Cancel Failed",
+          description: result?.error || "Unable to stop Codex stream.",
+          variant: "destructive",
+        });
+        return;
+      }
+      cancelledStreamRef.current = true;
+    } catch (error) {
+      console.error("Failed to stop Codex stream:", error);
+      toast({
+        title: "Cancel Failed",
+        description: "Unable to stop Codex stream. Please try again.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsStreaming(false);
+    setLoadingSeconds(0);
+    setStreamingOutput(streamOutputRef.current);
   };
 
   return (
@@ -524,12 +439,12 @@ export const ChatInterface: React.FC<Props> = ({
         </div>
       </div>
 
-      <div 
+      <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto p-6" 
-        style={{ 
-          maskImage: 'linear-gradient(to bottom, black 0%, black 85%, transparent 100%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 85%, transparent 100%)'
+        className="flex-1 overflow-y-auto px-6 pt-6 pb-2"
+        style={{
+          maskImage: 'linear-gradient(to bottom, black 0%, black 93%, transparent 100%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 93%, transparent 100%)'
         }}
       >
         <div className="max-w-4xl mx-auto space-y-6">
@@ -623,138 +538,16 @@ export const ChatInterface: React.FC<Props> = ({
                 );
               })}
               
-              {activeStreamingHeadline && (
-                <div
-                  className={`flex justify-start transition-all duration-300 ease-out ${
-                    isStreamingHeadlineVisible
-                      ? "opacity-100 translate-y-0"
-                      : "opacity-0 -translate-y-1"
-                  }`}
-                >
-                  <div
-                    key={activeStreamingHeadline}
-                    className="max-w-[80%] rounded-md px-4 py-3 text-sm leading-relaxed font-sans bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 transition-all duration-300 ease-out"
-                  >
-                    <div className="prose prose-sm max-w-none">
-                      <ReactMarkdown
-                          components={{
-                            code: ({
-                              node,
-                            inline,
-                            className,
-                            children,
-                            ...props
-                          }: any) => {
-                            const match = /language-(\w+)/.exec(className || "");
-                            const language = match ? match[1] : "";
-                            const codeContent = String(children).replace(/\n$/, "");
-
-                            if (
-                              language === "diff" ||
-                              codeContent.includes("diff --git")
-                            ) {
-                              return (
-                                <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm font-mono">
-                                  <code className="text-gray-100" {...props}>
-                                    {codeContent.split("\n").map((line, index) => {
-                                      let lineClass = "text-gray-300";
-                                      if (line.startsWith("+"))
-                                        lineClass = "text-green-400";
-                                      else if (line.startsWith("-"))
-                                        lineClass = "text-red-400";
-                                      else if (line.startsWith("@@"))
-                                        lineClass = "text-blue-400";
-                                      else if (line.startsWith("diff --git"))
-                                        lineClass = "text-yellow-400";
-                                      else if (line.startsWith("index"))
-                                        lineClass = "text-purple-400";
-
-                                      return (
-                                        <div key={index} className={lineClass}>
-                                          {line}
-                                        </div>
-                                      );
-                                    })}
-                                  </code>
-                                </pre>
-                              );
-                            }
-
-                            if (
-                              !inline &&
-                              (match ||
-                                codeContent.includes("import ") ||
-                                codeContent.includes("function ") ||
-                                codeContent.includes("const ") ||
-                                codeContent.includes("class "))
-                            ) {
-                              return (
-                                <pre className="bg-gray-900 text-gray-100 p-4 rounded-lg overflow-x-auto text-sm font-mono">
-                                  <code className="text-gray-100" {...props}>
-                                    {codeContent}
-                                  </code>
-                                </pre>
-                              );
-                            }
-
-                            return (
-                              <code
-                                className="bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded text-sm font-mono text-gray-800 dark:text-gray-200"
-                                {...props}
-                              >
-                                {children}
-                              </code>
-                            );
-                          },
-                          ul: ({ children }) => (
-                            <ul className="list-disc list-inside space-y-1 my-2">
-                              {children}
-                            </ul>
-                          ),
-                          ol: ({ children }) => (
-                            <ol className="list-decimal list-inside space-y-1 my-2">
-                              {children}
-                            </ol>
-                          ),
-                          li: ({ children }) => (
-                            <li className="ml-2">{children}</li>
-                          ),
-                          p: ({ children }) => (
-                            <p className="mb-2 last:mb-0">{children}</p>
-                          ),
-                          strong: ({ children }) => (
-                            <strong className="font-semibold text-gray-900 dark:text-gray-100">
-                              {children}
-                            </strong>
-                          ),
-                          em: ({ children }) => (
-                            <em className="italic">{children}</em>
-                          ),
-                        }}
-                      >
-                        {activeStreamingHeadline}
-                      </ReactMarkdown>
-                    </div>
+              {(isStreaming || streamingOutput) && (
+                <div className="flex justify-start">
+                  <div className="max-w-[80%] rounded-md px-4 py-3 text-sm leading-relaxed font-sans bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100">
+                    <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm text-gray-900 dark:text-gray-100">
+                      {streamingOutput}
+                    </pre>
                   </div>
                 </div>
               )}
             </>
-          )}
-
-          {isStreaming && !filteredStreamingMessage && (
-            <div className="text-gray-600 dark:text-gray-400">
-              <div className="flex space-x-1">
-                <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
-                <div
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0.1s" }}
-                ></div>
-                <div
-                  className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                  style={{ animationDelay: "0.2s" }}
-                ></div>
-              </div>
-            </div>
           )}
           
           {/* Scroll target element */}
@@ -766,6 +559,7 @@ export const ChatInterface: React.FC<Props> = ({
         value={inputValue}
         onChange={setInputValue}
         onSend={handleSendMessage}
+        onCancel={handleCancelStream}
         isLoading={isStreaming}
         loadingSeconds={loadingSeconds}
         isCodexInstalled={isCodexInstalled}

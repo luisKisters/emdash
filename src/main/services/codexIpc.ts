@@ -47,6 +47,18 @@ export function setupCodexIpc() {
     }
   });
 
+  ipcMain.handle('codex:stop-stream', async (event, workspaceId: string) => {
+    try {
+      console.log('[codex:stop-stream] request received', workspaceId);
+      const stopped = await codexService.stopMessageStream(workspaceId);
+      console.log('[codex:stop-stream] result', { workspaceId, stopped });
+      return { success: stopped, stopped };
+    } catch (error) {
+      console.error('[codex:stop-stream] failed', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+    }
+  });
+
   // Get agent status
   ipcMain.handle('codex:get-agent-status', async (event, workspaceId: string) => {
     try {

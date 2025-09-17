@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Button } from "./ui/button";
-import { Spinner } from "./ui/spinner";
 import { ChevronsUpDown, ArrowRight } from "lucide-react";
 import openaiLogo from "../../assets/images/openai.png";
 import claudeLogo from "../../assets/images/claude.png";
@@ -10,6 +9,7 @@ interface ChatInputProps {
   value: string;
   onChange: (value: string) => void;
   onSend: () => void;
+  onCancel: () => void;
   isLoading: boolean;
   loadingSeconds: number;
   isCodexInstalled: boolean | null;
@@ -46,6 +46,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   value,
   onChange,
   onSend,
+  onCancel,
   isLoading,
   loadingSeconds,
   isCodexInstalled,
@@ -71,7 +72,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
-      onSend();
+      if (!isLoading) {
+        onSend();
+      }
     }
   };
 
@@ -85,11 +88,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     return "Tell agent what to do...";
   };
 
-  const isDisabled =
-    disabled || isLoading || !isCodexInstalled || !agentCreated;
+  const trimmedValue = value.trim();
+  const baseDisabled = disabled || !isCodexInstalled || !agentCreated;
+  const textareaDisabled = baseDisabled || isLoading;
+  const sendDisabled = isLoading ? baseDisabled : baseDisabled || !trimmedValue;
 
   return (
-    <div className="p-6">
+    <div className="px-6 pt-4 pb-6">
       <div className="max-w-4xl mx-auto">
         <div
           className={`relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md transition-shadow duration-200 ${
@@ -106,7 +111,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               placeholder={getPlaceholder()}
               className="w-full resize-none border-none outline-none bg-transparent text-gray-900 dark:text-gray-100 text-sm placeholder-gray-500 dark:placeholder-gray-400"
               rows={2}
-              disabled={isDisabled}
+              disabled={textareaDisabled}
               style={{ minHeight: "56px" }}
             />
           </div>
@@ -188,12 +193,23 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 </span>
               )}
               <Button
-                onClick={onSend}
-                disabled={!value.trim() || isDisabled}
-                className="h-9 w-9 p-0 rounded-md bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-300 disabled:opacity-50"
-                aria-label="Send"
+                type="button"
+                onClick={isLoading ? onCancel : onSend}
+                disabled={sendDisabled}
+                className={`group relative h-9 w-9 p-0 rounded-md text-gray-600 dark:text-gray-300 transition-colors disabled:opacity-50 disabled:pointer-events-none ${
+                  isLoading
+                    ? "bg-gray-200 dark:bg-gray-700 hover:bg-red-300 hover:text-white dark:hover:text-white"
+                    : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+                }`}
+                aria-label={isLoading ? "Stop Codex" : "Send"}
               >
-                {isLoading ? <Spinner size="sm" /> : <ArrowRight className="w-4 h-4" />}
+                {isLoading ? (
+                  <div className="flex items-center justify-center w-full h-full">
+                    <div className="w-3.5 h-3.5 rounded-[3px] bg-gray-500 dark:bg-gray-300 transition-colors duration-150 group-hover:bg-red-500" />
+                  </div>
+                ) : (
+                  <ArrowRight className="w-4 h-4" />
+                )}
               </Button>
             </div>
           </div>
