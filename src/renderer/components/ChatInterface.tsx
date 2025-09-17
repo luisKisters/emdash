@@ -78,6 +78,10 @@ export const ChatInterface: React.FC<Props> = ({
   );
   const [agentCreated, setAgentCreated] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const conversationIdRef = useRef<string | null>(null);
+  useEffect(() => {
+    conversationIdRef.current = conversationId;
+  }, [conversationId]);
   const [isLoadingMessages, setIsLoadingMessages] = useState(true);
   const [streamingOutput, setStreamingOutput] = useState("");
   const streamOutputRef = useRef("");
@@ -220,6 +224,7 @@ export const ChatInterface: React.FC<Props> = ({
         streamOutputRef.current = '';
         setStreamingOutput('');
         cancelledStreamRef.current = false;
+        setStreamingMessage("");
       }
     );
 
@@ -232,6 +237,20 @@ export const ChatInterface: React.FC<Props> = ({
       cancelledStreamRef.current = false;
     };
   }, [workspace.id, conversationId]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const status = await (window as any).electronAPI.codexGetAgentStatus(workspace.id);
+        if (status?.success && status.agent) {
+          if (status.agent.status === 'running' && status.agent.lastResponse) {
+            setIsStreaming(true);
+            setStreamingMessage(status.agent.lastResponse);
+          }
+        }
+      } catch {}
+    })();
+  }, [workspace.id]);
 
   // Load conversation and messages on mount
   useEffect(() => {
@@ -361,16 +380,11 @@ export const ChatInterface: React.FC<Props> = ({
     }
 
     setMessages((prev) => [...prev, userMessage]);
-
-    const attachmentsSection = await buildAttachmentsSection(
-      workspace.path,
-      inputValue,
-      {
-        maxFiles: 6,
-        maxBytesPerFile: 200 * 1024,
-      }
-    );
-
+    // Build message to send with inline attachments for @mentions
+    const attachmentsSection = await buildAttachmentsSection(workspace.path, inputValue, {
+      maxFiles: 6,
+      maxBytesPerFile: 200 * 1024,
+    });
     const messageToSend = inputValue + attachmentsSection;
     setInputValue("");
     streamOutputRef.current = "";
@@ -458,63 +472,51 @@ export const ChatInterface: React.FC<Props> = ({
             <>
               {messages.map((message) => {
                 const isUserMessage = message.sender === "user";
-                const messageContent = isUserMessage
-                  ? message.content
-                  : filterCodexOutput(message.content);
-
-                if (!isUserMessage && !messageContent) {
-                  return null;
-                }
-
-                if (!isUserMessage) {
-                  return (
-                    <div key={message.id} className="flex justify-start">
-                      <div className="max-w-[80%] px-4 py-3 text-sm leading-relaxed font-sans text-gray-900 dark:text-gray-100">
-                        <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm">
-                          {messageContent}
-                        </pre>
-                      </div>
-                    </div>
-                  );
-                }
+                const raw = message.content ?? "";
+                const messageContent = isUserMessage ? raw : filterCodexOutput(raw);
+                if (!isUserMessage && !messageContent) return null;
 
                 return (
-                  <div key={message.id} className="flex justify-end">
-                    <div className="max-w-[80%] rounded-md px-4 py-3 text-sm leading-relaxed font-sans bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100">
-                      <div className="text-sm leading-relaxed space-y-2">
+                  <div
+                    key={message.id}
+                    className={`flex ${isUserMessage ? "justify-end" : "justify-start"}`}
+                  >
+                    <div
+                      className={`max-w-[80%] rounded-md px-4 py-3 text-sm leading-relaxed font-sans ${
+                        isUserMessage
+                          ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                          : "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 shadow-sm"
+                      }`}
+                    >
+                      <div className="prose prose-sm max-w-none">
                         <ReactMarkdown
                           components={{
-                            code: ({
-                              node,
-                              inline,
-                              className,
-                              children,
-                              ...props
-                            }: any) => {
+                            code: ({ inline, className, children, ...props }: any) => {
                               const match = /language-(\w+)/.exec(className || "");
-                              if (!inline && match) {
-                                return (
-                                  <pre className="overflow-x-auto text-sm whitespace-pre-wrap">
-                                    <code className={className} {...props}>
-                                      {children}
-                                    </code>
-                                  </pre>
-                                );
-                              }
-
-                              return (
-                                <code className="font-mono text-sm" {...props}>
+                              return !inline && match ? (
+                                <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md overflow-x-auto">
+                                  <code className={className} {...props}>
+                                    {children}
+                                  </code>
+                                </pre>
+                              ) : (
+                                <code
+                                  className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm"
+                                  {...props}
+                                >
                                   {children}
                                 </code>
                               );
                             },
-                            ul: ({ children }) => <div className="space-y-1">{children}</div>,
-                            ol: ({ children }) => <div className="space-y-1">{children}</div>,
-                            li: ({ children }) => <div className="pl-0">{children}</div>,
-                            p: ({ children }) => <p className="m-0">{children}</p>,
-                            strong: ({ children }) => (
-                              <strong className="font-semibold">{children}</strong>
+                            ul: ({ children }) => (
+                              <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>
                             ),
+                            ol: ({ children }) => (
+                              <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>
+                            ),
+                            li: ({ children }) => <li className="ml-2">{children}</li>,
+                            p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                            strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
                             em: ({ children }) => <em className="italic">{children}</em>,
                           }}
                         >
@@ -525,19 +527,19 @@ export const ChatInterface: React.FC<Props> = ({
                   </div>
                 );
               })}
-              
+
               {(isStreaming || streamingOutput) && (
                 <div className="flex justify-start">
                   <div className="max-w-[80%] px-4 py-3 text-sm leading-relaxed font-sans text-gray-900 dark:text-gray-100">
                     <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm">
-                      {streamingOutput}
+                      {streamingOutput ?? ""}
                     </pre>
                   </div>
                 </div>
               )}
             </>
           )}
-          
+
           {/* Scroll target element */}
           <div ref={messagesEndRef} />
         </div>
@@ -556,6 +558,6 @@ export const ChatInterface: React.FC<Props> = ({
       />
     </div>
   );
-};
+
 
 export default ChatInterface;

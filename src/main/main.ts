@@ -11,6 +11,7 @@ import * as fs from 'fs'
 const execAsync = promisify(exec)
 import { registerPtyIpc } from './services/ptyIpc'
 import { registerWorktreeIpc } from './services/worktreeIpc'
+import { registerFsIpc } from './services/fsIpc'
 import { setupCodexIpc } from './services/codexIpc'
 import { registerFsIpc } from './services/fsIpc'
 
@@ -36,7 +37,6 @@ const createWindow = (): void => {
   // Load the app
   if (isDev) {
     mainWindow.loadURL('http://localhost:3000')
-    mainWindow.webContents.openDevTools()
   } else {
     mainWindow.loadFile(join(__dirname, '../renderer/index.html'))
   }
@@ -261,6 +261,36 @@ ipcMain.handle('github:isAuthenticated', async () => {
   }
 })
 
+// GitHub status: installed + authenticated + user
+ipcMain.handle('github:getStatus', async () => {
+  try {
+    let installed = true
+    try {
+      await execAsync('gh --version')
+    } catch {
+      installed = false
+    }
+
+    let authenticated = false
+    let user: any = null
+    if (installed) {
+      try {
+        const { stdout } = await execAsync('gh api user')
+        user = JSON.parse(stdout)
+        authenticated = true
+      } catch {
+        authenticated = false
+        user = null
+      }
+    }
+
+    return { installed, authenticated, user }
+  } catch (error) {
+    console.error('GitHub status check failed:', error)
+    return { installed: false, authenticated: false }
+  }
+})
+
 ipcMain.handle('github:getUser', async () => {
   try {
     const token = await githubService['getStoredToken']()
@@ -312,6 +342,194 @@ ipcMain.handle('settings:update', async (_, settings: any) => {
   // TODO: Implement settings persistence
   console.log('Updating settings:', settings)
 })
+
+// Git: Create Pull Request via GitHub CLI
+ipcMain.handle('git:create-pr', async (_, args: { workspacePath: string; title?: string; body?: string; base?: string; head?: string; draft?: boolean; web?: boolean; fill?: boolean }) => {
+  const { workspacePath, title, body, base, head, draft, web, fill } = args || ({} as any)
+  try {
+    const outputs: string[] = []
+
+    // Stage and commit any pending changes
+    try {
+      const { stdout: statusOut } = await execAsync('git status --porcelain', { cwd: workspacePath })
+      if (statusOut && statusOut.trim().length > 0) {
+        const { stdout: addOut, stderr: addErr } = await execAsync('git add -A', { cwd: workspacePath })
+        if (addOut?.trim()) outputs.push(addOut.trim())
+        if (addErr?.trim()) outputs.push(addErr.trim())
+
+        const commitMsg = 'stagehand: prepare pull request'
+        try {
+          const { stdout: commitOut, stderr: commitErr } = await execAsync(`git commit -m ${JSON.stringify(commitMsg)}`, { cwd: workspacePath })
+          if (commitOut?.trim()) outputs.push(commitOut.trim())
+          if (commitErr?.trim()) outputs.push(commitErr.trim())
+        } catch (commitErr: any) {
+          const msg = commitErr?.stderr || commitErr?.message || String(commitErr)
+          if (msg && /nothing to commit/i.test(msg)) {
+            outputs.push('git commit: nothing to commit')
+          } else {
+            throw commitErr
+          }
+        }
+      }
+    } catch (stageErr) {
+      console.warn('Failed to stage/commit changes before PR:', stageErr)
+      // Continue; PR may still be created for existing commits
+    }
+
+    // Ensure branch is pushed to origin so PR includes latest commit
+    try {
+      await execAsync('git push', { cwd: workspacePath })
+      outputs.push('git push: success')
+    } catch (pushErr: any) {
+      try {
+        const { stdout: branchOut } = await execAsync('git rev-parse --abbrev-ref HEAD', { cwd: workspacePath })
+        const branch = branchOut.trim()
+        await execAsync(`git push --set-upstream origin ${JSON.stringify(branch)}`, { cwd: workspacePath })
+        outputs.push(`git push --set-upstream origin ${branch}: success`)
+      } catch (pushErr2) {
+        console.error('Failed to push branch before PR:', pushErr2)
+        return { success: false, error: 'Failed to push branch to origin. Please check your Git remotes and authentication.' }
+      }
+    }
+
+    // Build gh pr create command
+    const flags: string[] = []
+    if (title) flags.push(`--title ${JSON.stringify(title)}`)
+    if (body) flags.push(`--body ${JSON.stringify(body)}`)
+    if (base) flags.push(`--base ${JSON.stringify(base)}`)
+    if (head) flags.push(`--head ${JSON.stringify(head)}`)
+    if (draft) flags.push('--draft')
+    if (web) flags.push('--web')
+    if (fill) flags.push('--fill')
+
+    const cmd = `gh pr create ${flags.join(' ')}`.trim()
+
+    const { stdout, stderr } = await execAsync(cmd, { cwd: workspacePath })
+    const out = [...outputs, ((stdout || '').trim() || (stderr || '').trim())].filter(Boolean).join('\n')
+
+    // Try to extract PR URL from output
+    const urlMatch = out.match(/https?:\/\/\S+/)
+    const url = urlMatch ? urlMatch[0] : null
+
+    return { success: true, url, output: out }
+  } catch (error: any) {
+    console.error('Failed to create PR:', error)
+    return { success: false, error: error?.message || String(error) }
+  }
+})
+
+// Git: Commit all changes and push current branch (create feature branch if on default)
+ipcMain.handle(
+  'git:commit-and-push',
+  async (
+    _,
+    args: {
+      workspacePath: string
+      commitMessage?: string
+      createBranchIfOnDefault?: boolean
+      branchPrefix?: string
+    }
+  ) => {
+    const {
+      workspacePath,
+      commitMessage = 'chore: apply workspace changes',
+      createBranchIfOnDefault = true,
+      branchPrefix = 'orch',
+    } = (args || ({} as any)) as {
+      workspacePath: string
+      commitMessage?: string
+      createBranchIfOnDefault?: boolean
+      branchPrefix?: string
+    }
+
+    try {
+      // Ensure we're in a git repo
+      await execAsync('git rev-parse --is-inside-work-tree', { cwd: workspacePath })
+
+      // Determine current branch
+      const { stdout: currentBranchOut } = await execAsync('git branch --show-current', {
+        cwd: workspacePath,
+      })
+      const currentBranch = (currentBranchOut || '').trim()
+
+      // Determine default branch via gh, fallback to main/master
+      let defaultBranch = 'main'
+      try {
+        const { stdout } = await execAsync('gh repo view --json defaultBranchRef -q .defaultBranchRef.name', {
+          cwd: workspacePath,
+        })
+        const db = (stdout || '').trim()
+        if (db) defaultBranch = db
+      } catch {
+        try {
+          const { stdout } = await execAsync('git remote show origin | sed -n "/HEAD branch/s/.*: //p"', {
+            cwd: workspacePath,
+          })
+          const db = (stdout || '').trim()
+          if (db) defaultBranch = db
+        } catch {
+          // keep default
+        }
+      }
+
+      // Optionally create a feature branch if currently on default
+      let targetBranch = currentBranch
+      if (createBranchIfOnDefault && (!currentBranch || currentBranch === defaultBranch)) {
+        const ts = new Date().toISOString().replace(/[-:T]/g, '').slice(0, 15)
+        targetBranch = `${branchPrefix}/${defaultBranch}-${ts}`
+        // Ensure we have latest default, then create branch from origin/default if available
+        try {
+          await execAsync('git fetch origin --quiet', { cwd: workspacePath })
+        } catch {}
+
+        // Prefer switching from remote default if it exists
+        try {
+          await execAsync(`git switch -c ${targetBranch} origin/${defaultBranch}`, { cwd: workspacePath })
+        } catch {
+          await execAsync(`git switch -c ${targetBranch}`, { cwd: workspacePath })
+        }
+      }
+
+      // Check for changes; if none, skip add/commit but still push
+      const { stdout: statusOut } = await execAsync('git status --porcelain', { cwd: workspacePath })
+      const hasChanges = !!(statusOut && statusOut.trim())
+
+      if (hasChanges) {
+        // Stage all and commit
+        await execAsync('git add -A', { cwd: workspacePath })
+        try {
+          await execAsync(`git commit -m ${JSON.stringify(commitMessage)}`, { cwd: workspacePath })
+        } catch (err: any) {
+          const msg = String(err?.stderr || err?.message || '')
+          if (!/nothing to commit/i.test(msg)) {
+            throw err
+          }
+        }
+      }
+
+      // Ensure remote origin exists
+      try {
+        await execAsync('git remote get-url origin', { cwd: workspacePath })
+      } catch {
+        return { success: false, error: "No 'origin' remote configured" }
+      }
+
+      // Push branch and set upstream
+      const branchNameOut = targetBranch || currentBranch
+      const pushCmd = `git push -u origin ${branchNameOut}`
+      try {
+        const { stdout, stderr } = await execAsync(pushCmd, { cwd: workspacePath })
+        const out = (stdout || '').trim() || (stderr || '').trim()
+        return { success: true, branch: branchNameOut, output: out }
+      } catch (error: any) {
+        return { success: false, error: error?.stderr || error?.message || String(error) }
+      }
+    } catch (error: any) {
+      console.error('Failed to commit and push:', error)
+      return { success: false, error: error?.message || String(error) }
+    }
+  }
+)
 
 // Database IPC handlers
 ipcMain.handle('db:getProjects', async () => {

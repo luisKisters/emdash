@@ -14,14 +14,16 @@ export function useFileChanges(workspacePath: string) {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchFileChanges = async () => {
+    const fetchFileChanges = async (isInitialLoad = false) => {
       if (!workspacePath) return;
       
-      setIsLoading(true);
-      setError(null);
+      if (isInitialLoad) {
+        setIsLoading(true);
+        setError(null);
+      }
       
       try {
-        // Call the main process to get git status
+        // Call main process to get git status
         const result = await window.electronAPI.getGitStatus(workspacePath);
         
         if (result?.success && result.changes && result.changes.length > 0) {
@@ -34,23 +36,26 @@ export function useFileChanges(workspacePath: string) {
           }));
           setFileChanges(changes);
         } else {
-          // No changes detected - set empty array
           setFileChanges([]);
         }
       } catch (err) {
         console.error('Failed to fetch file changes:', err);
-        setError('Failed to load file changes');
+        if (isInitialLoad) {
+          setError('Failed to load file changes');
+        }
         // No changes on error - set empty array
         setFileChanges([]);
       } finally {
-        setIsLoading(false);
+        if (isInitialLoad) {
+          setIsLoading(false);
+        }
       }
     };
 
-    fetchFileChanges();
+    // Initial load with loading state
+    fetchFileChanges(true);
     
-    // Set up polling for file changes every 5 seconds
-    const interval = setInterval(fetchFileChanges, 5000);
+    const interval = setInterval(() => fetchFileChanges(false), 5000);
     
     return () => clearInterval(interval);
   }, [workspacePath]);

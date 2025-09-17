@@ -2,7 +2,7 @@ import React from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Spinner } from './ui/spinner';
-import { FolderOpen, GitBranch, Plus, Settings } from 'lucide-react';
+import { FolderOpen, GitBranch, Plus } from 'lucide-react';
 
 interface Project {
   id: string;
@@ -54,16 +54,6 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
               <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
                 {project.path}
               </p>
-            </div>
-            <div className="flex space-x-2">
-              <Button variant="outline" size="sm" className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600">
-                <Settings className="w-4 h-4 mr-2" />
-                Settings
-              </Button>
-              <Button variant="outline" size="sm" className="bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600">
-                <GitBranch className="w-4 h-4 mr-2" />
-                View on GitHub
-              </Button>
             </div>
           </div>
           
@@ -135,12 +125,19 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
                     }`}
                     onClick={() => onSelectWorkspace(workspace)}
                   >
-                    <CardHeader>
+                  <CardHeader className="flex flex-row items-start justify-between space-y-0">
+                    <div>
                       <CardTitle className="text-lg">{workspace.name}</CardTitle>
-                      <CardDescription>
-                        Branch: {workspace.branch}
+                      <CardDescription className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
+                        {(workspace.status === 'running' || workspace.agentId) ? (
+                          <Spinner size="sm" className="text-gray-500" />
+                        ) : (
+                          <GitBranch className="w-4 h-4" />
+                        )}
+                        <span>Branch: {workspace.branch}</span>
                       </CardDescription>
-                    </CardHeader>
+                    </div>
+                  </CardHeader>
                     <CardContent>
                       <div className="flex items-center justify-between text-sm text-gray-500">
                         <span className={`px-2 py-1 rounded text-xs ${
@@ -162,37 +159,6 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
               </div>
             </div>
           )}
-
-          {/* Script Management
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-serif">Setup Script</CardTitle>
-                <CardDescription>
-                  Runs when a workspace is created. Use for copying .env files and installing dependencies.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" className="w-full">
-                  Add setup script
-                </Button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg font-serif">Run Script</CardTitle>
-                <CardDescription>
-                  Run tests or a development server to test changes in a workspace.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button variant="outline" className="w-full">
-                  Add run script
-                </Button>
-              </CardContent>
-            </Card>
-          </div> */}
         </div>
       </div>
     </div>

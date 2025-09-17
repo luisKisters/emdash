@@ -9,7 +9,7 @@ type ListArgs = {
 }
 
 type Item = {
-  path: string
+  path: string // relative to root
   type: 'file' | 'dir'
 }
 
@@ -96,10 +96,11 @@ export function registerFsIpc(): void {
   ipcMain.handle('fs:read', async (_event, args: { root: string; relPath: string; maxBytes?: number }) => {
     try {
       const { root, relPath } = args
-      const maxBytes = Math.min(Math.max(args.maxBytes ?? 200 * 1024, 1024), 5 * 1024 * 1024)
+      const maxBytes = Math.min(Math.max(args.maxBytes ?? 200 * 1024, 1024), 5 * 1024 * 1024) // 200KB default, clamp 1KB..5MB
       if (!root || !fs.existsSync(root)) return { success: false, error: 'Invalid root path' }
       if (!relPath) return { success: false, error: 'Invalid relPath' }
 
+      // Resolve and ensure within root
       const abs = path.resolve(root, relPath)
       const normRoot = path.resolve(root) + path.sep
       if (!abs.startsWith(normRoot)) return { success: false, error: 'Path escapes root' }

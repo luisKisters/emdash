@@ -124,3 +124,17 @@ The application stores conversation history locally, which may consume disk spac
 - Conversations are stored per workspace and persist across sessions
 - Database grows with usage but remains manageable for typical development workflows
 - Consider periodic cleanup of old conversations if storage becomes a concern
+
+### Clearing Local Storage
+
+If you want to reset or reclaim space, you can delete the app's database file. This removes saved conversations and resets projects and workspaces.
+
+**Before you start:**
+- Quit orcbench to ensure files are not in use.
+
+**Delete the database file:**
+- macOS: `~/Library/Application Support/orcbench/database.sqlite`
+- Windows: `%APPDATA%/orcbench/database.sqlite`
+- Linux: `~/.config/orcbench/database.sqlite`
+
+After deletion, restart orcbench — the database will be re‑initialized on launch.

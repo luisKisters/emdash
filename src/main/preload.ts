@@ -55,11 +55,23 @@ contextBridge.exposeInMainWorld('electronAPI', {
   openProject: () => ipcRenderer.invoke('project:open'),
   getGitInfo: (projectPath: string) => ipcRenderer.invoke('git:getInfo', projectPath),
   getGitStatus: (workspacePath: string) => ipcRenderer.invoke('git:get-status', workspacePath),
+  getFileDiff: (args: { workspacePath: string; filePath: string }) =>
+    ipcRenderer.invoke('git:get-file-diff', args),
+  gitCommitAndPush: (args: { workspacePath: string; commitMessage?: string; createBranchIfOnDefault?: boolean; branchPrefix?: string }) =>
+    ipcRenderer.invoke('git:commit-and-push', args),
+  createPullRequest: (args: { workspacePath: string; title?: string; body?: string; base?: string; head?: string; draft?: boolean; web?: boolean; fill?: boolean }) =>
+    ipcRenderer.invoke('git:create-pr', args),
   connectToGitHub: (projectPath: string) => ipcRenderer.invoke('github:connect', projectPath),
   
   // Repository management
   scanRepos: () => ipcRenderer.invoke('repos:scan'),
   addRepo: (path: string) => ipcRenderer.invoke('repos:add', path),
+  
+  // Filesystem
+  fsList: (root: string, opts?: { includeDirs?: boolean; maxEntries?: number }) =>
+    ipcRenderer.invoke('fs:list', { root, ...(opts || {}) }),
+  fsRead: (root: string, relPath: string, maxBytes?: number) =>
+    ipcRenderer.invoke('fs:read', { root, relPath, maxBytes }),
   
   // Run management
   createRun: (config: any) => ipcRenderer.invoke('runs:create', config),
@@ -75,6 +87,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // GitHub integration
   githubAuth: () => ipcRenderer.invoke('github:auth'),
   githubIsAuthenticated: () => ipcRenderer.invoke('github:isAuthenticated'),
+  githubGetStatus: () => ipcRenderer.invoke('github:getStatus'),
   githubGetUser: () => ipcRenderer.invoke('github:getUser'),
   githubGetRepositories: () => ipcRenderer.invoke('github:getRepositories'),
   githubCloneRepository: (repoUrl: string, localPath: string) => ipcRenderer.invoke('github:cloneRepository', repoUrl, localPath),
@@ -159,6 +172,9 @@ export interface ElectronAPI {
   openProject: () => Promise<{ success: boolean; path?: string; error?: string }>
   getGitInfo: (projectPath: string) => Promise<{ isGitRepo: boolean; remote?: string; branch?: string; path?: string; error?: string }>
   getGitStatus: (workspacePath: string) => Promise<{ success: boolean; changes?: Array<{ path: string; status: string; additions: number; deletions: number; diff?: string }>; error?: string }>
+  getFileDiff: (args: { workspacePath: string; filePath: string }) => Promise<{ success: boolean; diff?: { lines: Array<{ left?: string; right?: string; type: 'context' | 'add' | 'del' }> }; error?: string }>
+  gitCommitAndPush: (args: { workspacePath: string; commitMessage?: string; createBranchIfOnDefault?: boolean; branchPrefix?: string }) => Promise<{ success: boolean; branch?: string; output?: string; error?: string }>
+  createPullRequest: (args: { workspacePath: string; title?: string; body?: string; base?: string; head?: string; draft?: boolean; web?: boolean; fill?: boolean }) => Promise<{ success: boolean; url?: string; output?: string; error?: string }>
   connectToGitHub: (projectPath: string) => Promise<{ success: boolean; repository?: string; branch?: string; error?: string }>
 
   
@@ -180,6 +196,7 @@ export interface ElectronAPI {
   // GitHub integration
   githubAuth: () => Promise<{ success: boolean; token?: string; user?: any; error?: string }>
   githubIsAuthenticated: () => Promise<boolean>
+  githubGetStatus: () => Promise<{ installed: boolean; authenticated: boolean; user?: any }>
   githubGetUser: () => Promise<any>
   githubGetRepositories: () => Promise<any[]>
   githubCloneRepository: (repoUrl: string, localPath: string) => Promise<{ success: boolean; error?: string }>

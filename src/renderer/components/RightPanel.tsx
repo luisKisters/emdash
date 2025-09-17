@@ -1,4 +1,7 @@
 import React, { useState, useEffect } from "react";
+import { useToast } from "../hooks/use-toast";
+import { Spinner } from "./ui/spinner";
+import { useCreatePR } from "../hooks/useCreatePR";
 import { Run } from "../types";
 
 interface RightPanelProps {
@@ -6,6 +9,8 @@ interface RightPanelProps {
 }
 
 const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
+  const { toast } = useToast();
+  const { isCreating: isCreatingPR, createPR } = useCreatePR();
   const [activeTab, setActiveTab] = useState<"logs" | "diff" | "terminal">(
     "logs"
   );
@@ -13,7 +18,6 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
 
   useEffect(() => {
     if (selectedRun) {
-      // Set up event listener for run events
       const handleRunEvent = (event: any) => {
         if (event.runId === selectedRun.id) {
           setLogs((prev) => [...prev, event]);
@@ -53,8 +57,8 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
 
   if (!selectedRun) {
     return (
-      <div className="w-96 bg-gray-800 border-l border-gray-700 flex items-center justify-center">
-        <div className="text-center text-gray-500">
+      <div className="w-96 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex items-center justify-center">
+        <div className="text-center text-gray-500 dark:text-gray-400">
           <div className="text-4xl mb-2">📋</div>
           <p>Select a run to view details</p>
         </div>
@@ -63,36 +67,36 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
   }
 
   return (
-    <div className="w-96 bg-gray-800 border-l border-gray-700 flex flex-col">
-      <div className="p-4 border-b border-gray-700">
+    <div className="w-96 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 flex flex-col">
+      <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-2">
-          <h3 className="font-semibold text-white">Run Details</h3>
+          <h3 className="font-medium text-gray-900 dark:text-gray-100">Run Details</h3>
           <div className="flex gap-1">
             <button
-              className={`px-2 py-1 text-xs rounded ${
+              className={`px-2 py-1 text-xs rounded-md border ${
                 activeTab === "logs"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-600"
+                  : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700"
               }`}
               onClick={() => setActiveTab("logs")}
             >
               Logs
             </button>
             <button
-              className={`px-2 py-1 text-xs rounded ${
+              className={`px-2 py-1 text-xs rounded-md border ${
                 activeTab === "diff"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-600"
+                  : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700"
               }`}
               onClick={() => setActiveTab("diff")}
             >
               Diff
             </button>
             <button
-              className={`px-2 py-1 text-xs rounded ${
+              className={`px-2 py-1 text-xs rounded-md border ${
                 activeTab === "terminal"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+                  ? "bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-600"
+                  : "bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 border-gray-200 dark:border-gray-700"
               }`}
               onClick={() => setActiveTab("terminal")}
             >
@@ -101,36 +105,35 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
           </div>
         </div>
 
-        <div className="text-sm text-gray-400">
+        <div className="text-sm text-gray-600 dark:text-gray-400">
           <div>Branch: {selectedRun.branch}</div>
           <div>Provider: {selectedRun.provider}</div>
           <div>Status: {selectedRun.status}</div>
         </div>
       </div>
 
-      {/* Content */}
       <div className="flex-1 overflow-hidden">
         {activeTab === "logs" && (
           <div className="h-full overflow-y-auto p-4">
             <div className="space-y-3">
               {logs.length === 0 ? (
-                <div className="text-center text-gray-500 py-8">
+                <div className="text-center text-gray-500 dark:text-gray-400 py-8">
                   <div className="text-2xl mb-2">📝</div>
                   <p>No logs yet</p>
                 </div>
               ) : (
                 logs.map((log, index) => (
-                  <div key={index} className="bg-gray-700 p-3 rounded">
+                  <div key={index} className="bg-gray-50 dark:bg-gray-900/40 border border-gray-200 dark:border-gray-700 p-3 rounded-md">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-lg">{getEventIcon(log.kind)}</span>
-                      <span className="text-sm font-medium text-gray-300">
+                      <span className="text-sm font-medium text-gray-800 dark:text-gray-200">
                         {log.kind.toUpperCase()}
                       </span>
-                      <span className="text-xs text-gray-500">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">
                         {formatTimestamp(log.timestamp)}
                       </span>
                     </div>
-                    <div className="text-sm text-gray-400">
+                    <div className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-wrap break-words">
                       {typeof log.payload === "string"
                         ? log.payload
                         : JSON.stringify(log.payload, null, 2)}
@@ -144,7 +147,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
 
         {activeTab === "diff" && (
           <div className="h-full overflow-y-auto p-4">
-            <div className="text-center text-gray-500 py-8">
+            <div className="text-center text-gray-500 dark:text-gray-400 py-8">
               <div className="text-2xl mb-2">📊</div>
               <p>Diff view coming soon</p>
             </div>
@@ -153,7 +156,7 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
 
         {activeTab === "terminal" && (
           <div className="h-full overflow-y-auto p-4">
-            <div className="text-center text-gray-500 py-8">
+            <div className="text-center text-gray-500 dark:text-gray-400 py-8">
               <div className="text-2xl mb-2">💻</div>
               <p>Terminal view coming soon</p>
             </div>
@@ -161,10 +164,24 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
         )}
       </div>
 
-      <div className="p-4 border-t border-gray-700">
+      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
         <div className="flex gap-2">
-          <button className="flex-1 px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors text-sm">
-            Create PR
+          <button
+            className="flex-1 px-3 py-2 bg-gray-900 text-white rounded hover:bg-black transition-colors text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={isCreatingPR}
+            onClick={async () => {
+              if (!selectedRun) return;
+              await createPR({ workspacePath: selectedRun.worktreePath })
+            }}
+          >
+            {isCreatingPR ? (
+              <>
+                <Spinner size="sm" className="mr-2" />
+                Creating...
+              </>
+            ) : (
+              "Create PR"
+            )}
           </button>
           {selectedRun.status === "running" && (
             <button className="px-3 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition-colors text-sm">

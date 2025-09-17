@@ -29,6 +29,9 @@ declare global {
       openProject: () => Promise<{ success: boolean; path?: string; error?: string }>
       getGitInfo: (projectPath: string) => Promise<{ isGitRepo: boolean; remote?: string; branch?: string; path?: string; error?: string }>
       getGitStatus: (workspacePath: string) => Promise<{ success: boolean; changes?: Array<{ path: string; status: string; additions: number; deletions: number; diff?: string }>; error?: string }>
+      getFileDiff: (args: { workspacePath: string; filePath: string }) => Promise<{ success: boolean; diff?: { lines: Array<{ left?: string; right?: string; type: 'context' | 'add' | 'del' }> }; error?: string }>
+      gitCommitAndPush: (args: { workspacePath: string; commitMessage?: string; createBranchIfOnDefault?: boolean; branchPrefix?: string }) => Promise<{ success: boolean; branch?: string; output?: string; error?: string }>
+      createPullRequest: (args: { workspacePath: string; title?: string; body?: string; base?: string; head?: string; draft?: boolean; web?: boolean; fill?: boolean }) => Promise<{ success: boolean; url?: string; output?: string; error?: string }>
       connectToGitHub: (projectPath: string) => Promise<{ success: boolean; repository?: string; branch?: string; error?: string }>
 
       // Filesystem helpers
@@ -42,6 +45,7 @@ declare global {
       // GitHub integration
       githubAuth: () => Promise<{ success: boolean; token?: string; user?: any; error?: string }>
       githubIsAuthenticated: () => Promise<boolean>
+      githubGetStatus: () => Promise<{ installed: boolean; authenticated: boolean; user?: any }>
       githubGetUser: () => Promise<any>
       githubGetRepositories: () => Promise<any[]>
       githubLogout: () => Promise<void>
@@ -107,9 +111,10 @@ export interface ElectronAPI {
   // Project management
   openProject: () => Promise<{ success: boolean; path?: string; error?: string }>
   getGitInfo: (projectPath: string) => Promise<{ isGitRepo: boolean; remote?: string; branch?: string; path?: string; error?: string }>
+  createPullRequest: (args: { workspacePath: string; title?: string; body?: string; base?: string; head?: string; draft?: boolean; web?: boolean; fill?: boolean }) => Promise<{ success: boolean; url?: string; output?: string; error?: string }>
   connectToGitHub: (projectPath: string) => Promise<{ success: boolean; repository?: string; branch?: string; error?: string }>
 
-  // Filesystem helpers
+  // Filesystem
   fsList: (root: string, opts?: { includeDirs?: boolean; maxEntries?: number }) => Promise<{ success: boolean; items?: Array<{ path: string; type: 'file' | 'dir' }>; error?: string }>
   fsRead: (root: string, relPath: string, maxBytes?: number) => Promise<{ success: boolean; path?: string; size?: number; truncated?: boolean; content?: string; error?: string }>
 
