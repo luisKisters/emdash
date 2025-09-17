@@ -82,16 +82,19 @@ const MessageList: React.FC<MessageListProps> = ({
             >
               <div
                 className={`max-w-[80%] px-4 py-3 text-sm leading-relaxed font-sans text-gray-900 dark:text-gray-100 ${
-                  isUserMessage
-                    ? "rounded-md bg-gray-100 dark:bg-gray-700"
-                    : ""
+                  isUserMessage ? "rounded-md bg-gray-100 dark:bg-gray-700" : ""
                 }`}
               >
                 {isUserMessage ? (
                   <div className="prose prose-sm max-w-none">
                     <ReactMarkdown
                       components={{
-                        code: ({ inline, className, children, ...props }: any) => {
+                        code: ({
+                          inline,
+                          className,
+                          children,
+                          ...props
+                        }: any) => {
                           const match = /language-(\w+)/.exec(className || "");
                           return !inline && match ? (
                             <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md overflow-x-auto">
@@ -118,7 +121,9 @@ const MessageList: React.FC<MessageListProps> = ({
                             {children}
                           </ol>
                         ),
-                        li: ({ children }) => <li className="ml-2">{children}</li>,
+                        li: ({ children }) => (
+                          <li className="ml-2">{children}</li>
+                        ),
                         p: ({ children }) => (
                           <p className="mb-2 last:mb-0">{children}</p>
                         ),

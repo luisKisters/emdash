@@ -65,15 +65,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('git:get-pr-status', args),
   openExternal: (url: string) => ipcRenderer.invoke('app:openExternal', url),
   connectToGitHub: (projectPath: string) => ipcRenderer.invoke('github:connect', projectPath),
-  
-  // Repository management
-  scanRepos: () => ipcRenderer.invoke('repos:scan'),
-  addRepo: (path: string) => ipcRenderer.invoke('repos:add', path),
-  
-  // Run management
-  createRun: (config: any) => ipcRenderer.invoke('runs:create', config),
-  cancelRun: (runId: string) => ipcRenderer.invoke('runs:cancel', runId),
-  getRunDiff: (runId: string) => ipcRenderer.invoke('runs:diff', runId),
   onRunEvent: (callback: (event: any) => void) => {
     ipcRenderer.on('run:event', (_, event) => callback(event))
   },
@@ -89,11 +80,6 @@ contextBridge.exposeInMainWorld('electronAPI', {
   githubGetRepositories: () => ipcRenderer.invoke('github:getRepositories'),
   githubCloneRepository: (repoUrl: string, localPath: string) => ipcRenderer.invoke('github:cloneRepository', repoUrl, localPath),
   githubLogout: () => ipcRenderer.invoke('github:logout'),
-  
-  // Settings
-  getSettings: () => ipcRenderer.invoke('settings:get'),
-  updateSettings: (settings: any) => ipcRenderer.invoke('settings:update', settings),
-  
   // Database methods
   getProjects: () => ipcRenderer.invoke('db:getProjects'),
   saveProject: (project: any) => ipcRenderer.invoke('db:saveProject', project),
@@ -174,19 +160,10 @@ export interface ElectronAPI {
   createPullRequest: (args: { workspacePath: string; title?: string; body?: string; base?: string; head?: string; draft?: boolean; web?: boolean; fill?: boolean }) => Promise<{ success: boolean; url?: string; output?: string; error?: string }>
   connectToGitHub: (projectPath: string) => Promise<{ success: boolean; repository?: string; branch?: string; error?: string }>
 
-  
-  // Repository management
-  scanRepos: () => Promise<any[]>
-  addRepo: (path: string) => Promise<any>
-  
   // Filesystem helpers
   fsList: (root: string, opts?: { includeDirs?: boolean; maxEntries?: number }) => Promise<{ success: boolean; items?: Array<{ path: string; type: 'file' | 'dir' }>; error?: string }>
   fsRead: (root: string, relPath: string, maxBytes?: number) => Promise<{ success: boolean; path?: string; size?: number; truncated?: boolean; content?: string; error?: string }>
   
-  // Run management
-  createRun: (config: any) => Promise<string>
-  cancelRun: (runId: string) => Promise<void>
-  getRunDiff: (runId: string) => Promise<any>
   onRunEvent: (callback: (event: any) => void) => void
   removeRunEventListeners: () => void
   
@@ -198,10 +175,6 @@ export interface ElectronAPI {
   githubGetRepositories: () => Promise<any[]>
   githubCloneRepository: (repoUrl: string, localPath: string) => Promise<{ success: boolean; error?: string }>
   githubLogout: () => Promise<void>
-  
-  // Settings
-  getSettings: () => Promise<any>
-  updateSettings: (settings: any) => Promise<void>
   
   // Database methods
   getProjects: () => Promise<any[]>
