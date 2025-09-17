@@ -1,12 +1,5 @@
 import React, { useState } from "react";
-import {
-  GitBranch,
-  Plus,
-  Minus,
-  FileText,
-  ChevronDown,
-  ChevronRight,
-} from "lucide-react";
+import { ChevronDown, ChevronRight } from "lucide-react";
 import { Button } from "./ui/button";
 import { Spinner } from "./ui/spinner";
 import { useToast } from "../hooks/use-toast";
@@ -33,43 +26,6 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
   const { fileChanges, isLoading, error, refreshChanges } =
     useFileChanges(workspaceId);
   const { toast } = useToast();
-
-  const getStatusChip = (status: FileChange["status"]) => {
-    const map: Record<
-      FileChange["status"],
-      { text: string; cls: string; icon: JSX.Element }
-    > = {
-      added: {
-        text: "added",
-        cls: "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800",
-        icon: <Plus className="w-3 h-3" />,
-      },
-      modified: {
-        text: "modified",
-        cls: "bg-gray-50 dark:bg-gray-900/40 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-700",
-        icon: <FileText className="w-3 h-3" />,
-      },
-      deleted: {
-        text: "deleted",
-        cls: "bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800",
-        icon: <Minus className="w-3 h-3" />,
-      },
-      renamed: {
-        text: "renamed",
-        cls: "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800",
-        icon: <GitBranch className="w-3 h-3" />,
-      },
-    };
-    const v = map[status];
-    return (
-      <span
-        className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded border text-[10px] ${v.cls}`}
-      >
-        {v.icon}
-        {v.text}
-      </span>
-    );
-  };
 
   const renderPath = (p: string) => {
     const last = p.lastIndexOf("/");
@@ -186,7 +142,6 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
                 </div>
               </div>
               <div className="flex items-center gap-2 ml-3">
-                {getStatusChip(change.status)}
                 {change.additions > 0 && (
                   <span className="px-1.5 py-0.5 rounded bg-green-50 dark:bg-green-900/30 text-emerald-700 dark:text-emerald-300 text-[11px] font-medium">
                     +{change.additions}
