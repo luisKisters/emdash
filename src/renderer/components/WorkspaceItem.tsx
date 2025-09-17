@@ -3,6 +3,7 @@ import { GitBranch, Bot } from "lucide-react";
 import { useWorkspaceChanges } from "../hooks/useWorkspaceChanges";
 import { ChangesBadge } from "./WorkspaceChanges";
 import { Spinner } from "./ui/spinner";
+import { usePrStatus } from "../hooks/usePrStatus";
 
 interface Workspace {
   id: string;
@@ -23,6 +24,7 @@ export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({ workspace }) => {
     workspace.id
   );
   const [isRunning, setIsRunning] = useState(false);
+  const { pr } = usePrStatus(workspace.path);
 
   // Initialize from current agent status
   useEffect(() => {
@@ -76,9 +78,21 @@ export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({ workspace }) => {
         )}
       </div>
       <div className="hidden sm:flex items-center space-x-2">
-        {!isLoading && (totalAdditions > 0 || totalDeletions > 0) && (
+        {!isLoading && (totalAdditions > 0 || totalDeletions > 0) ? (
           <ChangesBadge additions={totalAdditions} deletions={totalDeletions} />
-        )}
+        ) : pr ? (
+          <span
+            className={`text-[10px] px-1.5 py-0.5 rounded border 
+              ${pr.state === 'MERGED' ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
+              ${pr.state === 'OPEN' && pr.isDraft ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
+              ${pr.state === 'OPEN' && !pr.isDraft ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
+              ${pr.state === 'CLOSED' ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
+            `}
+            title={`${pr.title || 'Pull Request'} (#${pr.number})`}
+          >
+            {pr.isDraft ? 'draft' : pr.state.toLowerCase()}
+          </span>
+        ) : null}
       </div>
     </div>
   );

@@ -3,6 +3,8 @@ import { useToast } from "../hooks/use-toast";
 import { Spinner } from "./ui/spinner";
 import { useCreatePR } from "../hooks/useCreatePR";
 import { Run } from "../types";
+import { usePrStatus } from "../hooks/usePrStatus";
+import PrStatusSkeleton from "./ui/pr-status-skeleton";
 
 interface RightPanelProps {
   selectedRun: Run | null;
@@ -15,6 +17,16 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
     "logs"
   );
   const [logs, setLogs] = useState<any[]>([]);
+  const { pr, loading: prLoading, refresh: refreshPr } = usePrStatus(selectedRun?.worktreePath);
+
+  const prBadgeClass = (state?: string, isDraft?: boolean) => {
+    if (!state) return "border-gray-200 bg-gray-100 text-gray-700 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300";
+    if (state === 'MERGED') return "bg-purple-100 text-purple-700 border-purple-200";
+    if (state === 'CLOSED') return "bg-red-100 text-red-700 border-red-200";
+    if (state === 'OPEN' && isDraft) return "bg-gray-100 text-gray-700 border-gray-200";
+    if (state === 'OPEN') return "bg-green-100 text-green-700 border-green-200";
+    return "border-gray-200 bg-gray-100 text-gray-700";
+  };
 
   useEffect(() => {
     if (selectedRun) {
@@ -109,6 +121,26 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
           <div>Branch: {selectedRun.branch}</div>
           <div>Provider: {selectedRun.provider}</div>
           <div>Status: {selectedRun.status}</div>
+          <div className="mt-1">
+            {prLoading ? (
+              <PrStatusSkeleton />
+            ) : pr ? (
+              <button
+                type="button"
+                onClick={() => {
+                  const api: any = (window as any).electronAPI;
+                  api?.openExternal?.(pr.url);
+                }}
+                className={`cursor-pointer inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded border ${prBadgeClass(pr.state, pr.isDraft)}`}
+                title={pr.title || 'Pull Request'}
+              >
+                <span>PR #{pr.number}</span>
+                <span>{pr.isDraft ? 'draft' : pr.state.toLowerCase()}</span>
+              </button>
+            ) : (
+              <span className="text-xs text-gray-500">No PR found for branch</span>
+            )}
+          </div>
         </div>
       </div>
 
@@ -171,7 +203,11 @@ const RightPanel: React.FC<RightPanelProps> = ({ selectedRun }) => {
             disabled={isCreatingPR}
             onClick={async () => {
               if (!selectedRun) return;
-              await createPR({ workspacePath: selectedRun.worktreePath })
+              const res = await createPR({ workspacePath: selectedRun.worktreePath })
+              if (res?.success) {
+                // Refresh PR status after creation
+                try { await refreshPr() } catch {}
+              }
             }}
           >
             {isCreatingPR ? (

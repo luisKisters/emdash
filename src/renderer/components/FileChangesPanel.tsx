@@ -5,6 +5,8 @@ import { useToast } from "../hooks/use-toast";
 import { useCreatePR } from "../hooks/useCreatePR";
 import ChangesDiffModal from "./ChangesDiffModal";
 import { useFileChanges, type FileChange } from "../hooks/useFileChanges";
+import { usePrStatus } from "../hooks/usePrStatus";
+import PrStatusSkeleton from "./ui/pr-status-skeleton";
 import FileTypeIcon from "./ui/file-type-icon";
 
 interface FileChangesPanelProps {
@@ -25,6 +27,7 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
     useFileChanges(workspaceId);
   const { toast } = useToast();
   const hasChanges = fileChanges.length > 0;
+  const { pr, loading: prLoading, refresh: refreshPr } = usePrStatus(workspaceId);
 
   const renderPath = (p: string) => {
     const last = p.lastIndexOf("/");
@@ -52,12 +55,12 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
     <div
       className={`bg-white dark:bg-gray-800 shadow-sm flex flex-col h-full ${className}`}
     >
-      <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex items-center">
+      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex items-center">
         {hasChanges ? (
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center space-x-2">
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                <span className="text-sm font-medium p-2 text-gray-900 dark:text-gray-100">
                   {fileChanges.length} files changed
                 </span>
                 <div className="flex items-center space-x-1 text-xs">
@@ -82,6 +85,7 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
                     workspacePath: workspaceId,
                     onSuccess: async () => {
                       await refreshChanges();
+                      try { await refreshPr(); } catch {}
                     },
                   });
                 }}
@@ -91,10 +95,36 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
             </div>
           </div>
         ) : (
-          <div className="flex items-center">
-            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              Changes
-            </span>
+          <div className="flex items-center justify-between w-full">
+            <div className="flex items-center gap-2 p-2">
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                Changes
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              {prLoading ? (
+                <PrStatusSkeleton />
+              ) : pr ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    const api: any = (window as any).electronAPI;
+                    api?.openExternal?.(pr.url);
+                  }}
+                  className={`cursor-pointer text-[11px] px-2 py-0.5 rounded border 
+                    ${pr.state === 'MERGED' ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
+                    ${pr.state === 'OPEN' && pr.isDraft ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
+                    ${pr.state === 'OPEN' && !pr.isDraft ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
+                    ${pr.state === 'CLOSED' ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
+                  `}
+                  title={pr.title || 'Pull Request'}
+                >
+                  PR {pr.isDraft ? 'draft' : pr.state.toLowerCase()}
+                </button>
+              ) : (
+                <span className="text-xs text-gray-500">No PR for this branch</span>
+              )}
+            </div>
           </div>
         )}
       </div>

@@ -30,9 +30,11 @@ declare global {
       getGitInfo: (projectPath: string) => Promise<{ isGitRepo: boolean; remote?: string; branch?: string; path?: string; error?: string }>
       getGitStatus: (workspacePath: string) => Promise<{ success: boolean; changes?: Array<{ path: string; status: string; additions: number; deletions: number; diff?: string }>; error?: string }>
       getFileDiff: (args: { workspacePath: string; filePath: string }) => Promise<{ success: boolean; diff?: { lines: Array<{ left?: string; right?: string; type: 'context' | 'add' | 'del' }> }; error?: string }>
-      gitCommitAndPush: (args: { workspacePath: string; commitMessage?: string; createBranchIfOnDefault?: boolean; branchPrefix?: string }) => Promise<{ success: boolean; branch?: string; output?: string; error?: string }>
-      createPullRequest: (args: { workspacePath: string; title?: string; body?: string; base?: string; head?: string; draft?: boolean; web?: boolean; fill?: boolean }) => Promise<{ success: boolean; url?: string; output?: string; error?: string }>
-      connectToGitHub: (projectPath: string) => Promise<{ success: boolean; repository?: string; branch?: string; error?: string }>
+  gitCommitAndPush: (args: { workspacePath: string; commitMessage?: string; createBranchIfOnDefault?: boolean; branchPrefix?: string }) => Promise<{ success: boolean; branch?: string; output?: string; error?: string }>
+  createPullRequest: (args: { workspacePath: string; title?: string; body?: string; base?: string; head?: string; draft?: boolean; web?: boolean; fill?: boolean }) => Promise<{ success: boolean; url?: string; output?: string; error?: string }>
+  getPrStatus: (args: { workspacePath: string }) => Promise<{ success: boolean; pr?: { number: number; url: string; state: string; isDraft?: boolean; mergeStateStatus?: string; headRefName?: string; baseRefName?: string; title?: string; author?: any } | null; error?: string }>
+  openExternal: (url: string) => Promise<{ success: boolean; error?: string }>
+  connectToGitHub: (projectPath: string) => Promise<{ success: boolean; repository?: string; branch?: string; error?: string }>
 
       // Filesystem helpers
       fsList: (root: string, opts?: { includeDirs?: boolean; maxEntries?: number }) => Promise<{ success: boolean; items?: Array<{ path: string; type: 'file' | 'dir' }>; error?: string }>

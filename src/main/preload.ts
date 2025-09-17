@@ -61,6 +61,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('git:commit-and-push', args),
   createPullRequest: (args: { workspacePath: string; title?: string; body?: string; base?: string; head?: string; draft?: boolean; web?: boolean; fill?: boolean }) =>
     ipcRenderer.invoke('git:create-pr', args),
+  getPrStatus: (args: { workspacePath: string }) =>
+    ipcRenderer.invoke('git:get-pr-status', args),
+  openExternal: (url: string) => ipcRenderer.invoke('app:openExternal', url),
   connectToGitHub: (projectPath: string) => ipcRenderer.invoke('github:connect', projectPath),
   
   // Repository management
