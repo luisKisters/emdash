@@ -1,7 +1,8 @@
 import React from "react";
 import ReorderList from "./ReorderList";
 import { Button } from "./ui/button";
-import { FolderOpen, Home } from "lucide-react";
+import { Home, CheckCircle2, AlertCircle, Check } from "lucide-react";
+import githubLogo from "../../assets/images/github.png";
 import { WorkspaceItem } from "./WorkspaceItem";
 
 interface Project {
@@ -38,6 +39,9 @@ interface LeftSidebarProps {
   activeWorkspace?: Workspace | null;
   onReorderProjects?: (sourceId: string, targetId: string) => void;
   onReorderProjectsFull?: (newOrder: Project[]) => void;
+  githubInstalled?: boolean;
+  githubAuthenticated?: boolean;
+  githubUser?: { login?: string; name?: string } | null;
 }
 
 const LeftSidebar: React.FC<LeftSidebarProps> = ({
@@ -49,10 +53,59 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   activeWorkspace,
   onReorderProjects,
   onReorderProjectsFull,
+  githubInstalled = true,
+  githubAuthenticated = false,
+  githubUser,
 }) => {
+  const renderGithubStatus = () => {
+    if (!githubInstalled) {
+      return (
+        <div className="flex items-start space-x-2 text-xs text-amber-600 dark:text-amber-400">
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium">Install GitHub CLI</p>
+            <p className="text-[11px] text-amber-700/80 dark:text-amber-300/80">
+              Required for repo status and auth
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    if (!githubAuthenticated) {
+      return (
+        <div className="flex items-start space-x-2 text-xs text-amber-600 dark:text-amber-300">
+          <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="font-medium">GitHub not authenticated</p>
+            <p className="text-[11px] text-amber-700/80 dark:text-amber-200/80">
+              Run <code className="bg-amber-100 px-1 rounded">gh auth login</code>
+            </p>
+          </div>
+        </div>
+      );
+    }
+
+    const displayName = githubUser?.login || githubUser?.name || "GitHub account";
+
+    return (
+      <div className="flex items-center text-xs text-emerald-600 dark:text-emerald-400 space-x-2">
+        <img
+          src={githubLogo}
+          alt="GitHub"
+          className="w-4 h-4 rounded-sm object-contain"
+        />
+        <span className="font-medium flex items-center space-x-1 min-w-0">
+          <span className="truncate">{displayName}</span>
+          <Check className="w-3 h-3 text-emerald-500 flex-shrink-0" aria-hidden="true" />
+        </span>
+      </div>
+    );
+  };
+
   return (
-    <div className="flex-shrink-0 w-16 sm:w-64 lg:w-80 bg-gray-50 dark:bg-gray-900  h-screen overflow-y-auto overscroll-contain">
-      <div className="p-2 sm:p-4">
+    <div className="flex-shrink-0 w-16 sm:w-64 lg:w-80 bg-gray-50 dark:bg-gray-900 h-screen flex flex-col">
+      <div className="flex-1 overflow-y-auto overscroll-contain p-2 sm:p-4">
         <div className="mb-6">
           <Button
             variant="ghost"
@@ -143,6 +196,16 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
             )}
           </ReorderList>
         </div>
+      </div>
+      <div className="hidden sm:block border-t border-gray-200 dark:border-gray-800 p-4">
+        {renderGithubStatus()}
+      </div>
+      <div className="sm:hidden border-t border-gray-200 dark:border-gray-800 px-2 py-2 flex justify-start">
+        {githubInstalled && githubAuthenticated ? (
+          <CheckCircle2 className="w-5 h-5 text-emerald-500" aria-label="GitHub connected" />
+        ) : (
+          <AlertCircle className="w-5 h-5 text-amber-500" aria-label="GitHub not connected" />
+        )}
       </div>
     </div>
   );

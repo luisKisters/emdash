@@ -356,11 +356,14 @@ const App: React.FC = () => {
         activeWorkspace={activeWorkspace || undefined}
         onReorderProjects={handleReorderProjects}
         onReorderProjectsFull={handleReorderProjectsFull}
+        githubInstalled={ghInstalled}
+        githubAuthenticated={isAuthenticated}
+        githubUser={user}
       />
 
       {showHomeView ? (
         <div className="flex-1 bg-background text-foreground overflow-y-auto">
-          <div className="container mx-auto px-4 py-8">
+          <div className="container mx-auto px-4 py-8 flex flex-col justify-center min-h-screen">
             <div className="text-center mb-12">
               <div className="flex items-center justify-center mb-4">
                 <img
@@ -369,7 +372,7 @@ const App: React.FC = () => {
                   className="h-16"
                 />
               </div>
-              <p className="text-lg text-gray-700 text-muted-foreground mb-4">
+              <p className="text-sm sm:text-base text-gray-700 text-muted-foreground mb-4">
                 Run multiple Codex Agents in parallel
               </p>
               {(!ghInstalled || !isAuthenticated) && (
@@ -452,7 +455,7 @@ const App: React.FC = () => {
         </div>
       ) : (
         <div className="flex-1 bg-background text-foreground overflow-y-auto">
-          <div className="container mx-auto px-4 py-8">
+          <div className="container mx-auto px-4 py-8 flex flex-col justify-center min-h-screen">
             <div className="text-center mb-12">
               <div className="flex items-center justify-center mb-4">
                 <img
@@ -461,7 +464,7 @@ const App: React.FC = () => {
                   className="h-16"
                 />
               </div>
-              <p className="text-lg text-gray-700 text-muted-foreground mb-4">
+              <p className="text-sm sm:text-base text-gray-700 text-muted-foreground mb-4">
                 Run multiple Codex Agents in parallel
               </p>
               {(!ghInstalled || !isAuthenticated) && (
