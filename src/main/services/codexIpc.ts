@@ -261,6 +261,11 @@ async function getGitStatus(workspacePath: string): Promise<
         status = "modified";
       }
 
+      // Ignore internal log files that should never be surfaced
+      if (filePath.endsWith('codex-stream.log')) {
+        continue;
+      }
+
       // Get diff statistics for the file using --numstat (sum staged + unstaged for consistency)
       let additions = 0;
       let deletions = 0;

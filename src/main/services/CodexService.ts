@@ -3,6 +3,7 @@ import { promisify } from 'util';
 import { EventEmitter } from 'events';
 import { createWriteStream, existsSync, mkdirSync, WriteStream } from 'fs';
 import path from 'path';
+import { app } from 'electron';
 
 const execAsync = promisify(exec);
 
@@ -35,7 +36,11 @@ export class CodexService extends EventEmitter {
   }
 
   private getStreamLogPath(agent: CodexAgent): string {
-    return path.join(agent.worktreePath, 'codex-stream.log');
+    // Store logs outside the repo to avoid showing up in git status
+    const userData = app.getPath('userData');
+    // Group by workspace so multiple runs append consistently
+    const dir = path.join(userData, 'logs', 'codex', agent.workspaceId);
+    return path.join(dir, 'codex-stream.log');
   }
 
   private initializeStreamLog(workspaceId: string, agent: CodexAgent, prompt: string): void {
