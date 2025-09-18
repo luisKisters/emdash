@@ -18,9 +18,9 @@ Emdash is an orchestration layer for running multiple Codex CLI agents in parall
 ## Requirements
 
 ### GitHub CLI
-emdash requires GitHub CLI to be installed and authenticated:
+emdash requires [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart) to be installed and authenticated:
 
-**Install GitHub CLI:**
+**Install [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart):**
 - **macOS:** `brew install gh`
 - **Linux:** `sudo apt install gh` (Ubuntu/Debian) or `sudo dnf install gh` (Fedora)
 - **Windows:** `winget install GitHub.cli`
@@ -34,7 +34,7 @@ Follow the prompts to authenticate with your GitHub account.
 
 ## Getting Started
 
-1. Install GitHub CLI (see Requirements above)
+1. Install [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart) (see Requirements above)
 2. Authenticate with GitHub: `gh auth login`
 3. Clone this repository
 4. Install dependencies: `npm install`
@@ -68,7 +68,7 @@ CREATE TABLE projects (
 **Key Features:**
 - **Unique Path Constraint**: Prevents duplicate project entries
 - **Git Integration**: Tracks remote URLs and current branches
-- **GitHub Status**: Monitors connection state with GitHub CLI
+- **GitHub Status**: Monitors connection state with [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart)
 - **Automatic Timestamps**: Tracks creation and modification times
 
 #### Workspaces Table
@@ -116,7 +116,7 @@ The application provides a comprehensive set of database operations through the 
 
 - **Local Storage Only**: All data remains on your local machine
 - **No Cloud Sync**: No data is transmitted to external servers
-- **GitHub CLI Integration**: Uses official GitHub CLI for secure authentication
+- **GitHub CLI Integration**: Uses official [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart) for secure authentication
 - **File System Access**: Only accesses directories you explicitly open
 
 ### Performance Considerations
