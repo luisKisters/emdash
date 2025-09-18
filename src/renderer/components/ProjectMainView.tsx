@@ -249,24 +249,6 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
                 <p className="text-sm text-muted-foreground">
                   Each workspace is an isolated copy and branch of your repo (Git-tracked files only).
                 </p>
-                <Button
-                  onClick={onCreateWorkspace}
-                  disabled={isCreatingWorkspace}
-                  size="sm"
-                  aria-busy={isCreatingWorkspace}
-                >
-                  {isCreatingWorkspace ? (
-                    <>
-                      <Loader2 className="mr-2 size-4 animate-spin" />
-                      Creating…
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="mr-2 size-4" />
-                      Create workspace
-                    </>
-                  )}
-                </Button>
               </AlertDescription>
             </Alert>
           )}
