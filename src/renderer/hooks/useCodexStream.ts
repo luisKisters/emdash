@@ -66,6 +66,9 @@ declare const window: Window & {
         conversationId?: string;
       }) => void
     ) => () => void;
+    codexGetStreamTail: (
+      workspaceId: string
+    ) => Promise<{ success: boolean; tail?: string; startedAt?: string; error?: string }>
   };
 };
 
@@ -113,11 +116,11 @@ const useCodexStream = (
   useEffect(() => {
     if (!isStreaming) {
       clearTimer();
-      setSeconds(0);
+      // do not reset seconds here; preserve elapsed across view switches
       return;
     }
 
-    setSeconds(0);
+    // start ticking from whatever the current seconds value is
     timerRef.current = setInterval(() => {
       setSeconds((prev) => prev + 1);
     }, 1000);
@@ -375,6 +378,26 @@ const useCodexStream = (
         });
 
         setMessages(loadedMessages);
+
+        // If a stream is currently running for this workspace, seed the UI
+        // with the current streaming tail so switching views doesn't lose context.
+        try {
+          const tailRes = await window.electronAPI.codexGetStreamTail(workspaceId)
+          if (tailRes?.success && typeof tailRes.tail === 'string' && tailRes.tail.trim()) {
+            // Seed buffer and mark as streaming
+            streamBufferRef.current = tailRes.tail
+            setStreamingOutput(tailRes.tail)
+            // If we know when the stream started, compute elapsed seconds
+            if (tailRes.startedAt) {
+              const started = Date.parse(tailRes.startedAt)
+              if (!Number.isNaN(started)) {
+                const elapsed = Math.max(0, Math.floor((Date.now() - started) / 1000))
+                setSeconds(elapsed)
+              }
+            }
+            setIsStreaming(true)
+          }
+        } catch {}
       } catch (error) {
         console.error("Error loading Codex conversation:", error);
       } finally {
