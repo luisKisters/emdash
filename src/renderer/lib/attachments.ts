@@ -26,6 +26,12 @@ export function getFenceLang(p: string): string {
   return '';
 }
 
+export function stripMentions(text: string): string {
+  if (!text) return ''
+  const re = /@[\w\-.\/]+/g
+  return text.replace(re, '').replace(/\s{2,}/g, ' ').trim()
+}
+
 export async function buildAttachmentsSection(
   rootPath: string,
   text: string,

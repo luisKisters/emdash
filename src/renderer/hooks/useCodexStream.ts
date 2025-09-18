@@ -186,11 +186,16 @@ const useCodexStream = (
         return { success: false, error: "conversation-unavailable" };
       }
 
+      const { stripMentions, extractMentions } = await import("../lib/attachments");
+      const displayText = stripMentions(text);
+      const mentionList = extractMentions(text);
+
       const userMessage: Message = {
         id: Date.now().toString(),
-        content: text,
+        content: displayText,
         sender: "user",
         timestamp: new Date(),
+        attachments: mentionList,
       };
 
       try {
@@ -201,6 +206,7 @@ const useCodexStream = (
           sender: userMessage.sender,
           metadata: JSON.stringify({
             workspaceId: normalizedOptions.workspaceId,
+            attachments: mentionList,
           }),
         });
       } catch (error) {
@@ -340,11 +346,22 @@ const useCodexStream = (
             conversationId: convoId,
           };
 
+          let attachments: string[] | undefined
+          try {
+            if (msg.metadata && msg.sender === 'user') {
+              const meta = JSON.parse(msg.metadata)
+              if (meta && Array.isArray(meta.attachments) && meta.attachments.length > 0) {
+                attachments = meta.attachments
+              }
+            }
+          } catch {}
+
           return {
             id: msg.id,
             content: defaultPipeline(msg.content, ctx),
             sender: msg.sender as "user" | "agent",
             timestamp: new Date(msg.timestamp),
+            attachments,
           };
         });
 

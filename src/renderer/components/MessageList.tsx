@@ -9,6 +9,19 @@ import {
 } from "@/components/ai-elements/reasoning";
 import { Response } from "@/components/ai-elements/response";
 import { CodeBlock, CodeBlockCopyButton } from "@/components/ai-elements/code-block";
+import { Badge } from "@/components/ui/badge";
+import FileTypeIcon from "@/components/ui/file-type-icon";
+
+function basename(p: string): string {
+  const b = p.split('/').pop() || p
+  return b
+}
+function extname(p: string): string {
+  const b = basename(p)
+  const i = b.lastIndexOf('.')
+  if (i <= 0) return ''
+  return b.slice(i + 1).toUpperCase()
+}
 
 interface MessageListProps {
   messages: Message[];
@@ -152,6 +165,16 @@ const MessageList: React.FC<MessageListProps> = ({
                     >
                       {content}
                     </ReactMarkdown>
+                    {Array.isArray(message.attachments) && message.attachments.length > 0 ? (
+                      <div className="mt-2 flex flex-wrap gap-1 items-center">
+                        {message.attachments.map((p) => (
+                          <Badge key={p} className="flex items-center gap-1">
+                            <FileTypeIcon path={p} type="file" className="w-3.5 h-3.5" />
+                            <span>{basename(p)}</span>
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 ) : (
                   <div className="space-y-3">
