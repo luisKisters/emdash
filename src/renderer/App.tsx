@@ -324,6 +324,87 @@ const App: React.FC = () => {
     setActiveWorkspace(workspace);
   };
 
+  const handleDeleteWorkspace = async (
+    targetProject: Project,
+    workspace: Workspace
+  ) => {
+    try {
+      try {
+        if (workspace.agentId) {
+          const agentRemoval = await window.electronAPI.codexRemoveAgent(
+            workspace.id
+          );
+          if (!agentRemoval.success) {
+            console.warn(
+              "codexRemoveAgent reported failure:",
+              agentRemoval.error
+            );
+          }
+        }
+      } catch (agentError) {
+        console.warn("Failed to remove agent before deleting workspace:", agentError);
+      }
+
+      const removeResult = await window.electronAPI.worktreeRemove({
+        projectPath: targetProject.path,
+        worktreeId: workspace.id,
+        worktreePath: workspace.path,
+        branch: workspace.branch,
+      });
+      if (!removeResult.success) {
+        throw new Error(removeResult.error || "Failed to remove worktree");
+      }
+
+      const result = await window.electronAPI.deleteWorkspace(workspace.id);
+      if (!result.success) {
+        throw new Error(result.error || "Failed to delete workspace");
+      }
+
+      setProjects((prev) =>
+        prev.map((project) =>
+          project.id === targetProject.id
+            ? {
+                ...project,
+                workspaces: (project.workspaces || []).filter(
+                  (w) => w.id !== workspace.id
+                ),
+              }
+            : project
+        )
+      );
+
+      setSelectedProject((prev) =>
+        prev && prev.id === targetProject.id
+          ? {
+              ...prev,
+              workspaces: (prev.workspaces || []).filter(
+                (w) => w.id !== workspace.id
+              ),
+            }
+          : prev
+      );
+
+      if (activeWorkspace?.id === workspace.id) {
+        setActiveWorkspace(null);
+      }
+
+      toast({
+        title: "Workspace deleted",
+        description: `"${workspace.name}" was removed.`,
+      });
+    } catch (error) {
+      console.error("Failed to delete workspace:", error);
+      toast({
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Could not delete workspace. Check the console for details.",
+        variant: "destructive",
+      });
+    }
+  };
+
   const handleReorderProjects = (sourceId: string, targetId: string) => {
     setProjects((prev) => {
       const list = [...prev];
@@ -435,6 +516,7 @@ const App: React.FC = () => {
                 onCreateWorkspace={() => setShowWorkspaceModal(true)}
                 activeWorkspace={activeWorkspace}
                 onSelectWorkspace={handleSelectWorkspace}
+                onDeleteWorkspace={handleDeleteWorkspace}
                 isCreatingWorkspace={isCreatingWorkspace}
               />
             )}

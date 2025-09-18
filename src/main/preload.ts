@@ -34,7 +34,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('worktree:create', args),
   worktreeList: (args: { projectPath: string }) =>
     ipcRenderer.invoke('worktree:list', args),
-  worktreeRemove: (args: { projectPath: string; worktreeId: string }) =>
+  worktreeRemove: (args: { projectPath: string; worktreeId: string; worktreePath?: string; branch?: string }) =>
     ipcRenderer.invoke('worktree:remove', args),
   worktreeStatus: (args: { worktreePath: string }) =>
     ipcRenderer.invoke('worktree:status', args),

@@ -19,7 +19,7 @@ declare global {
       // Worktree management
       worktreeCreate: (args: { projectPath: string; workspaceName: string; projectId: string }) => Promise<{ success: boolean; worktree?: any; error?: string }>
       worktreeList: (args: { projectPath: string }) => Promise<{ success: boolean; worktrees?: any[]; error?: string }>
-      worktreeRemove: (args: { projectPath: string; worktreeId: string }) => Promise<{ success: boolean; error?: string }>
+      worktreeRemove: (args: { projectPath: string; worktreeId: string; worktreePath?: string; branch?: string }) => Promise<{ success: boolean; error?: string }>
       worktreeStatus: (args: { worktreePath: string }) => Promise<{ success: boolean; status?: any; error?: string }>
       worktreeMerge: (args: { projectPath: string; worktreeId: string }) => Promise<{ success: boolean; error?: string }>
       worktreeGet: (args: { worktreeId: string }) => Promise<{ success: boolean; worktree?: any; error?: string }>
@@ -104,7 +104,7 @@ export interface ElectronAPI {
   // Worktree management
   worktreeCreate: (args: { projectPath: string; workspaceName: string; projectId: string }) => Promise<{ success: boolean; worktree?: any; error?: string }>
   worktreeList: (args: { projectPath: string }) => Promise<{ success: boolean; worktrees?: any[]; error?: string }>
-  worktreeRemove: (args: { projectPath: string; worktreeId: string }) => Promise<{ success: boolean; error?: string }>
+  worktreeRemove: (args: { projectPath: string; worktreeId: string; worktreePath?: string; branch?: string }) => Promise<{ success: boolean; error?: string }>
   worktreeStatus: (args: { worktreePath: string }) => Promise<{ success: boolean; status?: any; error?: string }>
   worktreeMerge: (args: { projectPath: string; worktreeId: string }) => Promise<{ success: boolean; error?: string }>
   worktreeGet: (args: { worktreeId: string }) => Promise<{ success: boolean; worktree?: any; error?: string }>

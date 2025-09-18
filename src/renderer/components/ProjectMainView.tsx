@@ -7,7 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
-import { GitBranch, Plus, Loader2 } from "lucide-react";
+import { GitBranch, Plus, Loader2, Trash } from "lucide-react";
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -17,6 +17,17 @@ import {
 import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "./ui/alert-dialog";
 
 interface Project {
   id: string;
@@ -55,10 +66,12 @@ function WorkspaceCard({
   ws,
   active,
   onClick,
+  onDelete,
 }: {
   ws: Workspace;
   active: boolean;
   onClick: () => void;
+  onDelete: () => void | Promise<void>;
 }) {
   return (
     <Card
@@ -66,30 +79,79 @@ function WorkspaceCard({
       role="button"
       tabIndex={0}
       className={[
-        "cursor-pointer transition-shadow hover:shadow-sm",
+        "group cursor-pointer transition-shadow hover:shadow-sm",
         active ? "ring-2 ring-primary" : "",
       ].join(" ")}
     >
-      <CardHeader className="space-y-1 p-4 pb-2">
-        <CardTitle className="text-base leading-tight tracking-tight">
-          {ws.name}
-        </CardTitle>
-        <CardDescription className="flex items-center gap-2 min-w-0 text-xs">
-          {ws.status === "running" && (
-            <Loader2 className="size-3 animate-spin" />
-          )}
-          <GitBranch className="size-3" />
-          <span
-            className="text-xs truncate max-w-[12rem]"
-            title={`origin/${ws.branch}`}
-          >
-            origin/{ws.branch}
-          </span>
-        </CardDescription>
+      <CardHeader className="p-4 pb-2">
+        <div className="flex items-start justify-between gap-2">
+          <div className="space-y-1 min-w-0">
+            <CardTitle className="text-base leading-tight tracking-tight">
+              {ws.name}
+            </CardTitle>
+            <CardDescription className="flex items-center gap-2 min-w-0 text-xs">
+              {ws.status === "running" && (
+                <Loader2 className="size-3 animate-spin" />
+              )}
+              <GitBranch className="size-3" />
+              <span
+                className="font-mono text-xs truncate max-w-[12rem]"
+                title={`origin/${ws.branch}`}
+              >
+                origin/{ws.branch}
+              </span>
+            </CardDescription>
+          </div>
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="text-muted-foreground hover:text-destructive group-hover:text-destructive hover:bg-transparent focus-visible:ring-0"
+                onClick={(event) => {
+                  event.stopPropagation();
+                }}
+                aria-label={`Delete workspace ${ws.name}`}
+              >
+                <Trash className="size-4" />
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent
+              onClick={(event) => event.stopPropagation()}
+              className="space-y-4"
+            >
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete workspace?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  {`This will remove the worktree for "${ws.name}" and delete its branch.`}
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90 px-4 py-2"
+                  onClick={async (event) => {
+                    event.stopPropagation();
+                    try {
+                      await Promise.resolve(onDelete());
+                    } catch (err) {
+                      console.error("Failed to delete workspace:", err);
+                    }
+                  }}
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+        </div>
       </CardHeader>
-      <CardContent className="p-4 pt-2 flex items-center justify-between">
-        <StatusBadge status={ws.status} />
-        {ws.agentId && <Badge variant="outline">agent</Badge>}
+      <CardContent className="p-4 pt-2 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <StatusBadge status={ws.status} />
+          {ws.agentId && <Badge variant="outline">agent</Badge>}
+        </div>
       </CardContent>
     </Card>
   );
@@ -100,6 +162,7 @@ interface ProjectMainViewProps {
   onCreateWorkspace: () => void;
   activeWorkspace: Workspace | null;
   onSelectWorkspace: (workspace: Workspace) => void;
+  onDeleteWorkspace: (project: Project, workspace: Workspace) => void | Promise<void>;
   isCreatingWorkspace?: boolean;
 }
 
@@ -108,6 +171,7 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
   onCreateWorkspace,
   activeWorkspace,
   onSelectWorkspace,
+  onDeleteWorkspace,
   isCreatingWorkspace = false,
 }) => {
   return (
@@ -172,6 +236,7 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
                   ws={ws}
                   active={activeWorkspace?.id === ws.id}
                   onClick={() => onSelectWorkspace(ws)}
+                  onDelete={() => onDeleteWorkspace(project, ws)}
                 />
               ))}
             </div>
@@ -184,6 +249,24 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
                 <p className="text-sm text-muted-foreground">
                   Each workspace is an isolated copy and branch of your repo (Git-tracked files only).
                 </p>
+                <Button
+                  onClick={onCreateWorkspace}
+                  disabled={isCreatingWorkspace}
+                  size="sm"
+                  aria-busy={isCreatingWorkspace}
+                >
+                  {isCreatingWorkspace ? (
+                    <>
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                      Creating…
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="mr-2 size-4" />
+                      Create workspace
+                    </>
+                  )}
+                </Button>
               </AlertDescription>
             </Alert>
           )}
