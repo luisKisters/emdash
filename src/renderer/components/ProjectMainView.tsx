@@ -7,7 +7,6 @@ import {
   CardHeader,
   CardTitle,
 } from "./ui/card";
-import { Spinner } from "./ui/spinner";
 import { GitBranch, Plus, Loader2 } from "lucide-react";
 import {
   Breadcrumb,
@@ -71,22 +70,24 @@ function WorkspaceCard({
         active ? "ring-2 ring-primary" : "",
       ].join(" ")}
     >
-      <CardHeader className="space-y-1">
-        <CardTitle className="text-base">{ws.name}</CardTitle>
-        <CardDescription className="flex items-center gap-2 min-w-0">
+      <CardHeader className="space-y-1 p-4 pb-2">
+        <CardTitle className="text-base leading-tight tracking-tight">
+          {ws.name}
+        </CardTitle>
+        <CardDescription className="flex items-center gap-2 min-w-0 text-xs">
           {ws.status === "running" && (
             <Loader2 className="size-3 animate-spin" />
           )}
           <GitBranch className="size-3" />
           <span
-            className="font-mono text-xs truncate max-w-[10rem]"
+            className="text-xs truncate max-w-[12rem]"
             title={`origin/${ws.branch}`}
           >
             origin/{ws.branch}
           </span>
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex items-center justify-between">
+      <CardContent className="p-4 pt-2 flex items-center justify-between">
         <StatusBadge status={ws.status} />
         {ws.agentId && <Badge variant="outline">agent</Badge>}
       </CardContent>
@@ -141,6 +142,41 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
         </div>
 
         <div className="max-w-4xl space-y-6">
+          <div className="space-y-3">
+            <div className="flex items-center justify-start gap-3">
+              <h2 className="text-lg font-semibold">Workspaces</h2>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={onCreateWorkspace}
+                disabled={isCreatingWorkspace}
+                aria-busy={isCreatingWorkspace}
+              >
+                {isCreatingWorkspace ? (
+                  <>
+                    <Loader2 className="mr-2 size-4 animate-spin" />
+                    Creating…
+                  </>
+                ) : (
+                  <>
+                    <Plus className="mr-2 size-4" />
+                    Create workspace
+                  </>
+                )}
+              </Button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {(project.workspaces ?? []).map((ws) => (
+                <WorkspaceCard
+                  key={ws.id}
+                  ws={ws}
+                  active={activeWorkspace?.id === ws.id}
+                  onClick={() => onSelectWorkspace(ws)}
+                />
+              ))}
+            </div>
+          </div>
+
           {(!project.workspaces || project.workspaces.length === 0) && (
             <Alert>
               <AlertTitle>What’s a workspace?</AlertTitle>
@@ -150,81 +186,6 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
                 </p>
               </AlertDescription>
             </Alert>
-          )}
-
-          {project.workspaces && project.workspaces.length > 0 && (
-            <div className="mb-6">
-              <div className="flex items-center justify-start gap-3 mb-4">
-                <h2 className="text-lg font-semibold">Workspaces</h2>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={onCreateWorkspace}
-                  disabled={isCreatingWorkspace}
-                  aria-busy={isCreatingWorkspace}
-                >
-                  {isCreatingWorkspace ? (
-                    <>
-                      <Loader2 className="mr-2 size-4 animate-spin" />
-                      Creating…
-                    </>
-                  ) : (
-                    <>
-                      <Plus className="mr-2 size-4" />
-                      Create workspace
-                    </>
-                  )}
-                </Button>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {project.workspaces.map((workspace) => (
-                  <Card
-                    key={workspace.id}
-                    className={`hover:shadow-lg transition-all cursor-pointer ${
-                      activeWorkspace?.id === workspace.id
-                        ? "ring-2 ring-blue-500 border-blue-500"
-                        : "hover:shadow-lg"
-                    }`}
-                    onClick={() => onSelectWorkspace(workspace)}
-                  >
-                    <CardHeader className="flex flex-row items-start justify-between space-y-0">
-                      <div>
-                        <CardTitle className="text-lg">
-                          {workspace.name}
-                        </CardTitle>
-                        <CardDescription className="flex items-center gap-2 text-gray-500 dark:text-gray-400">
-                          {workspace.status === "running" ||
-                          workspace.agentId ? (
-                            <Spinner size="sm" className="text-gray-500" />
-                          ) : (
-                            <GitBranch className="w-4 h-4" />
-                          )}
-                          <span>Branch: {workspace.branch}</span>
-                        </CardDescription>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="flex items-center justify-between text-sm text-gray-500">
-                        <span
-                          className={`px-2 py-1 rounded text-xs ${
-                            workspace.status === "running"
-                              ? "bg-green-100 text-green-800"
-                              : workspace.status === "active"
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}
-                        >
-                          {workspace.status}
-                        </span>
-                        {workspace.agentId && (
-                          <span className="text-purple-600">Agent Active</span>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            </div>
           )}
         </div>
       </div>
