@@ -11,6 +11,7 @@ import {
   SidebarMenu,
   SidebarMenuItem,
   SidebarMenuButton,
+  SidebarFooter,
 } from "./ui/sidebar";
 import {
   Collapsible,
@@ -238,16 +239,18 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <div className="hidden sm:block border-t border-gray-200 dark:border-gray-800 p-4">
-          {renderGithubStatus()}
-        </div>
-        <div className="sm:hidden border-t border-gray-200 dark:border-gray-800 px-2 py-2 flex justify-start">
-          {githubInstalled && githubAuthenticated ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-500" aria-label="GitHub connected" />
-          ) : (
-            <AlertCircle className="w-5 h-5 text-amber-500" aria-label="GitHub not connected" />
-          )}
-        </div>
+        <SidebarFooter className="border-t border-gray-200 dark:border-gray-800">
+          <div className="hidden sm:block">
+            {renderGithubStatus()}
+          </div>
+          <div className="sm:hidden flex justify-start">
+            {githubInstalled && githubAuthenticated ? (
+              <CheckCircle2 className="w-5 h-5 text-emerald-500" aria-label="GitHub connected" />
+            ) : (
+              <AlertCircle className="w-5 h-5 text-amber-500" aria-label="GitHub not connected" />
+            )}
+          </div>
+        </SidebarFooter>
       </Sidebar>
     </SidebarProvider>
   );
