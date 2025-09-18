@@ -5,7 +5,7 @@
   alt="Emdash" width="900">
   </p>
 
-Emdash is an orchestration layer for running multiple Codex CLI agents in parallel, each isolated in its own Git worktree — so you can fan out tasks, keep changes compartmentalized, and manage everything from a single UI.
+emdash is an orchestration layer for running multiple Codex CLI agents in parallel, each isolated in its own Git worktree — so you can fan out tasks, keep changes compartmentalized, and manage everything from a single UI.
 
 <p align="center">
   <a href="https://github.com/openai/codex" target="_blank" rel="noopener">OpenAI Codex CLI</a>
@@ -177,3 +177,8 @@ npx electron -e "const {app}=require('electron');app.whenReady().then(()=>{conso
 Delete `emdash.db` (and optional legacy names) inside the printed folder.
 
 After deletion, restart emdash — the database will be re‑initialized on launch.
+
+## What's Next
+
+- [ ] Cloud database option as an alternative to local SQLite
+- [ ] Pluggable provider system to run other CLI coding agents (e.g., Claude Code, Gemini CLI, aider, Warp) alongside Codex and switch easily
