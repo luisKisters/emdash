@@ -203,26 +203,30 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                                   {typedProject.workspaces.map((workspace) => {
                                     const isActive = activeWorkspace?.id === workspace.id;
                                     return (
-                                      <div
-                                        key={workspace.id}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (
-                                            onSelectProject &&
-                                            selectedProject?.id !== typedProject.id
-                                          ) {
-                                            onSelectProject(typedProject);
-                                          }
-                                          onSelectWorkspace &&
-                                            onSelectWorkspace(workspace);
-                                        }}
-                                        className={`-mx-2 px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 ${
-                                          isActive ? "bg-black/5 dark:bg-white/5" : ""
-                                        }`}
-                                        title={workspace.name}
-                                      >
-                                        <WorkspaceItem workspace={workspace} />
-                                      </div>
+                                      <SidebarMenuItem key={workspace.id}>
+                                        <SidebarMenuButton
+                                          asChild
+                                          className={`-mx-2 px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 ${
+                                            isActive ? "bg-black/5 dark:bg-white/5" : ""
+                                          }`}
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (
+                                              onSelectProject &&
+                                              selectedProject?.id !== typedProject.id
+                                            ) {
+                                              onSelectProject(typedProject);
+                                            }
+                                            onSelectWorkspace &&
+                                              onSelectWorkspace(workspace);
+                                          }}
+                                          title={workspace.name}
+                                        >
+                                          <div>
+                                            <WorkspaceItem workspace={workspace} />
+                                          </div>
+                                        </SidebarMenuButton>
+                                      </SidebarMenuItem>
                                     );
                                   })}
                                 </div>
