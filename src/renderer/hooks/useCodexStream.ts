@@ -157,7 +157,16 @@ const useCodexStream = (
         conversationId: conversationIdRef.current,
       };
 
-      setStreamingOutput(defaultPipeline(streamBufferRef.current, ctx));
+      // Guard: don't show raw stream until Codex has emitted a thinking/codex marker
+      const buf = streamBufferRef.current || "";
+      const hasMarker = /\[[0-9]{4}-[0-9]{2}-[0-9]{2}T[^\]]+\]\s*(thinking|codex)/i.test(buf);
+      if (!hasMarker) {
+        // keep streaming area blank to avoid flashing user prompt/tools output
+        setStreamingOutput("");
+        return;
+      }
+
+      setStreamingOutput(defaultPipeline(buf, ctx));
     };
 
     if (typeof window !== "undefined" && window.requestAnimationFrame) {

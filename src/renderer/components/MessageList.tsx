@@ -1,7 +1,7 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Message } from "../types/chat";
-import { parseCodexOutput } from "../lib/codexParse";
+import { parseCodexOutput, parseCodexStream } from "../lib/codexParse";
 import {
   Reasoning,
   ReasoningContent,
@@ -9,6 +9,7 @@ import {
 } from "@/components/ai-elements/reasoning";
 import { Response } from "@/components/ai-elements/response";
 import { CodeBlock, CodeBlockCopyButton } from "@/components/ai-elements/code-block";
+import StreamingAction from "./StreamingAction";
 import { Badge } from "@/components/ui/badge";
 import FileTypeIcon from "@/components/ui/file-type-icon";
 
@@ -181,7 +182,7 @@ const MessageList: React.FC<MessageListProps> = ({
                     {parsed?.reasoning ? (
                       <Reasoning className="w-full" isStreaming={false} defaultOpen={false}>
                         <ReasoningTrigger />
-                        <ReasoningContent>{parsed.reasoning}</ReasoningContent>
+                        <ReasoningContent>{parsed.reasoning || ''}</ReasoningContent>
                       </Reasoning>
                     ) : null}
                     <Response>{parsed ? parsed.response : trimmedContent}</Response>
@@ -196,16 +197,19 @@ const MessageList: React.FC<MessageListProps> = ({
           <div className="flex justify-start">
             <div className="max-w-[80%] px-4 py-3 text-sm leading-relaxed font-sans text-gray-900 dark:text-gray-100">
               {(() => {
-                const parsed = parseCodexOutput(streamingOutput || "")
+                const parsed = parseCodexStream(streamingOutput || "")
                 return (
                   <div className="space-y-3">
                     {parsed.reasoning ? (
                       <Reasoning className="w-full" isStreaming={!!isStreaming} defaultOpen={false}>
                         <ReasoningTrigger />
-                        <ReasoningContent>{parsed.reasoning}</ReasoningContent>
+                        <ReasoningContent>{parsed.reasoning || ''}</ReasoningContent>
                       </Reasoning>
                     ) : null}
-                    <Response>{parsed.response}</Response>
+                    {parsed.response ? <Response>{parsed.response}</Response> : null}
+                    {parsed && parsed.actions && parsed.actions.length > 0 ? (
+                      <StreamingAction text={parsed.actions[parsed.actions.length - 1]} />
+                    ) : null}
                   </div>
                 )
               })()}

@@ -5,7 +5,7 @@ import remarkGfm from "remark-gfm";
 import { CodeBlock, CodeBlockCopyButton } from "./code-block";
 
 export type ResponseProps = React.HTMLAttributes<HTMLDivElement> & {
-  children: string;
+  children: React.ReactNode;
   parseIncompleteMarkdown?: boolean;
   components?: Record<string, React.ComponentType<any>>;
   allowedImagePrefixes?: string[];
@@ -39,7 +39,8 @@ export const Response: React.FC<ResponseProps> = ({
   remarkPlugins = [],
   ...divProps
 }) => {
-  const content = parseIncompleteMarkdown ? closeUnfinishedCodeFences(children || "") : children || "";
+  const raw = typeof children === 'string' ? children : ''
+  const content = parseIncompleteMarkdown ? closeUnfinishedCodeFences(raw || "") : raw || "";
 
   const mergedComponents = {
     code: ({ inline, className, children, ...props }: any) => {
@@ -87,13 +88,17 @@ export const Response: React.FC<ResponseProps> = ({
       )}
       {...divProps}
     >
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm, ...remarkPlugins]}
-        rehypePlugins={[...rehypePlugins]}
-        components={mergedComponents}
-      >
-        {content}
-      </ReactMarkdown>
+      {typeof children === 'string' ? (
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm, ...remarkPlugins]}
+          rehypePlugins={[...rehypePlugins]}
+          components={mergedComponents}
+        >
+          {content}
+        </ReactMarkdown>
+      ) : (
+        children
+      )}
     </div>
   );
 };
