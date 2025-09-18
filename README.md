@@ -5,7 +5,7 @@
   alt="Emdash" width="900">
   </p>
 
-emdash is an orchestration layer for running multiple Codex CLI agents in parallel, each isolated in its own Git worktree — so you can fan out tasks, keep changes compartmentalized, and manage everything from a single UI.
+emdash is a UI layer for running multiple Codex CLI agents in parallel, each isolated in its own Git worktree — so you can fan out tasks, keep changes compartmentalized, and manage everything from a single UI.
 
 <p align="center">
   <a href="https://github.com/openai/codex" target="_blank" rel="noopener">OpenAI Codex CLI</a>
@@ -112,27 +112,9 @@ The application provides a comprehensive set of database operations through the 
 - **Automatic Initialization**: Database and tables are created on first launch
 - **Error Handling**: Robust error handling with detailed logging
 
-### Privacy & Security
-
-- **Local Storage Only**: All data remains on your local machine
-- **No Cloud Sync**: No data is transmitted to external servers
-- **GitHub CLI Integration**: Uses official [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart) for secure authentication
-- **File System Access**: Only accesses directories you explicitly open
-
-### Performance Considerations
-
-- **Indexed Queries**: Optimized database indexes for fast project and workspace lookups
-- **Efficient Storage**: Minimal storage footprint with normalized data structure
-- **Background Operations**: Database operations run asynchronously to maintain UI responsiveness
-
 ### Storage Usage
 
 The application stores conversation history locally, which may consume disk space over time:
-
-**Storage Management:**
-- Conversations are stored per workspace and persist across sessions
-- Database grows with usage but remains manageable for typical development workflows
-- Consider periodic cleanup of old conversations if storage becomes a concern
 
 ### Clearing Local Storage (Reset Database)
 
@@ -168,15 +150,6 @@ rm -f "$HOME/Library/Application Support/emdash/database.sqlite" \
 rm -f "$HOME/Library/Application Support/Electron/database.sqlite" \
       "$HOME/Library/Application Support/Electron/orcbench.db"
 ```
-
-Not sure where the DB is?
-- You can ask Electron for the exact `userData` folder:
-```bash
-npx electron -e "const {app}=require('electron');app.whenReady().then(()=>{console.log(app.getPath('userData'));app.quit()})"
-```
-Delete `emdash.db` (and optional legacy names) inside the printed folder.
-
-After deletion, restart emdash — the database will be re‑initialized on launch.
 
 ## What's Next
 
