@@ -176,23 +176,31 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                     return (
                       <SidebarMenuItem>
                         <Collapsible defaultOpen className="group/collapsible">
-                          <CollapsibleTrigger
-                            className="flex w-full items-center justify-start rounded-md px-2 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onSelectProject(typedProject);
-                            }}
-                          >
-                            <span className="flex flex-1 flex-col min-w-0 text-left">
-                              <span className="truncate">
-                                {typedProject.name}
-                              </span>
-                              <span className="hidden sm:block text-xs text-muted-foreground truncate">
+                          <div className="flex w-full items-center rounded-md px-2 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
+                            <button
+                              type="button"
+                              className="flex flex-1 min-w-0 flex-col text-left bg-transparent outline-none focus-visible:outline-none"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onSelectProject(typedProject);
+                              }}
+                            >
+                              <span className="truncate">{typedProject.name}</span>
+                              <span className="hidden sm:block truncate text-xs text-muted-foreground">
                                 {typedProject.githubInfo?.repository || typedProject.path}
                               </span>
-                            </span>
-                            <ChevronDown className="ml-2 h-4 w-4 shrink-0 group-data-[state=open]/collapsible:rotate-180" />
-                          </CollapsibleTrigger>
+                            </button>
+                            <CollapsibleTrigger asChild>
+                              <button
+                                type="button"
+                                aria-label={`Toggle workspaces for ${typedProject.name}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="ml-2 -mr-1 rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                              >
+                                <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                              </button>
+                            </CollapsibleTrigger>
+                          </div>
 
                           <CollapsibleContent asChild>
                             <div>
