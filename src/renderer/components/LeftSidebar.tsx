@@ -12,7 +12,12 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
 } from "./ui/sidebar";
-import { Home, CheckCircle2, AlertCircle, Check } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "./ui/collapsible";
+import { Home, CheckCircle2, AlertCircle, Check, ChevronDown } from "lucide-react";
 import githubLogo from "../../assets/images/github.png";
 import { WorkspaceItem } from "./WorkspaceItem";
 
@@ -165,61 +170,66 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                     }
                   }}
                   className="space-y-1 list-none p-0 m-0"
-                  itemClassName="relative group cursor-pointer rounded-md list-none"
+                  itemClassName="relative group p-2 sm:p-3 cursor-pointer rounded-md list-none"
                   getKey={(p) => (p as Project).id}
                 >
                   {(project) => {
                     const typedProject = project as Project;
                     return (
                       <SidebarMenuItem>
-                        <div onClick={() => onSelectProject(typedProject)}>
-                          <SidebarMenuButton asChild>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              className="w-full justify-start px-2 text-left"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onSelectProject(typedProject);
-                              }}
-                            >
-                              <span className="flex flex-col min-w-0">
-                                <span className="text-sm font-medium truncate">
-                                  {typedProject.name}
-                                </span>
-                                <span className="text-xs text-muted-foreground truncate">
-                                  {typedProject.githubInfo?.repository || typedProject.path}
-                                </span>
+                        <Collapsible defaultOpen className="group/collapsible">
+                          <CollapsibleTrigger
+                            className="flex w-full items-center justify-start rounded-md px-2 py-2 text-sm font-medium transition hover:bg-accent hover:text-accent-foreground"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onSelectProject(typedProject);
+                            }}
+                          >
+                            <span className="flex flex-1 flex-col min-w-0 text-left">
+                              <span className="truncate">
+                                {typedProject.name}
                               </span>
-                            </Button>
-                          </SidebarMenuButton>
+                              <span className="hidden sm:block text-xs text-muted-foreground truncate">
+                                {typedProject.githubInfo?.repository || typedProject.path}
+                              </span>
+                            </span>
+                            <ChevronDown className="ml-2 h-4 w-4 shrink-0 group-data-[state=open]/collapsible:rotate-180" />
+                          </CollapsibleTrigger>
 
-                          {typedProject.workspaces?.length ? (
-                            <div className="hidden sm:block mt-2 ml-7 space-y-1">
-                              {typedProject.workspaces.map((workspace) => {
-                                const isActive = activeWorkspace?.id === workspace.id;
-                                return (
-                                  <div
-                                    key={workspace.id}
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      if (onSelectProject && selectedProject?.id !== typedProject.id) {
-                                        onSelectProject(typedProject);
-                                      }
-                                      onSelectWorkspace && onSelectWorkspace(workspace);
-                                    }}
-                                    className={`-mx-2 px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 ${
-                                      isActive ? "bg-black/5 dark:bg-white/5" : ""
-                                    }`}
-                                    title={workspace.name}
-                                  >
-                                    <WorkspaceItem workspace={workspace} />
-                                  </div>
-                                );
-                              })}
+                          <CollapsibleContent asChild>
+                            <div>
+                              {typedProject.workspaces?.length ? (
+                                <div className="hidden sm:block mt-2 ml-7 space-y-1">
+                                  {typedProject.workspaces.map((workspace) => {
+                                    const isActive = activeWorkspace?.id === workspace.id;
+                                    return (
+                                      <div
+                                        key={workspace.id}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (
+                                            onSelectProject &&
+                                            selectedProject?.id !== typedProject.id
+                                          ) {
+                                            onSelectProject(typedProject);
+                                          }
+                                          onSelectWorkspace &&
+                                            onSelectWorkspace(workspace);
+                                        }}
+                                        className={`-mx-2 px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 ${
+                                          isActive ? "bg-black/5 dark:bg-white/5" : ""
+                                        }`}
+                                        title={workspace.name}
+                                      >
+                                        <WorkspaceItem workspace={workspace} />
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : null}
                             </div>
-                          ) : null}
-                        </div>
+                          </CollapsibleContent>
+                        </Collapsible>
                       </SidebarMenuItem>
                     );
                   }}
