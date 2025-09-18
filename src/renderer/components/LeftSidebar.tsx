@@ -1,6 +1,7 @@
 import React from "react";
 import ReorderList from "./ReorderList";
 import { Button } from "./ui/button";
+import { SidebarProvider, Sidebar, SidebarContent } from "./ui/sidebar";
 import { Home, CheckCircle2, AlertCircle, Check } from "lucide-react";
 import githubLogo from "../../assets/images/github.png";
 import { WorkspaceItem } from "./WorkspaceItem";
@@ -104,110 +105,118 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   };
 
   return (
-    <div className="flex-shrink-0 w-16 sm:w-64 lg:w-80 bg-gray-50 dark:bg-gray-900 h-screen flex flex-col">
-      <div className="flex-1 overflow-y-auto overscroll-contain p-2 sm:p-4">
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={onGoHome}
-            className="w-full justify-center sm:justify-start mt-5 p-3 h-auto"
-            aria-label="Home"
-          >
-            <Home className="w-5 h-5 sm:w-4 sm:h-4 sm:mr-3 text-gray-600 dark:text-gray-400" />
-            <span className="hidden sm:inline text-sm font-medium">Home</span>
-          </Button>
-        </div>
+    <SidebarProvider>
+      <Sidebar
+        variant="unstyled"
+        className="flex-shrink-0 w-16 sm:w-64 lg:w-80 bg-gray-50 dark:bg-gray-900 h-screen flex flex-col"
+      >
+        <SidebarContent
+          variant="unstyled"
+          className="overscroll-contain p-2 sm:p-4"
+        >
+          <div className="mb-6">
+            <Button
+              variant="ghost"
+              onClick={onGoHome}
+              className="w-full justify-center sm:justify-start mt-5 p-3 h-auto"
+              aria-label="Home"
+            >
+              <Home className="w-5 h-5 sm:w-4 sm:h-4 sm:mr-3 text-gray-600 dark:text-gray-400" />
+              <span className="hidden sm:inline text-sm font-medium">Home</span>
+            </Button>
+          </div>
 
-        <div className="mb-6">
-          <ReorderList
-            as="div"
-            axis="y"
-            items={projects}
-            onReorder={(newOrder) => {
-              if (onReorderProjectsFull) {
-                onReorderProjectsFull(newOrder as Project[]);
-              } else if (onReorderProjects) {
-                const oldIds = projects.map((p) => p.id);
-                const newIds = (newOrder as Project[]).map((p) => p.id);
-                for (let i = 0; i < newIds.length; i++) {
-                  if (newIds[i] !== oldIds[i]) {
-                    const sourceId = newIds.find((id) => id === oldIds[i]);
-                    const targetId = newIds[i];
-                    if (sourceId && targetId && sourceId !== targetId) {
-                      onReorderProjects(sourceId, targetId);
+          <div className="mb-6">
+            <ReorderList
+              as="div"
+              axis="y"
+              items={projects}
+              onReorder={(newOrder) => {
+                if (onReorderProjectsFull) {
+                  onReorderProjectsFull(newOrder as Project[]);
+                } else if (onReorderProjects) {
+                  const oldIds = projects.map((p) => p.id);
+                  const newIds = (newOrder as Project[]).map((p) => p.id);
+                  for (let i = 0; i < newIds.length; i++) {
+                    if (newIds[i] !== oldIds[i]) {
+                      const sourceId = newIds.find((id) => id === oldIds[i]);
+                      const targetId = newIds[i];
+                      if (sourceId && targetId && sourceId !== targetId) {
+                        onReorderProjects(sourceId, targetId);
+                      }
+                      break;
                     }
-                    break;
                   }
                 }
-              }
-            }}
-            className="space-y-1 list-none p-0 m-0"
-            itemClassName="relative group p-2 sm:p-3 cursor-pointer rounded-md list-none"
-            getKey={(p) => (p as Project).id}
-          >
-            {(project) => (
-              <div onClick={() => onSelectProject(project as Project)}>
-                <div className="flex items-center sm:items-start sm:space-x-3">
-                  <div className="hidden sm:block flex-1 min-w-0">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectProject(project as Project);
-                      }}
-                      className="block w-full text-left font-medium text-sm truncate rounded-sm hover:underline hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none focus:underline"
-                      title={(project as Project).name}
-                    >
-                      {(project as Project).name
-                        }
-                    </button>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {(project as Project).githubInfo?.repository || (project as Project).path}
-                    </p>
+              }}
+              className="space-y-1 list-none p-0 m-0"
+              itemClassName="relative group p-2 sm:p-3 cursor-pointer rounded-md list-none"
+              getKey={(p) => (p as Project).id}
+            >
+              {(project) => (
+                <div onClick={() => onSelectProject(project as Project)}>
+                  <div className="flex items-center sm:items-start sm:space-x-3">
+                    <div className="hidden sm:block flex-1 min-w-0">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onSelectProject(project as Project);
+                        }}
+                        className="block w-full text-left font-medium text-sm truncate rounded-sm hover:underline hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none focus:underline"
+                        title={(project as Project).name}
+                      >
+                        {(project as Project).name
+                          }
+                      </button>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                        {(project as Project).githubInfo?.repository || (project as Project).path}
+                      </p>
+                    </div>
                   </div>
-                </div>
 
-                {(project as Project).workspaces && (project as Project).workspaces!.length > 0 && (
-                  <div className="hidden sm:block mt-2 ml-7 space-y-1">
-                    {(project as Project).workspaces!.map((workspace) => {
-                      const isActive = activeWorkspace?.id === workspace.id;
-                      return (
-                        <div
-                          key={workspace.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (onSelectProject && selectedProject?.id !== (project as Project).id) {
-                              onSelectProject(project as Project);
-                            }
-                            onSelectWorkspace && onSelectWorkspace(workspace);
-                          }}
-                          className={`-mx-2 px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 ${
-                            isActive ? "bg-black/5 dark:bg-white/5" : ""
-                          }`}
-                          title={workspace.name}
-                        >
-                          <WorkspaceItem workspace={workspace} />
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-          </ReorderList>
+                  {(project as Project).workspaces && (project as Project).workspaces!.length > 0 && (
+                    <div className="hidden sm:block mt-2 ml-7 space-y-1">
+                      {(project as Project).workspaces!.map((workspace) => {
+                        const isActive = activeWorkspace?.id === workspace.id;
+                        return (
+                          <div
+                            key={workspace.id}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onSelectProject && selectedProject?.id !== (project as Project).id) {
+                                onSelectProject(project as Project);
+                              }
+                              onSelectWorkspace && onSelectWorkspace(workspace);
+                            }}
+                            className={`-mx-2 px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 ${
+                              isActive ? "bg-black/5 dark:bg-white/5" : ""
+                            }`}
+                            title={workspace.name}
+                          >
+                            <WorkspaceItem workspace={workspace} />
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+            </ReorderList>
+          </div>
+        </SidebarContent>
+        <div className="hidden sm:block border-t border-gray-200 dark:border-gray-800 p-4">
+          {renderGithubStatus()}
         </div>
-      </div>
-      <div className="hidden sm:block border-t border-gray-200 dark:border-gray-800 p-4">
-        {renderGithubStatus()}
-      </div>
-      <div className="sm:hidden border-t border-gray-200 dark:border-gray-800 px-2 py-2 flex justify-start">
-        {githubInstalled && githubAuthenticated ? (
-          <CheckCircle2 className="w-5 h-5 text-emerald-500" aria-label="GitHub connected" />
-        ) : (
-          <AlertCircle className="w-5 h-5 text-amber-500" aria-label="GitHub not connected" />
-        )}
-      </div>
-    </div>
+        <div className="sm:hidden border-t border-gray-200 dark:border-gray-800 px-2 py-2 flex justify-start">
+          {githubInstalled && githubAuthenticated ? (
+            <CheckCircle2 className="w-5 h-5 text-emerald-500" aria-label="GitHub connected" />
+          ) : (
+            <AlertCircle className="w-5 h-5 text-amber-500" aria-label="GitHub not connected" />
+          )}
+        </div>
+      </Sidebar>
+    </SidebarProvider>
   );
 };
 
