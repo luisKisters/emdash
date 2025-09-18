@@ -1,10 +1,11 @@
-# emdash
-
-**Agent-agnostic Orchestration Bench for Codex Agents**
+<p align="center">
+    <img src="./src/assets/images/emdash/emdash_logo.svg#gh-light-mode-only"
+  alt="Emdash" width="900">
+    <img src="./src/assets/images/emdash/emdash_logo_white.svg#gh-dark-mode-only"
+  alt="Emdash" width="900">
+  </p>
 
 Run multiple Codex Agents in parallel with isolated Git worktrees.
-
-![App Screenshot](images/screenshot.png)
 
 ## Requirements
 
