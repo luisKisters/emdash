@@ -5,8 +5,6 @@
   alt="Emdash" width="900">
   </p>
 
-# Emdash
-
 Emdash is an orchestration layer for running multiple Codex CLI agents in parallel, each isolated in its own Git worktree — so you can fan out tasks, keep changes compartmentalized, and manage everything from a single UI.
 
 <p>
