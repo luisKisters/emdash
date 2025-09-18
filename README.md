@@ -8,6 +8,10 @@
 Emdash is an orchestration layer for running multiple Codex CLI agents in parallel, each isolated in its own Git worktree — so you can fan out tasks, keep changes compartmentalized, and manage everything from a single UI.
 
 <p align="center">
+  <a href="https://github.com/openai/codex" target="_blank" rel="noopener">Built for the OpenAI Codex CLI</a>
+</p>
+
+<p align="center">
     <img src="./docs/media/emdash.gif" alt="Emdash demo" width="100%">
 </p>
 
