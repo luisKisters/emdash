@@ -222,7 +222,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                                           onSelectWorkspace &&
                                             onSelectWorkspace(workspace);
                                         }}
-                                        className={`-mx-2 px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 ${
+                                        className={` px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 ${
                                           isActive ? "bg-black/5 dark:bg-white/5" : ""
                                         }`}
                                         title={workspace.name}
