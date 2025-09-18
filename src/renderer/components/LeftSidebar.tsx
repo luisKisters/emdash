@@ -6,6 +6,7 @@ import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
+  SidebarGroupLabel,
   SidebarGroupContent,
   SidebarMenu,
   SidebarMenuItem,
@@ -117,7 +118,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
     <SidebarProvider>
       <Sidebar>
         <SidebarContent>
-          <SidebarGroup>
+          <SidebarGroup className="mb-2">
             <SidebarGroupContent>
               <SidebarMenu>
                 <SidebarMenuItem>
@@ -137,84 +138,91 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
             </SidebarGroupContent>
           </SidebarGroup>
 
-          <div className="mb-6">
-            <ReorderList
-              as="div"
-              axis="y"
-              items={projects}
-              onReorder={(newOrder) => {
-                if (onReorderProjectsFull) {
-                  onReorderProjectsFull(newOrder as Project[]);
-                } else if (onReorderProjects) {
-                  const oldIds = projects.map((p) => p.id);
-                  const newIds = (newOrder as Project[]).map((p) => p.id);
-                  for (let i = 0; i < newIds.length; i++) {
-                    if (newIds[i] !== oldIds[i]) {
-                      const sourceId = newIds.find((id) => id === oldIds[i]);
-                      const targetId = newIds[i];
-                      if (sourceId && targetId && sourceId !== targetId) {
-                        onReorderProjects(sourceId, targetId);
-                      }
-                      break;
-                    }
-                  }
-                }
-              }}
-              className="space-y-1 list-none p-0 m-0"
-              itemClassName="relative group p-2 sm:p-3 cursor-pointer rounded-md list-none"
-              getKey={(p) => (p as Project).id}
-            >
-              {(project) => (
-                <div onClick={() => onSelectProject(project as Project)}>
-                  <div className="flex items-center sm:items-start sm:space-x-3">
-                    <div className="hidden sm:block flex-1 min-w-0">
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onSelectProject(project as Project);
-                        }}
-                        className="block w-full text-left font-medium text-sm truncate rounded-sm hover:underline hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none focus:underline"
-                        title={(project as Project).name}
-                      >
-                        {(project as Project).name
+          <SidebarGroup>
+            <SidebarGroupLabel className="sr-only">Projects</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <ReorderList
+                  as="div"
+                  axis="y"
+                  items={projects}
+                  onReorder={(newOrder) => {
+                    if (onReorderProjectsFull) {
+                      onReorderProjectsFull(newOrder as Project[]);
+                    } else if (onReorderProjects) {
+                      const oldIds = projects.map((p) => p.id);
+                      const newIds = (newOrder as Project[]).map((p) => p.id);
+                      for (let i = 0; i < newIds.length; i++) {
+                        if (newIds[i] !== oldIds[i]) {
+                          const sourceId = newIds.find((id) => id === oldIds[i]);
+                          const targetId = newIds[i];
+                          if (sourceId && targetId && sourceId !== targetId) {
+                            onReorderProjects(sourceId, targetId);
                           }
-                      </button>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {(project as Project).githubInfo?.repository || (project as Project).path}
-                      </p>
-                    </div>
-                  </div>
-
-                  {(project as Project).workspaces && (project as Project).workspaces!.length > 0 && (
-                    <div className="hidden sm:block mt-2 ml-7 space-y-1">
-                      {(project as Project).workspaces!.map((workspace) => {
-                        const isActive = activeWorkspace?.id === workspace.id;
-                        return (
-                          <div
-                            key={workspace.id}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (onSelectProject && selectedProject?.id !== (project as Project).id) {
+                          break;
+                        }
+                      }
+                    }
+                  }}
+                  className="space-y-1 list-none p-0 m-0"
+                  itemClassName="relative group p-2 sm:p-3 cursor-pointer rounded-md list-none"
+                  getKey={(p) => (p as Project).id}
+                >
+                  {(project) => (
+                    <SidebarMenuItem>
+                      <div onClick={() => onSelectProject(project as Project)}>
+                        <div className="flex items-center sm:items-start sm:space-x-3">
+                          <div className="hidden sm:block flex-1 min-w-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
                                 onSelectProject(project as Project);
-                              }
-                              onSelectWorkspace && onSelectWorkspace(workspace);
-                            }}
-                            className={`-mx-2 px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 ${
-                              isActive ? "bg-black/5 dark:bg-white/5" : ""
-                            }`}
-                            title={workspace.name}
-                          >
-                            <WorkspaceItem workspace={workspace} />
+                              }}
+                              className="block w-full text-left font-medium text-sm truncate rounded-sm hover:underline hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none focus:underline"
+                              title={(project as Project).name}
+                            >
+                              {(project as Project).name
+                                }
+                            </button>
+                            <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                              {(project as Project).githubInfo?.repository || (project as Project).path}
+                            </p>
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+
+                        {(project as Project).workspaces && (project as Project).workspaces!.length > 0 && (
+                          <div className="hidden sm:block mt-2 ml-7 space-y-1">
+                            {(project as Project).workspaces!.map((workspace) => {
+                              const isActive = activeWorkspace?.id === workspace.id;
+                              return (
+                                <div
+                                  key={workspace.id}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (onSelectProject && selectedProject?.id !== (project as Project).id) {
+                                      onSelectProject(project as Project);
+                                    }
+                                    onSelectWorkspace && onSelectWorkspace(workspace);
+                                  }}
+                                  className={`-mx-2 px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 ${
+                                    isActive ? "bg-black/5 dark:bg-white/5" : ""
+                                  }`}
+                                  title={workspace.name}
+                                >
+                                  <WorkspaceItem workspace={workspace} />
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    </SidebarMenuItem>
                   )}
-                </div>
-              )}
-            </ReorderList>
-          </div>
+                </ReorderList>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
         </SidebarContent>
         <div className="hidden sm:block border-t border-gray-200 dark:border-gray-800 p-4">
           {renderGithubStatus()}
