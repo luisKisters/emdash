@@ -8,7 +8,16 @@ import {
   CardTitle,
 } from "./ui/card";
 import { Spinner } from "./ui/spinner";
-import { FolderOpen, GitBranch, Plus } from "lucide-react";
+import { GitBranch, Plus, Loader2 } from "lucide-react";
+import {
+  Breadcrumb,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbList,
+} from "./ui/breadcrumb";
+import { Badge } from "./ui/badge";
+import { Separator } from "./ui/separator";
+import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
 
 interface Project {
   id: string;
@@ -35,6 +44,56 @@ interface Workspace {
   agentId?: string;
 }
 
+function StatusBadge({ status }: { status: Workspace["status"] }) {
+  return (
+    <Badge variant="secondary" className="capitalize">
+      {status}
+    </Badge>
+  );
+}
+
+function WorkspaceCard({
+  ws,
+  active,
+  onClick,
+}: {
+  ws: Workspace;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <Card
+      onClick={onClick}
+      role="button"
+      tabIndex={0}
+      className={[
+        "cursor-pointer transition-shadow hover:shadow-sm",
+        active ? "ring-2 ring-primary" : "",
+      ].join(" ")}
+    >
+      <CardHeader className="space-y-1">
+        <CardTitle className="text-base">{ws.name}</CardTitle>
+        <CardDescription className="flex items-center gap-2 min-w-0">
+          {ws.status === "running" && (
+            <Loader2 className="size-3 animate-spin" />
+          )}
+          <GitBranch className="size-3" />
+          <span
+            className="font-mono text-xs truncate max-w-[10rem]"
+            title={`origin/${ws.branch}`}
+          >
+            origin/{ws.branch}
+          </span>
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="flex items-center justify-between">
+        <StatusBadge status={ws.status} />
+        {ws.agentId && <Badge variant="outline">agent</Badge>}
+      </CardContent>
+    </Card>
+  );
+}
+
 interface ProjectMainViewProps {
   project: Project;
   onCreateWorkspace: () => void;
@@ -51,77 +110,72 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
   isCreatingWorkspace = false,
 }) => {
   return (
-    <div className="flex-1 bg-white dark:bg-gray-800 h-screen overflow-y-auto">
-      <div className="p-6">
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h1 className="text-3xl font-bold">{project.name}</h1>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                {project.path}
-              </p>
-            </div>
-          </div>
+    <div className="flex-1 bg-background">
+      <div className="container mx-auto max-w-6xl p-6 space-y-8">
+        <div className="mb-8 space-y-2">
+          <header className="flex items-start justify-between">
+            <div className="space-y-2">
+              <h1 className="text-3xl font-semibold tracking-tight">{project.name}</h1>
 
-          {project.gitInfo.branch && (
-            <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
-              <GitBranch className="w-4 h-4" />
-              <span>Branching from origin/{project.gitInfo.branch}</span>
+              <Breadcrumb className="text-muted-foreground">
+                <BreadcrumbList>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink className="text-muted-foreground">
+                      {project.path}
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  {project.gitInfo.branch && (
+                    <BreadcrumbItem>
+                      <Badge variant="secondary" className="gap-1">
+                        <GitBranch className="size-3" />
+                        origin/{project.gitInfo.branch}
+                      </Badge>
+                    </BreadcrumbItem>
+                  )}
+                </BreadcrumbList>
+              </Breadcrumb>
             </div>
-          )}
+
+          </header>
+          <Separator className="my-2" />
         </div>
 
-        <div className="max-w-4xl">
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="text-xl">What's a workspace?</CardTitle>
-              <CardDescription>
-                Each workspace is an isolated copy and branch of your Git repo.
-                emdash only copies files tracked in Git.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center justify-between">
-                <div className="flex-1">
-                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
-                    Create isolated environments for different tasks and agents
-                    to work on.
-                  </p>
-                  <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-                    <div className="flex items-center space-x-1">
-                      <FolderOpen className="w-4 h-4" />
-                      <span>{project.name}</span>
-                    </div>
-                    <div className="flex items-center space-x-1">
-                      <GitBranch className="w-4 h-4" />
-                      <span>origin/{project.gitInfo.branch || "main"}</span>
-                    </div>
-                  </div>
-                </div>
+        <div className="max-w-4xl space-y-6">
+          {(!project.workspaces || project.workspaces.length === 0) && (
+            <Alert>
+              <AlertTitle>What’s a workspace?</AlertTitle>
+              <AlertDescription className="flex items-center justify-between gap-4">
+                <p className="text-sm text-muted-foreground">
+                  Each workspace is an isolated copy and branch of your repo (Git-tracked files only).
+                </p>
+              </AlertDescription>
+            </Alert>
+          )}
+
+          {project.workspaces && project.workspaces.length > 0 && (
+            <div className="mb-6">
+              <div className="flex items-center justify-start gap-3 mb-4">
+                <h2 className="text-lg font-semibold">Workspaces</h2>
                 <Button
+                  variant="secondary"
+                  size="sm"
                   onClick={onCreateWorkspace}
                   disabled={isCreatingWorkspace}
-                  className="bg-black text-white hover:bg-gray-800"
+                  aria-busy={isCreatingWorkspace}
                 >
                   {isCreatingWorkspace ? (
                     <>
-                      <Spinner size="sm" className="mr-2" />
-                      Creating...
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                      Creating…
                     </>
                   ) : (
                     <>
-                      <Plus className="w-4 h-4 mr-2" />
+                      <Plus className="mr-2 size-4" />
                       Create workspace
                     </>
                   )}
                 </Button>
               </div>
-            </CardContent>
-          </Card>
-
-          {project.workspaces && project.workspaces.length > 0 && (
-            <div className="mb-6">
-              <h2 className="text-lg font-semibold mb-4">Workspaces</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {project.workspaces.map((workspace) => (
                   <Card
