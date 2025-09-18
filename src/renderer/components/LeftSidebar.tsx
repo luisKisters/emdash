@@ -165,7 +165,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                     }
                   }}
                   className="space-y-1 list-none p-0 m-0"
-                  itemClassName="relative group p-2 sm:p-3 cursor-pointer rounded-md list-none"
+                  itemClassName="relative group cursor-pointer rounded-md list-none"
                   getKey={(p) => (p as Project).id}
                 >
                   {(project) => {
@@ -173,32 +173,30 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                     return (
                       <SidebarMenuItem>
                         <div onClick={() => onSelectProject(typedProject)}>
-                          <SidebarMenuButton asChild className="w-full justify-start">
+                          <SidebarMenuButton asChild>
                             <Button
                               type="button"
                               variant="ghost"
-                              className="w-full justify-start px-2"
+                              className="w-full justify-start px-2 text-left"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onSelectProject(typedProject);
                               }}
                             >
-                              <div className="flex w-full items-center gap-2 sm:gap-3">
-                                <div className="flex-1 min-w-0 text-left">
-                                  <span className="block text-sm font-medium truncate">
-                                    {typedProject.name}
-                                  </span>
-                                  <span className="hidden sm:block text-xs text-muted-foreground truncate">
-                                    {typedProject.githubInfo?.repository || typedProject.path}
-                                  </span>
-                                </div>
-                              </div>
+                              <span className="flex flex-col min-w-0">
+                                <span className="text-sm font-medium truncate">
+                                  {typedProject.name}
+                                </span>
+                                <span className="text-xs text-muted-foreground truncate">
+                                  {typedProject.githubInfo?.repository || typedProject.path}
+                                </span>
+                              </span>
                             </Button>
                           </SidebarMenuButton>
 
                           {typedProject.workspaces?.length ? (
                             <div className="hidden sm:block mt-2 ml-7 space-y-1">
-                              {typedProject.workspaces?.map((workspace) => {
+                              {typedProject.workspaces.map((workspace) => {
                                 const isActive = activeWorkspace?.id === workspace.id;
                                 return (
                                   <div
