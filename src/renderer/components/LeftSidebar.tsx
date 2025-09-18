@@ -18,7 +18,7 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from "./ui/collapsible";
-import { Home, CheckCircle2, AlertCircle, ChevronDown } from "lucide-react";
+import { Home, ChevronDown } from "lucide-react";
 import githubLogo from "../../assets/images/github.png";
 import { WorkspaceItem } from "./WorkspaceItem";
 
@@ -247,22 +247,6 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                 <div className="flex flex-1 flex-col min-w-0 text-left gap-1">
                   <div className="hidden sm:block truncate">
                     {renderGithubStatus()}
-                  </div>
-                  <div className="sm:hidden flex items-center gap-2">
-                    {githubInstalled && githubAuthenticated ? (
-                      <CheckCircle2
-                        className="w-5 h-5 text-emerald-500"
-                        aria-label="GitHub connected"
-                      />
-                    ) : (
-                      <AlertCircle
-                        className="w-5 h-5 text-amber-500"
-                        aria-label="GitHub not connected"
-                      />
-                    )}
-                    <span className="truncate">
-                      {githubAuthenticated ? "GitHub connected" : "GitHub not connected"}
-                    </span>
                   </div>
                 </div>
               </SidebarMenuButton>
