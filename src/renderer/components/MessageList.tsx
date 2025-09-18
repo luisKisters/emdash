@@ -1,15 +1,39 @@
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import type { Message } from "../types/chat";
+import { parseCodexOutput, parseCodexStream } from "../lib/codexParse";
+import {
+  Reasoning,
+  ReasoningContent,
+  ReasoningTrigger,
+} from "@/components/ai-elements/reasoning";
+import { Response } from "@/components/ai-elements/response";
+import { CodeBlock, CodeBlockCopyButton } from "@/components/ai-elements/code-block";
+import StreamingAction from "./StreamingAction";
+import { Badge } from "@/components/ui/badge";
+import FileTypeIcon from "@/components/ui/file-type-icon";
+
+function basename(p: string): string {
+  const b = p.split('/').pop() || p
+  return b
+}
+function extname(p: string): string {
+  const b = basename(p)
+  const i = b.lastIndexOf('.')
+  if (i <= 0) return ''
+  return b.slice(i + 1).toUpperCase()
+}
 
 interface MessageListProps {
   messages: Message[];
   streamingOutput: string | null;
+  isStreaming?: boolean;
 }
 
 const MessageList: React.FC<MessageListProps> = ({
   messages,
   streamingOutput,
+  isStreaming = false,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -72,6 +96,11 @@ const MessageList: React.FC<MessageListProps> = ({
           const content = message.content ?? "";
           const trimmedContent = content.trim();
           if (!isUserMessage && !trimmedContent) return null;
+
+          // Parse agent outputs for reasoning blocks
+          const parsed = !isUserMessage && trimmedContent
+            ? parseCodexOutput(trimmedContent)
+            : null
 
           return (
             <div
@@ -137,11 +166,27 @@ const MessageList: React.FC<MessageListProps> = ({
                     >
                       {content}
                     </ReactMarkdown>
+                    {Array.isArray(message.attachments) && message.attachments.length > 0 ? (
+                      <div className="mt-2 flex flex-wrap gap-1 items-center">
+                        {message.attachments.map((p) => (
+                          <Badge key={p} className="flex items-center gap-1">
+                            <FileTypeIcon path={p} type="file" className="w-3.5 h-3.5" />
+                            <span>{basename(p)}</span>
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 ) : (
-                  <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm">
-                    {trimmedContent}
-                  </pre>
+                  <div className="space-y-3">
+                    {parsed?.reasoning ? (
+                      <Reasoning className="w-full" isStreaming={false} defaultOpen={false}>
+                        <ReasoningTrigger />
+                        <ReasoningContent>{parsed.reasoning || ''}</ReasoningContent>
+                      </Reasoning>
+                    ) : null}
+                    <Response>{parsed ? parsed.response : trimmedContent}</Response>
+                  </div>
                 )}
               </div>
             </div>
@@ -151,9 +196,23 @@ const MessageList: React.FC<MessageListProps> = ({
         {streamingOutput !== null && (
           <div className="flex justify-start">
             <div className="max-w-[80%] px-4 py-3 text-sm leading-relaxed font-sans text-gray-900 dark:text-gray-100">
-              <pre className="whitespace-pre-wrap font-mono text-xs sm:text-sm">
-                {streamingOutput ?? ""}
-              </pre>
+              {(() => {
+                const parsed = parseCodexStream(streamingOutput || "")
+                return (
+                  <div className="space-y-3">
+                    {parsed.reasoning ? (
+                      <Reasoning className="w-full" isStreaming={!!isStreaming} defaultOpen={false}>
+                        <ReasoningTrigger />
+                        <ReasoningContent>{parsed.reasoning || ''}</ReasoningContent>
+                      </Reasoning>
+                    ) : null}
+                    {parsed.response ? <Response>{parsed.response}</Response> : null}
+                    {parsed && parsed.actions && parsed.actions.length > 0 ? (
+                      <StreamingAction text={parsed.actions[parsed.actions.length - 1]} />
+                    ) : null}
+                  </div>
+                )
+              })()}
             </div>
           </div>
         )}

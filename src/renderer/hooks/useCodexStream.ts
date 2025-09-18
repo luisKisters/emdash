@@ -157,7 +157,16 @@ const useCodexStream = (
         conversationId: conversationIdRef.current,
       };
 
-      setStreamingOutput(defaultPipeline(streamBufferRef.current, ctx));
+      // Guard: don't show raw stream until Codex has emitted a thinking/codex marker
+      const buf = streamBufferRef.current || "";
+      const hasMarker = /\[[0-9]{4}-[0-9]{2}-[0-9]{2}T[^\]]+\]\s*(thinking|codex)/i.test(buf);
+      if (!hasMarker) {
+        // keep streaming area blank to avoid flashing user prompt/tools output
+        setStreamingOutput("");
+        return;
+      }
+
+      setStreamingOutput(defaultPipeline(buf, ctx));
     };
 
     if (typeof window !== "undefined" && window.requestAnimationFrame) {
@@ -186,11 +195,16 @@ const useCodexStream = (
         return { success: false, error: "conversation-unavailable" };
       }
 
+      const { stripMentions, extractMentions } = await import("../lib/attachments");
+      const displayText = stripMentions(text);
+      const mentionList = extractMentions(text);
+
       const userMessage: Message = {
         id: Date.now().toString(),
-        content: text,
+        content: displayText,
         sender: "user",
         timestamp: new Date(),
+        attachments: mentionList,
       };
 
       try {
@@ -201,6 +215,7 @@ const useCodexStream = (
           sender: userMessage.sender,
           metadata: JSON.stringify({
             workspaceId: normalizedOptions.workspaceId,
+            attachments: mentionList,
           }),
         });
       } catch (error) {
@@ -340,11 +355,22 @@ const useCodexStream = (
             conversationId: convoId,
           };
 
+          let attachments: string[] | undefined
+          try {
+            if (msg.metadata && msg.sender === 'user') {
+              const meta = JSON.parse(msg.metadata)
+              if (meta && Array.isArray(meta.attachments) && meta.attachments.length > 0) {
+                attachments = meta.attachments
+              }
+            }
+          } catch {}
+
           return {
             id: msg.id,
             content: defaultPipeline(msg.content, ctx),
             sender: msg.sender as "user" | "agent",
             timestamp: new Date(msg.timestamp),
+            attachments,
           };
         });
 

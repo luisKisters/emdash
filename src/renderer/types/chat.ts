@@ -11,4 +11,5 @@ export interface Message {
   content: string;
   sender: "user" | "agent";
   timestamp: Date;
+  attachments?: string[];
 }

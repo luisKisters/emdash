@@ -43,7 +43,28 @@ const TerminalPaneComponent: React.FC<Props> = ({
       cols: cols,
       rows: rows,
       theme: {
-        background: "#0b0e14",
+        // Enforce strict black & white rendering
+        background: "#000000",
+        foreground: "#ffffff",
+        cursor: "#ffffff",
+        selectionBackground: "#ffffff33",
+        // Map all ANSI colors to white/gray to avoid color output
+        black: "#000000",
+        red: "#ffffff",
+        green: "#ffffff",
+        yellow: "#ffffff",
+        blue: "#ffffff",
+        magenta: "#ffffff",
+        cyan: "#ffffff",
+        white: "#ffffff",
+        brightBlack: "#bfbfbf",
+        brightRed: "#ffffff",
+        brightGreen: "#ffffff",
+        brightYellow: "#ffffff",
+        brightBlue: "#ffffff",
+        brightMagenta: "#ffffff",
+        brightCyan: "#ffffff",
+        brightWhite: "#ffffff",
       },
       allowTransparency: false,
       scrollback: 1000,
@@ -128,7 +149,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
         width: "100%",
         height: "100%",
         minHeight: "0",
-        backgroundColor: "#0b0e14",
+        backgroundColor: "#000000",
         overflow: "hidden",
       }}
       onClick={() => termRef.current?.focus()}
