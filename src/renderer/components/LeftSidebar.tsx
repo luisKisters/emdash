@@ -1,7 +1,16 @@
 import React from "react";
 import ReorderList from "./ReorderList";
 import { Button } from "./ui/button";
-import { SidebarProvider, Sidebar, SidebarContent } from "./ui/sidebar";
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+} from "./ui/sidebar";
 import { Home, CheckCircle2, AlertCircle, Check } from "lucide-react";
 import githubLogo from "../../assets/images/github.png";
 import { WorkspaceItem } from "./WorkspaceItem";
@@ -106,25 +115,27 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
 
   return (
     <SidebarProvider>
-      <Sidebar
-        variant="unstyled"
-        className="flex-shrink-0 w-16 sm:w-64 lg:w-80 bg-gray-50 dark:bg-gray-900 h-screen flex flex-col"
-      >
-        <SidebarContent
-          variant="unstyled"
-          className="overscroll-contain p-2 sm:p-4"
-        >
-          <div className="mb-6">
-            <Button
-              variant="ghost"
-              onClick={onGoHome}
-              className="w-full justify-center sm:justify-start mt-5 p-3 h-auto"
-              aria-label="Home"
-            >
-              <Home className="w-5 h-5 sm:w-4 sm:h-4 sm:mr-3 text-gray-600 dark:text-gray-400" />
-              <span className="hidden sm:inline text-sm font-medium">Home</span>
-            </Button>
-          </div>
+      <Sidebar>
+        <SidebarContent>
+          <SidebarGroup>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Button
+                      variant="ghost"
+                      onClick={onGoHome}
+                      aria-label="Home"
+                      className="justify-start mt-5"
+                    >
+                      <Home className="w-5 h-5 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400" />
+                      <span className="hidden sm:inline text-sm font-medium">Home</span>
+                    </Button>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
 
           <div className="mb-6">
             <ReorderList
