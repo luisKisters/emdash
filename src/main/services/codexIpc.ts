@@ -1,6 +1,7 @@
 import { ipcMain } from "electron";
 import { codexService, CodexAgent } from "./CodexService";
 import { exec } from "child_process";
+import * as fs from "fs";
 import { promisify } from "util";
 import * as path from "path";
 
@@ -307,17 +308,28 @@ async function getGitStatus(workspacePath: string): Promise<
       }
 
       // If still nothing and file is untracked, approximate additions as total lines
+      // Only attempt for existing regular files; skip directories or missing paths.
       if (additions === 0 && deletions === 0 && statusCode.includes("?")) {
+        const absPath = path.join(workspacePath, filePath);
         try {
-          const { stdout: wc } = await execAsync(`wc -l < "${filePath}"`, {
-            cwd: workspacePath,
-          });
-          additions = parseInt(wc.trim(), 10) || 0;
-        } catch (e) {
-          console.warn(
-            `Failed to count lines for untracked file ${filePath}:`,
-            e
-          );
+          const stat = fs.existsSync(absPath) ? fs.statSync(absPath) : undefined;
+          if (stat && stat.isFile()) {
+            try {
+              const { stdout: wc } = await execAsync(`wc -l < "${filePath}"`, {
+                cwd: workspacePath,
+              });
+              additions = parseInt(wc.trim(), 10) || 0;
+            } catch (e) {
+              // Keep a single concise warning if wc fails on an actual file
+              console.warn(
+                `Failed to count lines for untracked file ${filePath}:`,
+                e
+              );
+            }
+          }
+          // If path doesn't exist or is not a file, silently skip to avoid noisy logs
+        } catch {
+          // No-op: path issues; skip counting
         }
       }
 
