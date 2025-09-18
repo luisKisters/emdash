@@ -136,7 +136,6 @@ export const ReasoningTrigger = memo(
       >
         {children ?? (
           <>
-            <BrainIcon className="size-4" />
             {getThinkingMessage(isStreaming, duration)}
             <ChevronDownIcon
               className={cn(
@@ -151,7 +150,9 @@ export const ReasoningTrigger = memo(
   }
 );
 
-export type ReasoningContentProps = ComponentProps<typeof CollapsibleContent> & {
+export type ReasoningContentProps = ComponentProps<
+  typeof CollapsibleContent
+> & {
   children: React.ReactNode;
 };
 
