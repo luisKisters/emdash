@@ -1,11 +1,12 @@
 import { ipcMain } from "electron";
 import { codexService, CodexAgent } from "./CodexService";
-import { exec } from "child_process";
+import { exec, execFile } from "child_process";
 import * as fs from "fs";
 import { promisify } from "util";
 import * as path from "path";
 
 const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export function setupCodexIpc() {
   // Check if Codex is installed
@@ -207,7 +208,7 @@ async function getGitStatus(workspacePath: string): Promise<
   try {
     // Check if the directory is a git repository
     try {
-      await execAsync("git rev-parse --is-inside-work-tree", {
+      await execFileAsync("git", ["rev-parse", "--is-inside-work-tree"], {
         cwd: workspacePath,
       });
     } catch (error) {
@@ -216,9 +217,11 @@ async function getGitStatus(workspacePath: string): Promise<
     }
 
     // Get git status in porcelain format (tracks staged + unstaged in a single 2-char code)
-    const { stdout: statusOutput } = await execAsync("git status --porcelain", {
-      cwd: workspacePath,
-    });
+    const { stdout: statusOutput } = await execFileAsync(
+      "git",
+      ["status", "--porcelain"],
+      { cwd: workspacePath }
+    );
 
     if (!statusOutput.trim()) {
       return [];
@@ -283,8 +286,9 @@ async function getGitStatus(workspacePath: string): Promise<
 
       try {
         // Staged changes relative to HEAD
-        const staged = await execAsync(
-          `git diff --numstat --cached -- "${filePath}"`,
+        const staged = await execFileAsync(
+          "git",
+          ["diff", "--numstat", "--cached", "--", filePath],
           { cwd: workspacePath }
         );
         if (staged.stdout && staged.stdout.trim()) {
@@ -296,8 +300,9 @@ async function getGitStatus(workspacePath: string): Promise<
 
       try {
         // Unstaged changes relative to index
-        const unstaged = await execAsync(
-          `git diff --numstat -- "${filePath}"`,
+        const unstaged = await execFileAsync(
+          "git",
+          ["diff", "--numstat", "--", filePath],
           { cwd: workspacePath }
         );
         if (unstaged.stdout && unstaged.stdout.trim()) {
@@ -315,19 +320,15 @@ async function getGitStatus(workspacePath: string): Promise<
           const stat = fs.existsSync(absPath) ? fs.statSync(absPath) : undefined;
           if (stat && stat.isFile()) {
             try {
-              const { stdout: wc } = await execAsync(`wc -l < "${filePath}"`, {
-                cwd: workspacePath,
-              });
-              additions = parseInt(wc.trim(), 10) || 0;
-            } catch (e) {
-              // Keep a single concise warning if wc fails on an actual file
-              console.warn(
-                `Failed to count lines for untracked file ${filePath}:`,
-                e
-              );
+              const buf = fs.readFileSync(absPath);
+              let count = 0;
+              for (let i = 0; i < buf.length; i++) if (buf[i] === 0x0a) count++;
+              additions = count;
+            } catch {
+              // Ignore errors (binary or unreadable), keep additions at 0
             }
           }
-          // If path doesn't exist or is not a file, silently skip to avoid noisy logs
+          // If path doesn't exist or is not a file, silently skip
         } catch {
           // No-op: path issues; skip counting
         }
@@ -353,9 +354,12 @@ export async function getFileDiff(
   lines: Array<{ left?: string; right?: string; type: 'context' | 'add' | 'del' }>
 }> {
   // Use unified diff from HEAD to working tree to include staged + unstaged
-  const cmd = `git diff --no-color --unified=2000 HEAD -- "${filePath}"`
   try {
-    const { stdout } = await execAsync(cmd, { cwd: workspacePath })
+    const { stdout } = await execFileAsync(
+      'git',
+      ['diff', '--no-color', '--unified=2000', 'HEAD', '--', filePath],
+      { cwd: workspacePath }
+    )
     const linesRaw = stdout.split("\n")
     const result: Array<{ left?: string; right?: string; type: 'context' | 'add' | 'del' }> = []
 
@@ -382,16 +386,14 @@ export async function getFileDiff(
     // If parsing yielded no content (e.g., brand-new file or edge case), fall back gracefully
     if (result.length === 0) {
       try {
-        const fs = require('fs') as typeof import('fs')
-        const p = require('path') as typeof import('path')
-        const abs = p.join(workspacePath, filePath)
+        const abs = path.join(workspacePath, filePath)
         if (fs.existsSync(abs)) {
           const content = fs.readFileSync(abs, 'utf8')
           return { lines: content.split('\n').map((l: string) => ({ right: l, type: 'add' as const })) }
         } else {
           // File missing in working tree: try to show previous content from HEAD as deletions
           try {
-            const { stdout: prev } = await execAsync(`git show HEAD:"${filePath}"`, { cwd: workspacePath })
+            const { stdout: prev } = await execFileAsync('git', ['show', `HEAD:${filePath}`], { cwd: workspacePath })
             return { lines: prev.split('\n').map((l: string) => ({ left: l, type: 'del' as const })) }
           } catch {
             return { lines: [] }
@@ -404,17 +406,16 @@ export async function getFileDiff(
 
     return { lines: result }
   } catch (error) {
-    // If the file is untracked, show full content as additions
+    // If the file is untracked, show full content as additions (best-effort)
     try {
-      const { stdout: cat } = await execAsync(`cat -- "${filePath}"`, { cwd: workspacePath })
-      const lines = cat.split('\n')
-      return {
-        lines: lines.map((l) => ({ right: l, type: 'add' as const }))
-      }
+      const abs = path.join(workspacePath, filePath)
+      const content = fs.readFileSync(abs, 'utf8')
+      const lines = content.split('\n')
+      return { lines: lines.map((l) => ({ right: l, type: 'add' as const })) }
     } catch (e) {
       // Deleted file or inaccessible: try diff cached vs HEAD
       try {
-        const { stdout } = await execAsync(`git diff --no-color --unified=2000 HEAD -- "${filePath}"`, { cwd: workspacePath })
+        const { stdout } = await execFileAsync('git', ['diff', '--no-color', '--unified=2000', 'HEAD', '--', filePath], { cwd: workspacePath })
         const linesRaw = stdout.split('\n')
         const result: Array<{ left?: string; right?: string; type: 'context' | 'add' | 'del' }> = []
         for (const line of linesRaw) {
@@ -430,7 +431,7 @@ export async function getFileDiff(
         if (result.length === 0) {
           // As a last resort, try to show HEAD content as deletions
           try {
-            const { stdout: prev } = await execAsync(`git show HEAD:"${filePath}"`, { cwd: workspacePath })
+            const { stdout: prev } = await execFileAsync('git', ['show', `HEAD:${filePath}`], { cwd: workspacePath })
             return { lines: prev.split('\n').map((l: string) => ({ left: l, type: 'del' as const })) }
           } catch {
             return { lines: [] }
