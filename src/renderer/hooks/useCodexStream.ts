@@ -18,6 +18,7 @@ interface UseCodexStreamResult {
   isReady: boolean;
   streamingOutput: string;
   isStreaming: boolean;
+  awaitingThinking: boolean;
   seconds: number;
   send: (text: string, attachments?: string) => Promise<{ success: boolean; error?: string }>;
   cancel: () => Promise<{ success: boolean; error?: string }>;
@@ -82,6 +83,7 @@ const useCodexStream = (
   const [isReady, setIsReady] = useState(false);
   const [streamingOutput, setStreamingOutput] = useState("");
   const [isStreaming, setIsStreaming] = useState(false);
+  const [awaitingThinking, setAwaitingThinking] = useState(false);
   const [seconds, setSeconds] = useState(0);
 
   const streamBufferRef = useRef("");
@@ -144,6 +146,7 @@ const useCodexStream = (
     cancelScheduledFrame();
     streamBufferRef.current = "";
     setStreamingOutput("");
+    setAwaitingThinking(false);
   }, [cancelScheduledFrame]);
 
   const scheduleStreamingUpdate = useCallback(() => {
@@ -166,9 +169,11 @@ const useCodexStream = (
       if (!hasMarker) {
         // keep streaming area blank to avoid flashing user prompt/tools output
         setStreamingOutput("");
+        setAwaitingThinking(true);
         return;
       }
 
+      setAwaitingThinking(false);
       setStreamingOutput(defaultPipeline(buf, ctx));
     };
 
@@ -573,6 +578,7 @@ const useCodexStream = (
     isReady,
     streamingOutput,
     isStreaming,
+    awaitingThinking,
     seconds,
     send,
     cancel,

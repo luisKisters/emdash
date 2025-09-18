@@ -9,6 +9,7 @@ export interface ParsedCodexOutput {
   reasoning?: string
   response: string
   actions?: string[]
+  hasCodex?: boolean
 }
 
 const TS_LINE = /^\[[0-9]{4}-[0-9]{2}-[0-9]{2}T[^\]]+\]/
@@ -71,15 +72,36 @@ export function parseCodexOutput(raw: string): ParsedCodexOutput {
     return { reasoning: cleaned || undefined, response: '', actions }
   }
 
+  // If we have only a codex marker (no explicit thinking), treat everything
+  // after it until the next timestamp as the final response; ignore prior headers.
+  if (thinkingIdx === -1 && codexIdx !== -1) {
+    let end = lines.length
+    for (let i = codexIdx + 1; i < lines.length; i++) {
+      if (TS_LINE.test(lines[i])) { end = i; break }
+    }
+    const response = lines.slice(codexIdx + 1, end).join('\n').trim()
+    return { response }
+  }
+
   // Fallback: strip known header/footer noise and return remainder as response
   const cleaned = lines
     .filter((l) => {
       const t = l.trim()
       if (!t) return false
+      // Bare (non-timestamped) header/footer lines
       if (t.startsWith('OpenAI Codex')) return false
       if (t === '--------') return false
       if (t.toLowerCase().startsWith('tokens used:')) return false
-      if (TS_LINE.test(t) && /^(user instructions:)/i.test(t.replace(TS_LINE, '').trim())) return false
+      // Timestamped header/meta lines: inspect text after timestamp
+      if (TS_LINE.test(t)) {
+        const after = t.replace(TS_LINE, '').trim().toLowerCase()
+        if (/^openai codex/.test(after)) return false
+        if (/^(workdir|model|provider|approval|sandbox|reasoning effort|reasoning summaries|attached files?|file:)\b/.test(after)) return false
+        if (/^user instructions:/.test(after)) return false
+        if (/^tokens used:/.test(after)) return false
+        if (/^thinking\b/.test(after)) return false
+        if (/^codex\b/.test(after)) return false
+      }
       return true
     })
     .join('\n')
@@ -106,6 +128,7 @@ export function parseCodexStream(raw: string): ParsedCodexOutput {
   const responseBuf: string[] = []
   let responseSeenReal = false
   const pendingMeta: string[] = []
+  let codexSeen = false
 
   const isHeader = (s: string) =>
     /^openai codex/i.test(s) ||
@@ -123,7 +146,7 @@ export function parseCodexStream(raw: string): ParsedCodexOutput {
       const lower = after.toLowerCase()
       if (!after || isHeader(lower)) { section = 'ignore'; continue }
       if (lower.startsWith('thinking')) { section = 'reasoning'; continue }
-      if (lower.startsWith('codex')) { section = 'response'; continue }
+      if (lower.startsWith('codex')) { codexSeen = true; section = 'response'; continue }
       if (lower.startsWith('exec') || lower.startsWith('bash') || lower.startsWith('succeeded in') || lower.startsWith('failed')) { section = 'tool'; continue }
       section = 'ignore'
       continue
@@ -151,7 +174,7 @@ export function parseCodexStream(raw: string): ParsedCodexOutput {
       if (!responseSeenReal) {
         if (substantiveHeuristic) {
           responseSeenReal = true
-          responseBuf.push(...pendingMeta)
+          // Do not surface pending meta in the final response; keep it hidden
           pendingMeta.length = 0
           responseBuf.push(line)
         } else {
@@ -172,5 +195,6 @@ export function parseCodexStream(raw: string): ParsedCodexOutput {
     reasoning: cleaned || undefined,
     response: responseBuf.join('\n').trim(),
     actions,
+    hasCodex: codexSeen,
   }
 }
