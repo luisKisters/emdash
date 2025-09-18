@@ -18,7 +18,7 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from "./ui/collapsible";
-import { Home, CheckCircle2, AlertCircle, Check, ChevronDown } from "lucide-react";
+import { Home, CheckCircle2, AlertCircle, ChevronDown } from "lucide-react";
 import githubLogo from "../../assets/images/github.png";
 import { WorkspaceItem } from "./WorkspaceItem";
 
@@ -106,16 +106,13 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
     const displayName = githubUser?.login || githubUser?.name || "GitHub account";
 
     return (
-      <div className="flex items-center text-xs text-emerald-600 dark:text-emerald-400 space-x-2">
+      <div className="flex items-center text-sm text-muted-foreground space-x-2">
         <img
           src={githubLogo}
           alt="GitHub"
           className="w-4 h-4 rounded-sm object-contain"
         />
-        <span className="font-medium flex items-center space-x-1 min-w-0">
-          <span className="truncate">{displayName}</span>
-          <Check className="w-3 h-3 text-emerald-500 flex-shrink-0" aria-hidden="true" />
-        </span>
+        <span className="truncate">{displayName}</span>
       </div>
     );
   };
@@ -239,17 +236,38 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter className="border-t border-gray-200 dark:border-gray-800">
-          <div className="hidden sm:block">
-            {renderGithubStatus()}
-          </div>
-          <div className="sm:hidden flex justify-start">
-            {githubInstalled && githubAuthenticated ? (
-              <CheckCircle2 className="w-5 h-5 text-emerald-500" aria-label="GitHub connected" />
-            ) : (
-              <AlertCircle className="w-5 h-5 text-amber-500" aria-label="GitHub not connected" />
-            )}
-          </div>
+        <SidebarFooter className="border-t border-gray-200 dark:border-gray-800 px-2 py-2 sm:px-4 sm:py-4">
+          <SidebarMenu className="w-full">
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                tabIndex={-1}
+                onClick={(e) => e.preventDefault()}
+                className="flex w-full items-center justify-start gap-2 px-2 py-2 text-sm text-muted-foreground cursor-default hover:bg-transparent focus-visible:outline-none focus-visible:ring-0"
+              >
+                <div className="flex flex-1 flex-col min-w-0 text-left gap-1">
+                  <div className="hidden sm:block truncate">
+                    {renderGithubStatus()}
+                  </div>
+                  <div className="sm:hidden flex items-center gap-2">
+                    {githubInstalled && githubAuthenticated ? (
+                      <CheckCircle2
+                        className="w-5 h-5 text-emerald-500"
+                        aria-label="GitHub connected"
+                      />
+                    ) : (
+                      <AlertCircle
+                        className="w-5 h-5 text-amber-500"
+                        aria-label="GitHub not connected"
+                      />
+                    )}
+                    <span className="truncate">
+                      {githubAuthenticated ? "GitHub connected" : "GitHub not connected"}
+                    </span>
+                  </div>
+                </div>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
     </SidebarProvider>
