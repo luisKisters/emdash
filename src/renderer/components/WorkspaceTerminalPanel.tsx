@@ -50,7 +50,7 @@ export const WorkspaceTerminalPanel: React.FC<Props> = ({
         </div>
       </div>
 
-      <div className="flex-1 bg-gray-900 overflow-hidden">
+      <div className="flex-1 bg-black overflow-hidden">
         <TerminalPane
           id={`workspace-${workspace.id}`}
           cwd={workspace.path}

@@ -125,16 +125,46 @@ The application stores conversation history locally, which may consume disk spac
 - Database grows with usage but remains manageable for typical development workflows
 - Consider periodic cleanup of old conversations if storage becomes a concern
 
-### Clearing Local Storage
+### Clearing Local Storage (Reset Database)
 
-If you want to reset or reclaim space, you can delete the app's database file. This removes saved conversations and resets projects and workspaces.
+If you want to reset or reclaim space, you can delete the app's local database. This removes saved conversations and resets projects/workspaces. The database is recreated automatically on next launch.
 
-**Before you start:**
-- Quit emdash to ensure files are not in use.
+Important
+- Quit the app before deleting the DB to avoid file‑in‑use errors.
+- Paths with spaces need quotes (e.g. `"Application Support"`).
 
-**Delete the database file:**
+Default locations (packaged app)
 - macOS: `~/Library/Application Support/emdash/emdash.db`
 - Windows: `%APPDATA%/emdash/emdash.db`
 - Linux: `~/.config/emdash/emdash.db`
+
+Development builds (Electron default)
+- macOS: `~/Library/Application Support/Electron/emdash.db`
+
+Note: legacy filenames we migrate from (safe to remove if present): `database.sqlite`, `orcbench.db`.
+
+Quick commands (macOS)
+```bash
+# Quit the app first
+
+# Packaged path
+rm -f "$HOME/Library/Application Support/emdash/emdash.db"
+
+# Dev path (vite/electron dev)
+rm -f "$HOME/Library/Application Support/Electron/emdash.db"
+
+# Optional: remove legacy DB filenames if they exist
+rm -f "$HOME/Library/Application Support/emdash/database.sqlite" \
+      "$HOME/Library/Application Support/emdash/orcbench.db"
+rm -f "$HOME/Library/Application Support/Electron/database.sqlite" \
+      "$HOME/Library/Application Support/Electron/orcbench.db"
+```
+
+Not sure where the DB is?
+- You can ask Electron for the exact `userData` folder:
+```bash
+npx electron -e "const {app}=require('electron');app.whenReady().then(()=>{console.log(app.getPath('userData'));app.quit()})"
+```
+Delete `emdash.db` (and optional legacy names) inside the printed folder.
 
 After deletion, restart emdash — the database will be re‑initialized on launch.
