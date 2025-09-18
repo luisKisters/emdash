@@ -1,7 +1,7 @@
 import { spawn, exec, execFile, ChildProcessWithoutNullStreams, ChildProcess } from 'child_process';
 import { promisify } from 'util';
 import { EventEmitter } from 'events';
-import { createWriteStream, existsSync, mkdirSync, WriteStream } from 'fs';
+import { createWriteStream, existsSync, mkdirSync, WriteStream, readFileSync, statSync } from 'fs';
 import path from 'path';
 import { app } from 'electron';
 
@@ -41,6 +41,44 @@ export class CodexService extends EventEmitter {
     // Group by workspace so multiple runs append consistently
     const dir = path.join(userData, 'logs', 'codex', agent.workspaceId);
     return path.join(dir, 'codex-stream.log');
+  }
+
+  /**
+   * Return the current streaming tail for an active process, parsed from the log.
+   * If no active process for the workspace, return empty string.
+   */
+  public getStreamInfo(workspaceId: string): { tail: string; startedAt?: string } {
+    const isRunning = this.runningProcesses.has(workspaceId);
+    if (!isRunning) return { tail: '' };
+
+    const agent = Array.from(this.agents.values()).find((a) => a.workspaceId === workspaceId);
+    if (!agent) return { tail: '' };
+
+    try {
+      const logPath = this.getStreamLogPath(agent);
+      if (!existsSync(logPath)) return { tail: '' };
+
+      let buf = readFileSync(logPath, 'utf8');
+      let startedAt: string | undefined;
+      const headerMatch = buf.match(/^=== Codex Stream\s+([^=\n]+?)\s*===/m);
+      if (headerMatch && headerMatch[1]) {
+        const iso = headerMatch[1].trim();
+        if (!Number.isNaN(Date.parse(iso))) startedAt = new Date(iso).toISOString();
+      }
+
+      // Trim to last 200KB if very large
+      if (buf.length > 200 * 1024) {
+        buf = buf.slice(buf.length - 200 * 1024);
+      }
+      const marker = '--- Output ---';
+      const idx = buf.lastIndexOf(marker);
+      let tail = idx >= 0 ? buf.slice(idx + marker.length) : buf;
+      tail = tail.replace(/^\s+/, '');
+      tail = tail.replace(/\n\[(COMPLETE|CANCELLED)\][\s\S]*$/, '');
+      return { tail, startedAt };
+    } catch {
+      return { tail: '' };
+    }
   }
 
   private initializeStreamLog(workspaceId: string, agent: CodexAgent, prompt: string): void {

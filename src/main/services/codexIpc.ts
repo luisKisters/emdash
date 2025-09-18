@@ -70,6 +70,19 @@ export function setupCodexIpc() {
     }
   );
 
+  // Get current streaming tail for a workspace (if running)
+  ipcMain.handle(
+    'codex:get-stream-tail',
+    async (_event, workspaceId: string) => {
+      try {
+        const info = codexService.getStreamInfo(workspaceId)
+        return { success: true, ...info }
+      } catch (error) {
+        return { success: false, error: error instanceof Error ? error.message : 'Unknown error' }
+      }
+    }
+  )
+
   ipcMain.handle('codex:stop-stream', async (event, workspaceId: string) => {
     try {
       console.log('[codex:stop-stream] request received', workspaceId);
