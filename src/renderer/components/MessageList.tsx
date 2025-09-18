@@ -12,6 +12,7 @@ import { CodeBlock, CodeBlockCopyButton } from "@/components/ai-elements/code-bl
 import StreamingAction from "./StreamingAction";
 import { Badge } from "@/components/ui/badge";
 import FileTypeIcon from "@/components/ui/file-type-icon";
+import ThinkingDots from "@/components/ai-elements/thinking-dots";
 
 function basename(p: string): string {
   const b = p.split('/').pop() || p
@@ -28,12 +29,14 @@ interface MessageListProps {
   messages: Message[];
   streamingOutput: string | null;
   isStreaming?: boolean;
+  awaitingThinking?: boolean;
 }
 
 const MessageList: React.FC<MessageListProps> = ({
   messages,
   streamingOutput,
   isStreaming = false,
+  awaitingThinking = false,
 }) => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -198,6 +201,11 @@ const MessageList: React.FC<MessageListProps> = ({
             <div className="max-w-[80%] px-4 py-3 text-sm leading-relaxed font-sans text-gray-900 dark:text-gray-100">
               {(() => {
                 const parsed = parseCodexStream(streamingOutput || "")
+                if (awaitingThinking) {
+                  return (
+                    <ThinkingDots />
+                  )
+                }
                 return (
                   <div className="space-y-3">
                     {parsed.reasoning ? (
@@ -206,7 +214,7 @@ const MessageList: React.FC<MessageListProps> = ({
                         <ReasoningContent>{parsed.reasoning || ''}</ReasoningContent>
                       </Reasoning>
                     ) : null}
-                    {parsed.response ? <Response>{parsed.response}</Response> : null}
+                    {parsed.hasCodex && parsed.response ? <Response>{parsed.response}</Response> : null}
                     {parsed && parsed.actions && parsed.actions.length > 0 ? (
                       <StreamingAction text={parsed.actions[parsed.actions.length - 1]} />
                     ) : null}
