@@ -18,7 +18,7 @@ import {
   CollapsibleTrigger,
   CollapsibleContent,
 } from "./ui/collapsible";
-import { Home, ChevronDown } from "lucide-react";
+import { Home, AlertCircle, ChevronDown } from "lucide-react";
 import githubLogo from "../../assets/images/github.png";
 import { WorkspaceItem } from "./WorkspaceItem";
 
