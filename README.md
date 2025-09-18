@@ -12,7 +12,7 @@ emdash is a UI layer for running multiple Codex CLI agents in parallel, each iso
 </p>
 
 <p align="center">
-    <img src="./docs/media/emdash.gif" alt="Emdash demo" width="100%">
+    <img src="./docs/media/emdash-screenshot.png" alt="Emdash app screenshot" width="100%">
 </p>
 
 ## Requirements
@@ -39,6 +39,30 @@ Follow the prompts to authenticate with your GitHub account.
 3. Clone this repository
 4. Install dependencies: `npm install`
 5. Run the app: `npm run dev`
+
+## Demos
+
+Parallel agents in isolated Git worktrees
+- Two workspaces run Codex agents concurrently; switching back preserves live output and accurate timers.
+
+<p align="center">
+  <img src="./docs/media/emdash.gif" alt="Demo: parallel agents with preserved stream state" width="100%" style="border-radius:12px">
+  
+</p>
+
+CI workflow setup in minutes
+- Agent adds a minimal GitHub Actions workflow (type-check + build) and opens a PR.
+
+<p align="center">
+  <img src="./docs/media/ci-setup.gif" alt="Demo: add CI workflow via agent" width="100%" style="border-radius:12px">
+</p>
+
+README polish + PR flow
+- Agent improves README, commits changes, and opens a PR; sidebar shows PR status/badges.
+
+<p align="center">
+  <img src="./docs/media/readme-pr.gif" alt="Demo: README polish and PR flow" width="100%" style="border-radius:12px">
+</p>
 
 ## Data Persistence
 
