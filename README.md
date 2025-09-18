@@ -5,7 +5,15 @@
   alt="Emdash" width="900">
   </p>
 
-Run multiple Codex Agents in parallel with isolated Git worktrees.
+# Emdash
+
+Emdash is an orchestration layer for running multiple Codex CLI agents in parallel, each isolated in its own Git worktree — so you can fan out tasks, keep changes compartmentalized, and manage everything from a single UI.
+
+<p>
+  <video src="./docs/media/emdash.mp4" width="100%" controls muted playsinline>
+    Your browser does not support the video tag.
+  </video>
+</p>
 
 ## Requirements
 
