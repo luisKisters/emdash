@@ -1,7 +1,24 @@
 import React from "react";
 import ReorderList from "./ReorderList";
 import { Button } from "./ui/button";
-import { Home, CheckCircle2, AlertCircle, Check } from "lucide-react";
+import {
+  SidebarProvider,
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarGroupContent,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarFooter,
+} from "./ui/sidebar";
+import {
+  Collapsible,
+  CollapsibleTrigger,
+  CollapsibleContent,
+} from "./ui/collapsible";
+import { Home, AlertCircle, ChevronDown } from "lucide-react";
 import githubLogo from "../../assets/images/github.png";
 import { WorkspaceItem } from "./WorkspaceItem";
 
@@ -89,125 +106,163 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
     const displayName = githubUser?.login || githubUser?.name || "GitHub account";
 
     return (
-      <div className="flex items-center text-xs text-emerald-600 dark:text-emerald-400 space-x-2">
+      <div className="flex items-center text-sm text-muted-foreground space-x-2">
         <img
           src={githubLogo}
           alt="GitHub"
           className="w-4 h-4 rounded-sm object-contain"
         />
-        <span className="font-medium flex items-center space-x-1 min-w-0">
-          <span className="truncate">{displayName}</span>
-          <Check className="w-3 h-3 text-emerald-500 flex-shrink-0" aria-hidden="true" />
-        </span>
+        <span className="truncate">{displayName}</span>
       </div>
     );
   };
 
   return (
-    <div className="flex-shrink-0 w-16 sm:w-64 lg:w-80 bg-gray-50 dark:bg-gray-900 h-screen flex flex-col">
-      <div className="flex-1 overflow-y-auto overscroll-contain p-2 sm:p-4">
-        <div className="mb-6">
-          <Button
-            variant="ghost"
-            onClick={onGoHome}
-            className="w-full justify-center sm:justify-start mt-5 p-3 h-auto"
-            aria-label="Home"
-          >
-            <Home className="w-5 h-5 sm:w-4 sm:h-4 sm:mr-3 text-gray-600 dark:text-gray-400" />
-            <span className="hidden sm:inline text-sm font-medium">Home</span>
-          </Button>
-        </div>
-
-        <div className="mb-6">
-          <ReorderList
-            as="div"
-            axis="y"
-            items={projects}
-            onReorder={(newOrder) => {
-              if (onReorderProjectsFull) {
-                onReorderProjectsFull(newOrder as Project[]);
-              } else if (onReorderProjects) {
-                const oldIds = projects.map((p) => p.id);
-                const newIds = (newOrder as Project[]).map((p) => p.id);
-                for (let i = 0; i < newIds.length; i++) {
-                  if (newIds[i] !== oldIds[i]) {
-                    const sourceId = newIds.find((id) => id === oldIds[i]);
-                    const targetId = newIds[i];
-                    if (sourceId && targetId && sourceId !== targetId) {
-                      onReorderProjects(sourceId, targetId);
-                    }
-                    break;
-                  }
-                }
-              }
-            }}
-            className="space-y-1 list-none p-0 m-0"
-            itemClassName="relative group p-2 sm:p-3 cursor-pointer rounded-md list-none"
-            getKey={(p) => (p as Project).id}
-          >
-            {(project) => (
-              <div onClick={() => onSelectProject(project as Project)}>
-                <div className="flex items-center sm:items-start sm:space-x-3">
-                  <div className="hidden sm:block flex-1 min-w-0">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onSelectProject(project as Project);
-                      }}
-                      className="block w-full text-left font-medium text-sm truncate rounded-sm hover:underline hover:text-gray-900 dark:hover:text-gray-100 focus:outline-none focus:underline"
-                      title={(project as Project).name}
+    <SidebarProvider>
+      <Sidebar>
+        <SidebarContent>
+          <SidebarGroup className="mb-2">
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Button
+                      variant="ghost"
+                      onClick={onGoHome}
+                      aria-label="Home"
+                      className="justify-start mt-5"
                     >
-                      {(project as Project).name
+                      <Home className="w-5 h-5 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400" />
+                      <span className="hidden sm:inline text-sm font-medium">Home</span>
+                    </Button>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+
+          <SidebarGroup>
+            <SidebarGroupLabel className="sr-only">Projects</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <ReorderList
+                  as="div"
+                  axis="y"
+                  items={projects}
+                  onReorder={(newOrder) => {
+                    if (onReorderProjectsFull) {
+                      onReorderProjectsFull(newOrder as Project[]);
+                    } else if (onReorderProjects) {
+                      const oldIds = projects.map((p) => p.id);
+                      const newIds = (newOrder as Project[]).map((p) => p.id);
+                      for (let i = 0; i < newIds.length; i++) {
+                        if (newIds[i] !== oldIds[i]) {
+                          const sourceId = newIds.find((id) => id === oldIds[i]);
+                          const targetId = newIds[i];
+                          if (sourceId && targetId && sourceId !== targetId) {
+                            onReorderProjects(sourceId, targetId);
+                          }
+                          break;
                         }
-                    </button>
-                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {(project as Project).githubInfo?.repository || (project as Project).path}
-                    </p>
+                      }
+                    }
+                  }}
+                  className="space-y-1 list-none p-0 m-0"
+                  itemClassName="relative group cursor-pointer rounded-md list-none"
+                  getKey={(p) => (p as Project).id}
+                >
+                  {(project) => {
+                    const typedProject = project as Project;
+                    return (
+                      <SidebarMenuItem>
+                        <Collapsible defaultOpen className="group/collapsible">
+                          <div className="flex w-full items-center rounded-md px-2 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
+                            <button
+                              type="button"
+                              className="flex flex-1 min-w-0 flex-col text-left bg-transparent outline-none focus-visible:outline-none"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onSelectProject(typedProject);
+                              }}
+                            >
+                              <span className="truncate">{typedProject.name}</span>
+                              <span className="hidden sm:block truncate text-xs text-muted-foreground">
+                                {typedProject.githubInfo?.repository || typedProject.path}
+                              </span>
+                            </button>
+                            <CollapsibleTrigger asChild>
+                              <button
+                                type="button"
+                                aria-label={`Toggle workspaces for ${typedProject.name}`}
+                                onClick={(e) => e.stopPropagation()}
+                                className="ml-2 -mr-1 rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                              >
+                                <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
+                              </button>
+                            </CollapsibleTrigger>
+                          </div>
+
+                          <CollapsibleContent asChild>
+                            <div>
+                              {typedProject.workspaces?.length ? (
+                                <div className="hidden sm:block mt-2 ml-7 space-y-1">
+                                  {typedProject.workspaces.map((workspace) => {
+                                    const isActive = activeWorkspace?.id === workspace.id;
+                                    return (
+                                      <div
+                                        key={workspace.id}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (
+                                            onSelectProject &&
+                                            selectedProject?.id !== typedProject.id
+                                          ) {
+                                            onSelectProject(typedProject);
+                                          }
+                                          onSelectWorkspace &&
+                                            onSelectWorkspace(workspace);
+                                        }}
+                                        className={` px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 ${
+                                          isActive ? "bg-black/5 dark:bg-white/5" : ""
+                                        }`}
+                                        title={workspace.name}
+                                      >
+                                        <WorkspaceItem workspace={workspace} />
+                                      </div>
+                                    );
+                                  })}
+                                </div>
+                              ) : null}
+                            </div>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      </SidebarMenuItem>
+                    );
+                  }}
+                </ReorderList>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        </SidebarContent>
+        <SidebarFooter className="border-t border-gray-200 dark:border-gray-800 px-2 py-2 sm:px-4 sm:py-4">
+          <SidebarMenu className="w-full">
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                tabIndex={-1}
+                onClick={(e) => e.preventDefault()}
+                className="flex w-full items-center justify-start gap-2 px-2 py-2 text-sm text-muted-foreground cursor-default hover:bg-transparent focus-visible:outline-none focus-visible:ring-0"
+              >
+                <div className="flex flex-1 flex-col min-w-0 text-left gap-1">
+                  <div className="hidden sm:block truncate">
+                    {renderGithubStatus()}
                   </div>
                 </div>
-
-                {(project as Project).workspaces && (project as Project).workspaces!.length > 0 && (
-                  <div className="hidden sm:block mt-2 ml-7 space-y-1">
-                    {(project as Project).workspaces!.map((workspace) => {
-                      const isActive = activeWorkspace?.id === workspace.id;
-                      return (
-                        <div
-                          key={workspace.id}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (onSelectProject && selectedProject?.id !== (project as Project).id) {
-                              onSelectProject(project as Project);
-                            }
-                            onSelectWorkspace && onSelectWorkspace(workspace);
-                          }}
-                          className={`-mx-2 px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 ${
-                            isActive ? "bg-black/5 dark:bg-white/5" : ""
-                          }`}
-                          title={workspace.name}
-                        >
-                          <WorkspaceItem workspace={workspace} />
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-              </div>
-            )}
-          </ReorderList>
-        </div>
-      </div>
-      <div className="hidden sm:block border-t border-gray-200 dark:border-gray-800 p-4">
-        {renderGithubStatus()}
-      </div>
-      <div className="sm:hidden border-t border-gray-200 dark:border-gray-800 px-2 py-2 flex justify-start">
-        {githubInstalled && githubAuthenticated ? (
-          <CheckCircle2 className="w-5 h-5 text-emerald-500" aria-label="GitHub connected" />
-        ) : (
-          <AlertCircle className="w-5 h-5 text-amber-500" aria-label="GitHub not connected" />
-        )}
-      </div>
-    </div>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
+    </SidebarProvider>
   );
 };
 
