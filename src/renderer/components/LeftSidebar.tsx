@@ -170,7 +170,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                     }
                   }}
                   className="space-y-1 list-none p-0 m-0"
-                  itemClassName="relative group p-2 sm:p-3 cursor-pointer rounded-md list-none"
+                  itemClassName="relative group cursor-pointer rounded-md list-none"
                   getKey={(p) => (p as Project).id}
                 >
                   {(project) => {
@@ -179,7 +179,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                       <SidebarMenuItem>
                         <Collapsible defaultOpen className="group/collapsible">
                           <CollapsibleTrigger
-                            className="flex w-full items-center justify-start rounded-md px-2 py-2 text-sm font-medium transition hover:bg-accent hover:text-accent-foreground"
+                            className="flex w-full items-center justify-start rounded-md px-2 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
                             onClick={(e) => {
                               e.stopPropagation();
                               onSelectProject(typedProject);
@@ -203,30 +203,26 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                                   {typedProject.workspaces.map((workspace) => {
                                     const isActive = activeWorkspace?.id === workspace.id;
                                     return (
-                                      <SidebarMenuItem key={workspace.id}>
-                                        <SidebarMenuButton
-                                          asChild
-                                          className={`-mx-2 px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 ${
-                                            isActive ? "bg-black/5 dark:bg-white/5" : ""
-                                          }`}
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (
-                                              onSelectProject &&
-                                              selectedProject?.id !== typedProject.id
-                                            ) {
-                                              onSelectProject(typedProject);
-                                            }
-                                            onSelectWorkspace &&
-                                              onSelectWorkspace(workspace);
-                                          }}
-                                          title={workspace.name}
-                                        >
-                                          <div>
-                                            <WorkspaceItem workspace={workspace} />
-                                          </div>
-                                        </SidebarMenuButton>
-                                      </SidebarMenuItem>
+                                      <div
+                                        key={workspace.id}
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          if (
+                                            onSelectProject &&
+                                            selectedProject?.id !== typedProject.id
+                                          ) {
+                                            onSelectProject(typedProject);
+                                          }
+                                          onSelectWorkspace &&
+                                            onSelectWorkspace(workspace);
+                                        }}
+                                        className={`-mx-2 px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 ${
+                                          isActive ? "bg-black/5 dark:bg-white/5" : ""
+                                        }`}
+                                        title={workspace.name}
+                                      >
+                                        <WorkspaceItem workspace={workspace} />
+                                      </div>
                                     );
                                   })}
                                 </div>
