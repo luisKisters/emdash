@@ -230,7 +230,11 @@ async function getGitStatus(workspacePath: string): Promise<
       deletions: number;
       diff?: string;
     }> = [];
-    const statusLines = statusOutput.trim().split("\n");
+    // Preserve leading spaces in porcelain output; they are significant
+    const statusLines = statusOutput
+      .split("\n")
+      .map((l) => l.replace(/\r$/, ""))
+      .filter((l) => l.length > 0);
 
     for (const line of statusLines) {
       const statusCode = line.substring(0, 2);
