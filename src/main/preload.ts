@@ -104,7 +104,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   codexCheckInstallation: () => ipcRenderer.invoke('codex:check-installation'),
   codexCreateAgent: (workspaceId: string, worktreePath: string) => ipcRenderer.invoke('codex:create-agent', workspaceId, worktreePath),
   codexSendMessage: (workspaceId: string, message: string) => ipcRenderer.invoke('codex:send-message', workspaceId, message),
-  codexSendMessageStream: (workspaceId: string, message: string) => ipcRenderer.invoke('codex:send-message-stream', workspaceId, message),
+  codexSendMessageStream: (workspaceId: string, message: string, conversationId?: string) => ipcRenderer.invoke('codex:send-message-stream', workspaceId, message, conversationId),
   codexStopStream: (workspaceId: string) => ipcRenderer.invoke('codex:stop-stream', workspaceId),
   codexGetStreamTail: (workspaceId: string) => ipcRenderer.invoke('codex:get-stream-tail', workspaceId),
   codexGetAgentStatus: (workspaceId: string) => ipcRenderer.invoke('codex:get-agent-status', workspaceId),
@@ -113,18 +113,18 @@ contextBridge.exposeInMainWorld('electronAPI', {
   codexGetInstallationInstructions: () => ipcRenderer.invoke('codex:get-installation-instructions'),
   
   // Streaming event listeners
-  onCodexStreamOutput: (listener: (data: { workspaceId: string; output: string; agentId: string }) => void) => {
-    const wrapped = (_: Electron.IpcRendererEvent, data: { workspaceId: string; output: string; agentId: string }) => listener(data)
+  onCodexStreamOutput: (listener: (data: { workspaceId: string; output: string; agentId: string; conversationId?: string }) => void) => {
+    const wrapped = (_: Electron.IpcRendererEvent, data: { workspaceId: string; output: string; agentId: string; conversationId?: string }) => listener(data)
     ipcRenderer.on('codex:stream-output', wrapped)
     return () => ipcRenderer.removeListener('codex:stream-output', wrapped)
   },
-  onCodexStreamError: (listener: (data: { workspaceId: string; error: string; agentId: string }) => void) => {
-    const wrapped = (_: Electron.IpcRendererEvent, data: { workspaceId: string; error: string; agentId: string }) => listener(data)
+  onCodexStreamError: (listener: (data: { workspaceId: string; error: string; agentId: string; conversationId?: string }) => void) => {
+    const wrapped = (_: Electron.IpcRendererEvent, data: { workspaceId: string; error: string; agentId: string; conversationId?: string }) => listener(data)
     ipcRenderer.on('codex:stream-error', wrapped)
     return () => ipcRenderer.removeListener('codex:stream-error', wrapped)
   },
-  onCodexStreamComplete: (listener: (data: { workspaceId: string; exitCode: number; agentId: string }) => void) => {
-    const wrapped = (_: Electron.IpcRendererEvent, data: { workspaceId: string; exitCode: number; agentId: string }) => listener(data)
+  onCodexStreamComplete: (listener: (data: { workspaceId: string; exitCode: number; agentId: string; conversationId?: string }) => void) => {
+    const wrapped = (_: Electron.IpcRendererEvent, data: { workspaceId: string; exitCode: number; agentId: string; conversationId?: string }) => listener(data)
     ipcRenderer.on('codex:stream-complete', wrapped)
     return () => ipcRenderer.removeListener('codex:stream-complete', wrapped)
   },
@@ -197,18 +197,18 @@ export interface ElectronAPI {
   codexCheckInstallation: () => Promise<{ success: boolean; isInstalled?: boolean; error?: string }>
   codexCreateAgent: (workspaceId: string, worktreePath: string) => Promise<{ success: boolean; agent?: any; error?: string }>
   codexSendMessage: (workspaceId: string, message: string) => Promise<{ success: boolean; response?: any; error?: string }>
-  codexSendMessageStream: (workspaceId: string, message: string) => Promise<{ success: boolean; error?: string }>
+  codexSendMessageStream: (workspaceId: string, message: string, conversationId?: string) => Promise<{ success: boolean; error?: string }>
   codexStopStream: (workspaceId: string) => Promise<{ success: boolean; stopped?: boolean; error?: string }>
-  codexGetStreamTail: (workspaceId: string) => Promise<{ success: boolean; tail?: string; error?: string }>
+  codexGetStreamTail: (workspaceId: string) => Promise<{ success: boolean; tail?: string; startedAt?: string; error?: string }>
   codexGetAgentStatus: (workspaceId: string) => Promise<{ success: boolean; agent?: any; error?: string }>
   codexGetAllAgents: () => Promise<{ success: boolean; agents?: any[]; error?: string }>
   codexRemoveAgent: (workspaceId: string) => Promise<{ success: boolean; removed?: boolean; error?: string }>
   codexGetInstallationInstructions: () => Promise<{ success: boolean; instructions?: string; error?: string }>
   
   // Streaming event listeners
-  onCodexStreamOutput: (listener: (data: { workspaceId: string; output: string; agentId: string }) => void) => () => void
-  onCodexStreamError: (listener: (data: { workspaceId: string; error: string; agentId: string }) => void) => () => void
-  onCodexStreamComplete: (listener: (data: { workspaceId: string; exitCode: number; agentId: string }) => void) => () => void
+  onCodexStreamOutput: (listener: (data: { workspaceId: string; output: string; agentId: string; conversationId?: string }) => void) => () => void
+  onCodexStreamError: (listener: (data: { workspaceId: string; error: string; agentId: string; conversationId?: string }) => void) => () => void
+  onCodexStreamComplete: (listener: (data: { workspaceId: string; exitCode: number; agentId: string; conversationId?: string }) => void) => () => void
 }
 
 declare global {

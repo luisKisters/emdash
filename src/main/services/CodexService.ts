@@ -4,6 +4,7 @@ import { EventEmitter } from 'events';
 import { createWriteStream, existsSync, mkdirSync, WriteStream, readFileSync, statSync } from 'fs';
 import path from 'path';
 import { app } from 'electron';
+import { databaseService } from './DatabaseService';
 
 const execAsync = promisify(exec);
 
@@ -29,6 +30,8 @@ export class CodexService extends EventEmitter {
   private runningProcesses: Map<string, ChildProcess> = new Map();
   private streamLogWriters: Map<string, WriteStream> = new Map();
   private pendingCancellationLogs: Set<string> = new Set();
+  // Track the active conversation for a workspace while a stream is running
+  private activeConversations: Map<string, string> = new Map();
 
   constructor() {
     super();
@@ -79,6 +82,13 @@ export class CodexService extends EventEmitter {
     } catch {
       return { tail: '' };
     }
+  }
+
+  /**
+   * Return active conversation id for a running stream in this workspace, if any
+   */
+  public getActiveConversationId(workspaceId: string): string | undefined {
+    return this.activeConversations.get(workspaceId);
   }
 
   private initializeStreamLog(workspaceId: string, agent: CodexAgent, prompt: string): void {
@@ -188,7 +198,7 @@ export class CodexService extends EventEmitter {
   /**
    * Send message to a Codex agent with streaming output
    */
-  public async sendMessageStream(workspaceId: string, message: string): Promise<void> {
+  public async sendMessageStream(workspaceId: string, message: string, conversationId?: string): Promise<void> {
     // Find agent for this workspace
 
     const agent = Array.from(this.agents.values()).find((a) => a.workspaceId === workspaceId);
@@ -214,7 +224,13 @@ export class CodexService extends EventEmitter {
     // Update agent status
     agent.status = 'running';
     agent.lastMessage = message;
-    agent.lastResponse = agent.lastResponse || '';
+    // reset accumulated response for this new run
+    agent.lastResponse = '';
+    if (conversationId) {
+      this.activeConversations.set(workspaceId, conversationId);
+    } else {
+      this.activeConversations.delete(workspaceId);
+    }
 
     try {
       // Spawn codex directly with args to avoid shell quoting issues (backticks, quotes, etc.)
@@ -232,22 +248,24 @@ export class CodexService extends EventEmitter {
       this.runningProcesses.set(workspaceId, child);
 
       // Stream stdout
-    child.stdout.on('data', (data) => {
-    const output = data.toString();
-    this.appendStreamLog(workspaceId, output);
-    agent.lastResponse = (agent.lastResponse || '') + output;
-    this.emit('codex:output', { workspaceId, output, agentId: agent.id });
-    });
+      child.stdout.on('data', (data) => {
+        const output = data.toString();
+        this.appendStreamLog(workspaceId, output);
+        agent.lastResponse = (agent.lastResponse || '') + output;
+        const convId = this.activeConversations.get(workspaceId);
+        this.emit('codex:output', { workspaceId, output, agentId: agent.id, conversationId: convId });
+      });
 
       // Stream stderr
       child.stderr.on('data', (data) => {
         const error = data.toString();
         this.appendStreamLog(workspaceId, `\n[ERROR] ${error}\n`);
-        this.emit('codex:error', { workspaceId, error, agentId: agent.id });
+        const convId = this.activeConversations.get(workspaceId);
+        this.emit('codex:error', { workspaceId, error, agentId: agent.id, conversationId: convId });
       });
 
       // Handle completion
-      child.on('close', (code) => {
+      child.on('close', async (code) => {
         this.runningProcesses.delete(workspaceId);
         agent.status = 'idle';
         console.log(`Codex completed with code ${code} in ${agent.worktreePath}`);
@@ -256,7 +274,27 @@ export class CodexService extends EventEmitter {
         if (!this.pendingCancellationLogs.has(workspaceId)) {
           this.finalizeStreamLog(workspaceId);
         }
-        this.emit('codex:complete', { workspaceId, exitCode: code, agentId: agent.id });
+        // Persist final agent message even if UI isn't mounted
+        let emitConvId: string | undefined;
+        try {
+          const convId = this.activeConversations.get(workspaceId);
+          const raw = (agent.lastResponse || '').trim();
+          if (convId && raw) {
+            await databaseService.saveMessage({
+              id: `agent-${Date.now()}`,
+              conversationId: convId,
+              content: raw,
+              sender: 'agent',
+              metadata: JSON.stringify({ workspaceId, isStreaming: true })
+            });
+          }
+          emitConvId = convId;
+        } catch (e) {
+          console.error('Failed to persist agent message on complete:', e);
+        } finally {
+          this.activeConversations.delete(workspaceId);
+        }
+        this.emit('codex:complete', { workspaceId, exitCode: code, agentId: agent.id, conversationId: emitConvId });
       });
 
       // Handle errors
@@ -267,7 +305,9 @@ export class CodexService extends EventEmitter {
         this.appendStreamLog(workspaceId, `\n[ERROR] ${error.message}\n`);
         this.pendingCancellationLogs.delete(workspaceId);
         this.finalizeStreamLog(workspaceId);
-        this.emit('codex:error', { workspaceId, error: error.message, agentId: agent.id });
+        const convId = this.activeConversations.get(workspaceId);
+        this.emit('codex:error', { workspaceId, error: error.message, agentId: agent.id, conversationId: convId });
+        this.activeConversations.delete(workspaceId);
       });
     } catch (error: any) {
       agent.status = 'error';
@@ -276,7 +316,9 @@ export class CodexService extends EventEmitter {
       this.appendStreamLog(workspaceId, `\n[ERROR] ${error.message}\n`);
       this.pendingCancellationLogs.delete(workspaceId);
       this.finalizeStreamLog(workspaceId);
-      this.emit('codex:error', { workspaceId, error: error.message, agentId: agent.id });
+      const convId = this.activeConversations.get(workspaceId);
+      this.emit('codex:error', { workspaceId, error: error.message, agentId: agent.id, conversationId: convId });
+      this.activeConversations.delete(workspaceId);
     }
   }
 
@@ -345,6 +387,8 @@ export class CodexService extends EventEmitter {
       agent.status = 'idle';
     }
 
+    // Clear any active conversation association for this workspace
+    this.activeConversations.delete(workspaceId);
     return result;
   }
 
