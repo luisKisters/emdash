@@ -70,7 +70,7 @@ emdash in action
 
 Running multiple Codex agents in parallel
 
-- Monitor and review the work of the several agents within emdash
+- Monitor and review the work of several agents within emdash
 
 <p align="center">
   <img src="./docs/media/parallel.gif" alt="Demo: parallel agents with preserved stream state" width="100%" style="border-radius:12px">
