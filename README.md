@@ -50,7 +50,7 @@ gh auth login
 
 1. Ensure Node.js 18+ and Git are installed
 2. Install and authenticate Codex CLI (see Requirements above)
-3. (Optional) Install and authenticate [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart)
+3. Install and authenticate [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart)
 4. Clone this repository
 5. Install dependencies: `npm install`
 6. Run the app: `npm run dev`
