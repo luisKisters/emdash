@@ -38,7 +38,8 @@ declare const window: Window & {
     ) => Promise<{ success: boolean; error?: string }>;
     codexSendMessageStream: (
       workspaceId: string,
-      message: string
+      message: string,
+      conversationId?: string
     ) => Promise<any>;
     codexStopStream: (
       workspaceId: string
@@ -240,7 +241,8 @@ const useCodexStream = (
       try {
         await window.electronAPI.codexSendMessageStream(
           normalizedOptions.workspaceId,
-          `${text}${attachments ?? ""}`
+          `${text}${attachments ?? ""}`,
+          conversationIdRef.current ?? undefined
         );
         return { success: true };
       } catch (error) {
@@ -526,23 +528,8 @@ const useCodexStream = (
 
       setMessages((prev) => [...prev, agentMessage]);
 
-      window.electronAPI
-        .saveMessage({
-          id: agentMessage.id,
-          conversationId: activeConversationId,
-          content: trimmed,
-          sender: agentMessage.sender,
-          metadata: JSON.stringify({
-            workspaceId,
-            isStreaming: true,
-          }),
-        })
-        .catch((error: unknown) => {
-          console.error("Failed to save agent message:", error);
-        })
-        .finally(() => {
-          resetStreamState();
-        });
+      // Main process now persists the final agent message. We only update UI state.
+      resetStreamState();
     };
 
     const unsubscribeOutput = window.electronAPI.onCodexStreamOutput(

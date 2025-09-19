@@ -63,21 +63,21 @@ export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({ workspace }) => {
   }, [workspace.id]);
 
   return (
-    <div className="flex items-center justify-between">
+    <div className="flex items-center justify-between min-w-0">
       <div className="flex items-center space-x-2 py-1 flex-1 min-w-0">
         {isRunning || workspace.status === "running" || workspace.agentId ? (
           <Spinner size="sm" className="w-3 h-3 text-gray-400 flex-shrink-0" />
         ) : (
           <GitBranch className="w-3 h-3 text-gray-400 flex-shrink-0" />
         )}
-        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate">
+        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate block">
           {workspace.name}
         </span>
         {workspace.agentId && (
           <Bot className="w-3 h-3 text-purple-500 flex-shrink-0" />
         )}
       </div>
-      <div className="hidden sm:flex items-center space-x-2">
+      <div className="hidden sm:flex items-center space-x-2 flex-shrink-0">
         {!isLoading && (totalAdditions > 0 || totalDeletions > 0) ? (
           <ChangesBadge additions={totalAdditions} deletions={totalDeletions} />
         ) : pr ? (

@@ -57,9 +57,9 @@ export function setupCodexIpc() {
   // Send a message to Codex with streaming
   ipcMain.handle(
     "codex:send-message-stream",
-    async (event, workspaceId: string, message: string) => {
+    async (event, workspaceId: string, message: string, conversationId?: string) => {
       try {
-        await codexService.sendMessageStream(workspaceId, message);
+        await codexService.sendMessageStream(workspaceId, message, conversationId);
         return { success: true };
       } catch (error) {
         return {
