@@ -211,3 +211,8 @@ find "$HOME" -type f -name 'emdash.db*' -print
 
 - [ ] Cloud database option as an alternative to local SQLite
 - [ ] Pluggable provider system to run other CLI coding agents (e.g., Claude Code, Gemini CLI, aider, Warp) alongside Codex and switch easily
+## Privacy
+
+- Privacy
+  - All data is local. The app does not send your code or chats to us.
+  - Using Codex CLI or GitHub CLI transmits data to those providers per their policies.
