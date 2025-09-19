@@ -17,8 +17,24 @@ emdash is a UI layer for running multiple Codex CLI agents in parallel, each iso
 
 ## Requirements
 
-### GitHub CLI
-emdash requires [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart) to be installed and authenticated:
+- Node.js 18+ and Git
+- OpenAI Codex CLI (install + authenticate)
+- Optional: [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart) for PRs, badges, and repo info
+
+### Codex CLI
+Install the Codex CLI and authenticate it:
+
+```bash
+npm install -g @openai/codex
+# or
+brew install codex
+
+# authenticate
+codex
+```
+
+### GitHub CLI (optional, recommended)
+Install and authenticate GitHub CLI for GitHub features:
 
 **Install [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart):**
 - **macOS:** `brew install gh`
@@ -30,15 +46,14 @@ emdash requires [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/qu
 gh auth login
 ```
 
-Follow the prompts to authenticate with your GitHub account.
-
 ## Getting Started
 
-1. Install [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart) (see Requirements above)
-2. Authenticate with GitHub: `gh auth login`
-3. Clone this repository
-4. Install dependencies: `npm install`
-5. Run the app: `npm run dev`
+1. Ensure Node.js 18+ and Git are installed
+2. Install and authenticate Codex CLI (see Requirements above)
+3. (Optional) Install and authenticate [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart)
+4. Clone this repository
+5. Install dependencies: `npm install`
+6. Run the app: `npm run dev`
 
 ## Demos
 
