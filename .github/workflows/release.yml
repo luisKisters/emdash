@@ -1,0 +1,56 @@
+name: Release macOS DMG
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: "Architecture to build (arm64 | x64 | both)"
+        required: false
+        default: "both"
+
+permissions:
+  contents: write
+
+jobs:
+  build-mac:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build and publish DMG
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false' # skip code signing unless certs provided
+        run: |
+          ARCH_INPUT="${{ github.event.inputs.arch }}"
+          if [ -z "$ARCH_INPUT" ] || [ "$ARCH_INPUT" = "both" ]; then
+            FLAGS="--x64 --arm64"
+          elif [ "$ARCH_INPUT" = "arm64" ]; then
+            FLAGS="--arm64"
+          elif [ "$ARCH_INPUT" = "x64" ]; then
+            FLAGS="--x64"
+          else
+            echo "Unknown arch input: $ARCH_INPUT" && exit 1
+          fi
+          echo "Building for: $FLAGS"
+          npx electron-builder --mac dmg $FLAGS --publish always
+
+      # Optional: upload build artifacts for debugging even if publish fails
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dmgs
+          path: release/*.dmg
