@@ -469,7 +469,7 @@ const App: React.FC = () => {
                   />
                 </div>
               </div>
-              <p className="text-sm sm:text-base text-gray-700 text-muted-foreground mb-4">
+              <p className="text-sm sm:text-base text-gray-700 text-muted-foreground">
                 Run multiple Codex Agents in parallel
               </p>
               {(!ghInstalled || !isAuthenticated) && (
@@ -562,7 +562,7 @@ const App: React.FC = () => {
                   className="h-16"
                 />
               </div>
-              <p className="text-sm sm:text-base text-gray-700 text-muted-foreground mb-4">
+              <p className="text-sm sm:text-base text-gray-700 text-muted-foreground">
                 Run multiple Codex Agents in parallel
               </p>
               {(!ghInstalled || !isAuthenticated) && (
