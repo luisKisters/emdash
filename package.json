@@ -75,9 +75,19 @@
       "dist/**/*",
       "node_modules/**/*"
     ],
+    "extraResources": [
+      {
+        "from": "src/assets/images/emdash/emdash.icns",
+        "to": "emdash.icns"
+      }
+    ],
     "mac": {
       "category": "public.app-category.developer-tools",
-      "target": "dmg"
+      "target": "dmg",
+      "icon": "src/assets/images/emdash/emdash.icns"
+    },
+    "dmg": {
+      "icon": "src/assets/images/emdash/emdash.icns"
     }
   }
 }
