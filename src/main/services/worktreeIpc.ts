@@ -36,9 +36,16 @@ export function registerWorktreeIpc(): void {
   ipcMain.handle('worktree:remove', async (event, args: {
     projectPath: string
     worktreeId: string
+    worktreePath?: string
+    branch?: string
   }) => {
     try {
-      await worktreeService.removeWorktree(args.projectPath, args.worktreeId)
+      await worktreeService.removeWorktree(
+        args.projectPath,
+        args.worktreeId,
+        args.worktreePath,
+        args.branch
+      )
       return { success: true }
     } catch (error) {
       console.error('Failed to remove worktree:', error)

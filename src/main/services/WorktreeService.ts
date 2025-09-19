@@ -176,24 +176,50 @@ export class WorktreeService {
   /**
    * Remove a worktree
    */
-  async removeWorktree(projectPath: string, worktreeId: string): Promise<void> {
+  async removeWorktree(
+    projectPath: string,
+    worktreeId: string,
+    worktreePath?: string,
+    branch?: string
+  ): Promise<void> {
     try {
-      const worktree = this.worktrees.get(worktreeId);
-      if (!worktree) {
-        throw new Error("Worktree not found");
+      let worktree = this.worktrees.get(worktreeId);
+
+      let pathToRemove = worktree?.path ?? worktreePath;
+      let branchToDelete = worktree?.branch ?? branch;
+
+      if (!pathToRemove) {
+        throw new Error("Worktree path not provided");
       }
 
-      // Remove the worktree
-      await execAsync(`git worktree remove "${worktree.path}"`, {
-        cwd: projectPath,
-      });
+      // Remove the worktree directory via git first
+      try {
+        await execAsync(`git worktree remove "${pathToRemove}"`, {
+          cwd: projectPath,
+        });
+      } catch (gitError) {
+        console.warn("git worktree remove failed, attempting filesystem cleanup", gitError);
+      }
 
-      // Delete the branch
-      await execAsync(`git branch -D ${worktree.branch}`, { cwd: projectPath });
+      // Ensure directory is removed even if git command failed
+      if (fs.existsSync(pathToRemove)) {
+        await fs.promises.rm(pathToRemove, { recursive: true, force: true });
+      }
 
-      this.worktrees.delete(worktreeId);
+      if (branchToDelete) {
+        try {
+          await execAsync(`git branch -D ${branchToDelete}`, { cwd: projectPath });
+        } catch (branchError) {
+          console.warn(`Failed to delete branch ${branchToDelete}:`, branchError);
+        }
+      }
 
-      console.log(`Removed worktree: ${worktree.name}`);
+      if (worktree) {
+        this.worktrees.delete(worktreeId);
+        console.log(`Removed worktree: ${worktree.name}`);
+      } else {
+        console.log(`Removed worktree ${worktreeId}`);
+      }
     } catch (error) {
       console.error("Failed to remove worktree:", error);
       throw new Error(`Failed to remove worktree: ${error}`);
