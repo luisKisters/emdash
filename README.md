@@ -210,7 +210,11 @@ find "$HOME" -type f -name 'emdash.db*' -print
 ## What's Next
 
 - [ ] Cloud database option as an alternative to local SQLite
-- [ ] Pluggable provider system to run other CLI coding agents (e.g., Claude Code, Gemini CLI, aider, Warp) alongside Codex and switch easily
+- [ ] Pluggable provider system to run other CLI coding agents (e.g., Claude Code, Gemini CLI, aider, Warp) alongside Codex
+- [ ] Workspace lifecycle hooks to run custom scripts on create, run, and archive (e.g., install deps, copy env files, clean up resources)
+- [ ] Planning chat with controlled execution (draft actions in a separate chat, then run them one by one)
+- [ ] Linear integration to track and close out issues
+
 ## Privacy
 
 - Privacy
