@@ -102,9 +102,31 @@ jobs:
       - name: Build app (ts + vite)
         run: npm run build
 
-      - name: Detect notarization secrets
+      - name: Detect notarization credentials
         run: |
-          if [ -n "${{ secrets.APPLE_API_KEY }}" ] && [ -n "${{ secrets.APPLE_API_KEY_ID }}" ] && [ -n "${{ secrets.APPLE_API_ISSUER }}" ]; then
+          # Prefer secrets; fall back to environment variables if org policy uses vars
+          if [ -n "${{ secrets.APPLE_API_KEY }}" ]; then echo "APPLE_API_KEY_SOURCE=secrets" >> $GITHUB_ENV; fi
+          if [ -n "${{ vars.APPLE_API_KEY }}" ]; then echo "APPLE_API_KEY_SOURCE=vars" >> $GITHUB_ENV; fi
+
+          if [ -n "${{ secrets.APPLE_API_KEY }}" ] || [ -n "${{ vars.APPLE_API_KEY }}" ]; then
+            echo "HAS_APPLE_API_KEY=true" >> $GITHUB_ENV
+          else
+            echo "HAS_APPLE_API_KEY=false" >> $GITHUB_ENV
+          fi
+
+          if [ -n "${{ secrets.APPLE_API_KEY_ID }}" ] || [ -n "${{ vars.APPLE_API_KEY_ID }}" ]; then
+            echo "HAS_APPLE_API_KEY_ID=true" >> $GITHUB_ENV
+          else
+            echo "HAS_APPLE_API_KEY_ID=false" >> $GITHUB_ENV
+          fi
+
+          if [ -n "${{ secrets.APPLE_API_ISSUER }}" ] || [ -n "${{ vars.APPLE_API_ISSUER }}" ]; then
+            echo "HAS_APPLE_API_ISSUER=true" >> $GITHUB_ENV
+          else
+            echo "HAS_APPLE_API_ISSUER=false" >> $GITHUB_ENV
+          fi
+
+          if [ "$HAS_APPLE_API_KEY" = "true" ] && [ "$HAS_APPLE_API_KEY_ID" = "true" ] && [ "$HAS_APPLE_API_ISSUER" = "true" ]; then
             echo "HAS_APPLE_API=true" >> $GITHUB_ENV
           else
             echo "HAS_APPLE_API=false" >> $GITHUB_ENV
@@ -113,21 +135,33 @@ jobs:
       - name: Prepare Apple API key (if provided)
         if: env.HAS_APPLE_API == 'true'
         run: |
-          echo "${{ secrets.APPLE_API_KEY }}" > ./apple_api_key.p8
+          if [ "${APPLE_API_KEY_SOURCE}" = "vars" ]; then
+            echo "${{ vars.APPLE_API_KEY }}" > ./apple_api_key.p8
+            echo "APPLE_API_KEY_ID=${{ vars.APPLE_API_KEY_ID }}" >> $GITHUB_ENV
+            echo "APPLE_API_ISSUER=${{ vars.APPLE_API_ISSUER }}" >> $GITHUB_ENV
+          else
+            echo "${{ secrets.APPLE_API_KEY }}" > ./apple_api_key.p8
+            echo "APPLE_API_KEY_ID=${{ secrets.APPLE_API_KEY_ID }}" >> $GITHUB_ENV
+            echo "APPLE_API_ISSUER=${{ secrets.APPLE_API_ISSUER }}" >> $GITHUB_ENV
+          fi
           echo "APPLE_API_KEY=$(pwd)/apple_api_key.p8" >> $GITHUB_ENV
-          echo "APPLE_API_KEY_ID=${{ secrets.APPLE_API_KEY_ID }}" >> $GITHUB_ENV
-          echo "APPLE_API_ISSUER=${{ secrets.APPLE_API_ISSUER }}" >> $GITHUB_ENV
 
       - name: Build and publish signed DMG(s)
         env:
-          CSC_LINK: ${{ secrets.CSC_LINK }}
-          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CSC_LINK: ${{ secrets.CSC_LINK || vars.CSC_LINK }}
+          CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD || vars.CSC_KEY_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID || vars.APPLE_TEAM_ID }}
           APPLE_API_KEY: ${{ env.APPLE_API_KEY }}
           APPLE_API_KEY_ID: ${{ env.APPLE_API_KEY_ID }}
           APPLE_API_ISSUER: ${{ env.APPLE_API_ISSUER }}
+          APPLE_ID: ${{ secrets.APPLE_ID || vars.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD || vars.APPLE_APP_SPECIFIC_PASSWORD }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          echo "Signing vars present:"
+          for v in CSC_LINK CSC_KEY_PASSWORD APPLE_TEAM_ID APPLE_ID APPLE_APP_SPECIFIC_PASSWORD APPLE_API_KEY APPLE_API_KEY_ID APPLE_API_ISSUER; do
+            if [ -n "${!v}" ]; then echo " - $v: set"; else echo " - $v: MISSING"; fi
+          done
           ARCH_INPUT="${{ github.event.inputs.arch }}"
           if [ -z "$ARCH_INPUT" ] || [ "$ARCH_INPUT" = "both" ]; then
             FLAGS="--x64 --arm64"
