@@ -57,26 +57,12 @@ gh auth login
 
 ## Demos
 
-Parallel agents in isolated Git worktrees
-- Two workspaces run Codex agents concurrently; switching back preserves live output and accurate timers.
+emdash in action
+- Creating a CONTRIBUTIONS.md for an open source repository
 
 <p align="center">
-  <img src="./docs/media/emdash.gif" alt="Demo: parallel agents with preserved stream state" width="100%" style="border-radius:12px">
+  <img src="./docs/media/demo.gif" alt="Demo: parallel agents with preserved stream state" width="100%" style="border-radius:12px">
   
-</p>
-
-CI workflow setup in minutes
-- Agent adds a minimal GitHub Actions workflow (type-check + build) and opens a PR.
-
-<p align="center">
-  <img src="./docs/media/ci-setup.gif" alt="Demo: add CI workflow via agent" width="100%" style="border-radius:12px">
-</p>
-
-README polish + PR flow
-- Agent improves README, commits changes, and opens a PR; sidebar shows PR status/badges.
-
-<p align="center">
-  <img src="./docs/media/readme-pr.gif" alt="Demo: README polish and PR flow" width="100%" style="border-radius:12px">
 </p>
 
 ## Data Persistence
@@ -177,17 +163,24 @@ Quick commands (macOS)
 ```bash
 # Quit the app first
 
-# Packaged path
-rm -f "$HOME/Library/Application Support/emdash/emdash.db"
+# Packaged path (if you ran a built app)
+rm -f "$HOME/Library/Application Support/emdash/emdash.db" \
+      "$HOME/Library/Application Support/emdash/emdash.db-wal" \
+      "$HOME/Library/Application Support/emdash/emdash.db-shm"
 
 # Dev path (vite/electron dev)
-rm -f "$HOME/Library/Application Support/Electron/emdash.db"
+rm -f "$HOME/Library/Application Support/Electron/emdash.db" \
+      "$HOME/Library/Application Support/Electron/emdash.db-wal" \
+      "$HOME/Library/Application Support/Electron/emdash.db-shm"
 
 # Optional: remove legacy DB filenames if they exist
 rm -f "$HOME/Library/Application Support/emdash/database.sqlite" \
       "$HOME/Library/Application Support/emdash/orcbench.db"
 rm -f "$HOME/Library/Application Support/Electron/database.sqlite" \
       "$HOME/Library/Application Support/Electron/orcbench.db"
+
+# One-liner to locate any emdash.db under your home folder (preview only)
+find "$HOME" -type f -name 'emdash.db*' -print
 ```
 
 ## What's Next
