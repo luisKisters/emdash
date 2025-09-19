@@ -11,6 +11,13 @@ emdash is a UI layer for running multiple Codex CLI agents in parallel, each iso
     <img src="./docs/media/emdash-screenshot.png" alt="Emdash app screenshot" width="100%">
 </p>
 
+## Install
+
+- Download for macOS (Apple Silicon): https://github.com/generalaction/stagehand/releases/latest/download/emdash-arm64.dmg
+- Download for macOS (Intel x64): https://github.com/generalaction/stagehand/releases/latest/download/emdash-x64.dmg
+
+Note: Builds are unsigned by default. On first launch, right‑click the app, choose Open, then confirm to bypass Gatekeeper. For signed/notarized builds, add Apple Developer credentials to GitHub Actions (see CI section below).
+
 ## Requirements
 
 - Node.js 18+ and Git
