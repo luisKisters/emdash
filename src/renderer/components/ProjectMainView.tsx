@@ -1,12 +1,5 @@
 import React from "react";
 import { Button } from "./ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "./ui/card";
 import { GitBranch, Plus, Loader2, Trash } from "lucide-react";
 import {
   Breadcrumb,
@@ -62,7 +55,7 @@ function StatusBadge({ status }: { status: Workspace["status"] }) {
   );
 }
 
-function WorkspaceCard({
+function WorkspaceRow({
   ws,
   active,
   onClick,
@@ -74,86 +67,78 @@ function WorkspaceCard({
   onDelete: () => void | Promise<void>;
 }) {
   return (
-    <Card
+    <div
       onClick={onClick}
       role="button"
       tabIndex={0}
       className={[
-        "group cursor-pointer transition-shadow hover:shadow-sm",
+        "group flex items-start justify-between gap-3 rounded-xl border border-border bg-background",
+        "px-4 py-3 transition-all hover:bg-muted/40 hover:shadow-sm",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary",
         active ? "ring-2 ring-primary" : "",
       ].join(" ")}
     >
-      <CardHeader className="p-4 pb-2">
-        <div className="flex items-start justify-between gap-2">
-          <div className="space-y-1 min-w-0">
-            <CardTitle className="text-base leading-tight tracking-tight">
-              {ws.name}
-            </CardTitle>
-            <CardDescription className="flex items-center gap-2 min-w-0 text-xs">
-              {ws.status === "running" && (
-                <Loader2 className="size-3 animate-spin" />
-              )}
-              <GitBranch className="size-3" />
-              <span
-                className="font-mono text-xs truncate max-w-[12rem]"
-                title={`origin/${ws.branch}`}
-              >
-                origin/{ws.branch}
-              </span>
-            </CardDescription>
-          </div>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                className="text-muted-foreground hover:text-destructive group-hover:text-destructive hover:bg-transparent focus-visible:ring-0"
-                onClick={(event) => {
-                  event.stopPropagation();
-                }}
-                aria-label={`Delete workspace ${ws.name}`}
-              >
-                <Trash className="size-4" />
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent
-              onClick={(event) => event.stopPropagation()}
-              className="space-y-4"
+      <div className="min-w-0">
+        <div className="text-base font-medium leading-tight tracking-tight">
+          {ws.name}
+        </div>
+        <div className="mt-1 flex items-center gap-2 min-w-0 text-xs text-muted-foreground">
+          {ws.status === "running" && (
+            <Loader2 className="size-3 animate-spin" />
+          )}
+          <GitBranch className="size-3" />
+          <span
+            className="font-mono truncate max-w-[24rem]"
+            title={`origin/${ws.branch}`}
+          >
+            origin/{ws.branch}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex shrink-0 items-center gap-2">
+        {ws.status !== "idle" && <StatusBadge status={ws.status} />}
+        {ws.agentId && <Badge variant="outline">agent</Badge>}
+
+        <AlertDialog>
+          <AlertDialogTrigger asChild>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="text-muted-foreground hover:text-destructive hover:bg-transparent focus-visible:ring-0"
+              onClick={(e) => e.stopPropagation()}
+              aria-label={`Delete workspace ${ws.name}`}
             >
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete workspace?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  {`This will remove the worktree for "${ws.name}" and delete its branch.`}
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90 px-4 py-2"
-                  onClick={async (event) => {
-                    event.stopPropagation();
-                    try {
-                      await Promise.resolve(onDelete());
-                    } catch (err) {
-                      console.error("Failed to delete workspace:", err);
-                    }
-                  }}
-                >
-                  Delete
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </div>
-      </CardHeader>
-      <CardContent className="p-4 pt-2 flex items-center justify-between gap-2">
-        <div className="flex items-center gap-2">
-          <StatusBadge status={ws.status} />
-          {ws.agentId && <Badge variant="outline">agent</Badge>}
-        </div>
-      </CardContent>
-    </Card>
+              <Trash className="size-4" />
+            </Button>
+          </AlertDialogTrigger>
+          <AlertDialogContent
+            onClick={(e) => e.stopPropagation()}
+            className="space-y-4"
+          >
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete workspace?</AlertDialogTitle>
+              <AlertDialogDescription>
+                {`This will remove the worktree for "${ws.name}" and delete its branch.`}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 px-4 py-2"
+                onClick={async (e) => {
+                  e.stopPropagation();
+                  await Promise.resolve(onDelete());
+                }}
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
+    </div>
   );
 }
 
@@ -229,17 +214,17 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
                 )}
               </Button>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {(project.workspaces ?? []).map((ws) => (
-                <WorkspaceCard
-                  key={ws.id}
-                  ws={ws}
-                  active={activeWorkspace?.id === ws.id}
-                  onClick={() => onSelectWorkspace(ws)}
-                  onDelete={() => onDeleteWorkspace(project, ws)}
-                />
-              ))}
-            </div>
+              <div className="flex flex-col gap-3">
+                {(project.workspaces ?? []).map((ws) => (
+                  <WorkspaceRow
+                    key={ws.id}
+                    ws={ws}
+                    active={activeWorkspace?.id === ws.id}
+                    onClick={() => onSelectWorkspace(ws)}
+                    onDelete={() => onDeleteWorkspace(project, ws)}
+                  />
+                ))}
+              </div>
           </div>
 
           {(!project.workspaces || project.workspaces.length === 0) && (
