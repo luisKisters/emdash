@@ -30,7 +30,7 @@ brew install codex
 codex
 ```
 
-### GitHub CLI (optional, recommended)
+### GitHub CLI
 
 Install and authenticate GitHub CLI for GitHub features:
 
