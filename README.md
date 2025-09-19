@@ -77,6 +77,14 @@ Running multiple Codex agents in parallel
   
 </p>
 
+Open a Pull Request from the dashboard
+
+- Review diffs, set title/description, choose target branch, and publish to GitHub — all from emdash
+
+<p align="center">
+  <img src="./docs/media/openpr.gif" alt="Open a PR from the emdash dashboard" width="100%" style="border-radius:12px">
+</p>
+
 ## Data Persistence
 
 emdash uses SQLite for local data persistence, ensuring your projects and workspaces are maintained across application sessions. All data is stored locally on your machine, providing privacy and offline functionality.
