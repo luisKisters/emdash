@@ -22,6 +22,7 @@ emdash is a UI layer for running multiple Codex CLI agents in parallel, each iso
 - Optional: [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart) for PRs, badges, and repo info
 
 ### Codex CLI
+
 Install the Codex CLI and authenticate it:
 
 ```bash
@@ -34,14 +35,17 @@ codex
 ```
 
 ### GitHub CLI (optional, recommended)
+
 Install and authenticate GitHub CLI for GitHub features:
 
 **Install [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart):**
+
 - **macOS:** `brew install gh`
 - **Linux:** `sudo apt install gh` (Ubuntu/Debian) or `sudo dnf install gh` (Fedora)
 - **Windows:** `winget install GitHub.cli`
 
 **Authenticate:**
+
 ```bash
 gh auth login
 ```
@@ -58,10 +62,18 @@ gh auth login
 ## Demos
 
 emdash in action
-- Creating a CONTRIBUTIONS.md for an open source repository
+
+- Creating a CONTRIBUTIONS.md file for an open source repository
 
 <p align="center">
   <img src="./docs/media/demo.gif" alt="Demo: parallel agents with preserved stream state" width="100%" style="border-radius:12px">
+
+Running multiple Codex agents in parallel
+
+- Monitor and review the work of the several agents within emdash
+
+<p align="center">
+  <img src="./docs/media/parallel.gif" alt="Demo: parallel agents with preserved stream state" width="100%" style="border-radius:12px">
   
 </p>
 
@@ -74,6 +86,7 @@ emdash uses SQLite for local data persistence, ensuring your projects and worksp
 The application maintains two primary data structures:
 
 #### Projects Table
+
 Stores information about opened Git repositories and their GitHub integration status:
 
 ```sql
@@ -91,12 +104,14 @@ CREATE TABLE projects (
 ```
 
 **Key Features:**
+
 - **Unique Path Constraint**: Prevents duplicate project entries
 - **Git Integration**: Tracks remote URLs and current branches
 - **GitHub Status**: Monitors connection state with [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart)
 - **Automatic Timestamps**: Tracks creation and modification times
 
 #### Workspaces Table
+
 Manages isolated agent workspaces with their associated Git worktrees:
 
 ```sql
@@ -115,6 +130,7 @@ CREATE TABLE workspaces (
 ```
 
 **Key Features:**
+
 - **Cascade Deletion**: Removing a project automatically cleans up associated workspaces
 - **Status Tracking**: Monitors workspace state (idle, running, completed)
 - **Agent Assignment**: Links workspaces to specific agent instances
@@ -146,20 +162,24 @@ The application stores conversation history locally, which may consume disk spac
 If you want to reset or reclaim space, you can delete the app's local database. This removes saved conversations and resets projects/workspaces. The database is recreated automatically on next launch.
 
 Important
+
 - Quit the app before deleting the DB to avoid file‑in‑use errors.
 - Paths with spaces need quotes (e.g. `"Application Support"`).
 
 Default locations (packaged app)
+
 - macOS: `~/Library/Application Support/emdash/emdash.db`
 - Windows: `%APPDATA%/emdash/emdash.db`
 - Linux: `~/.config/emdash/emdash.db`
 
 Development builds (Electron default)
+
 - macOS: `~/Library/Application Support/Electron/emdash.db`
 
 Note: legacy filenames we migrate from (safe to remove if present): `database.sqlite`, `orcbench.db`.
 
 Quick commands (macOS)
+
 ```bash
 # Quit the app first
 
