@@ -106,7 +106,7 @@
       rgba(255, 255, 255, 0) 100%
     );
     transform: skewX(-15deg) translateX(-125%);
-    animation: logo-shimmer-move 5s linear infinite;
+    animation: logo-shimmer-move 2.5s linear infinite;
     opacity: 1;
     will-change: transform;
   }
@@ -117,10 +117,10 @@
 
   @keyframes logo-shimmer-move {
     0% {
-      transform: skewX(-15deg) translateX(-135%);
+      transform: skewX(-15deg) translateX(-110%);
     }
     100% {
-      transform: skewX(-15deg) translateX(235%);
+      transform: skewX(-15deg) translateX(210%);
     }
   }
 
