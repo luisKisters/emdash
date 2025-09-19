@@ -41,6 +41,9 @@ jobs:
           npm_config_python: ${{ env.python }}
         run: npm ci
 
+      - name: Build app (ts + vite)
+        run: npm run build
+
       - name: Build DMG(s) (no publish)
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false' 
