@@ -69,3 +69,65 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .logo-shimmer-container {
+    position: relative;
+    display: inline-block;
+    height: 4rem;
+  }
+
+  .logo-shimmer-image {
+    display: block;
+    height: 100%;
+    width: auto;
+  }
+
+  .logo-shimmer-overlay {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+  }
+
+  .logo-shimmer-overlay::before {
+    content: "";
+    position: absolute;
+    top: -20%;
+    bottom: -20%;
+    left: -65%;
+    width: 70%;
+    background: linear-gradient(
+      120deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.28) 30%,
+      rgba(255, 255, 255, 0.75) 50%,
+      rgba(255, 255, 255, 0.28) 70%,
+      rgba(255, 255, 255, 0) 100%
+    );
+    transform: skewX(-15deg) translateX(-125%);
+    animation: logo-shimmer-move 2.5s linear infinite;
+    opacity: 1;
+    will-change: transform;
+  }
+
+  .dark .logo-shimmer-overlay {
+    mix-blend-mode: screen;
+  }
+
+  @keyframes logo-shimmer-move {
+    0% {
+      transform: skewX(-15deg) translateX(-110%);
+    }
+    100% {
+      transform: skewX(-15deg) translateX(210%);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .logo-shimmer-overlay::before {
+      animation: none;
+      opacity: 0;
+    }
+  }
+}

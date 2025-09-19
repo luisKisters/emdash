@@ -447,11 +447,27 @@ const App: React.FC = () => {
           <div className="container mx-auto px-4 py-8 flex flex-col justify-center min-h-screen">
             <div className="text-center mb-12">
               <div className="flex items-center justify-center mb-4">
-                <img
-                  src={emdashLogo}
-                  alt="emdash"
-                  className="h-16"
-                />
+                <div className="logo-shimmer-container">
+                  <img
+                    src={emdashLogo}
+                    alt="emdash"
+                    className="logo-shimmer-image"
+                  />
+                  <span
+                    className="logo-shimmer-overlay"
+                    aria-hidden="true"
+                    style={{
+                      WebkitMaskImage: `url(${emdashLogo})`,
+                      maskImage: `url(${emdashLogo})`,
+                      WebkitMaskRepeat: "no-repeat",
+                      maskRepeat: "no-repeat",
+                      WebkitMaskSize: "contain",
+                      maskSize: "contain",
+                      WebkitMaskPosition: "center",
+                      maskPosition: "center",
+                    }}
+                  />
+                </div>
               </div>
               <p className="text-sm sm:text-base text-gray-700 text-muted-foreground mb-4">
                 Run multiple Codex Agents in parallel
