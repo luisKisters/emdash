@@ -112,7 +112,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
           alt="GitHub"
           className="w-4 h-4 rounded-sm object-contain"
         />
-        <span className="truncate">{displayName}</span>
+        <span className="truncate block">{displayName}</span>
       </div>
     );
   };
@@ -167,8 +167,8 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                       }
                     }
                   }}
-                  className="space-y-1 list-none p-0 m-0"
-                  itemClassName="relative group cursor-pointer rounded-md list-none"
+                  className="space-y-1 list-none p-0 m-0 min-w-0"
+                  itemClassName="relative group cursor-pointer rounded-md list-none min-w-0"
                   getKey={(p) => (p as Project).id}
                 >
                   {(project) => {
@@ -176,7 +176,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                     return (
                       <SidebarMenuItem>
                         <Collapsible defaultOpen className="group/collapsible">
-                          <div className="flex w-full items-center rounded-md px-2 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
+                          <div className="flex w-full items-center rounded-md px-2 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground min-w-0">
                             <button
                               type="button"
                               className="flex flex-1 min-w-0 flex-col text-left bg-transparent outline-none focus-visible:outline-none"
@@ -185,7 +185,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                                 onSelectProject(typedProject);
                               }}
                             >
-                              <span className="truncate">{typedProject.name}</span>
+                              <span className="truncate block">{typedProject.name}</span>
                               <span className="hidden sm:block truncate text-xs text-muted-foreground">
                                 {typedProject.githubInfo?.repository || typedProject.path}
                               </span>
@@ -205,7 +205,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                           <CollapsibleContent asChild>
                             <div>
                               {typedProject.workspaces?.length ? (
-                                <div className="hidden sm:block mt-2 ml-7 space-y-1">
+                                <div className="hidden sm:block mt-2 ml-7 space-y-1 min-w-0">
                                   {typedProject.workspaces.map((workspace) => {
                                     const isActive = activeWorkspace?.id === workspace.id;
                                     return (
@@ -222,7 +222,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                                           onSelectWorkspace &&
                                             onSelectWorkspace(workspace);
                                         }}
-                                        className={` px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 ${
+                                        className={` px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 min-w-0 ${
                                           isActive ? "bg-black/5 dark:bg-white/5" : ""
                                         }`}
                                         title={workspace.name}
