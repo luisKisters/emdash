@@ -8,17 +8,13 @@
 emdash is a UI layer for running multiple Codex CLI agents in parallel, each isolated in its own Git worktree — so you can fan out tasks, keep changes compartmentalized, and manage everything from a single UI.
 
 <p align="center">
-  <a href="https://github.com/openai/codex" target="_blank" rel="noopener">OpenAI Codex CLI</a>
-</p>
-
-<p align="center">
     <img src="./docs/media/emdash-screenshot.png" alt="Emdash app screenshot" width="100%">
 </p>
 
 ## Requirements
 
 - Node.js 18+ and Git
-- OpenAI Codex CLI (install + authenticate)
+- [OpenAI Codex CLI](https://github.com/openai/codex) (install + authenticate)
 - Optional: [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart) for PRs, badges, and repo info
 
 ### Codex CLI
