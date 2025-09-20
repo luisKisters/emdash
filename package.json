@@ -89,12 +89,7 @@
       ],
       "icon": "src/assets/images/emdash/emdash.icns",
       "notarize": {
-        "tool": "notarytool",
-        "appBundleId": "com.emdash",
-        "appleApiKey": "${env.APPLE_API_KEY}",
-        "appleApiKeyId": "${env.APPLE_API_KEY_ID}",
-        "appleApiIssuer": "${env.APPLE_API_ISSUER}",
-        "teamId": "${env.APPLE_TEAM_ID}"
+        "appBundleId": "com.emdash"
       }
     },
     "dmg": {
