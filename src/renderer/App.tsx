@@ -60,6 +60,9 @@ const App: React.FC = () => {
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(
     null
   );
+  const [isCodexInstalled, setIsCodexInstalled] = useState<boolean | null>(null);
+  const showGithubRequirement = !ghInstalled || !isAuthenticated;
+  const showCodexRequirement = isCodexInstalled === false;
 
   // Persist and apply custom project order (by id)
   const ORDER_KEY = "sidebarProjectOrder";
@@ -110,6 +113,19 @@ const App: React.FC = () => {
         );
         const ordered = applyProjectOrder(projectsWithWorkspaces);
         setProjects(ordered);
+
+        const codexStatus = await window.electronAPI.codexCheckInstallation();
+        if (codexStatus.success) {
+          setIsCodexInstalled(
+            codexStatus.isInstalled ?? false
+          );
+        } else {
+          setIsCodexInstalled(false);
+          console.error(
+            "Failed to check Codex CLI installation:",
+            codexStatus.error
+          );
+        }
       } catch (error) {
         console.error("Failed to load app data:", error);
       }
@@ -418,6 +434,9 @@ const App: React.FC = () => {
     });
   };
 
+  const needsGhInstall = !ghInstalled;
+  const needsGhAuth = ghInstalled && !isAuthenticated;
+
   const handleReorderProjectsFull = (newOrder: Project[]) => {
     setProjects(() => {
       const list = [...newOrder];
@@ -469,38 +488,57 @@ const App: React.FC = () => {
                   />
                 </div>
               </div>
-              <p className="text-sm sm:text-base text-gray-700 text-muted-foreground">
+              <p className="text-sm sm:text-base text-gray-700 text-muted-foreground mb-6">
                 Run multiple Codex Agents in parallel
               </p>
-              {(!ghInstalled || !isAuthenticated) && (
-                <div className="text-sm text-gray-500 max-w-2xl mx-auto">
-                  {!ghInstalled ? (
-                    <>
-                      <p className="mb-2">
-                        <strong>Requirements:</strong> Install GitHub CLI
-                      </p>
+              <div className="text-sm text-gray-500 max-w-2xl mx-auto space-y-4">
+                {showGithubRequirement && (
+                  <div>
+                    <p className="mb-2">
+                      <strong>Requirements:</strong> GitHub CLI
+                    </p>
+                    {needsGhInstall ? (
                       <p className="text-xs">
                         Install:{" "}
                         <code className="bg-gray-100 px-1 rounded">
                           brew install gh
                         </code>
                       </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="mb-2">
-                        <strong>Requirements:</strong> Authenticate GitHub CLI
-                      </p>
-                      <p className="text-xs">
-                        Authenticate:{" "}
+                    ) : (
+                      needsGhAuth && (
+                        <p className="text-xs">
+                          Authenticate:{" "}
+                          <code className="bg-gray-100 px-1 rounded">
+                            gh auth login
+                          </code>
+                        </p>
+                      )
+                    )}
+                  </div>
+                )}
+
+                {showCodexRequirement && (
+                  <div>
+                    <p className="mb-2">
+                      <strong>Requirements:</strong> Codex CLI
+                    </p>
+                    <div className="text-xs space-y-1">
+                      <p>
+                        Install:{" "}
                         <code className="bg-gray-100 px-1 rounded">
-                          gh auth login
+                          npm install -g @openai/codex
                         </code>
                       </p>
-                    </>
-                  )}
-                </div>
-              )}
+                      <p>
+                        Authenticate:{" "}
+                        <code className="bg-gray-100 px-1 rounded">
+                          codex auth login
+                        </code>
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
@@ -562,38 +600,58 @@ const App: React.FC = () => {
                   className="h-16"
                 />
               </div>
-              <p className="text-sm sm:text-base text-gray-700 text-muted-foreground">
+              <p className="text-sm sm:text-base text-gray-700 text-muted-foreground mb-6">
                 Run multiple Codex Agents in parallel
               </p>
-              {(!ghInstalled || !isAuthenticated) && (
-                <div className="text-sm text-gray-500 max-w-2xl mx-auto">
-                  {!ghInstalled ? (
-                    <>
-                      <p className="mb-2">
-                        <strong>Requirements:</strong> Install GitHub CLI
-                      </p>
+              <div className="text-sm text-gray-500 max-w-2xl mx-auto space-y-4">
+                {showGithubRequirement && (
+                  <div>
+                    <p className="mb-2">
+                      <strong>Requirements:</strong> GitHub CLI
+                    </p>
+                    {needsGhInstall ? (
                       <p className="text-xs">
                         Install:{" "}
                         <code className="bg-gray-100 px-1 rounded">
                           brew install gh
                         </code>
                       </p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="mb-2">
-                        <strong>Requirements:</strong> Authenticate GitHub CLI
-                      </p>
-                      <p className="text-xs">
-                        Authenticate:{" "}
+                    ) : (
+                      needsGhAuth && (
+                        <p className="text-xs">
+                          Authenticate:{" "}
+                          <code className="bg-gray-100 px-1 rounded">
+                            gh auth login
+                          </code>
+                        </p>
+                      )
+                    )}
+                  </div>
+                )}
+
+                {showCodexRequirement && (
+                  <div>
+                    <p className="mb-2">
+                      <strong>Requirements:</strong> Codex CLI
+                    </p>
+                    <div className="text-xs space-y-1">
+                      <p>
+                        Install:{" "}
                         <code className="bg-gray-100 px-1 rounded">
-                          gh auth login
+                          npm install -g @openai/codex
                         </code>
                       </p>
-                    </>
-                  )}
-                </div>
-              )}
+                      <p>
+                        Authenticate:{" "}
+                        <code className="bg-gray-100 px-1 rounded">
+                          codex auth login
+                        </code>
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+              </div>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
