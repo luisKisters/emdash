@@ -22,6 +22,19 @@ jobs:
   build-mac:
     runs-on: macos-latest
     steps:
+      - name: Init flags
+        id: init
+        run: |
+          set -euo pipefail
+          # Normalize dry_run from workflow_dispatch inputs (string: true/false)
+          DRY=${{ inputs.dry_run || '' }}
+          if [ -z "$DRY" ]; then DRY=${{ github.event.inputs.dry_run || '' }}; fi
+          DRY=$(printf "%s" "$DRY" | tr '[:upper:]' '[:lower:]')
+          case "$DRY" in
+            true|1|yes) DRY=true ;;
+            *) DRY=false ;;
+          esac
+          echo "dry_run=$DRY" >> "$GITHUB_OUTPUT"
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -193,9 +206,17 @@ jobs:
           for APP in release/mac*/emdash.app; do
             if [ -d "$APP" ]; then
               echo "Asserting bundle ID and resources for $APP"
-              BID=$(defaults read "$APP/Contents/Info" CFBundleIdentifier || true)
+              PLIST="$APP/Contents/Info.plist"
+              if [ ! -f "$PLIST" ]; then
+                echo "::error::Missing Info.plist at $PLIST"; exit 1
+              fi
+              # Read CFBundleIdentifier robustly (defaults can be flaky on raw files)
+              BID=$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$PLIST" 2>/dev/null || true)
+              if [ -z "$BID" ]; then
+                BID=$(plutil -extract CFBundleIdentifier xml1 -o - "$PLIST" 2>/dev/null | sed -n 's/.*<string>\(.*\)<\/string>.*/\1/p' | head -n1)
+              fi
               if [ "$BID" != "com.emdash" ]; then
-                echo "::error::CFBundleIdentifier mismatch (got '$BID')"; exit 1
+                echo "::error::CFBundleIdentifier mismatch (got '$BID', expected 'com.emdash')"; exit 1
               fi
               # Ensure packaged resources exist (prevents white-screen adhoc shells)
               if [ ! -f "$APP/Contents/Resources/app.asar" ] && [ ! -d "$APP/Contents/Resources/app" ]; then
@@ -227,7 +248,7 @@ jobs:
           done
 
       - name: Publish GitHub Release and upload artifacts
-        if: ${{ github.event.inputs.dry_run != 'true' }}
+        if: ${{ steps.init.outputs.dry_run != 'true' }}
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -246,7 +267,7 @@ jobs:
           gh release upload "$TAG" "${FILES[@]}" --clobber
 
       - name: Upload signed DMGs as workflow artifacts (dry-run)
-        if: ${{ github.event.inputs.dry_run == 'true' }}
+        if: ${{ steps.init.outputs.dry_run == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: SIGNED-STAPLED-DMGS
