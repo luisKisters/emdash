@@ -10,6 +10,10 @@ on:
         description: "Architecture to build (arm64 | x64 | both)"
         required: false
         default: "both"
+      dry_run:
+        description: "Build signed+stapled but DO NOT publish a GitHub Release (artifacts only)"
+        required: false
+        default: "false"
 
 permissions:
   contents: read
@@ -62,12 +66,7 @@ jobs:
           npx electron-builder --mac dmg $FLAGS --publish never
 
       # Optional: upload build artifacts for debugging even if publish fails
-      - name: Upload artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: dmgs
-          path: release/*.dmg
+      # Deliberately skip uploading debug DMGs to avoid confusion
 
   release-mac:
     if: startsWith(github.ref, 'refs/tags/')
@@ -129,7 +128,7 @@ jobs:
           echo "APPLE_API_KEY_ID=${{ secrets.APPLE_API_KEY_ID }}" >> $GITHUB_ENV
           echo "APPLE_API_ISSUER=${{ secrets.APPLE_API_ISSUER }}" >> $GITHUB_ENV
 
-      - name: Build and publish signed DMG(s)
+      - name: Build signed DMG(s) (do not publish yet)
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'true'
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -162,21 +161,67 @@ jobs:
             echo "Unknown arch input: $ARCH_INPUT" && exit 1
           fi
           echo "Building signed for: $FLAGS"
-          npx electron-builder --mac dmg $FLAGS --publish always
+          # Build signed + notarized artifacts locally but DO NOT publish yet.
+          # We will staple and validate before uploading to the GitHub Release.
+          npx electron-builder --mac dmg $FLAGS --publish never
 
-      - name: Staple notarization (best-effort)
-        if: always()
+      - name: Verify Developer ID signing
         run: |
-          set -e
+          set -euo pipefail
+          FAILED=0
+          for APP in release/mac*/emdash.app; do
+            if [ -d "$APP" ]; then
+              echo "Checking codesign for $APP"
+              if ! codesign -dv --verbose=4 "$APP" 2>&1 | grep -q "Authority=Developer ID Application"; then
+                echo "::error::App is not Developer ID signed: $APP"; FAILED=1
+              fi
+            fi
+          done
+          [ "$FAILED" -eq 0 ] || exit 1
+
+      - name: Staple and validate artifacts
+        run: |
+          set -euo pipefail
           # Staple apps
           for APP in release/mac*/emdash.app; do
             if [ -d "$APP" ]; then
-              xcrun stapler staple "$APP" || true
+              echo "Stapling $APP"; xcrun stapler staple "$APP"
+              echo "Validate $APP"; xcrun stapler validate "$APP"
             fi
           done
           # Staple DMGs
           for DMG in release/*.dmg; do
             if [ -f "$DMG" ]; then
-              xcrun stapler staple "$DMG" || true
+              echo "Stapling $DMG"; xcrun stapler staple "$DMG"
+              echo "Validate $DMG"; xcrun stapler validate "$DMG"
             fi
           done
+
+      - name: Publish GitHub Release and upload artifacts
+        if: ${{ github.event.inputs.dry_run != 'true' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          TAG="${GITHUB_REF_NAME}"
+          # Create if missing, or publish if draft
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            gh release edit "$TAG" --draft=false --prerelease=false
+          else
+            gh release create "$TAG" --title "$TAG" --generate-notes --latest
+          fi
+          # Upload stapled DMGs and update files used for autoupdate if present
+          FILES=(release/emdash-*.dmg)
+          if ls release/*.blockmap >/dev/null 2>&1; then FILES+=(release/*.blockmap); fi
+          if [ -f release/latest-mac.yml ]; then FILES+=(release/latest-mac.yml); fi
+          gh release upload "$TAG" "${FILES[@]}" --clobber
+
+      - name: Upload signed DMGs as workflow artifacts (dry-run)
+        if: ${{ github.event.inputs.dry_run == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: SIGNED-STAPLED-DMGS
+          path: |
+            release/emdash-*.dmg
+            release/*.blockmap
+            release/latest-mac.yml
