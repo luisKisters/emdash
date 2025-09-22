@@ -69,7 +69,8 @@ jobs:
       # Deliberately skip uploading debug DMGs to avoid confusion
 
   release-mac:
-    if: startsWith(github.ref, 'refs/tags/')
+    # Run for tagged pushes (normal release) and for manual runs (dry run or ad-hoc release)
+    if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch'
     runs-on: macos-latest
     permissions:
       contents: write
@@ -166,18 +167,46 @@ jobs:
           npx electron-builder --mac dmg $FLAGS --publish never
 
       - name: Verify Developer ID signing
+        env:
+          EXPECT_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           set -euo pipefail
           FAILED=0
           for APP in release/mac*/emdash.app; do
             if [ -d "$APP" ]; then
               echo "Checking codesign for $APP"
-              if ! codesign -dv --verbose=4 "$APP" 2>&1 | grep -q "Authority=Developer ID Application"; then
-                echo "::error::App is not Developer ID signed: $APP"; FAILED=1
+              META=$(codesign -dv --verbose=4 "$APP" 2>&1)
+              echo "$META" | grep -q "Authority=Developer ID Application" || { echo "::error::Not Developer ID Application signed"; FAILED=1; }
+              if [ -n "${EXPECT_TEAM_ID:-}" ]; then
+                TID=$(printf "%s\n" "$META" | awk -F= '/TeamIdentifier=/{print $2; exit}')
+                if [ "$TID" != "$EXPECT_TEAM_ID" ]; then
+                  echo "::error::TeamIdentifier mismatch (got '$TID', expected '$EXPECT_TEAM_ID')"; FAILED=1
+                fi
               fi
             fi
           done
           [ "$FAILED" -eq 0 ] || exit 1
+
+      - name: Verify bundle metadata and integrity
+        run: |
+          set -euo pipefail
+          for APP in release/mac*/emdash.app; do
+            if [ -d "$APP" ]; then
+              echo "Asserting bundle ID and resources for $APP"
+              BID=$(defaults read "$APP/Contents/Info" CFBundleIdentifier || true)
+              if [ "$BID" != "com.emdash" ]; then
+                echo "::error::CFBundleIdentifier mismatch (got '$BID')"; exit 1
+              fi
+              # Ensure packaged resources exist (prevents white-screen adhoc shells)
+              if [ ! -f "$APP/Contents/Resources/app.asar" ] && [ ! -d "$APP/Contents/Resources/app" ]; then
+                echo "::error::Missing packaged renderer resources (app.asar or Resources/app)"; exit 1
+              fi
+              echo "codesign --verify --deep --strict"
+              codesign --verify --deep --strict --verbose=2 "$APP"
+              echo "spctl assessment"
+              spctl -a -vv --type execute "$APP"
+            fi
+          done
 
       - name: Staple and validate artifacts
         run: |
