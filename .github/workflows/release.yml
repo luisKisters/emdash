@@ -206,7 +206,7 @@ jobs:
           done
           [ "$FAILED" -eq 0 ] || exit 1
 
-      - name: Verify bundle metadata and integrity
+      - name: Verify bundle metadata and integrity (no app notarization required)
         run: |
           set -euo pipefail
           for APP in release/mac*/emdash.app; do
@@ -230,19 +230,18 @@ jobs:
               fi
               echo "codesign --verify --deep --strict"
               codesign --verify --deep --strict --verbose=2 "$APP"
-              echo "spctl assessment"
-              spctl -a -vv --type execute "$APP"
+              echo "Skip spctl on raw app (validated later via DMG end-to-end check)"
             fi
           done
 
-      - name: Staple and validate artifacts
+      - name: Staple and validate artifacts (best-effort for app)
         run: |
           set -euo pipefail
           # Staple apps
           for APP in release/mac*/emdash.app; do
             if [ -d "$APP" ]; then
-              echo "Stapling $APP"; xcrun stapler staple "$APP"
-              echo "Validate $APP"; xcrun stapler validate "$APP"
+              echo "Attempt staple $APP (may be not notarized)"; xcrun stapler staple "$APP" || echo "App staple skipped"
+              echo "Validate $APP (best-effort)"; xcrun stapler validate "$APP" || echo "App validate skipped"
             fi
           done
           # Staple DMGs
