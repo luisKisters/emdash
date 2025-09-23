@@ -56,7 +56,7 @@ jobs:
       - name: Install dependencies
         env:
           npm_config_python: ${{ env.python }}
-        run: npm ci
+        run: npm ci || npm install
 
       - name: Build app (ts + vite)
         run: npm run build
@@ -89,6 +89,19 @@ jobs:
       contents: write
     environment: release
     steps:
+      - name: Init flags
+        id: init
+        run: |
+          set -euo pipefail
+          # Normalize dry_run from workflow_dispatch inputs (string: true/false)
+          DRY=${{ inputs.dry_run || '' }}
+          if [ -z "$DRY" ]; then DRY=${{ github.event.inputs.dry_run || '' }}; fi
+          DRY=$(printf "%s" "$DRY" | tr '[:upper:]' '[:lower:]')
+          case "$DRY" in
+            true|1|yes) DRY=true ;;
+            *) DRY=false ;;
+          esac
+          echo "dry_run=$DRY" >> "$GITHUB_OUTPUT"
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -110,7 +123,7 @@ jobs:
       - name: Install dependencies
         env:
           npm_config_python: ${{ env.python }}
-        run: npm ci
+        run: npm ci || npm install
 
       - name: Import Apple signing certificate
         uses: apple-actions/import-codesign-certs@v2
@@ -251,6 +264,43 @@ jobs:
             fi
           done
 
+      - name: Notarize and staple DMGs (ensures user-downloadable DMG works)
+        if: ${{ steps.flags.outputs.has_apple_api == 'true' }}
+        env:
+          APPLE_API_KEY: ${{ env.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ env.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ env.APPLE_API_ISSUER }}
+        run: |
+          set -euo pipefail
+          for DMG in release/*.dmg; do
+            [ -f "$DMG" ] || continue
+            echo "Submitting $DMG to Apple Notary (notarytool)..."
+            xcrun notarytool submit "$DMG" \
+              --key "$APPLE_API_KEY" \
+              --key-id "$APPLE_API_KEY_ID" \
+              --issuer "$APPLE_API_ISSUER" \
+              --wait
+            echo "Stapling $DMG after notarization"
+            xcrun stapler staple -v "$DMG"
+            xcrun stapler validate "$DMG"
+          done
+
+      - name: "End-to-end check: app inside DMG passes Gatekeeper"
+        run: |
+          set -euo pipefail
+          for DMG in release/*.dmg; do
+            [ -f "$DMG" ] || continue
+            MNT=$(mktemp -d)
+            echo "Mounting $DMG at $MNT"; hdiutil attach "$DMG" -mountpoint "$MNT" -nobrowse -quiet
+            APP="$MNT/emdash.app"
+            if [ ! -d "$APP" ]; then
+              echo "::error::No emdash.app found inside $DMG"; hdiutil detach "$MNT" -quiet || true; rm -rf "$MNT"; exit 1
+            fi
+            echo "codesign info for app inside DMG:"; codesign -dv --verbose=4 "$APP" 2>&1 | sed -n '1,60p'
+            echo "Gatekeeper assessment (should be accepted):"; spctl -a -vv --type execute "$APP"
+            hdiutil detach "$MNT" -quiet || true; rm -rf "$MNT"
+          done
+
       - name: Publish GitHub Release and upload artifacts
         if: ${{ steps.init.outputs.dry_run != 'true' }}
         env:
@@ -270,12 +320,33 @@ jobs:
           if [ -f release/latest-mac.yml ]; then FILES+=(release/latest-mac.yml); fi
           gh release upload "$TAG" "${FILES[@]}" --clobber
 
-      - name: Upload signed DMGs as workflow artifacts (dry-run)
+      - name: Inspect built artifacts (dry-run)
+        if: ${{ steps.init.outputs.dry_run == 'true' }}
+        run: |
+          set -euo pipefail
+          echo "Contents of release/:"
+          ls -lah release || true
+          echo "Find DMGs:"
+          find release -maxdepth 1 -type f -name 'emdash-*.dmg' -print
+          DMG_COUNT=$(find release -maxdepth 1 -type f -name 'emdash-*.dmg' | wc -l | tr -d ' ')
+          if [ "$DMG_COUNT" -eq 0 ]; then
+            echo "::error::No DMG files found in release/."; exit 1
+          fi
+
+      - name: Upload signed DMGs (dry-run)
         if: ${{ steps.init.outputs.dry_run == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: SIGNED-STAPLED-DMGS
+          path: release/emdash-*.dmg
+          if-no-files-found: error
+
+      - name: Upload supplemental files (blockmaps/yml) (dry-run)
+        if: ${{ steps.init.outputs.dry_run == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: SIGNED-STAPLED-DMGS-extras
           path: |
-            release/emdash-*.dmg
             release/*.blockmap
             release/latest-mac.yml
+          if-no-files-found: ignore
