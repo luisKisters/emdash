@@ -89,6 +89,19 @@ jobs:
       contents: write
     environment: release
     steps:
+      - name: Init flags
+        id: init
+        run: |
+          set -euo pipefail
+          # Normalize dry_run from workflow_dispatch inputs (string: true/false)
+          DRY=${{ inputs.dry_run || '' }}
+          if [ -z "$DRY" ]; then DRY=${{ github.event.inputs.dry_run || '' }}; fi
+          DRY=$(printf "%s" "$DRY" | tr '[:upper:]' '[:lower:]')
+          case "$DRY" in
+            true|1|yes) DRY=true ;;
+            *) DRY=false ;;
+          esac
+          echo "dry_run=$DRY" >> "$GITHUB_OUTPUT"
       - name: Checkout
         uses: actions/checkout@v4
 
