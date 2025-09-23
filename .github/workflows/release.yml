@@ -270,12 +270,33 @@ jobs:
           if [ -f release/latest-mac.yml ]; then FILES+=(release/latest-mac.yml); fi
           gh release upload "$TAG" "${FILES[@]}" --clobber
 
-      - name: Upload signed DMGs as workflow artifacts (dry-run)
+      - name: Inspect built artifacts (dry-run)
+        if: ${{ steps.init.outputs.dry_run == 'true' }}
+        run: |
+          set -euo pipefail
+          echo "Contents of release/:"
+          ls -lah release || true
+          echo "Find DMGs:"
+          find release -maxdepth 1 -type f -name 'emdash-*.dmg' -print
+          DMG_COUNT=$(find release -maxdepth 1 -type f -name 'emdash-*.dmg' | wc -l | tr -d ' ')
+          if [ "$DMG_COUNT" -eq 0 ]; then
+            echo "::error::No DMG files found in release/."; exit 1
+          fi
+
+      - name: Upload signed DMGs (dry-run)
         if: ${{ steps.init.outputs.dry_run == 'true' }}
         uses: actions/upload-artifact@v4
         with:
           name: SIGNED-STAPLED-DMGS
+          path: release/emdash-*.dmg
+          if-no-files-found: error
+
+      - name: Upload supplemental files (blockmaps/yml) (dry-run)
+        if: ${{ steps.init.outputs.dry_run == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: SIGNED-STAPLED-DMGS-extras
           path: |
-            release/emdash-*.dmg
             release/*.blockmap
             release/latest-mac.yml
+          if-no-files-found: ignore
