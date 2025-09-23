@@ -1,6 +1,6 @@
 {
   "name": "emdash",
-  "version": "0.1.0",
+  "version": "0.1.2",
   "description": "A macOS Electron app that orchestrates multiple coding agents in parallel",
   "main": "dist/main/main.js",
   "scripts": {
@@ -86,7 +86,13 @@
     "mac": {
       "category": "public.app-category.developer-tools",
       "target": [
-        { "target": "dmg", "arch": ["arm64", "x64"] }
+        {
+          "target": "dmg",
+          "arch": [
+            "arm64",
+            "x64"
+          ]
+        }
       ],
       "icon": "src/assets/images/emdash/emdash.icns",
       "notarize": {
