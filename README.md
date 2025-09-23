@@ -1,7 +1,7 @@
 <p align="left">
   <img src="./src/assets/images/emdash/emdash.iconset/icon_512x512.png#gh-light-mode-only" alt="Emdash" height="40" style="vertical-align:middle;margin-right:12px;">
   <img src="./src/assets/images/emdash/emdash.iconset/icon_512x512.png#gh-dark-mode-only" alt="Emdash" height="40" style="vertical-align:middle;margin-right:12px;">
-  <a href="https://github.com/generalaction/stagehand/releases/latest">
+  <a href="https://github.com/generalaction/emdash/releases">
     <img src="./docs/media/downloadformacos.png" alt="Download app for macOS" height="40" style="vertical-align:middle;">
   </a>
 
