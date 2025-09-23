@@ -95,9 +95,7 @@
         }
       ],
       "icon": "src/assets/images/emdash/emdash.icns",
-      "notarize": {
-        "appBundleId": "com.emdash"
-      }
+      "notarize": false
     },
     "dmg": {
       "icon": "src/assets/images/emdash/emdash.icns"
