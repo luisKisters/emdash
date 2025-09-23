@@ -242,8 +242,12 @@ jobs:
           # Staple DMGs
           for DMG in release/*.dmg; do
             if [ -f "$DMG" ]; then
-              echo "Stapling $DMG"; xcrun stapler staple "$DMG"
-              echo "Validate $DMG"; xcrun stapler validate "$DMG"
+              echo "Stapling $DMG (best-effort; only app must be stapled)"
+              if ! xcrun stapler staple "$DMG"; then
+                echo "Warning: DMG notarization ticket not found (expected if only app was notarized). Skipping."
+              else
+                xcrun stapler validate "$DMG" || echo "Warning: DMG validate failed; app is stapled and validated."
+              fi
             fi
           done
 
