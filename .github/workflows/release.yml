@@ -264,6 +264,43 @@ jobs:
             fi
           done
 
+      - name: Notarize and staple DMGs (ensures user-downloadable DMG works)
+        if: ${{ steps.flags.outputs.has_apple_api == 'true' }}
+        env:
+          APPLE_API_KEY: ${{ env.APPLE_API_KEY }}
+          APPLE_API_KEY_ID: ${{ env.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ env.APPLE_API_ISSUER }}
+        run: |
+          set -euo pipefail
+          for DMG in release/*.dmg; do
+            [ -f "$DMG" ] || continue
+            echo "Submitting $DMG to Apple Notary (notarytool)..."
+            xcrun notarytool submit "$DMG" \
+              --key "$APPLE_API_KEY" \
+              --key-id "$APPLE_API_KEY_ID" \
+              --issuer "$APPLE_API_ISSUER" \
+              --wait
+            echo "Stapling $DMG after notarization"
+            xcrun stapler staple -v "$DMG"
+            xcrun stapler validate "$DMG"
+          done
+
+      - name: "End-to-end check: app inside DMG passes Gatekeeper"
+        run: |
+          set -euo pipefail
+          for DMG in release/*.dmg; do
+            [ -f "$DMG" ] || continue
+            MNT=$(mktemp -d)
+            echo "Mounting $DMG at $MNT"; hdiutil attach "$DMG" -mountpoint "$MNT" -nobrowse -quiet
+            APP="$MNT/emdash.app"
+            if [ ! -d "$APP" ]; then
+              echo "::error::No emdash.app found inside $DMG"; hdiutil detach "$MNT" -quiet || true; rm -rf "$MNT"; exit 1
+            fi
+            echo "codesign info for app inside DMG:"; codesign -dv --verbose=4 "$APP" 2>&1 | sed -n '1,60p'
+            echo "Gatekeeper assessment (should be accepted):"; spctl -a -vv --type execute "$APP"
+            hdiutil detach "$MNT" -quiet || true; rm -rf "$MNT"
+          done
+
       - name: Publish GitHub Release and upload artifacts
         if: ${{ steps.init.outputs.dry_run != 'true' }}
         env:
