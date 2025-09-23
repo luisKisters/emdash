@@ -6,7 +6,7 @@
   </a>
 
 </p>
-<hr style="border: 0; height: 1px; background: #d0d7de; margin: 16px 0;">
+<hr style="border:0; height:1px; background:#d0d7de; margin:24px 0;">
 
 <p align="center">
     <img src="./src/assets/images/emdash/emdash_logo.svg#gh-light-mode-only"
