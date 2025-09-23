@@ -56,7 +56,7 @@ jobs:
       - name: Install dependencies
         env:
           npm_config_python: ${{ env.python }}
-        run: npm ci
+        run: npm ci || npm install
 
       - name: Build app (ts + vite)
         run: npm run build
@@ -123,7 +123,7 @@ jobs:
       - name: Install dependencies
         env:
           npm_config_python: ${{ env.python }}
-        run: npm ci
+        run: npm ci || npm install
 
       - name: Import Apple signing certificate
         uses: apple-actions/import-codesign-certs@v2
