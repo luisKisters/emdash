@@ -159,24 +159,17 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'true'
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
-          APPLE_API_KEY: ${{ env.APPLE_API_KEY }}
-          APPLE_API_KEY_ID: ${{ env.APPLE_API_KEY_ID }}
-          APPLE_API_ISSUER: ${{ env.APPLE_API_ISSUER }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           # Guard against legacy env vars overriding cert-import flow
           unset CSC_LINK CSC_KEY_PASSWORD CSC_NAME
-          # Prefer API key notarization when available; otherwise Apple ID with team ID
-          if [ -n "$APPLE_API_KEY" ] && [ -n "$APPLE_API_KEY_ID" ] && [ -n "$APPLE_API_ISSUER" ]; then
-            echo "Using API key for notarization"
-            unset APPLE_ID APPLE_APP_SPECIFIC_PASSWORD
-          else
-            echo "Using Apple ID for notarization"
-            export TEAM_ID="${APPLE_TEAM_ID}"
-            export NOTARIZE_TEAM_ID="${APPLE_TEAM_ID}"
-          fi
+          # Force Apple ID notarization for the app build to avoid bad APPLE_API_KEY paths
+          unset APPLE_API_KEY APPLE_API_KEY_ID APPLE_API_ISSUER
+          export TEAM_ID="${APPLE_TEAM_ID}"
+          export NOTARIZE_TEAM_ID="${APPLE_TEAM_ID}"
+          echo "App notarization method: Apple ID (TEAM_ID=$TEAM_ID)"
           ARCH_INPUT="${{ github.event.inputs.arch }}"
           if [ -z "$ARCH_INPUT" ] || [ "$ARCH_INPUT" = "both" ]; then
             FLAGS="--x64 --arm64"
