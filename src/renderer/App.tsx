@@ -178,9 +178,15 @@ const App: React.FC = () => {
                 }
                 // alert(`✅ Project connected to GitHub!\n\nRepository: ${githubInfo.repository}\nBranch: ${githubInfo.branch}\nPath: ${result.path}`);
               } else {
+                const updateHint =
+                  platform === "darwin"
+                    ? "Tip: Update GitHub CLI with: brew upgrade gh — then restart emdash."
+                    : platform === "win32"
+                    ? "Tip: Update GitHub CLI with: winget upgrade GitHub.cli — then restart emdash."
+                    : "Tip: Update GitHub CLI via your package manager (e.g., apt/dnf) and restart emdash.";
                 toast({
                   title: "GitHub Connection Failed",
-                  description: `Git repository detected but couldn't connect to GitHub: ${githubInfo.error}`,
+                  description: `Git repository detected but couldn't connect to GitHub: ${githubInfo.error}\n\n${updateHint}`,
                   variant: "destructive",
                 });
               }
