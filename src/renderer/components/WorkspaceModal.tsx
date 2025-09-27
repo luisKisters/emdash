@@ -18,6 +18,7 @@ interface WorkspaceModalProps {
   onCreateWorkspace: (name: string) => void;
   projectName: string;
   defaultBranch: string;
+  existingNames?: string[];
 }
 
 const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
@@ -26,25 +27,60 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   onCreateWorkspace,
   projectName,
   defaultBranch,
+  existingNames = [],
 }) => {
   const [workspaceName, setWorkspaceName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [touched, setTouched] = useState(false);
   const shouldReduceMotion = useReducedMotion();
+
+  const normalizedExisting = existingNames.map((n) => n.toLowerCase());
+
+  const validate = (value: string): string | null => {
+    const name = value.trim();
+    if (!name) return "Please enter a workspace name.";
+    // Allow lowercase letters, numbers, and single hyphens between segments
+    // Must start/end with alphanumeric; no spaces; no consecutive hyphens
+    const pattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+    if (!pattern.test(name)) {
+      return "Use lowercase letters, numbers, and hyphens (no spaces).";
+    }
+    if (normalizedExisting.includes(name.toLowerCase())) {
+      return "A workspace with this name already exists.";
+    }
+    if (name.length > 64) {
+      return "Name is too long (max 64 characters).";
+    }
+    return null;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!workspaceName.trim()) return;
+    setTouched(true);
+    const err = validate(workspaceName);
+    if (err) {
+      setError(err);
+      return;
+    }
 
     setIsCreating(true);
     try {
       await onCreateWorkspace(workspaceName.trim());
       setWorkspaceName("");
+      setError(null);
       onClose();
     } catch (error) {
       console.error("Failed to create workspace:", error);
     } finally {
       setIsCreating(false);
     }
+  };
+
+  const onChange = (val: string) => {
+    if (!touched) setTouched(true);
+    setWorkspaceName(val);
+    setError(validate(val));
   };
 
   return (
@@ -83,9 +119,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
             <Card className="w-full">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
                 <div>
-                  <CardTitle className="text-lg">
-                    New workspace
-                  </CardTitle>
+                  <CardTitle className="text-lg">New workspace</CardTitle>
                   <CardDescription>
                     {projectName} • Branching from origin/{defaultBranch}
                   </CardDescription>
@@ -112,11 +146,22 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                     <Input
                       id="workspace-name"
                       value={workspaceName}
-                      onChange={(e) => setWorkspaceName(e.target.value)}
+                      onChange={(e) => onChange(e.target.value)}
+                      onBlur={() => setTouched(true)}
                       placeholder="Describe your task..."
                       className="w-full"
+                      aria-invalid={touched && !!error}
+                      aria-describedby="workspace-name-error"
                       autoFocus
                     />
+                    {touched && error && (
+                      <p
+                        id="workspace-name-error"
+                        className="mt-2 text-sm text-destructive"
+                      >
+                        {error}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -137,7 +182,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                     </Button>
                     <Button
                       type="submit"
-                      disabled={!workspaceName.trim() || isCreating}
+                      disabled={!!validate(workspaceName) || isCreating}
                       className="bg-black text-white hover:bg-gray-800"
                     >
                       {isCreating ? (
