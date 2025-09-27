@@ -317,7 +317,7 @@ const App: React.FC = () => {
       console.error("Failed to create workspace:", error);
       toast({
         title: "Error",
-        description:
+        description: (error as Error)?.message ||
           "Failed to create workspace. Please check the console for details.",
       });
     } finally {
@@ -676,6 +676,7 @@ const App: React.FC = () => {
         onCreateWorkspace={handleCreateWorkspace}
         projectName={selectedProject?.name || ""}
         defaultBranch={selectedProject?.gitInfo.branch || "main"}
+        existingNames={(selectedProject?.workspaces || []).map((w) => w.name)}
       />
       <Toaster />
     </div>
