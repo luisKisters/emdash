@@ -1,10 +1,33 @@
 import { ipcMain } from 'electron'
 import { exec } from 'child_process'
 import { promisify } from 'util'
+import { getStatus as gitGetStatus, getFileDiff as gitGetFileDiff } from '../services/GitService'
 
 const execAsync = promisify(exec)
 
 export function registerGitIpc() {
+  // Git: Status (moved from Codex IPC)
+  ipcMain.handle('git:get-status', async (_, workspacePath: string) => {
+    try {
+      const changes = await gitGetStatus(workspacePath)
+      return { success: true, changes }
+    } catch (error: any) {
+      return { success: false, error: error?.message || String(error) }
+    }
+  })
+
+  // Git: Per-file diff (moved from Codex IPC)
+  ipcMain.handle(
+    'git:get-file-diff',
+    async (_, args: { workspacePath: string; filePath: string }) => {
+      try {
+        const diff = await gitGetFileDiff(args.workspacePath, args.filePath)
+        return { success: true, diff }
+      } catch (error: any) {
+        return { success: false, error: error?.message || String(error) }
+      }
+    }
+  )
   // Git: Create Pull Request via GitHub CLI
   ipcMain.handle(
     'git:create-pr',
@@ -225,4 +248,3 @@ export function registerGitIpc() {
     }
   )
 }
-
