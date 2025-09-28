@@ -28,8 +28,6 @@ emdash is a UI layer for running multiple Codex CLI agents in parallel, each iso
 
 Either download the DMG from Releases (or click the link above), or run the app locally — see Requirements and Getting Started below.
 
-Note: Builds are unsigned by default. On first launch, right‑click the app, choose Open, then confirm to bypass Gatekeeper. For signed/notarized builds, add Apple Developer credentials to GitHub Actions (see CI section below).
-
 ## Requirements
 
 - Node.js 18+ and Git
