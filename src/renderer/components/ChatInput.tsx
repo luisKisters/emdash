@@ -4,6 +4,7 @@ import { Button } from "./ui/button";
 import { ArrowRight } from "lucide-react";
 import openaiLogo from "../../assets/images/openai.png";
 import claudeLogo from "../../assets/images/claude.png";
+import factoryLogo from "../../assets/images/factorydroid.png";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectItemText } from "./ui/select";
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "./ui/tooltip";
 import { useFileIndex } from "../hooks/useFileIndex";
@@ -20,8 +21,8 @@ interface ChatInputProps {
   agentCreated: boolean;
   disabled?: boolean;
   workspacePath?: string;
-  provider?: 'codex' | 'claude';
-  onProviderChange?: (p: 'codex' | 'claude') => void;
+  provider?: 'codex' | 'claude' | 'droid';
+  onProviderChange?: (p: 'codex' | 'claude' | 'droid') => void;
   selectDisabled?: boolean;
 }
 
@@ -66,7 +67,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   selectDisabled = false,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
-  // Provider is controlled by parent (codex | claude)
+  // Provider is controlled by parent (codex | claude | droid)
   const shouldReduceMotion = useReducedMotion();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -174,13 +175,20 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       return "Initializing...";
     }
     if (provider === 'claude') return "Tell Claude Code what to do...";
+    if (provider === 'droid') return "Factory Droid uses the terminal above.";
     return "Tell Codex what to do...";
   };
 
   const trimmedValue = value.trim();
-  const baseDisabled = disabled || (provider === 'codex' ? (!isCodexInstalled || !agentCreated) : !agentCreated);
+  const baseDisabled = disabled || (
+    provider === 'codex'
+      ? (!isCodexInstalled || !agentCreated)
+      : provider === 'claude'
+        ? !agentCreated
+        : true // droid: input disabled, terminal-only
+  );
   const textareaDisabled = baseDisabled || isLoading;
-  const sendDisabled = isLoading ? baseDisabled : baseDisabled || !trimmedValue;
+  const sendDisabled = provider === 'droid' ? true : (isLoading ? baseDisabled : baseDisabled || !trimmedValue);
 
   return (
     <div className="px-6 pt-4 pb-6">
@@ -243,7 +251,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             <div className="relative inline-block w-[12rem]">
               <Select
                 value={provider}
-                onValueChange={(v) => { if (!selectDisabled) onProviderChange && onProviderChange(v as 'codex' | 'claude') }}
+                onValueChange={(v) => { if (!selectDisabled) onProviderChange && onProviderChange(v as 'codex' | 'claude' | 'droid') }}
                 disabled={selectDisabled}
               >
                 {selectDisabled ? (
@@ -252,7 +260,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                       <TooltipTrigger asChild>
                         <SelectTrigger aria-disabled className={`h-9 bg-gray-100 dark:bg-gray-700 border-none ${selectDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}>
                           <div className="flex items-center gap-2">
-                            <img src={provider === 'claude' ? claudeLogo : openaiLogo} alt="Provider" className="w-4 h-4 shrink-0" />
+                            {provider === 'claude' ? (
+                              <img src={claudeLogo} alt="Claude Code" className="w-4 h-4 shrink-0" />
+                            ) : provider === 'codex' ? (
+                              <img src={openaiLogo} alt="Codex" className="w-4 h-4 shrink-0" />
+                            ) : (
+                              <img src={factoryLogo} alt="Factory Droid" className="w-4 h-4 shrink-0" />
+                            )}
                             <SelectValue placeholder="Select provider" />
                           </div>
                         </SelectTrigger>
@@ -265,7 +279,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 ) : (
                   <SelectTrigger className="h-9 bg-gray-100 dark:bg-gray-700 border-none">
                     <div className="flex items-center gap-2">
-                      <img src={provider === 'claude' ? claudeLogo : openaiLogo} alt="Provider" className="w-4 h-4 shrink-0" />
+                      {provider === 'claude' ? (
+                        <img src={claudeLogo} alt="Claude Code" className="w-4 h-4 shrink-0" />
+                      ) : provider === 'codex' ? (
+                        <img src={openaiLogo} alt="Codex" className="w-4 h-4 shrink-0" />
+                      ) : (
+                        <img src={factoryLogo} alt="Factory Droid" className="w-4 h-4 shrink-0" />
+                      )}
                       <SelectValue placeholder="Select provider" />
                     </div>
                   </SelectTrigger>
@@ -281,6 +301,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     <div className="flex items-center gap-2">
                       <img src={claudeLogo} alt="Claude Code" className="w-4 h-4" />
                       <SelectItemText>Claude Code</SelectItemText>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="droid">
+                    <div className="flex items-center gap-2">
+                      <img src={factoryLogo} alt="Factory Droid" className="w-4 h-4" />
+                      <SelectItemText>Droid</SelectItemText>
                     </div>
                   </SelectItem>
                 </SelectContent>
@@ -302,9 +328,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     ? "bg-gray-200 dark:bg-gray-700 hover:bg-red-300 hover:text-white dark:hover:text-white"
                     : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
                 }`}
-                aria-label={isLoading ? "Stop Codex" : "Send"}
+                aria-label={provider === 'droid' ? 'Droid uses terminal' : (isLoading ? "Stop Codex" : "Send")}
               >
-                {isLoading ? (
+                {provider === 'droid' ? (
+                  <div className="flex items-center justify-center w-full h-full">
+                    <div className="w-3.5 h-3.5 rounded-[3px] bg-gray-500 dark:bg-gray-300" />
+                  </div>
+                ) : isLoading ? (
                   <div className="flex items-center justify-center w-full h-full">
                     <div className="w-3.5 h-3.5 rounded-[3px] bg-gray-500 dark:bg-gray-300 transition-colors duration-150 group-hover:bg-red-500" />
                   </div>

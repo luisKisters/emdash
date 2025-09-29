@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Folder } from "lucide-react";
 import { useToast } from "../hooks/use-toast";
 import ChatInput from "./ChatInput";
+import { TerminalPane } from "./TerminalPane";
 import MessageList from "./MessageList";
 import useCodexStream from "../hooks/useCodexStream";
 import useClaudeStream from "../hooks/useClaudeStream";
@@ -38,7 +39,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
   const [isClaudeInstalled, setIsClaudeInstalled] = useState<boolean | null>(null);
   const [claudeInstructions, setClaudeInstructions] = useState<string | null>(null);
   const [agentCreated, setAgentCreated] = useState(false);
-  const [provider, setProvider] = useState<'codex' | 'claude'>('codex');
+  const [provider, setProvider] = useState<'codex' | 'claude' | 'droid'>('codex');
   const initializedConversationRef = useRef<string | null>(null);
 
   const codexStream = useCodexStream({
@@ -234,7 +235,27 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
         </div>
       </div>
 
-      {codexStream.isLoading ? (
+      {provider === 'droid' ? (
+        <div className="flex-1 flex flex-col min-h-0">
+          <div className="px-6 pt-4">
+            <div className="max-w-4xl mx-auto">
+              <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 text-sm whitespace-pre-wrap">
+                Factory Droid runs in an interactive terminal UI. If not installed, install with:
+                {"\n\n"}
+                macOS/Linux:{"\n"}
+                curl -fsSL https://app.factory.ai/cli | sh
+                {"\n\n"}
+                Then start a session by typing: droid
+              </div>
+            </div>
+          </div>
+          <div className="flex-1 min-h-0 px-6 mt-4">
+            <div className="max-w-4xl mx-auto h-full rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+              <TerminalPane id={`droid-main-${workspace.id}`} cwd={workspace.path} shell="droid" className="h-full w-full" />
+            </div>
+          </div>
+        </div>
+      ) : codexStream.isLoading ? (
         <div
           className="flex-1 overflow-y-auto px-6 pt-6 pb-2"
           style={{
@@ -268,7 +289,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
           streamingOutput={streamingOutputForList}
           isStreaming={activeStream.isStreaming}
           awaitingThinking={provider === 'codex' ? codexStream.awaitingThinking : claudeStream.awaitingThinking}
-          providerId={provider}
+          providerId={provider === 'codex' ? 'codex' : 'claude'}
         />
         </>
       )}
@@ -278,15 +299,15 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
         onChange={setInputValue}
         onSend={handleSendMessage}
         onCancel={handleCancelStream}
-        isLoading={activeStream.isStreaming}
-        loadingSeconds={activeStream.seconds}
+        isLoading={provider === 'droid' ? false : activeStream.isStreaming}
+        loadingSeconds={provider === 'droid' ? 0 : activeStream.seconds}
         isCodexInstalled={isCodexInstalled}
         agentCreated={agentCreated}
         workspacePath={workspace.path}
         provider={provider}
         onProviderChange={(p) => setProvider(p)}
         selectDisabled={providerLocked}
-        disabled={provider === 'claude' && isClaudeInstalled === false}
+        disabled={provider === 'droid' || (provider === 'claude' && isClaudeInstalled === false)}
       />
     </div>
   );
