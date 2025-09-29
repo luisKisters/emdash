@@ -20,6 +20,7 @@ import {
 } from "./ui/collapsible";
 import { Home, AlertCircle, ChevronDown } from "lucide-react";
 import githubLogo from "../../assets/images/github.png";
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
 import { WorkspaceItem } from "./WorkspaceItem";
 
 interface Project {
@@ -106,14 +107,23 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
     const displayName = githubUser?.login || githubUser?.name || "GitHub account";
 
     return (
-      <div className="flex items-center text-sm text-muted-foreground space-x-2">
-        <img
-          src={githubLogo}
-          alt="GitHub"
-          className="w-4 h-4 rounded-sm object-contain"
-        />
-        <span className="truncate block">{displayName}</span>
-      </div>
+      <TooltipProvider delayDuration={250}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className="flex items-center text-sm text-muted-foreground space-x-2">
+              <img
+                src={githubLogo}
+                alt="GitHub"
+                className="w-4 h-4 rounded-sm object-contain"
+              />
+              <span className="truncate block">{displayName}</span>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Authenticated via GitHub CLI{displayName ? ` as ${displayName}` : ''}</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
     );
   };
 
