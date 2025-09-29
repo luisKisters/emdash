@@ -6,6 +6,7 @@ import { TerminalPane } from "./TerminalPane";
 import MessageList from "./MessageList";
 import useCodexStream from "../hooks/useCodexStream";
 import useClaudeStream from "../hooks/useClaudeStream";
+import { useProviderPreference } from "../hooks/useProviderPreference";
 import { buildAttachmentsSection } from "../lib/attachments";
 import { Workspace, Message } from "../types/chat";
 
@@ -49,9 +50,7 @@ const ChatInterface: React.FC<Props> = ({
     null
   );
   const [agentCreated, setAgentCreated] = useState(false);
-  const [provider, setProvider] = useState<"codex" | "claude" | "droid">(
-    "codex"
-  );
+  // Provider is managed via useProviderPreference
   const initializedConversationRef = useRef<string | null>(null);
 
   const codexStream = useCodexStream({
@@ -59,11 +58,20 @@ const ChatInterface: React.FC<Props> = ({
     workspacePath: workspace.path,
   });
 
+  // Provider preference (restores on reload)
+  const { provider, setProvider } = useProviderPreference(
+    workspace.id,
+    codexStream.conversationId,
+    "codex"
+  );
+
   const claudeStream = useClaudeStream(
     provider === "claude"
       ? { workspaceId: workspace.id, workspacePath: workspace.path }
       : null
   );
+
+  // Provider persistence is handled by useProviderPreference
   const activeStream = provider === "codex" ? codexStream : claudeStream;
 
   useEffect(() => {
@@ -304,12 +312,10 @@ const ChatInterface: React.FC<Props> = ({
     activeStream.isStreaming || activeStream.streamingOutput
       ? activeStream.streamingOutput
       : null;
-  // Allow switching providers freely while in Droid mode
-  const providerLocked =
-    provider !== "droid" &&
-    (activeStream.isStreaming ||
-      (activeStream.messages &&
-        activeStream.messages.some((m) => m.sender === "user")));
+  const conversationHasUser =
+    codexStream.messages &&
+    codexStream.messages.some((m) => m.sender === "user");
+  const providerLocked = activeStream.isStreaming || conversationHasUser;
 
   return (
     <div
