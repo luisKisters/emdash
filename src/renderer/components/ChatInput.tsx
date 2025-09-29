@@ -3,6 +3,9 @@ import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { Button } from "./ui/button";
 import { ArrowRight } from "lucide-react";
 import openaiLogo from "../../assets/images/openai.png";
+import claudeLogo from "../../assets/images/claude.png";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectItemText } from "./ui/select";
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "./ui/tooltip";
 import { useFileIndex } from "../hooks/useFileIndex";
 import FileTypeIcon from "./ui/file-type-icon";
 
@@ -17,6 +20,9 @@ interface ChatInputProps {
   agentCreated: boolean;
   disabled?: boolean;
   workspacePath?: string;
+  provider?: 'codex' | 'claude';
+  onProviderChange?: (p: 'codex' | 'claude') => void;
+  selectDisabled?: boolean;
 }
 
 const MAX_LOADING_SECONDS = 60 * 60; // 60 minutes
@@ -55,10 +61,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   agentCreated,
   disabled = false,
   workspacePath,
+  provider = 'codex',
+  onProviderChange,
+  selectDisabled = false,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
-  // Only Codex is supported for now; keep UI element but disable switching
-  const provider = "codex" as const;
+  // Provider is controlled by parent (codex | claude)
   const shouldReduceMotion = useReducedMotion();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -71,7 +79,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   const mentionResults = mentionOpen ? search(mentionQuery, 12) : [];
 
-  // No provider dropdown needed when only Codex is supported
+  // Provider dropdown
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
   // Send on Enter (unless Shift) when mention is closed
@@ -159,17 +167,18 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   }
 
   const getPlaceholder = () => {
-    if (!isCodexInstalled) {
+    if (provider === 'codex' && !isCodexInstalled) {
       return "Codex CLI not installed...";
     }
     if (!agentCreated) {
       return "Initializing...";
     }
-    return "Tell agent what to do...";
+    if (provider === 'claude') return "Tell Claude Code what to do...";
+    return "Tell Codex what to do...";
   };
 
   const trimmedValue = value.trim();
-  const baseDisabled = disabled || !isCodexInstalled || !agentCreated;
+  const baseDisabled = disabled || (provider === 'codex' ? (!isCodexInstalled || !agentCreated) : !agentCreated);
   const textareaDisabled = baseDisabled || isLoading;
   const sendDisabled = isLoading ? baseDisabled : baseDisabled || !trimmedValue;
 
@@ -231,13 +240,51 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           </div>
 
           <div className="flex items-center justify-between px-4 py-3 rounded-b-xl">
-            <div className="relative inline-block w-[9.5rem]">
-              <div className="flex items-center gap-2 h-9 px-3 w-full rounded-md bg-gray-100 dark:bg-gray-700 select-none">
-                <img src={openaiLogo} alt="Codex" className="w-4 h-4 shrink-0" />
-                <span className="text-xs font-medium text-gray-600 dark:text-gray-300 truncate text-left">
-                  Codex
-                </span>
-              </div>
+            <div className="relative inline-block w-[12rem]">
+              <Select
+                value={provider}
+                onValueChange={(v) => { if (!selectDisabled) onProviderChange && onProviderChange(v as 'codex' | 'claude') }}
+                disabled={selectDisabled}
+              >
+                {selectDisabled ? (
+                  <TooltipProvider delayDuration={250}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <SelectTrigger aria-disabled className={`h-9 bg-gray-100 dark:bg-gray-700 border-none ${selectDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                          <div className="flex items-center gap-2">
+                            <img src={provider === 'claude' ? claudeLogo : openaiLogo} alt="Provider" className="w-4 h-4 shrink-0" />
+                            <SelectValue placeholder="Select provider" />
+                          </div>
+                        </SelectTrigger>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>Provider is locked for this conversation.</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                ) : (
+                  <SelectTrigger className="h-9 bg-gray-100 dark:bg-gray-700 border-none">
+                    <div className="flex items-center gap-2">
+                      <img src={provider === 'claude' ? claudeLogo : openaiLogo} alt="Provider" className="w-4 h-4 shrink-0" />
+                      <SelectValue placeholder="Select provider" />
+                    </div>
+                  </SelectTrigger>
+                )}
+                <SelectContent>
+                  <SelectItem value="codex">
+                    <div className="flex items-center gap-2">
+                      <img src={openaiLogo} alt="Codex" className="w-4 h-4" />
+                      <SelectItemText>Codex</SelectItemText>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="claude">
+                    <div className="flex items-center gap-2">
+                      <img src={claudeLogo} alt="Claude Code" className="w-4 h-4" />
+                      <SelectItemText>Claude Code</SelectItemText>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="flex items-center gap-2">
