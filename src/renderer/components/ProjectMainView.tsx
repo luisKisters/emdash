@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { Button } from "./ui/button";
 import { GitBranch, Plus, Loader2, Trash } from "lucide-react";
 import {
@@ -10,6 +10,10 @@ import {
 import { Badge } from "./ui/badge";
 import { Separator } from "./ui/separator";
 import { Alert, AlertDescription, AlertTitle } from "./ui/alert";
+import { usePrStatus } from "../hooks/usePrStatus";
+import { useWorkspaceChanges } from "../hooks/useWorkspaceChanges";
+import { ChangesBadge } from "./WorkspaceChanges";
+import { Spinner } from "./ui/spinner";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -66,6 +70,44 @@ function WorkspaceRow({
   onClick: () => void;
   onDelete: () => void | Promise<void>;
 }) {
+  const [isRunning, setIsRunning] = useState(false);
+  const { pr } = usePrStatus(ws.path);
+  const { totalAdditions, totalDeletions, isLoading } = useWorkspaceChanges(ws.path, ws.id);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const status = await (window as any).electronAPI.codexGetAgentStatus(
+          ws.id
+        );
+        if (status?.success && status.agent) {
+          setIsRunning(status.agent.status === "running");
+        }
+      } catch {}
+    })();
+
+    const offOut = (window as any).electronAPI.onCodexStreamOutput(
+      (data: any) => {
+        if (data.workspaceId === ws.id) setIsRunning(true);
+      }
+    );
+    const offComplete = (window as any).electronAPI.onCodexStreamComplete(
+      (data: any) => {
+        if (data.workspaceId === ws.id) setIsRunning(false);
+      }
+    );
+    const offErr = (window as any).electronAPI.onCodexStreamError(
+      (data: any) => {
+        if (data.workspaceId === ws.id) setIsRunning(false);
+      }
+    );
+    return () => {
+      offOut?.();
+      offComplete?.();
+      offErr?.();
+    };
+  }, [ws.id]);
+
   return (
     <div
       onClick={onClick}
@@ -83,9 +125,9 @@ function WorkspaceRow({
           {ws.name}
         </div>
         <div className="mt-1 flex items-center gap-2 min-w-0 text-xs text-muted-foreground">
-          {ws.status === "running" && (
-            <Loader2 className="size-3 animate-spin" />
-          )}
+          {isRunning || ws.status === "running" ? (
+            <Spinner size="sm" className="size-3" />
+          ) : null}
           <GitBranch className="size-3" />
           <span
             className="font-mono truncate max-w-[24rem]"
@@ -97,7 +139,21 @@ function WorkspaceRow({
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        {ws.status !== "idle" && <StatusBadge status={ws.status} />}
+        {!isLoading && (totalAdditions > 0 || totalDeletions > 0) ? (
+          <ChangesBadge additions={totalAdditions} deletions={totalDeletions} />
+        ) : pr ? (
+          <span
+            className={`text-[10px] px-1.5 py-0.5 rounded border 
+              ${pr.state === 'MERGED' ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
+              ${pr.state === 'OPEN' && pr.isDraft ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
+              ${pr.state === 'OPEN' && !pr.isDraft ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
+              ${pr.state === 'CLOSED' ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
+            `}
+            title={`${pr.title || 'Pull Request'} (#${pr.number})`}
+          >
+            {pr.isDraft ? 'draft' : pr.state.toLowerCase()}
+          </span>
+        ) : null}
         {ws.agentId && <Badge variant="outline">agent</Badge>}
 
         <AlertDialog>
