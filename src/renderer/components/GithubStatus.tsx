@@ -1,0 +1,84 @@
+import React from "react";
+import { AlertCircle } from "lucide-react";
+import githubLogo from "../../assets/images/github.png";
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+
+type GithubUser = { login?: string; name?: string } | null;
+
+export function GithubStatus({
+  installed,
+  authenticated,
+  user,
+  className = "",
+}: {
+  installed?: boolean;
+  authenticated?: boolean;
+  user?: GithubUser;
+  className?: string;
+}) {
+  if (!installed) {
+    return (
+      <TooltipProvider delayDuration={250}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className={`flex items-start space-x-2 text-xs text-amber-600 dark:text-amber-400 ${className}`}>
+              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium">Install GitHub CLI</p>
+                <p className="text-[11px] text-amber-700/80 dark:text-amber-300/80">
+                  Required for repo status and auth
+                </p>
+              </div>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>GitHub CLI not installed</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  if (!authenticated) {
+    return (
+      <TooltipProvider delayDuration={250}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div className={`flex items-start space-x-2 text-xs text-amber-600 dark:text-amber-300 ${className}`}>
+              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium">GitHub not authenticated</p>
+                <p className="text-[11px] text-amber-700/80 dark:text-amber-200/80">
+                  Run <code className="bg-amber-100 px-1 rounded">gh auth login</code>
+                </p>
+              </div>
+            </div>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>Not authenticated. Run: gh auth login</p>
+          </TooltipContent>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  }
+
+  const displayName = user?.login || user?.name || "GitHub account";
+  return (
+    <TooltipProvider delayDuration={250}>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className={`flex items-center text-sm text-muted-foreground space-x-2 ${className}`}>
+            <img src={githubLogo} alt="GitHub" className="w-4 h-4 rounded-sm object-contain" />
+            <span className="truncate block">{displayName}</span>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent>
+          <p>Authenticated via GitHub CLI{displayName ? ` as ${displayName}` : ""}</p>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
+  );
+}
+
+export default GithubStatus;
+
