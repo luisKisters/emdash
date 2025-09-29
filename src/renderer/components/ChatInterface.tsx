@@ -5,6 +5,7 @@ import ChatInput from "./ChatInput";
 import MessageList from "./MessageList";
 import useCodexStream from "../hooks/useCodexStream";
 import useClaudeStream from "../hooks/useClaudeStream";
+import { useProviderPreference } from "../hooks/useProviderPreference";
 import { buildAttachmentsSection } from "../lib/attachments";
 import { Workspace, Message } from "../types/chat";
 
@@ -38,7 +39,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
   const [isClaudeInstalled, setIsClaudeInstalled] = useState<boolean | null>(null);
   const [claudeInstructions, setClaudeInstructions] = useState<string | null>(null);
   const [agentCreated, setAgentCreated] = useState(false);
-  const [provider, setProvider] = useState<'codex' | 'claude'>('codex');
+  // Provider is managed via useProviderPreference
   const initializedConversationRef = useRef<string | null>(null);
 
   const codexStream = useCodexStream({
@@ -46,7 +47,12 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
     workspacePath: workspace.path,
   });
 
+  // Provider preference (restores on reload)
+  const { provider, setProvider } = useProviderPreference(workspace.id, codexStream.conversationId, 'codex')
+
   const claudeStream = useClaudeStream(provider === 'claude' ? { workspaceId: workspace.id, workspacePath: workspace.path } : null)
+
+  // Provider persistence is handled by useProviderPreference
 
   useEffect(() => {
     initializedConversationRef.current = null;
@@ -219,7 +225,8 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
 
   const activeStream = provider === 'codex' ? codexStream : claudeStream
   const streamingOutputForList = activeStream.isStreaming || activeStream.streamingOutput ? activeStream.streamingOutput : null
-  const providerLocked = activeStream.isStreaming || (activeStream.messages && activeStream.messages.some((m) => m.sender === 'user'))
+  const conversationHasUser = (codexStream.messages && codexStream.messages.some((m) => m.sender === 'user'))
+  const providerLocked = activeStream.isStreaming || conversationHasUser
 
   return (
     <div className={`flex flex-col h-full bg-white dark:bg-gray-800 ${className}`}>

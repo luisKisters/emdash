@@ -133,19 +133,19 @@ const useClaudeStream = (options?: Options | null): Result => {
       // Keep streaming but note error in console
       console.error('Claude stream error:', data.error)
     })
-    const offDone = window.electronAPI.onAgentStreamComplete(async (data: any) => {
-      if (data.providerId !== 'claude') return
-      if (data.workspaceId !== wid) return
-      setIsStreaming(false); setSeconds(0); setAwaitingThinking(false)
-      const raw = bufferRef.current.trim()
-      if (!raw) return
-      const convoId = conversationIdRef.current
-      if (!convoId) return
-      const agentMsg: Message = { id: Date.now().toString(), content: raw, sender: 'agent', timestamp: new Date() }
-      setMessages((prev) => [...prev, agentMsg])
-      try { await window.electronAPI.saveMessage({ id: agentMsg.id, conversationId: convoId, content: agentMsg.content, sender: agentMsg.sender }) } catch {}
-      bufferRef.current = ''; setStreamingOutput('')
-    })
+  const offDone = window.electronAPI.onAgentStreamComplete(async (data: any) => {
+    if (data.providerId !== 'claude') return
+    if (data.workspaceId !== wid) return
+    setIsStreaming(false); setSeconds(0); setAwaitingThinking(false)
+    const raw = bufferRef.current.trim()
+    if (!raw) return
+    const convoId = conversationIdRef.current
+    if (!convoId) return
+    const agentMsg: Message = { id: Date.now().toString(), content: raw, sender: 'agent', timestamp: new Date() }
+    setMessages((prev) => [...prev, agentMsg])
+    try { await window.electronAPI.saveMessage({ id: agentMsg.id, conversationId: convoId, content: agentMsg.content, sender: agentMsg.sender }) } catch {}
+    bufferRef.current = ''; setStreamingOutput('')
+  })
 
     return () => { offOut?.(); offErr?.(); offDone?.() }
   }, [normalized])
