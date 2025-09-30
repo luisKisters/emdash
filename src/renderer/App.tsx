@@ -495,7 +495,7 @@ const App: React.FC = () => {
                 </div>
               </div>
               <p className="text-sm sm:text-base text-gray-700 text-muted-foreground mb-6">
-                Run multiple Codex Agents in parallel
+                Run multiple Coding Agents in parallel
               </p>
               <div className="text-sm text-gray-500 max-w-2xl mx-auto space-y-4">
                 {showGithubRequirement && (
@@ -607,7 +607,7 @@ const App: React.FC = () => {
                 />
               </div>
               <p className="text-sm sm:text-base text-gray-700 text-muted-foreground mb-6">
-                Run multiple Codex Agents in parallel
+                Run multiple Coding Agents in parallel
               </p>
               <div className="text-sm text-gray-500 max-w-2xl mx-auto space-y-4">
                 {showGithubRequirement && (

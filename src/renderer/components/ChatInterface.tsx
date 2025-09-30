@@ -336,10 +336,10 @@ const ChatInterface: React.FC<Props> = ({
         <div className="flex-1 flex flex-col min-h-0">
           <div className="px-6 pt-4">
             <div className="max-w-4xl mx-auto">
-              <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 text-sm">
+              <div className="rounded-md border border-gray-200 bg-gray-50 text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 p-3 text-sm">
                 <div className="whitespace-pre-wrap">
-                  Factory Droid runs in an interactive terminal UI. To install
-                  and get started, see the Factory CLI Quickstart:
+                  Interact with Droid in the terminal below. To install and
+                  get started, see the Factory CLI Quickstart:
                 </div>
                 <button
                   type="button"
@@ -348,7 +348,7 @@ const ChatInterface: React.FC<Props> = ({
                       "https://docs.factory.ai/cli/getting-started/quickstart"
                     )
                   }
-                  className="mt-1 underline text-amber-900 hover:text-amber-700"
+                  className="mt-1 underline text-gray-800 hover:text-gray-600 dark:text-gray-200 dark:hover:text-gray-100"
                 >
                   https://docs.factory.ai/cli/getting-started/quickstart
                 </button>
