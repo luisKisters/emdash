@@ -361,11 +361,12 @@ const ChatInterface: React.FC<Props> = ({
             </div>
           </div>
           <div className="flex-1 min-h-0 px-6 mt-4">
-            <div className="max-w-4xl mx-auto h-full rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="max-w-4xl mx-auto h-full rounded-md overflow-hidden">
               <TerminalPane
                 id={`droid-main-${workspace.id}`}
                 cwd={workspace.path}
                 shell="droid"
+                variant="light"
                 className="h-full w-full"
               />
             </div>
