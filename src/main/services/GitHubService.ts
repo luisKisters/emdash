@@ -116,8 +116,15 @@ export class GitHubService {
    */
   async isAuthenticated(): Promise<boolean> {
     try {
-      const token = await this.getStoredToken();
-      if (!token) return false;
+      let token = await this.getStoredToken();
+
+      if (!token) {
+        const authResult = await this.authenticate();
+        if (!authResult.success || !authResult.token) {
+          return false;
+        }
+        token = authResult.token;
+      }
 
       // Test the token by making a simple API call
       const user = await this.getUserInfo(token);
