@@ -562,8 +562,8 @@ const App: React.FC = () => {
           </div>
         </div>
       ) : selectedProject ? (
-        <div className="flex-1 flex bg-background text-foreground">
-          <div className="flex-1">
+        <div className="flex-1 flex bg-background text-foreground overflow-hidden">
+          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
             {activeWorkspace ? (
               <ChatInterface
                 workspace={activeWorkspace}
