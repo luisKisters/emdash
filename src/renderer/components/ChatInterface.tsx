@@ -6,6 +6,7 @@ import { TerminalPane } from "./TerminalPane";
 import MessageList from "./MessageList";
 import useCodexStream from "../hooks/useCodexStream";
 import useClaudeStream from "../hooks/useClaudeStream";
+import { useProviderPreference } from "../hooks/useProviderPreference";
 import { buildAttachmentsSection } from "../lib/attachments";
 import { Workspace, Message } from "../types/chat";
 

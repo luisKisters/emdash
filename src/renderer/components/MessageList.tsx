@@ -221,11 +221,12 @@ const MessageList: React.FC<MessageListProps> = ({
                   )
                 })()
               ) : (
-                awaitingThinking ? (
-                  <ThinkingDots />
-                ) : (
-                  <div className="space-y-3"><Response>{streamingOutput}</Response></div>
-                )
+                <div className="space-y-3">
+                  {streamingOutput && streamingOutput.trim().length > 0 ? (
+                    <Response>{streamingOutput}</Response>
+                  ) : null}
+                  {isStreaming ? (<ThinkingDots />) : null}
+                </div>
               )}
             </div>
           </div>
