@@ -32,14 +32,26 @@ interface Props {
   className?: string;
 }
 
-const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) => {
+const ChatInterface: React.FC<Props> = ({
+  workspace,
+  projectName,
+  className,
+}) => {
   const { toast } = useToast();
   const [inputValue, setInputValue] = useState("");
-  const [isCodexInstalled, setIsCodexInstalled] = useState<boolean | null>(null);
-  const [isClaudeInstalled, setIsClaudeInstalled] = useState<boolean | null>(null);
-  const [claudeInstructions, setClaudeInstructions] = useState<string | null>(null);
+  const [isCodexInstalled, setIsCodexInstalled] = useState<boolean | null>(
+    null
+  );
+  const [isClaudeInstalled, setIsClaudeInstalled] = useState<boolean | null>(
+    null
+  );
+  const [claudeInstructions, setClaudeInstructions] = useState<string | null>(
+    null
+  );
   const [agentCreated, setAgentCreated] = useState(false);
-  const [provider, setProvider] = useState<'codex' | 'claude' | 'droid'>('codex');
+  const [provider, setProvider] = useState<"codex" | "claude" | "droid">(
+    "codex"
+  );
   const initializedConversationRef = useRef<string | null>(null);
 
   const codexStream = useCodexStream({
@@ -47,52 +59,105 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
     workspacePath: workspace.path,
   });
 
-  const claudeStream = useClaudeStream(provider === 'claude' ? { workspaceId: workspace.id, workspacePath: workspace.path } : null)
+  const claudeStream = useClaudeStream(
+    provider === "claude"
+      ? { workspaceId: workspace.id, workspacePath: workspace.path }
+      : null
+  );
+  const activeStream = provider === "codex" ? codexStream : claudeStream;
 
   useEffect(() => {
     initializedConversationRef.current = null;
   }, [workspace.id]);
 
-  // On workspace change, default to Codex so prior chats are visible
+  // On workspace change, restore locked provider if present; otherwise default to Codex.
   useEffect(() => {
-    setProvider('codex')
-  }, [workspace.id])
+    try {
+      const key = `provider:locked:${workspace.id}`;
+      const saved = window.localStorage.getItem(key) as
+        | "codex"
+        | "claude"
+        | "droid"
+        | null;
+      if (saved === "claude" || saved === "codex") {
+        setProvider(saved);
+      } else {
+        setProvider("codex");
+      }
+    } catch {
+      setProvider("codex");
+    }
+  }, [workspace.id]);
+
+  // When a chat becomes locked (first user message sent), persist the provider (excluding Droid)
+  useEffect(() => {
+    try {
+      const hasLockedProvider =
+        provider !== "droid" &&
+        activeStream.messages &&
+        activeStream.messages.some((m) => m.sender === "user");
+      if (hasLockedProvider) {
+        window.localStorage.setItem(
+          `provider:locked:${workspace.id}`,
+          provider
+        );
+      }
+    } catch {}
+  }, [provider, workspace.id, activeStream.messages]);
 
   // Check Claude Code installation when selected
   useEffect(() => {
-    let cancelled = false
-    if (provider !== 'claude') { setIsClaudeInstalled(null); setClaudeInstructions(null); return }
+    let cancelled = false;
+    if (provider !== "claude") {
+      setIsClaudeInstalled(null);
+      setClaudeInstructions(null);
+      return;
+    }
     (async () => {
       try {
-        const res = await (window as any).electronAPI.agentCheckInstallation?.('claude')
-        if (cancelled) return
+        const res = await (window as any).electronAPI.agentCheckInstallation?.(
+          "claude"
+        );
+        if (cancelled) return;
         if (res?.success) {
-          setIsClaudeInstalled(!!res.isInstalled)
+          setIsClaudeInstalled(!!res.isInstalled);
           if (!res.isInstalled) {
-            const inst = await (window as any).electronAPI.agentGetInstallationInstructions?.('claude')
-            setClaudeInstructions(inst?.instructions || 'Install: npm install -g @anthropic-ai/claude-code\nThen run: claude and use /login')
+            const inst = await (
+              window as any
+            ).electronAPI.agentGetInstallationInstructions?.("claude");
+            setClaudeInstructions(
+              inst?.instructions ||
+                "Install: npm install -g @anthropic-ai/claude-code\nThen run: claude and use /login"
+            );
           } else {
-            setClaudeInstructions(null)
+            setClaudeInstructions(null);
           }
         } else {
-          setIsClaudeInstalled(false)
+          setIsClaudeInstalled(false);
         }
       } catch {
-        setIsClaudeInstalled(false)
+        setIsClaudeInstalled(false);
       }
-    })()
-    return () => { cancelled = true }
-  }, [provider, workspace.id])
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [provider, workspace.id]);
 
   // When switching providers, ensure other streams are stopped
   useEffect(() => {
     (async () => {
       try {
-        if (provider !== 'codex') await (window as any).electronAPI.codexStopStream?.(workspace.id)
-        if (provider !== 'claude') await (window as any).electronAPI.agentStopStream?.({ providerId: 'claude', workspaceId: workspace.id })
+        if (provider !== "codex")
+          await (window as any).electronAPI.codexStopStream?.(workspace.id);
+        if (provider !== "claude")
+          await (window as any).electronAPI.agentStopStream?.({
+            providerId: "claude",
+            workspaceId: workspace.id,
+          });
       } catch {}
-    })()
-  }, [provider, workspace.id])
+    })();
+  }, [provider, workspace.id]);
 
   useEffect(() => {
     if (!codexStream.isReady) return;
@@ -177,12 +242,20 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
-    if (provider === 'claude' && isClaudeInstalled === false) {
-      toast({ title: 'Claude Code not installed', description: 'Install Claude Code CLI and login first. See instructions below.', variant: 'destructive' })
-      return
+    if (provider === "claude" && isClaudeInstalled === false) {
+      toast({
+        title: "Claude Code not installed",
+        description:
+          "Install Claude Code CLI and login first. See instructions below.",
+        variant: "destructive",
+      });
+      return;
     }
-    
-    const activeConversationId = provider === 'codex' ? codexStream.conversationId : claudeStream.conversationId
+
+    const activeConversationId =
+      provider === "codex"
+        ? codexStream.conversationId
+        : claudeStream.conversationId;
     if (!activeConversationId) return;
 
     const attachmentsSection = await buildAttachmentsSection(
@@ -194,9 +267,10 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
       }
     );
 
-    const result = provider === 'codex'
-      ? await codexStream.send(inputValue, attachmentsSection)
-      : await claudeStream.send(inputValue, attachmentsSection)
+    const result =
+      provider === "codex"
+        ? await codexStream.send(inputValue, attachmentsSection)
+        : await claudeStream.send(inputValue, attachmentsSection);
     if (!result.success) {
       if (result.error && result.error !== "stream-in-progress") {
         toast({
@@ -213,7 +287,10 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
 
   const handleCancelStream = async () => {
     if (!codexStream.isStreaming && !claudeStream.isStreaming) return;
-    const result = provider === 'codex' ? await codexStream.cancel() : await claudeStream.cancel();
+    const result =
+      provider === "codex"
+        ? await codexStream.cancel()
+        : await claudeStream.cancel();
     if (!result.success) {
       toast({
         title: "Cancel Failed",
@@ -223,13 +300,21 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
     }
   };
 
-  const activeStream = provider === 'codex' ? codexStream : claudeStream
-  const streamingOutputForList = activeStream.isStreaming || activeStream.streamingOutput ? activeStream.streamingOutput : null
+  const streamingOutputForList =
+    activeStream.isStreaming || activeStream.streamingOutput
+      ? activeStream.streamingOutput
+      : null;
   // Allow switching providers freely while in Droid mode
-  const providerLocked = provider !== 'droid' && (activeStream.isStreaming || (activeStream.messages && activeStream.messages.some((m) => m.sender === 'user')))
+  const providerLocked =
+    provider !== "droid" &&
+    (activeStream.isStreaming ||
+      (activeStream.messages &&
+        activeStream.messages.some((m) => m.sender === "user")));
 
   return (
-    <div className={`flex flex-col h-full bg-white dark:bg-gray-800 ${className}`}>
+    <div
+      className={`flex flex-col h-full bg-white dark:bg-gray-800 ${className}`}
+    >
       <div className="flex items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
         <div className="flex items-center space-x-3">
           <Folder className="w-5 h-5 text-gray-600" />
@@ -241,30 +326,42 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
         </div>
       </div>
 
-      {provider === 'droid' ? (
+      {provider === "droid" ? (
         <div className="flex-1 flex flex-col min-h-0">
           <div className="px-6 pt-4">
             <div className="max-w-4xl mx-auto">
               <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 text-sm">
                 <div className="whitespace-pre-wrap">
-                  Factory Droid runs in an interactive terminal UI. To install and get started, see the Factory CLI Quickstart:
+                  Factory Droid runs in an interactive terminal UI. To install
+                  and get started, see the Factory CLI Quickstart:
                 </div>
                 <button
                   type="button"
-                  onClick={() => window.electronAPI.openExternal('https://docs.factory.ai/cli/getting-started/quickstart')}
+                  onClick={() =>
+                    window.electronAPI.openExternal(
+                      "https://docs.factory.ai/cli/getting-started/quickstart"
+                    )
+                  }
                   className="mt-1 underline text-amber-900 hover:text-amber-700"
                 >
                   https://docs.factory.ai/cli/getting-started/quickstart
                 </button>
                 <div className="mt-2 text-xs opacity-90">
-                  Note: Chat state for Factory CLI sessions isn’t persisted; switching chats closes the terminal and its state is not restored.
+                  Note: Chat state for Factory CLI sessions isn’t persisted;
+                  switching chats closes the terminal and its state is not
+                  restored.
                 </div>
               </div>
             </div>
           </div>
           <div className="flex-1 min-h-0 px-6 mt-4">
             <div className="max-w-4xl mx-auto h-full rounded-md border border-gray-200 dark:border-gray-700 overflow-hidden">
-              <TerminalPane id={`droid-main-${workspace.id}`} cwd={workspace.path} shell="droid" className="h-full w-full" />
+              <TerminalPane
+                id={`droid-main-${workspace.id}`}
+                cwd={workspace.path}
+                shell="droid"
+                className="h-full w-full"
+              />
             </div>
           </div>
         </div>
@@ -288,22 +385,27 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
         </div>
       ) : (
         <>
-        {provider === 'claude' && isClaudeInstalled === false ? (
-          <div className="px-6 pt-4">
-            <div className="max-w-4xl mx-auto">
-              <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 text-sm whitespace-pre-wrap">
-                {claudeInstructions || 'Install Claude Code: npm install -g @anthropic-ai/claude-code\nThen run: claude and use /login'}
+          {provider === "claude" && isClaudeInstalled === false ? (
+            <div className="px-6 pt-4">
+              <div className="max-w-4xl mx-auto">
+                <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 text-sm whitespace-pre-wrap">
+                  {claudeInstructions ||
+                    "Install Claude Code: npm install -g @anthropic-ai/claude-code\nThen run: claude and use /login"}
+                </div>
               </div>
             </div>
-          </div>
-        ) : null}
-        <MessageList
-          messages={activeStream.messages}
-          streamingOutput={streamingOutputForList}
-          isStreaming={activeStream.isStreaming}
-          awaitingThinking={provider === 'codex' ? codexStream.awaitingThinking : claudeStream.awaitingThinking}
-          providerId={provider === 'codex' ? 'codex' : 'claude'}
-        />
+          ) : null}
+          <MessageList
+            messages={activeStream.messages}
+            streamingOutput={streamingOutputForList}
+            isStreaming={activeStream.isStreaming}
+            awaitingThinking={
+              provider === "codex"
+                ? codexStream.awaitingThinking
+                : claudeStream.awaitingThinking
+            }
+            providerId={provider === "codex" ? "codex" : "claude"}
+          />
         </>
       )}
 
@@ -312,15 +414,18 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
         onChange={setInputValue}
         onSend={handleSendMessage}
         onCancel={handleCancelStream}
-        isLoading={provider === 'droid' ? false : activeStream.isStreaming}
-        loadingSeconds={provider === 'droid' ? 0 : activeStream.seconds}
+        isLoading={provider === "droid" ? false : activeStream.isStreaming}
+        loadingSeconds={provider === "droid" ? 0 : activeStream.seconds}
         isCodexInstalled={isCodexInstalled}
         agentCreated={agentCreated}
         workspacePath={workspace.path}
         provider={provider}
         onProviderChange={(p) => setProvider(p)}
         selectDisabled={providerLocked}
-        disabled={provider === 'droid' || (provider === 'claude' && isClaudeInstalled === false)}
+        disabled={
+          provider === "droid" ||
+          (provider === "claude" && isClaudeInstalled === false)
+        }
       />
     </div>
   );
