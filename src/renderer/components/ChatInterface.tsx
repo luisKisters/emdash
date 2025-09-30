@@ -256,6 +256,9 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
                 >
                   https://docs.factory.ai/cli/getting-started/quickstart
                 </button>
+                <div className="mt-2 text-xs opacity-90">
+                  Note: Chat state for Factory CLI sessions isn’t persisted; switching chats closes the terminal and its state is not restored.
+                </div>
               </div>
             </div>
           </div>
