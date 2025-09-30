@@ -15,7 +15,7 @@
   alt="Emdash" width="900">
   </p>
 
-emdash is a UI layer for running multiple Codex CLI agents in parallel, each isolated in its own Git worktree — so you can fan out tasks, keep changes compartmentalized, and manage everything from a single UI.
+emdash is a UI layer for running multiple coding agents in parallel — currently supporting OpenAI Codex CLI and Claude Code CLI. Each agent runs in its own Git worktree so you can fan out tasks, keep changes compartmentalized, and manage everything from a single UI.
 
 <p align="center">
     <img src="./docs/media/emdash-screenshot.png" alt="Emdash app screenshot" width="100%">
@@ -31,7 +31,9 @@ Either download the DMG from Releases (or click the link above), or run the app 
 ## Requirements
 
 - Node.js 18+ and Git
-- [OpenAI Codex CLI](https://github.com/openai/codex) (install + authenticate)
+- One or more providers (install as needed):
+  - [OpenAI Codex CLI](https://github.com/openai/codex) (install + authenticate)
+  - Optional: [Claude Code CLI](https://www.npmjs.com/package/@anthropic-ai/claude-code) (install + authenticate)
 - Optional: [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart) for PRs, badges, and repo info
 
 ### Codex CLI
@@ -45,6 +47,18 @@ brew install codex
 
 # authenticate
 codex
+```
+
+### Claude Code CLI (optional)
+
+Install the Claude Code CLI and authenticate it:
+
+```bash
+npm install -g @anthropic-ai/claude-code
+
+# start and login
+claude
+# then use /login inside the CLI
 ```
 
 ### GitHub CLI
@@ -66,11 +80,13 @@ gh auth login
 ## Getting Started
 
 1. Ensure Node.js 18+ and Git are installed
-2. Install and authenticate Codex CLI (see Requirements above)
-3. Install and authenticate [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart)
+2. Install and authenticate at least one provider (Codex or Claude Code)
+3. (Optional) Install and authenticate [GitHub CLI](https://docs.github.com/en/github-cli/github-cli/quickstart)
 4. Clone this repository
 5. Install dependencies: `npm install`
 6. Run the app: `npm run dev`
+
+In the chat input, use the provider selector to switch between Codex and Claude Code. Once a chat has started with Codex or Claude, the provider is locked for that chat.
 
 ## Demos
 
@@ -225,7 +241,7 @@ find "$HOME" -type f -name 'emdash.db*' -print
 ```
 
 ## What's Next
-- [ ] Pluggable provider system to run other CLI coding agents (e.g., Claude Code, Gemini CLI, aider, Warp) alongside Codex
+- [ ] Additional providers (e.g., Gemini CLI, aider, Warp)
 - [ ] Workspace lifecycle hooks to run custom scripts on create, run, and archive (e.g., install deps, copy env files, clean up resources)
 - [ ] Planning chat with controlled execution (draft actions in a separate chat, then run them one by one)
 - [ ] Linear integration to track and close out issues
