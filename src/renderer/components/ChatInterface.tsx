@@ -53,6 +53,11 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
     initializedConversationRef.current = null;
   }, [workspace.id]);
 
+  // On workspace change, default to Codex so prior chats are visible
+  useEffect(() => {
+    setProvider('codex')
+  }, [workspace.id])
+
   // Check Claude Code installation when selected
   useEffect(() => {
     let cancelled = false
@@ -220,7 +225,8 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
 
   const activeStream = provider === 'codex' ? codexStream : claudeStream
   const streamingOutputForList = activeStream.isStreaming || activeStream.streamingOutput ? activeStream.streamingOutput : null
-  const providerLocked = activeStream.isStreaming || (activeStream.messages && activeStream.messages.some((m) => m.sender === 'user'))
+  // Allow switching providers freely while in Droid mode
+  const providerLocked = provider !== 'droid' && (activeStream.isStreaming || (activeStream.messages && activeStream.messages.some((m) => m.sender === 'user')))
 
   return (
     <div className={`flex flex-col h-full bg-white dark:bg-gray-800 ${className}`}>
@@ -239,13 +245,17 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
         <div className="flex-1 flex flex-col min-h-0">
           <div className="px-6 pt-4">
             <div className="max-w-4xl mx-auto">
-              <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 text-sm whitespace-pre-wrap">
-                Factory Droid runs in an interactive terminal UI. If not installed, install with:
-                {"\n\n"}
-                macOS/Linux:{"\n"}
-                curl -fsSL https://app.factory.ai/cli | sh
-                {"\n\n"}
-                Then start a session by typing: droid
+              <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 text-sm">
+                <div className="whitespace-pre-wrap">
+                  Factory Droid runs in an interactive terminal UI. To install and get started, see the Factory CLI Quickstart:
+                </div>
+                <button
+                  type="button"
+                  onClick={() => window.electronAPI.openExternal('https://docs.factory.ai/cli/getting-started/quickstart')}
+                  className="mt-1 underline text-amber-900 hover:text-amber-700"
+                >
+                  https://docs.factory.ai/cli/getting-started/quickstart
+                </button>
               </div>
             </div>
           </div>
