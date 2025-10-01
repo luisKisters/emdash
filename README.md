@@ -1,9 +1,10 @@
 <p align="left">
-  <img src="./src/assets/images/emdash/emdash.iconset/icon_512x512.png#gh-light-mode-only" alt="Emdash" height="40" style="vertical-align:middle;margin-right:12px;">
-  <img src="./src/assets/images/emdash/emdash.iconset/icon_512x512.png#gh-dark-mode-only" alt="Emdash" height="40" style="vertical-align:middle;margin-right:12px;">
   <a href="https://github.com/generalaction/emdash/releases">
     <img src="./docs/media/downloadformacos.png" alt="Download app for macOS" height="40" style="vertical-align:middle;">
   </a>
+
+  <br />
+  <br />
 
   <a href="https://discord.gg/XqWnhvMU" style="margin-left:8px; vertical-align:middle;">
     <img src="https://dcbadge.limes.pink/api/server/https://discord.gg/XqWnhvMU" alt="Join the emdash Discord" height="28" />
