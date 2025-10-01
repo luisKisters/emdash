@@ -69,3 +69,7 @@ export function killPty(id: string): void {
 export function hasPty(id: string): boolean {
   return ptys.has(id)
 }
+
+export function getPty(id: string): IPty | undefined {
+  return ptys.get(id)?.proc
+}

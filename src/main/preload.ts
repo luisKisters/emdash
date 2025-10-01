@@ -22,6 +22,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on(channel, wrapped)
     return () => ipcRenderer.removeListener(channel, wrapped)
   },
+  onPtyHistory: (id: string, listener: (data: string) => void) => {
+    const channel = `pty:history:${id}`
+    const wrapped = (_: Electron.IpcRendererEvent, data: string) => listener(data)
+    ipcRenderer.on(channel, wrapped)
+    return () => ipcRenderer.removeListener(channel, wrapped)
+  },
   onPtyExit: (id: string, listener: (info: { exitCode: number; signal?: number }) => void) => {
     const channel = `pty:exit:${id}`
     const wrapped = (_: Electron.IpcRendererEvent, info: { exitCode: number; signal?: number }) => listener(info)
@@ -168,6 +174,7 @@ export interface ElectronAPI {
   ptyResize: (args: { id: string; cols: number; rows: number }) => void
   ptyKill: (id: string) => void
   onPtyData: (id: string, listener: (data: string) => void) => () => void
+  onPtyHistory: (id: string, listener: (data: string) => void) => () => void
   onPtyExit: (id: string, listener: (info: { exitCode: number; signal?: number }) => void) => () => void
   // Worktree management
   worktreeCreate: (args: { projectPath: string; workspaceName: string; projectId: string }) => Promise<{ success: boolean; worktree?: any; error?: string }>
