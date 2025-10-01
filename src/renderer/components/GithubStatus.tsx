@@ -21,11 +21,11 @@ export function GithubStatus({
       <TooltipProvider delayDuration={250}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className={`flex items-start space-x-2 text-xs text-amber-600 dark:text-amber-400 ${className}`}>
+            <div className={`flex items-start space-x-2 text-xs text-gray-600 dark:text-gray-400 ${className}`}>
               <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-medium">Install GitHub CLI</p>
-                <p className="text-[11px] text-amber-700/80 dark:text-amber-300/80">
+                <p className="text-[11px] text-gray-700/80 dark:text-gray-300/80">
                   Required for repo status and auth
                 </p>
               </div>
@@ -44,12 +44,12 @@ export function GithubStatus({
       <TooltipProvider delayDuration={250}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className={`flex items-start space-x-2 text-xs text-amber-600 dark:text-amber-300 ${className}`}>
+            <div className={`flex items-start space-x-2 text-xs text-gray-600 dark:text-gray-300 ${className}`}>
               <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-medium">GitHub not authenticated</p>
-                <p className="text-[11px] text-amber-700/80 dark:text-amber-200/80">
-                  Run <code className="bg-amber-100 px-1 rounded">gh auth login</code>
+                <p className="text-[11px] text-gray-700/80 dark:text-gray-200/80">
+                  Run <code className="bg-gray-100 px-1 rounded">gh auth login</code>
                 </p>
               </div>
             </div>

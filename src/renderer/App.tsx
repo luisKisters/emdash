@@ -9,6 +9,7 @@ import ChatInterface from "./components/ChatInterface";
 import WorkspaceTerminalPanel from "./components/WorkspaceTerminalPanel";
 import FileChangesPanel from "./components/FileChangesPanel";
 import { Toaster } from "./components/ui/toaster";
+import RequirementsNotice from "./components/RequirementsNotice";
 import { useToast } from "./hooks/use-toast";
 import { useGithubAuth } from "./hooks/useGithubAuth";
 import emdashLogo from "../assets/images/emdash/emdash_logo.svg";
@@ -61,8 +62,11 @@ const App: React.FC = () => {
     null
   );
   const [isCodexInstalled, setIsCodexInstalled] = useState<boolean | null>(null);
+  const [isClaudeInstalled, setIsClaudeInstalled] = useState<boolean | null>(null);
   const showGithubRequirement = !ghInstalled || !isAuthenticated;
-  const showCodexRequirement = isCodexInstalled === false;
+  // Show agent requirements block if none of the supported CLIs are detected locally.
+  // We only actively detect Codex and Claude Code; Factory (Droid) docs are shown as an alternative.
+  const showAgentRequirement = (isCodexInstalled === false) && (isClaudeInstalled === false);
 
   // Persist and apply custom project order (by id)
   const ORDER_KEY = "sidebarProjectOrder";
@@ -116,15 +120,18 @@ const App: React.FC = () => {
 
         const codexStatus = await window.electronAPI.codexCheckInstallation();
         if (codexStatus.success) {
-          setIsCodexInstalled(
-            codexStatus.isInstalled ?? false
-          );
+          setIsCodexInstalled(codexStatus.isInstalled ?? false);
         } else {
           setIsCodexInstalled(false);
-          console.error(
-            "Failed to check Codex CLI installation:",
-            codexStatus.error
-          );
+          console.error("Failed to check Codex CLI installation:", codexStatus.error);
+        }
+
+        // Best-effort: detect Claude Code CLI presence
+        try {
+          const claude = await (window as any).electronAPI.agentCheckInstallation?.('claude');
+          setIsClaudeInstalled(!!claude?.isInstalled);
+        } catch {
+          setIsClaudeInstalled(false);
         }
       } catch (error) {
         console.error("Failed to load app data:", error);
@@ -497,54 +504,12 @@ const App: React.FC = () => {
               <p className="text-sm sm:text-base text-gray-700 text-muted-foreground mb-6">
                 Run multiple Coding Agents in parallel
               </p>
-              <div className="text-sm text-gray-500 max-w-2xl mx-auto space-y-4">
-                {showGithubRequirement && (
-                  <div>
-                    <p className="mb-2">
-                      <strong>Requirements:</strong> GitHub CLI
-                    </p>
-                    {needsGhInstall ? (
-                      <p className="text-xs">
-                        Install:{" "}
-                        <code className="bg-gray-100 px-1 rounded">
-                          brew install gh
-                        </code>
-                      </p>
-                    ) : (
-                      needsGhAuth && (
-                        <p className="text-xs">
-                          Authenticate:{" "}
-                          <code className="bg-gray-100 px-1 rounded">
-                            gh auth login
-                          </code>
-                        </p>
-                      )
-                    )}
-                  </div>
-                )}
-
-                {showCodexRequirement && (
-                  <div>
-                    <p className="mb-2">
-                      <strong>Requirements:</strong> Codex CLI
-                    </p>
-                    <div className="text-xs space-y-1">
-                      <p>
-                        Install:{" "}
-                        <code className="bg-gray-100 px-1 rounded">
-                          npm install -g @openai/codex
-                        </code>
-                      </p>
-                      <p>
-                        Authenticate:{" "}
-                        <code className="bg-gray-100 px-1 rounded">
-                          codex auth login
-                        </code>
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </div>
+              <RequirementsNotice
+                showGithubRequirement={showGithubRequirement}
+                needsGhInstall={needsGhInstall}
+                needsGhAuth={needsGhAuth}
+                showAgentRequirement={showAgentRequirement}
+              />
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
@@ -609,55 +574,12 @@ const App: React.FC = () => {
               <p className="text-sm sm:text-base text-gray-700 text-muted-foreground mb-6">
                 Run multiple Coding Agents in parallel
               </p>
-              <div className="text-sm text-gray-500 max-w-2xl mx-auto space-y-4">
-                {showGithubRequirement && (
-                  <div>
-                    <p className="mb-2">
-                      <strong>Requirements:</strong> GitHub CLI
-                    </p>
-                    {needsGhInstall ? (
-                      <p className="text-xs">
-                        Install:{" "}
-                        <code className="bg-gray-100 px-1 rounded">
-                          brew install gh
-                        </code>
-                      </p>
-                    ) : (
-                      needsGhAuth && (
-                        <p className="text-xs">
-                          Authenticate:{" "}
-                          <code className="bg-gray-100 px-1 rounded">
-                            gh auth login
-                          </code>
-                        </p>
-                      )
-                    )}
-                  </div>
-                )}
-
-                {showCodexRequirement && (
-                  <div>
-                    <p className="mb-2">
-                      <strong>Requirements:</strong> Codex CLI
-                    </p>
-                    <div className="text-xs space-y-1">
-                      <p>
-                        Install:{" "}
-                        <code className="bg-gray-100 px-1 rounded">
-                          npm install -g @openai/codex
-                        </code>
-                      </p>
-                      <p>
-                        Authenticate:{" "}
-                        <code className="bg-gray-100 px-1 rounded">
-                          codex auth login
-                        </code>
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-              </div>
+              <RequirementsNotice
+                showGithubRequirement={showGithubRequirement}
+                needsGhInstall={needsGhInstall}
+                needsGhAuth={needsGhAuth}
+                showAgentRequirement={showAgentRequirement}
+              />
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
