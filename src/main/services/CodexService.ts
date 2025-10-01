@@ -34,20 +34,51 @@ export class CodexService extends EventEmitter {
   private activeConversations: Map<string, string> = new Map();
 
   /**
-   * Resolve sandbox mode for Codex CLI execution. Honors an environment
-   * override via CODEX_SANDBOX_MODE when provided and valid. Falls back to
-   * 'workspace-write' to preserve current safe-default behavior.
+   * Resolve CLI args for Codex exec based on env vars.
+   *
+   * - If CODEX_DANGEROUSLY_BYPASS (or CODEX_SANDBOX_MODE=danger-full-access)
+   *   is set, prefer the unified `--dangerously-bypass-approvals-and-sandbox` flag.
+   * - Otherwise, pass `--sandbox <mode>` and optionally `--approval <policy>`.
+   *
+   * This keeps the default behavior safe (workspace-write) while enabling
+   * power users to opt out explicitly.
    */
-  private resolveSandboxMode(): 'read-only' | 'workspace-write' | 'danger-full-access' {
-    const raw = (process.env.CODEX_SANDBOX_MODE || '').trim().toLowerCase();
-    switch (raw) {
-      case 'read-only':
-      case 'workspace-write':
-      case 'danger-full-access':
-        return raw as any;
-      default:
-        return 'workspace-write';
+  private buildCodexExecArgs(message: string): string[] {
+    const bypassEnv = (process.env.CODEX_DANGEROUSLY_BYPASS || process.env.CODEX_DANGEROUSLY_BYPASS_APPROVALS_AND_SANDBOX || '').trim().toLowerCase();
+    const sandboxEnv = (process.env.CODEX_SANDBOX_MODE || '').trim().toLowerCase();
+    const approvalEnv = (process.env.CODEX_APPROVAL_POLICY || '').trim().toLowerCase();
+
+    const truthy = (v: string) => v === '1' || v === 'true' || v === 'yes' || v === 'y';
+    const bypass = truthy(bypassEnv) || sandboxEnv === 'danger-full-access';
+
+    if (bypass) {
+      return ['exec', '--dangerously-bypass-approvals-and-sandbox', message];
     }
+
+    // sandbox mode fallback
+    let sandbox: 'read-only' | 'workspace-write' = 'workspace-write';
+    if (sandboxEnv === 'read-only' || sandboxEnv === 'workspace-write') {
+      sandbox = sandboxEnv;
+    }
+
+    const args = ['exec', '--sandbox', sandbox] as string[];
+
+    // Optional approval policy if explicitly provided
+    switch (approvalEnv) {
+      case 'never':
+      case 'on-request':
+      case 'on-failure':
+      case 'untrusted':
+      case 'auto':
+        args.push('--approval', approvalEnv);
+        break;
+      default:
+        // ignore invalid/empty
+        break;
+    }
+
+    args.push(message);
+    return args;
   }
 
   constructor() {
@@ -251,8 +282,7 @@ export class CodexService extends EventEmitter {
 
     try {
       // Spawn codex directly with args to avoid shell quoting issues (backticks, quotes, etc.)
-      const sandboxMode = this.resolveSandboxMode();
-      const args = ['exec', '--sandbox', sandboxMode, message];
+      const args = this.buildCodexExecArgs(message);
       console.log(
         `Executing: codex ${args.map((a) => (a.includes(' ') ? '"' + a + '"' : a)).join(' ')} in ${agent.worktreePath}`
       );
@@ -438,8 +468,7 @@ export class CodexService extends EventEmitter {
     agent.lastMessage = message;
 
     try {
-      const sandboxMode = this.resolveSandboxMode();
-      const args = ['exec', '--sandbox', sandboxMode, message];
+      const args = this.buildCodexExecArgs(message);
       console.log(
         `Executing: codex ${args.map((a) => (a.includes(' ') ? '"' + a + '"' : a)).join(' ')} in ${agent.worktreePath}`
       );
