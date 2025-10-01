@@ -9,6 +9,8 @@ type Props = {
   shell?: string;
   className?: string;
   variant?: 'dark' | 'light';
+  keepAlive?: boolean;
+  onActivity?: () => void;
 };
 
 const TerminalPaneComponent: React.FC<Props> = ({
@@ -19,6 +21,8 @@ const TerminalPaneComponent: React.FC<Props> = ({
   shell,
   className,
   variant = 'dark',
+  keepAlive = false,
+  onActivity,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const termRef = useRef<Terminal | null>(null);
@@ -105,6 +109,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
         // eslint-disable-next-line no-console
         console.log("xterm onData", JSON.stringify(data));
       }
+      try { onActivity && onActivity() } catch {}
       window.electronAPI.ptyInput({ id, data });
     });
     const keyDisp2 = term.onKey((ev) => {
@@ -114,7 +119,36 @@ const TerminalPaneComponent: React.FC<Props> = ({
       }
     });
 
-    // Start PTY session
+    // Listen for history first, then live data, then start/attach to PTY
+    const offHistory = (window as any).electronAPI.onPtyHistory?.(id, (data: string) => {
+      term.write(data);
+    });
+    const offData = window.electronAPI.onPtyData(id, (data) => {
+      term.write(data);
+    });
+    const handleResize = () => {
+      if (termRef.current && el) {
+        const { width, height } = el.getBoundingClientRect();
+        const newCols = Math.max(20, Math.floor(width / 9));
+        const newRows = Math.max(10, Math.floor(height / 17));
+
+        if (newCols !== cols || newRows !== rows) {
+          termRef.current.resize(newCols, newRows);
+          window.electronAPI.ptyResize({ id, cols: newCols, rows: newRows });
+        }
+      }
+    };
+
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(el);
+
+    disposeFns.current.push(() => keyDisp.dispose());
+    if (offHistory) disposeFns.current.push(offHistory);
+    disposeFns.current.push(offData);
+    disposeFns.current.push(() => keyDisp2.dispose());
+    disposeFns.current.push(() => resizeObserver.disconnect());
+
+    // Start PTY session after listeners are attached so we don't miss initial output/history
     (async () => {
       try {
         const res = await window.electronAPI.ptyStart({
@@ -136,37 +170,15 @@ const TerminalPaneComponent: React.FC<Props> = ({
       }
     })();
 
-    const offData = window.electronAPI.onPtyData(id, (data) => {
-      term.write(data);
-    });
-    const handleResize = () => {
-      if (termRef.current && el) {
-        const { width, height } = el.getBoundingClientRect();
-        const newCols = Math.max(20, Math.floor(width / 9));
-        const newRows = Math.max(10, Math.floor(height / 17));
-
-        if (newCols !== cols || newRows !== rows) {
-          termRef.current.resize(newCols, newRows);
-          window.electronAPI.ptyResize({ id, cols: newCols, rows: newRows });
-        }
-      }
-    };
-
-    const resizeObserver = new ResizeObserver(handleResize);
-    resizeObserver.observe(el);
-
-    disposeFns.current.push(() => keyDisp.dispose());
-    disposeFns.current.push(offData);
-    disposeFns.current.push(() => keyDisp2.dispose());
-    disposeFns.current.push(() => resizeObserver.disconnect());
-
     return () => {
-      window.electronAPI.ptyKill(id);
+      if (!keepAlive) {
+        window.electronAPI.ptyKill(id);
+      }
       disposeFns.current.forEach((fn) => fn());
       term.dispose();
       termRef.current = null;
     };
-  }, [id, cwd, cols, rows, variant]);
+  }, [id, cwd, cols, rows, variant, keepAlive, shell]);
 
   return (
     <div

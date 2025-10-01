@@ -51,6 +51,10 @@ const ChatInterface: React.FC<Props> = ({
   );
   const [agentCreated, setAgentCreated] = useState(false);
   // Provider is managed via useProviderPreference
+  const [lockedProvider, setLockedProvider] = useState<
+    "codex" | "claude" | "droid" | null
+  >(null);
+  const [hasDroidActivity, setHasDroidActivity] = useState(false);
   const initializedConversationRef = useRef<string | null>(null);
 
   const codexStream = useCodexStream({
@@ -81,37 +85,63 @@ const ChatInterface: React.FC<Props> = ({
   // On workspace change, restore locked provider if present; otherwise default to Codex.
   useEffect(() => {
     try {
-      const key = `provider:locked:${workspace.id}`;
-      const saved = window.localStorage.getItem(key) as
+      const lastKey = `provider:last:${workspace.id}`;
+      const lockedKey = `provider:locked:${workspace.id}`;
+      const last = window.localStorage.getItem(lastKey) as
         | "codex"
         | "claude"
         | "droid"
         | null;
-      if (saved === "claude" || saved === "codex") {
-        setProvider(saved);
+      const locked = window.localStorage.getItem(lockedKey) as
+        | "codex"
+        | "claude"
+        | "droid"
+        | null;
+
+      setLockedProvider(locked);
+      setHasDroidActivity(locked === "droid");
+
+      if (locked === "droid") {
+        setProvider("droid");
+      } else if (last === "droid") {
+        setProvider("droid");
+      } else if (locked === "codex" || locked === "claude") {
+        setProvider(locked);
+      } else if (last === "codex" || last === "claude") {
+        setProvider(last);
       } else {
         setProvider("codex");
       }
     } catch {
       setProvider("codex");
     }
-  }, [workspace.id]);
+  }, [workspace.id, setProvider]);
 
-  // When a chat becomes locked (first user message sent), persist the provider (excluding Droid)
+  // Persist last-selected provider per workspace (including Droid)
   useEffect(() => {
     try {
-      const hasLockedProvider =
+      window.localStorage.setItem(`provider:last:${workspace.id}`, provider);
+    } catch {}
+  }, [provider, workspace.id]);
+
+  // When a chat becomes locked (first user message sent or Droid activity), persist the provider
+  useEffect(() => {
+    try {
+      const userLocked =
         provider !== "droid" &&
         activeStream.messages &&
         activeStream.messages.some((m) => m.sender === "user");
-      if (hasLockedProvider) {
+      const droidLocked = provider === "droid" && hasDroidActivity;
+
+      if (userLocked || droidLocked) {
         window.localStorage.setItem(
           `provider:locked:${workspace.id}`,
           provider
         );
+        setLockedProvider(provider);
       }
     } catch {}
-  }, [provider, workspace.id, activeStream.messages]);
+  }, [provider, workspace.id, activeStream.messages, hasDroidActivity]);
 
   // Check Claude Code installation when selected
   useEffect(() => {
@@ -312,10 +342,8 @@ const ChatInterface: React.FC<Props> = ({
     activeStream.isStreaming || activeStream.streamingOutput
       ? activeStream.streamingOutput
       : null;
-  const conversationHasUser =
-    codexStream.messages &&
-    codexStream.messages.some((m) => m.sender === "user");
-  const providerLocked = activeStream.isStreaming || conversationHasUser;
+  // Allow switching providers freely while in Droid mode
+  const providerLocked = lockedProvider !== null;
 
   return (
     <div
@@ -338,8 +366,8 @@ const ChatInterface: React.FC<Props> = ({
             <div className="max-w-4xl mx-auto">
               <div className="rounded-md border border-gray-200 bg-gray-50 text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 p-3 text-sm">
                 <div className="whitespace-pre-wrap">
-                  Interact with Droid in the terminal below. To install and
-                  get started, see the Factory CLI Quickstart:
+                  Interact with Droid in the terminal below. To install and get
+                  started, see the Factory CLI Quickstart:
                 </div>
                 <button
                   type="button"
@@ -353,9 +381,9 @@ const ChatInterface: React.FC<Props> = ({
                   https://docs.factory.ai/cli/getting-started/quickstart
                 </button>
                 <div className="mt-2 text-xs opacity-90">
-                  Note: Chat state for Factory CLI sessions isn’t persisted;
-                  switching chats closes the terminal and its state is not
-                  restored.
+                  Note: The Droid terminal session now persists while the app is
+                  open; leaving and returning to this chat will restore its
+                  output. Closing the app will terminate the session.
                 </div>
               </div>
             </div>
@@ -366,6 +394,17 @@ const ChatInterface: React.FC<Props> = ({
                 id={`droid-main-${workspace.id}`}
                 cwd={workspace.path}
                 shell="droid"
+                keepAlive={true}
+                onActivity={() => {
+                  try {
+                    setHasDroidActivity(true);
+                    window.localStorage.setItem(
+                      `provider:locked:${workspace.id}`,
+                      "droid"
+                    );
+                    setLockedProvider("droid");
+                  } catch {}
+                }}
                 variant="light"
                 className="h-full w-full"
               />
