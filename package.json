@@ -11,7 +11,7 @@
     "build:main": "tsc -p tsconfig.main.json",
     "build:renderer": "vite build",
     "package": "npm run build && electron-builder",
-    "postinstall": "electron-builder install-app-deps",
+    "postinstall": "electron-rebuild -v 28.3.3 -w \"sqlite3,node-pty,keytar\"",
     "lint": "eslint . --ext .ts,.tsx",
     "type-check": "tsc --noEmit"
   },
@@ -24,6 +24,7 @@
   ],
   "author": "Your Name",
   "devDependencies": {
+    "@electron/rebuild": "^4.0.1",
     "@types/node": "^20.10.0",
     "@types/react": "^18.2.45",
     "@types/react-dom": "^18.2.18",
@@ -78,20 +79,13 @@
       "dist/**/*",
       "node_modules/**/*"
     ],
-    "extraResources": [
-      {
-        "from": "src/assets/images/emdash/emdash.icns",
-        "to": "emdash.icns"
-      }
-    ],
     "mac": {
       "category": "public.app-category.developer-tools",
       "target": [
         {
           "target": "dmg",
           "arch": [
-            "arm64",
-            "x64"
+            "arm64"
           ]
         }
       ],
