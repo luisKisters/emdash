@@ -5,6 +5,10 @@
     <img src="./docs/media/downloadformacos.png" alt="Download app for macOS" height="40" style="vertical-align:middle;">
   </a>
 
+  <a href="https://discord.gg/XqWnhvMU" style="margin-left:8px; vertical-align:middle;">
+    <img src="https://dcbadge.limes.pink/api/server/https://discord.gg/XqWnhvMU" alt="Join the emdash Discord" height="28" />
+  </a>
+
 </p>
 <hr style="border:0; height:1px; background:#d0d7de; margin:24px 0;">
 
