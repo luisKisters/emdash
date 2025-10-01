@@ -2,6 +2,7 @@ import { execFile } from "child_process";
 import { promisify } from "util";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 
 const execFileAsync = promisify(execFile);
 
@@ -27,12 +28,12 @@ export class WorktreeService {
   }
 
   /**
-   * Generate stable worktree ID
+   * Generate a stable ID from the absolute worktree path.
    */
-  private generateWorktreeId(): string {
-    const timestamp = Date.now();
-    const random = Math.random().toString(36).substring(2, 8);
-    return `wt-${timestamp}-${random}`;
+  private stableIdFromPath(worktreePath: string): string {
+    const abs = path.resolve(worktreePath)
+    const h = crypto.createHash('sha1').update(abs).digest('hex').slice(0, 12)
+    return `wt-${h}`
   }
 
   /**
@@ -44,7 +45,6 @@ export class WorktreeService {
     projectId: string
   ): Promise<WorktreeInfo> {
     try {
-      const worktreeId = this.generateWorktreeId();
       const sluggedName = this.slugify(workspaceName);
       const timestamp = Date.now();
       const branchName = `agent/${sluggedName}-${timestamp}`;
@@ -53,6 +53,7 @@ export class WorktreeService {
         "..",
         `worktrees/${sluggedName}-${timestamp}`
       );
+      const worktreeId = this.stableIdFromPath(worktreePath);
 
       console.log(`Creating worktree: ${branchName} -> ${worktreePath}`);
 
@@ -175,7 +176,7 @@ export class WorktreeService {
             );
 
             worktrees.push(existing ?? {
-              id: this.generateWorktreeId(),
+              id: this.stableIdFromPath(worktreePath),
               name: path.basename(worktreePath),
               branch,
               path: worktreePath,
