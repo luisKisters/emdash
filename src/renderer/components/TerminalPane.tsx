@@ -8,6 +8,7 @@ type Props = {
   rows?: number;
   shell?: string;
   className?: string;
+  variant?: 'dark' | 'light';
 };
 
 const TerminalPaneComponent: React.FC<Props> = ({
@@ -17,6 +18,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
   rows = 24,
   shell,
   className,
+  variant = 'dark',
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const termRef = useRef<Terminal | null>(null);
@@ -36,36 +38,60 @@ const TerminalPaneComponent: React.FC<Props> = ({
       clientHeight: el.clientHeight,
     });
 
+    const isLight = variant === 'light';
     const term = new Terminal({
       convertEol: true,
       cursorBlink: true,
       disableStdin: false,
       cols: cols,
       rows: rows,
-      theme: {
-        // Enforce strict black & white rendering
-        background: "#000000",
-        foreground: "#ffffff",
-        cursor: "#ffffff",
-        selectionBackground: "#ffffff33",
-        // Map all ANSI colors to white/gray to avoid color output
-        black: "#000000",
-        red: "#ffffff",
-        green: "#ffffff",
-        yellow: "#ffffff",
-        blue: "#ffffff",
-        magenta: "#ffffff",
-        cyan: "#ffffff",
-        white: "#ffffff",
-        brightBlack: "#bfbfbf",
-        brightRed: "#ffffff",
-        brightGreen: "#ffffff",
-        brightYellow: "#ffffff",
-        brightBlue: "#ffffff",
-        brightMagenta: "#ffffff",
-        brightCyan: "#ffffff",
-        brightWhite: "#ffffff",
-      },
+      theme: isLight
+        ? {
+            // Light theme: black text on white bg; keep orange accents
+            background: "#ffffff",
+            foreground: "#000000",
+            cursor: "#000000",
+            selectionBackground: "#00000022",
+            black: "#000000",
+            red: "#000000",
+            green: "#000000",
+            yellow: "#f59e0b", // keep orange
+            blue: "#000000",
+            magenta: "#000000",
+            cyan: "#000000",
+            white: "#000000",
+            brightBlack: "#4b5563",
+            brightRed: "#000000",
+            brightGreen: "#000000",
+            brightYellow: "#f59e0b", // keep orange
+            brightBlue: "#000000",
+            brightMagenta: "#000000",
+            brightCyan: "#000000",
+            brightWhite: "#000000",
+          }
+        : {
+            // Dark theme (existing strict monochrome)
+            background: "#000000",
+            foreground: "#ffffff",
+            cursor: "#ffffff",
+            selectionBackground: "#ffffff33",
+            black: "#000000",
+            red: "#ffffff",
+            green: "#ffffff",
+            yellow: "#ffffff",
+            blue: "#ffffff",
+            magenta: "#ffffff",
+            cyan: "#ffffff",
+            white: "#ffffff",
+            brightBlack: "#bfbfbf",
+            brightRed: "#ffffff",
+            brightGreen: "#ffffff",
+            brightYellow: "#ffffff",
+            brightBlue: "#ffffff",
+            brightMagenta: "#ffffff",
+            brightCyan: "#ffffff",
+            brightWhite: "#ffffff",
+          },
       allowTransparency: false,
       scrollback: 1000,
     });
@@ -140,7 +166,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
       term.dispose();
       termRef.current = null;
     };
-  }, [id, cwd, cols, rows]);
+  }, [id, cwd, cols, rows, variant]);
 
   return (
     <div
@@ -149,7 +175,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
         width: "100%",
         height: "100%",
         minHeight: "0",
-        backgroundColor: "#000000",
+        backgroundColor: variant === 'light' ? '#ffffff' : '#000000',
         overflow: "hidden",
       }}
       onClick={() => termRef.current?.focus()}
