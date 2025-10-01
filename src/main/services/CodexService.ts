@@ -33,6 +33,23 @@ export class CodexService extends EventEmitter {
   // Track the active conversation for a workspace while a stream is running
   private activeConversations: Map<string, string> = new Map();
 
+  /**
+   * Resolve sandbox mode for Codex CLI execution. Honors an environment
+   * override via CODEX_SANDBOX_MODE when provided and valid. Falls back to
+   * 'workspace-write' to preserve current safe-default behavior.
+   */
+  private resolveSandboxMode(): 'read-only' | 'workspace-write' | 'danger-full-access' {
+    const raw = (process.env.CODEX_SANDBOX_MODE || '').trim().toLowerCase();
+    switch (raw) {
+      case 'read-only':
+      case 'workspace-write':
+      case 'danger-full-access':
+        return raw as any;
+      default:
+        return 'workspace-write';
+    }
+  }
+
   constructor() {
     super();
     this.checkCodexInstallation();
@@ -234,7 +251,8 @@ export class CodexService extends EventEmitter {
 
     try {
       // Spawn codex directly with args to avoid shell quoting issues (backticks, quotes, etc.)
-      const args = ['exec', '--sandbox', 'workspace-write', message];
+      const sandboxMode = this.resolveSandboxMode();
+      const args = ['exec', '--sandbox', sandboxMode, message];
       console.log(
         `Executing: codex ${args.map((a) => (a.includes(' ') ? '"' + a + '"' : a)).join(' ')} in ${agent.worktreePath}`
       );
@@ -420,7 +438,8 @@ export class CodexService extends EventEmitter {
     agent.lastMessage = message;
 
     try {
-      const args = ['exec', '--sandbox', 'workspace-write', message];
+      const sandboxMode = this.resolveSandboxMode();
+      const args = ['exec', '--sandbox', sandboxMode, message];
       console.log(
         `Executing: codex ${args.map((a) => (a.includes(' ') ? '"' + a + '"' : a)).join(' ')} in ${agent.worktreePath}`
       );
