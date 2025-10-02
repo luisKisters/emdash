@@ -349,16 +349,6 @@ const ChatInterface: React.FC<Props> = ({
     <div
       className={`flex flex-col h-full bg-white dark:bg-gray-800 ${className}`}
     >
-      <div className="flex items-center p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-        <div className="flex items-center space-x-3">
-          <Folder className="w-5 h-5 text-gray-600" />
-          <div>
-            <h3 className="font-medium text-gray-900 dark:text-gray-100 text-sm font-sans">
-              {projectName}
-            </h3>
-          </div>
-        </div>
-      </div>
 
       {provider === "droid" ? (
         <div className="flex-1 flex flex-col min-h-0">
