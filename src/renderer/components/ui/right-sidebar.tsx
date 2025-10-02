@@ -80,11 +80,28 @@ export function RightSidebarProvider({
   }, [width]);
 
   const setCollapsed = React.useCallback((next: boolean) => {
-    setCollapsedState(next);
+    setCollapsedState((prev) => {
+      if (prev === next) {
+        console.log(
+          `[RightSidebar] Collapsed state unchanged: ${prev ? "collapsed" : "expanded"}`
+        );
+        return prev;
+      }
+      console.log(
+        `[RightSidebar] Collapsed state set to: ${next ? "collapsed" : "expanded"}`
+      );
+      return next;
+    });
   }, []);
 
   const toggle = React.useCallback(() => {
-    setCollapsedState((prev) => !prev);
+    setCollapsedState((prev) => {
+      const next = !prev;
+      console.log(
+        `[RightSidebar] Toggled via provider: now ${next ? "collapsed" : "expanded"}`
+      );
+      return next;
+    });
   }, []);
 
   const setWidth = React.useCallback((next: number) => {
@@ -113,4 +130,3 @@ export function useRightSidebar() {
   }
   return context;
 }
-

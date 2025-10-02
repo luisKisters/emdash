@@ -15,23 +15,35 @@ import { useGithubAuth } from "./hooks/useGithubAuth";
 import emdashLogo from "../assets/images/emdash/emdash_logo.svg";
 import Titlebar from "./components/titlebar/Titlebar";
 import { SidebarProvider, useSidebar } from "./components/ui/sidebar";
-import { RightSidebarProvider } from "./components/ui/right-sidebar";
+import { RightSidebarProvider, useRightSidebar } from "./components/ui/right-sidebar";
 
 const SidebarHotkeys: React.FC = () => {
-  const { toggle } = useSidebar();
+  const { toggle: toggleLeftSidebar } = useSidebar();
+  const { toggle: toggleRightSidebar } = useRightSidebar();
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
     const handler = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "b") {
         event.preventDefault();
-        toggle();
+        toggleLeftSidebar();
+      }
+
+      const isRightPanelHotkey =
+        event.key === "." || event.code?.toLowerCase() === "period";
+
+      if ((event.metaKey || event.ctrlKey) && isRightPanelHotkey) {
+        event.preventDefault();
+        console.log(
+          `[RightSidebar] Toggle requested via hotkey (${event.metaKey ? "⌘" : "Ctrl"}.)`
+        );
+        toggleRightSidebar();
       }
     };
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [toggle]);
+  }, [toggleLeftSidebar, toggleRightSidebar]);
 
   return null;
 };
