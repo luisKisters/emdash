@@ -14,7 +14,7 @@ interface FileChangesPanelProps {
   className?: string;
 }
 
-export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
+const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({
   workspaceId,
   className,
 }) => {
@@ -180,5 +180,6 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
     </div>
   );
 };
+export const FileChangesPanel = React.memo(FileChangesPanelComponent);
 
 export default FileChangesPanel;

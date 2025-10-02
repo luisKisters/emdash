@@ -15,7 +15,7 @@ interface Props {
   className?: string;
 }
 
-export const WorkspaceTerminalPanel: React.FC<Props> = ({
+const WorkspaceTerminalPanelComponent: React.FC<Props> = ({
   workspace,
   className,
 }) => {
@@ -60,5 +60,6 @@ export const WorkspaceTerminalPanel: React.FC<Props> = ({
     </div>
   );
 };
+export const WorkspaceTerminalPanel = React.memo(WorkspaceTerminalPanelComponent);
 
 export default WorkspaceTerminalPanel;
