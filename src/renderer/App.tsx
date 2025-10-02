@@ -6,8 +6,6 @@ import LeftSidebar from "./components/LeftSidebar";
 import ProjectMainView from "./components/ProjectMainView";
 import WorkspaceModal from "./components/WorkspaceModal";
 import ChatInterface from "./components/ChatInterface";
-import WorkspaceTerminalPanel from "./components/WorkspaceTerminalPanel";
-import FileChangesPanel from "./components/FileChangesPanel";
 import { Toaster } from "./components/ui/toaster";
 import RequirementsNotice from "./components/RequirementsNotice";
 import { useToast } from "./hooks/use-toast";
@@ -15,22 +13,33 @@ import { useGithubAuth } from "./hooks/useGithubAuth";
 import emdashLogo from "../assets/images/emdash/emdash_logo.svg";
 import Titlebar from "./components/titlebar/Titlebar";
 import { SidebarProvider, useSidebar } from "./components/ui/sidebar";
+import { RightSidebarProvider, useRightSidebar } from "./components/ui/right-sidebar";
+import RightSidebar from "./components/RightSidebar";
 
 const SidebarHotkeys: React.FC = () => {
-  const { toggle } = useSidebar();
+  const { toggle: toggleLeftSidebar } = useSidebar();
+  const { toggle: toggleRightSidebar } = useRightSidebar();
 
   useEffect(() => {
     if (typeof window === "undefined") return undefined;
     const handler = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "b") {
         event.preventDefault();
-        toggle();
+        toggleLeftSidebar();
+      }
+
+      const isRightPanelHotkey =
+        event.key === "." || event.code?.toLowerCase() === "period";
+
+      if ((event.metaKey || event.ctrlKey) && isRightPanelHotkey) {
+        event.preventDefault();
+        toggleRightSidebar();
       }
     };
 
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
-  }, [toggle]);
+  }, [toggleLeftSidebar, toggleRightSidebar]);
 
   return null;
 };
@@ -59,6 +68,8 @@ interface Workspace {
   status: "active" | "idle" | "running";
   agentId?: string;
 }
+
+const TITLEBAR_HEIGHT = "36px";
 
 const App: React.FC = () => {
   const { toast } = useToast();
@@ -362,6 +373,7 @@ const App: React.FC = () => {
   const handleGoHome = () => {
     setSelectedProject(null);
     setShowHomeView(true);
+    setActiveWorkspace(null);
   };
 
   const handleSelectProject = (project: Project) => {
@@ -483,7 +495,7 @@ const App: React.FC = () => {
     if (showHomeView) {
       return (
         <div className="flex-1 bg-background text-foreground overflow-y-auto">
-          <div className="container mx-auto px-4 py-8 flex flex-col justify-center min-h-screen">
+          <div className="container mx-auto px-4 py-8 flex flex-col justify-center min-h-full">
             <div className="text-center mb-12">
               <div className="flex items-center justify-center mb-4">
                 <div className="logo-shimmer-container">
@@ -538,37 +550,22 @@ const App: React.FC = () => {
 
     if (selectedProject) {
       return (
-        <div className="flex-1 flex bg-background text-foreground overflow-hidden">
-          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-            {activeWorkspace ? (
-              <ChatInterface
-                workspace={activeWorkspace}
-                projectName={selectedProject.name}
-                className="h-full"
-              />
-            ) : (
-              <ProjectMainView
-                project={selectedProject}
-                onCreateWorkspace={() => setShowWorkspaceModal(true)}
-                activeWorkspace={activeWorkspace}
-                onSelectWorkspace={handleSelectWorkspace}
-                onDeleteWorkspace={handleDeleteWorkspace}
-                isCreatingWorkspace={isCreatingWorkspace}
-              />
-            )}
-          </div>
-
-          {activeWorkspace && (
-            <div className="w-80 border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex flex-col h-full max-h-full">
-              <FileChangesPanel
-                workspaceId={activeWorkspace.path}
-                className="flex-1 min-h-0"
-              />
-              <WorkspaceTerminalPanel
-                workspace={activeWorkspace}
-                className="flex-1 min-h-0"
-              />
-            </div>
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          {activeWorkspace ? (
+            <ChatInterface
+              workspace={activeWorkspace}
+              projectName={selectedProject.name}
+              className="flex-1 min-h-0"
+            />
+          ) : (
+            <ProjectMainView
+              project={selectedProject}
+              onCreateWorkspace={() => setShowWorkspaceModal(true)}
+              activeWorkspace={activeWorkspace}
+              onSelectWorkspace={handleSelectWorkspace}
+              onDeleteWorkspace={handleDeleteWorkspace}
+              isCreatingWorkspace={isCreatingWorkspace}
+            />
           )}
         </div>
       );
@@ -576,7 +573,7 @@ const App: React.FC = () => {
 
     return (
       <div className="flex-1 bg-background text-foreground overflow-y-auto">
-        <div className="container mx-auto px-4 py-8 flex flex-col justify-center min-h-screen">
+        <div className="container mx-auto px-4 py-8 flex flex-col justify-center min-h-full">
           <div className="text-center mb-12">
             <div className="flex items-center justify-center mb-4">
               <img
@@ -614,38 +611,46 @@ const App: React.FC = () => {
   };
 
   return (
-    <SidebarProvider>
-      <SidebarHotkeys />
-      <Titlebar />
-      <div className="mt-9 flex h-[calc(100vh-36px)] w-full bg-background text-foreground overflow-hidden">
-        <LeftSidebar
-          projects={projects}
-          selectedProject={selectedProject}
-          onSelectProject={handleSelectProject}
-          onGoHome={handleGoHome}
-          onSelectWorkspace={handleSelectWorkspace}
-          activeWorkspace={activeWorkspace || undefined}
-          onReorderProjects={handleReorderProjects}
-          onReorderProjectsFull={handleReorderProjectsFull}
-          githubInstalled={ghInstalled}
-          githubAuthenticated={isAuthenticated}
-          githubUser={user}
-        />
+    <div
+      className="flex h-[100dvh] w-full flex-col bg-background text-foreground"
+      style={{ "--tb": TITLEBAR_HEIGHT } as React.CSSProperties}
+    >
+      <SidebarProvider>
+        <RightSidebarProvider>
+          <SidebarHotkeys />
+          <Titlebar />
+          <div className="flex flex-1 overflow-hidden pt-[var(--tb)]">
+            <LeftSidebar
+              projects={projects}
+              selectedProject={selectedProject}
+              onSelectProject={handleSelectProject}
+              onGoHome={handleGoHome}
+            onSelectWorkspace={handleSelectWorkspace}
+            activeWorkspace={activeWorkspace || undefined}
+            onReorderProjects={handleReorderProjects}
+            onReorderProjectsFull={handleReorderProjectsFull}
+            githubInstalled={ghInstalled}
+            githubAuthenticated={isAuthenticated}
+            githubUser={user}
+          />
 
-        <div className="flex-1 overflow-hidden flex flex-col">
-          {renderMainContent()}
-        </div>
-      </div>
-      <WorkspaceModal
-        isOpen={showWorkspaceModal}
-        onClose={() => setShowWorkspaceModal(false)}
-        onCreateWorkspace={handleCreateWorkspace}
-        projectName={selectedProject?.name || ""}
-        defaultBranch={selectedProject?.gitInfo.branch || "main"}
-        existingNames={(selectedProject?.workspaces || []).map((w) => w.name)}
-      />
-      <Toaster />
-    </SidebarProvider>
+            <div className="flex-1 overflow-hidden flex flex-col bg-background text-foreground">
+              {renderMainContent()}
+            </div>
+            <RightSidebar workspace={activeWorkspace} />
+          </div>
+          <WorkspaceModal
+            isOpen={showWorkspaceModal}
+            onClose={() => setShowWorkspaceModal(false)}
+            onCreateWorkspace={handleCreateWorkspace}
+            projectName={selectedProject?.name || ""}
+            defaultBranch={selectedProject?.gitInfo.branch || "main"}
+            existingNames={(selectedProject?.workspaces || []).map((w) => w.name)}
+          />
+          <Toaster />
+        </RightSidebarProvider>
+      </SidebarProvider>
+    </div>
   );
 };
 
