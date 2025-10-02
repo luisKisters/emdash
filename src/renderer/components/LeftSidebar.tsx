@@ -2,7 +2,6 @@ import React from "react";
 import ReorderList from "./ReorderList";
 import { Button } from "./ui/button";
 import {
-  SidebarProvider,
   Sidebar,
   SidebarContent,
   SidebarGroup,
@@ -12,13 +11,14 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  useSidebar,
 } from "./ui/sidebar";
 import {
   Collapsible,
   CollapsibleTrigger,
   CollapsibleContent,
 } from "./ui/collapsible";
-import { Home, ChevronDown } from "lucide-react";
+import { Home, ChevronDown} from "lucide-react";
 import GithubStatus from "./GithubStatus";
 import { WorkspaceItem } from "./WorkspaceItem";
 
@@ -46,6 +46,22 @@ interface Workspace {
   status: "active" | "idle" | "running";
   agentId?: string;
 }
+
+const SidebarToggleButton: React.FC = () => {
+  const { toggle } = useSidebar();
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggle}
+      className="absolute -right-3 top-4 z-20 hidden h-9 w-9 items-center justify-center text-muted-foreground hover:bg-background/80 rounded-md lg:inline-flex"
+      aria-label="Toggle sidebar"
+    >
+
+    </Button>
+  );
+};
 
 interface LeftSidebarProps {
   projects: Project[];
@@ -79,7 +95,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   );
 
   return (
-    <SidebarProvider>
+    <div className="relative h-full">
       <Sidebar>
         <SidebarContent>
           <SidebarGroup className="mb-2">
@@ -91,7 +107,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                       variant="ghost"
                       onClick={onGoHome}
                       aria-label="Home"
-                      className="justify-start mt-5"
+                      className="justify-start"
                     >
                       <Home className="w-5 h-5 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400" />
                       <span className="hidden sm:inline text-sm font-medium">Home</span>
@@ -223,7 +239,8 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
           </SidebarMenu>
         </SidebarFooter>
       </Sidebar>
-    </SidebarProvider>
+      <SidebarToggleButton />
+    </div>
   );
 };
 
