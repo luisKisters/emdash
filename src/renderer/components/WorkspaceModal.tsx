@@ -149,7 +149,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                       id="initial-prompt"
                       value={initialPrompt}
                       onChange={(e) => setInitialPrompt(e.target.value)}
-                      placeholder="What would you like the agent to help you with?"
+                      placeholder="Add an initial prompt, outlining your goal and how you want to achieve it (this will be sent to codex)."
                       className="w-full min-h-[80px] px-3 py-2 text-sm border border-input bg-background rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                       rows={3}
                     />
