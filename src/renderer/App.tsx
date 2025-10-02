@@ -373,6 +373,7 @@ const App: React.FC = () => {
   const handleGoHome = () => {
     setSelectedProject(null);
     setShowHomeView(true);
+    setActiveWorkspace(null);
   };
 
   const handleSelectProject = (project: Project) => {
