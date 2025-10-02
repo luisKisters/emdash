@@ -6,8 +6,6 @@ import LeftSidebar from "./components/LeftSidebar";
 import ProjectMainView from "./components/ProjectMainView";
 import WorkspaceModal from "./components/WorkspaceModal";
 import ChatInterface from "./components/ChatInterface";
-import WorkspaceTerminalPanel from "./components/WorkspaceTerminalPanel";
-import FileChangesPanel from "./components/FileChangesPanel";
 import { Toaster } from "./components/ui/toaster";
 import RequirementsNotice from "./components/RequirementsNotice";
 import { useToast } from "./hooks/use-toast";
@@ -16,6 +14,7 @@ import emdashLogo from "../assets/images/emdash/emdash_logo.svg";
 import Titlebar from "./components/titlebar/Titlebar";
 import { SidebarProvider, useSidebar } from "./components/ui/sidebar";
 import { RightSidebarProvider, useRightSidebar } from "./components/ui/right-sidebar";
+import RightSidebar from "./components/RightSidebar";
 
 const SidebarHotkeys: React.FC = () => {
   const { toggle: toggleLeftSidebar } = useSidebar();
@@ -34,9 +33,6 @@ const SidebarHotkeys: React.FC = () => {
 
       if ((event.metaKey || event.ctrlKey) && isRightPanelHotkey) {
         event.preventDefault();
-        console.log(
-          `[RightSidebar] Toggle requested via hotkey (${event.metaKey ? "⌘" : "Ctrl"}.)`
-        );
         toggleRightSidebar();
       }
     };
@@ -551,37 +547,22 @@ const App: React.FC = () => {
 
     if (selectedProject) {
       return (
-        <div className="flex-1 flex bg-background text-foreground overflow-hidden">
-          <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
-            {activeWorkspace ? (
-              <ChatInterface
-                workspace={activeWorkspace}
-                projectName={selectedProject.name}
-                className="h-full"
-              />
-            ) : (
-              <ProjectMainView
-                project={selectedProject}
-                onCreateWorkspace={() => setShowWorkspaceModal(true)}
-                activeWorkspace={activeWorkspace}
-                onSelectWorkspace={handleSelectWorkspace}
-                onDeleteWorkspace={handleDeleteWorkspace}
-                isCreatingWorkspace={isCreatingWorkspace}
-              />
-            )}
-          </div>
-
-          {activeWorkspace && (
-            <div className="w-80 border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex flex-col h-full max-h-full">
-              <FileChangesPanel
-                workspaceId={activeWorkspace.path}
-                className="flex-1 min-h-0"
-              />
-              <WorkspaceTerminalPanel
-                workspace={activeWorkspace}
-                className="flex-1 min-h-0"
-              />
-            </div>
+        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+          {activeWorkspace ? (
+            <ChatInterface
+              workspace={activeWorkspace}
+              projectName={selectedProject.name}
+              className="flex-1 min-h-0"
+            />
+          ) : (
+            <ProjectMainView
+              project={selectedProject}
+              onCreateWorkspace={() => setShowWorkspaceModal(true)}
+              activeWorkspace={activeWorkspace}
+              onSelectWorkspace={handleSelectWorkspace}
+              onDeleteWorkspace={handleDeleteWorkspace}
+              isCreatingWorkspace={isCreatingWorkspace}
+            />
           )}
         </div>
       );
@@ -646,9 +627,10 @@ const App: React.FC = () => {
             githubUser={user}
           />
 
-          <div className="flex-1 overflow-hidden flex flex-col">
+          <div className="flex-1 overflow-hidden flex flex-col bg-background text-foreground">
             {renderMainContent()}
           </div>
+          <RightSidebar workspace={activeWorkspace} />
         </div>
         <WorkspaceModal
           isOpen={showWorkspaceModal}

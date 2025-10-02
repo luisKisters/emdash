@@ -4,14 +4,11 @@ import { PanelRight } from "lucide-react";
 import { useRightSidebar } from "../ui/right-sidebar";
 
 const SidebarRightToggleButton: React.FC = () => {
-  const { collapsed, toggle } = useRightSidebar();
+  const { toggle } = useRightSidebar();
 
   const label = "Toggle right sidebar (⌘.)";
 
   const handleClick = () => {
-    console.log(
-      `[RightSidebar] Toggle requested via titlebar button. Current state: ${collapsed ? "collapsed" : "expanded"}`
-    );
     toggle();
   };
 
