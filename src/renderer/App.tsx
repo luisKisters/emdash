@@ -210,8 +210,8 @@ const App: React.FC = () => {
                   platform === 'darwin'
                     ? 'Tip: Update GitHub CLI with: brew upgrade gh — then restart emdash.'
                     : platform === 'win32'
-                      ? 'Tip: Update GitHub CLI with: winget upgrade GitHub.cli — then restart emdash.'
-                      : 'Tip: Update GitHub CLI via your package manager (e.g., apt/dnf) and restart emdash.';
+                    ? 'Tip: Update GitHub CLI with: winget upgrade GitHub.cli — then restart emdash.'
+                    : 'Tip: Update GitHub CLI via your package manager (e.g., apt/dnf) and restart emdash.';
                 toast({
                   title: 'GitHub Connection Failed',
                   description: `Git repository detected but couldn't connect to GitHub: ${githubInfo.error}\n\n${updateHint}`,
@@ -279,7 +279,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleCreateWorkspace = async (workspaceName: string) => {
+  const handleCreateWorkspace = async (workspaceName: string, initialPrompt?: string) => {
     if (!selectedProject) return;
 
     setIsCreatingWorkspace(true);
@@ -312,6 +312,29 @@ const App: React.FC = () => {
       });
 
       if (saveResult.success) {
+        // If there's an initial prompt, create conversation and save it as first message
+        if (initialPrompt) {
+          try {
+            const conversationResult = await window.electronAPI.getOrCreateDefaultConversation(
+              newWorkspace.id
+            );
+            if (conversationResult.success && conversationResult.conversation) {
+              const userMessage = {
+                id: `initial-${Date.now()}`,
+                conversationId: conversationResult.conversation.id,
+                content: initialPrompt,
+                sender: 'user' as const,
+                metadata: JSON.stringify({ isInitialPrompt: true }),
+              };
+
+              await window.electronAPI.saveMessage(userMessage);
+            }
+          } catch (promptError) {
+            console.error('Failed to save initial prompt:', promptError);
+            // Don't fail workspace creation if prompt saving fails
+          }
+        }
+
         setProjects((prev) =>
           prev.map((project) =>
             project.id === selectedProject.id

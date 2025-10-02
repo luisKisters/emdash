@@ -209,29 +209,50 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
 
     initializedConversationRef.current = convoId;
 
-    if (codexStream.messages.length === 0) {
-      const welcomeMessage: Message = {
-        id: `welcome-${Date.now()}`,
-        content: `Hello! You're working in workspace **${workspace.name}**. What can the agent do for you?`,
-        sender: 'agent',
-        timestamp: new Date(),
-      };
+    // Check if we need to add a welcome message
+    // This runs when messages are loaded but could be empty or contain initial prompt
+    const checkForWelcomeMessage = async () => {
+      if (codexStream.messages.length === 0) {
+        // Check database directly for any existing messages to see if there's an initial prompt
+        try {
+          const messagesResult = await window.electronAPI.getMessages(convoId);
+          if (messagesResult.success && messagesResult.messages) {
+            const hasInitialPrompt = messagesResult.messages.some((msg: any) => {
+              try {
+                const metadata = JSON.parse(msg.metadata || '{}');
+                return metadata.isInitialPrompt;
+              } catch {
+                return false;
+              }
+            });
 
-      window.electronAPI
-        .saveMessage({
-          id: welcomeMessage.id,
-          conversationId: convoId,
-          content: welcomeMessage.content,
-          sender: welcomeMessage.sender,
-          metadata: JSON.stringify({ isWelcome: true }),
-        })
-        .catch((error: unknown) => {
-          console.error('Failed to save welcome message:', error);
-        })
-        .finally(() => {
-          codexStream.appendMessage(welcomeMessage);
-        });
-    }
+            // Only add welcome message if there's no initial prompt and no messages at all
+            if (!hasInitialPrompt && messagesResult.messages.length === 0) {
+              const welcomeMessage: Message = {
+                id: `welcome-${Date.now()}`,
+                content: `Hello! You're working in workspace **${workspace.name}**. What can the agent do for you?`,
+                sender: 'agent',
+                timestamp: new Date(),
+              };
+
+              await window.electronAPI.saveMessage({
+                id: welcomeMessage.id,
+                conversationId: convoId,
+                content: welcomeMessage.content,
+                sender: welcomeMessage.sender,
+                metadata: JSON.stringify({ isWelcome: true }),
+              });
+
+              codexStream.appendMessage(welcomeMessage);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to check for welcome message:', error);
+        }
+      }
+    };
+
+    checkForWelcomeMessage();
   }, [
     codexStream.isReady,
     codexStream.conversationId,
