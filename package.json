@@ -4,6 +4,7 @@
   "description": "A macOS Electron app that orchestrates multiple coding agents in parallel",
   "main": "dist/main/main.js",
   "scripts": {
+    "d": "npm i && npm run dev",
     "dev": "concurrently \"npm run dev:main\" \"npm run dev:renderer\"",
     "dev:main": "tsc -p tsconfig.main.json && electron dist/main/main.js --dev",
     "dev:renderer": "vite",
