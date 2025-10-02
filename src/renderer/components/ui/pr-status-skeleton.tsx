@@ -1,4 +1,4 @@
-import React from "react";
+import React from 'react';
 
 type PrStatusSkeletonProps = {
   className?: string;
@@ -8,10 +8,10 @@ type PrStatusSkeletonProps = {
 };
 
 export const PrStatusSkeleton: React.FC<PrStatusSkeletonProps> = ({
-  className = "",
-  widthClass = "w-20",
-  heightClass = "h-5",
-  ariaLabel = "Loading pull request status",
+  className = '',
+  widthClass = 'w-20',
+  heightClass = 'h-5',
+  ariaLabel = 'Loading pull request status',
 }) => {
   return (
     <span

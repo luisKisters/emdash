@@ -1,6 +1,6 @@
-import React from "react";
-import ReorderList from "./ReorderList";
-import { Button } from "./ui/button";
+import React from 'react';
+import ReorderList from './ReorderList';
+import { Button } from './ui/button';
 import {
   Sidebar,
   SidebarContent,
@@ -12,15 +12,11 @@ import {
   SidebarMenuButton,
   SidebarFooter,
   useSidebar,
-} from "./ui/sidebar";
-import {
-  Collapsible,
-  CollapsibleTrigger,
-  CollapsibleContent,
-} from "./ui/collapsible";
-import { Home, ChevronDown} from "lucide-react";
-import GithubStatus from "./GithubStatus";
-import { WorkspaceItem } from "./WorkspaceItem";
+} from './ui/sidebar';
+import { Collapsible, CollapsibleTrigger, CollapsibleContent } from './ui/collapsible';
+import { Home, ChevronDown } from 'lucide-react';
+import GithubStatus from './GithubStatus';
+import { WorkspaceItem } from './WorkspaceItem';
 
 interface Project {
   id: string;
@@ -43,7 +39,7 @@ interface Workspace {
   name: string;
   branch: string;
   path: string;
-  status: "active" | "idle" | "running";
+  status: 'active' | 'idle' | 'running';
   agentId?: string;
 }
 
@@ -57,9 +53,7 @@ const SidebarToggleButton: React.FC = () => {
       onClick={toggle}
       className="absolute -right-3 top-4 z-20 hidden h-9 w-9 items-center justify-center text-muted-foreground hover:bg-background/80 rounded-md lg:inline-flex"
       aria-label="Toggle sidebar"
-    >
-
-    </Button>
+    ></Button>
   );
 };
 
@@ -91,7 +85,11 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   githubUser,
 }) => {
   const renderGithubStatus = () => (
-    <GithubStatus installed={githubInstalled} authenticated={githubAuthenticated} user={githubUser} />
+    <GithubStatus
+      installed={githubInstalled}
+      authenticated={githubAuthenticated}
+      user={githubUser}
+    />
   );
 
   return (
@@ -196,11 +194,10 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                                           ) {
                                             onSelectProject(typedProject);
                                           }
-                                          onSelectWorkspace &&
-                                            onSelectWorkspace(workspace);
+                                          onSelectWorkspace && onSelectWorkspace(workspace);
                                         }}
                                         className={` px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 min-w-0 ${
-                                          isActive ? "bg-black/5 dark:bg-white/5" : ""
+                                          isActive ? 'bg-black/5 dark:bg-white/5' : ''
                                         }`}
                                         title={workspace.name}
                                       >
@@ -230,9 +227,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                 className="flex w-full items-center justify-start gap-2 px-2 py-2 text-sm text-muted-foreground cursor-default hover:bg-transparent focus-visible:outline-none focus-visible:ring-0"
               >
                 <div className="flex flex-1 flex-col min-w-0 text-left gap-1">
-                  <div className="hidden sm:block truncate">
-                    {renderGithubStatus()}
-                  </div>
+                  <div className="hidden sm:block truncate">{renderGithubStatus()}</div>
                 </div>
               </SidebarMenuButton>
             </SidebarMenuItem>

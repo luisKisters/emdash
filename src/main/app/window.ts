@@ -1,9 +1,9 @@
-import { BrowserWindow } from 'electron'
-import { join } from 'path'
-import { isDev } from '../utils/dev'
-import { registerExternalLinkHandlers } from '../utils/externalLinks'
+import { BrowserWindow } from 'electron';
+import { join } from 'path';
+import { isDev } from '../utils/dev';
+import { registerExternalLinkHandlers } from '../utils/externalLinks';
 
-let mainWindow: BrowserWindow | null = null
+let mainWindow: BrowserWindow | null = null;
 
 export function createMainWindow(): BrowserWindow {
   mainWindow = new BrowserWindow({
@@ -20,31 +20,31 @@ export function createMainWindow(): BrowserWindow {
     },
     titleBarStyle: 'hiddenInset',
     show: false,
-  })
+  });
 
   if (isDev) {
-    mainWindow.loadURL('http://localhost:3000')
+    mainWindow.loadURL('http://localhost:3000');
   } else {
     // renderer build outputs to dist/renderer
-    mainWindow.loadFile(join(__dirname, '..', '..', 'renderer', 'index.html'))
+    mainWindow.loadFile(join(__dirname, '..', '..', 'renderer', 'index.html'));
   }
 
   // Route external links to the user’s default browser
-  registerExternalLinkHandlers(mainWindow, isDev)
+  registerExternalLinkHandlers(mainWindow, isDev);
 
   // Show when ready
   mainWindow.once('ready-to-show', () => {
-    mainWindow?.show()
-  })
+    mainWindow?.show();
+  });
 
   // Cleanup reference on close
   mainWindow.on('closed', () => {
-    mainWindow = null
-  })
+    mainWindow = null;
+  });
 
-  return mainWindow
+  return mainWindow;
 }
 
 export function getMainWindow(): BrowserWindow | null {
-  return mainWindow
+  return mainWindow;
 }

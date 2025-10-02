@@ -1,7 +1,7 @@
-import React from "react";
-import { Reorder } from "motion/react";
+import React from 'react';
+import { Reorder } from 'motion/react';
 
-type Axis = "x" | "y";
+type Axis = 'x' | 'y';
 
 interface ReorderListProps<T> {
   items: T[];
@@ -18,11 +18,11 @@ interface ReorderListProps<T> {
 export function ReorderList<T>({
   items,
   onReorder,
-  axis = "y",
+  axis = 'y',
   className,
   itemClassName,
   layoutScroll = true,
-  as = "div",
+  as = 'div',
   getKey,
   children,
 }: ReorderListProps<T>) {
@@ -49,4 +49,3 @@ export function ReorderList<T>({
 }
 
 export default ReorderList;
-

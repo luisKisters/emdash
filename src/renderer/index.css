@@ -91,7 +91,7 @@
   }
 
   .logo-shimmer-overlay::before {
-    content: "";
+    content: '';
     position: absolute;
     top: -20%;
     bottom: -20%;

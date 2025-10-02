@@ -1,5 +1,5 @@
 export interface FilterContext {
-  phase: "chunk" | "final" | "historical";
+  phase: 'chunk' | 'final' | 'historical';
   workspaceId: string;
   conversationId?: string | null;
 }
@@ -13,8 +13,7 @@ export const composeFilters = (filters: Filter[]): Filter => {
     return noOp;
   }
 
-  return (input, ctx) =>
-    filters.reduce((acc, filter) => filter(acc, ctx), input);
+  return (input, ctx) => filters.reduce((acc, filter) => filter(acc, ctx), input);
 };
 
 export const defaultPipeline = composeFilters([noOp]);

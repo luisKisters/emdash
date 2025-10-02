@@ -1,4 +1,4 @@
-import * as React from "react";
+import * as React from 'react';
 
 interface RightSidebarContextValue {
   collapsed: boolean;
@@ -8,12 +8,10 @@ interface RightSidebarContextValue {
   setWidth: (next: number) => void;
 }
 
-const RightSidebarContext = React.createContext<
-  RightSidebarContextValue | undefined
->(undefined);
+const RightSidebarContext = React.createContext<RightSidebarContextValue | undefined>(undefined);
 
-const COLLAPSED_STORAGE_KEY = "emdash.rightSidebarCollapsed";
-const WIDTH_STORAGE_KEY = "emdash.rightSidebarWidth";
+const COLLAPSED_STORAGE_KEY = 'emdash.rightSidebarCollapsed';
+const WIDTH_STORAGE_KEY = 'emdash.rightSidebarWidth';
 const DEFAULT_WIDTH = 320; // Tailwind w-80 => 20rem => 320px
 
 export interface RightSidebarProviderProps {
@@ -23,18 +21,18 @@ export interface RightSidebarProviderProps {
 }
 
 function readStoredBoolean(key: string, fallback: boolean) {
-  if (typeof window === "undefined") return fallback;
+  if (typeof window === 'undefined') return fallback;
   try {
     const stored = window.localStorage.getItem(key);
     if (stored === null) return fallback;
-    return stored === "true";
+    return stored === 'true';
   } catch {
     return fallback;
   }
 }
 
 function readStoredNumber(key: string, fallback: number) {
-  if (typeof window === "undefined") return fallback;
+  if (typeof window === 'undefined') return fallback;
   try {
     const stored = window.localStorage.getItem(key);
     if (!stored) return fallback;
@@ -59,19 +57,16 @@ export function RightSidebarProvider({
   );
 
   React.useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
     try {
-      window.localStorage.setItem(
-        COLLAPSED_STORAGE_KEY,
-        collapsed ? "true" : "false"
-      );
+      window.localStorage.setItem(COLLAPSED_STORAGE_KEY, collapsed ? 'true' : 'false');
     } catch {
       // ignore persistence errors
     }
   }, [collapsed]);
 
   React.useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === 'undefined') return;
     try {
       window.localStorage.setItem(WIDTH_STORAGE_KEY, String(width));
     } catch {
@@ -99,17 +94,13 @@ export function RightSidebarProvider({
     [collapsed, toggle, setCollapsed, width, setWidth]
   );
 
-  return (
-    <RightSidebarContext.Provider value={value}>
-      {children}
-    </RightSidebarContext.Provider>
-  );
+  return <RightSidebarContext.Provider value={value}>{children}</RightSidebarContext.Provider>;
 }
 
 export function useRightSidebar() {
   const context = React.useContext(RightSidebarContext);
   if (!context) {
-    throw new Error("useRightSidebar must be used within a RightSidebarProvider");
+    throw new Error('useRightSidebar must be used within a RightSidebarProvider');
   }
   return context;
 }

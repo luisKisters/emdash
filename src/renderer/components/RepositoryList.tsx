@@ -36,7 +36,7 @@ const RepositoryList: React.FC<RepositoryListProps> = ({
     const now = new Date();
     const diffTime = Math.abs(now.getTime() - date.getTime());
     const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
+
     if (diffDays < 30) {
       return `${diffDays} days ago`;
     } else {
@@ -62,26 +62,24 @@ const RepositoryList: React.FC<RepositoryListProps> = ({
           {repositories.length} repositories found
         </p>
       </div>
-      
+
       <div className="space-y-2 max-h-96 overflow-y-auto">
         {repositories.map((repo) => (
-          <Card 
-            key={repo.id} 
+          <Card
+            key={repo.id}
             className="p-4 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors cursor-pointer"
             onClick={() => onOpenRepository(repo)}
           >
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-3 flex-1 min-w-0">
                 {getRepositoryIcon(repo)}
-                
+
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center space-x-2">
                     <h3 className="font-medium text-gray-900 dark:text-gray-100 truncate">
                       {repo.name}
                     </h3>
-                    {repo.private && (
-                      <Lock className="w-4 h-4 text-gray-400" />
-                    )}
+                    {repo.private && <Lock className="w-4 h-4 text-gray-400" />}
                   </div>
                   {repo.description && (
                     <p className="text-sm text-gray-500 dark:text-gray-400 truncate mt-1">
@@ -89,14 +87,14 @@ const RepositoryList: React.FC<RepositoryListProps> = ({
                     </p>
                   )}
                 </div>
-                
+
                 {/* Date */}
                 <div className="flex items-center space-x-1 text-sm text-gray-500 dark:text-gray-400">
                   <Calendar className="w-4 h-4" />
                   <span>{formatDate(repo.updated_at)}</span>
                 </div>
               </div>
-              
+
               <Button
                 variant="outline"
                 size="sm"
@@ -113,7 +111,7 @@ const RepositoryList: React.FC<RepositoryListProps> = ({
           </Card>
         ))}
       </div>
-      
+
       {repositories.length === 0 && (
         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
           <p>No repositories found</p>

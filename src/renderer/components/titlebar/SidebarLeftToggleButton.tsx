@@ -1,13 +1,8 @@
-import React from "react";
-import { Button } from "../ui/button";
-import { Command, PanelLeft } from "lucide-react";
-import { useSidebar } from "../ui/sidebar";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider,
-} from "../ui/tooltip";
+import React from 'react';
+import { Button } from '../ui/button';
+import { Command, PanelLeft } from 'lucide-react';
+import { useSidebar } from '../ui/sidebar';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '../ui/tooltip';
 
 const SidebarLeftToggleButton: React.FC = () => {
   const { toggle } = useSidebar();
@@ -29,8 +24,7 @@ const SidebarLeftToggleButton: React.FC = () => {
         </TooltipTrigger>
         <TooltipContent side="bottom" className="text-xs font-medium">
           <span className="flex items-center gap-1">
-            <Command className="h-3 w-3" aria-hidden="true" />
-            B
+            <Command className="h-3 w-3" aria-hidden="true" />B
           </span>
         </TooltipContent>
       </Tooltip>
