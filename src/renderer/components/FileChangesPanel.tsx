@@ -55,7 +55,7 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
     <div
       className={`bg-white dark:bg-gray-800 shadow-sm flex flex-col h-full ${className}`}
     >
-      <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex items-center">
+      <div className="px-3 py-2 bg-gray-50 dark:bg-gray-900 flex items-center">
         {hasChanges ? (
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center space-x-2">
