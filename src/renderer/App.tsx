@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "./components/ui/button";
 
-import { FolderOpen } from "lucide-react";
+import { FolderOpen, PanelLeft } from "lucide-react";
 import LeftSidebar from "./components/LeftSidebar";
 import ProjectMainView from "./components/ProjectMainView";
 import WorkspaceModal from "./components/WorkspaceModal";
@@ -13,6 +13,24 @@ import RequirementsNotice from "./components/RequirementsNotice";
 import { useToast } from "./hooks/use-toast";
 import { useGithubAuth } from "./hooks/useGithubAuth";
 import emdashLogo from "../assets/images/emdash/emdash_logo.svg";
+import { SidebarProvider, useSidebar } from "./components/ui/sidebar";
+import { cn } from "./lib/utils";
+
+const SidebarToggleButton: React.FC<{ className?: string }> = ({ className }) => {
+  const { open, toggle } = useSidebar();
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggle}
+      className={cn("h-9 w-9 text-muted-foreground hover:bg-background/80", className)}
+      aria-label={open ? "Collapse sidebar" : "Expand sidebar"}
+    >
+      <PanelLeft className="h-4 w-4" />
+    </Button>
+  );
+};
 
 interface Project {
   id: string;
@@ -458,23 +476,9 @@ const App: React.FC = () => {
     });
   };
 
-  return (
-    <div className="h-screen flex bg-background text-foreground">
-      <LeftSidebar
-        projects={projects}
-        selectedProject={selectedProject}
-        onSelectProject={handleSelectProject}
-        onGoHome={handleGoHome}
-        onSelectWorkspace={handleSelectWorkspace}
-        activeWorkspace={activeWorkspace || undefined}
-        onReorderProjects={handleReorderProjects}
-        onReorderProjectsFull={handleReorderProjectsFull}
-        githubInstalled={ghInstalled}
-        githubAuthenticated={isAuthenticated}
-        githubUser={user}
-      />
-
-      {showHomeView ? (
+  const renderMainContent = () => {
+    if (showHomeView) {
+      return (
         <div className="flex-1 bg-background text-foreground overflow-y-auto">
           <div className="container mx-auto px-4 py-8 flex flex-col justify-center min-h-screen">
             <div className="text-center mb-12">
@@ -526,7 +530,11 @@ const App: React.FC = () => {
             {null}
           </div>
         </div>
-      ) : selectedProject ? (
+      );
+    }
+
+    if (selectedProject) {
+      return (
         <div className="flex-1 flex bg-background text-foreground overflow-hidden">
           <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
             {activeWorkspace ? (
@@ -548,7 +556,7 @@ const App: React.FC = () => {
           </div>
 
           {activeWorkspace && (
-            <div className="w-80 border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex flex-col h-screen max-h-screen">
+            <div className="w-80 border-l border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 flex flex-col h-full max-h-full">
               <FileChangesPanel
                 workspaceId={activeWorkspace.path}
                 className="flex-1 min-h-0"
@@ -560,44 +568,72 @@ const App: React.FC = () => {
             </div>
           )}
         </div>
-      ) : (
-        <div className="flex-1 bg-background text-foreground overflow-y-auto">
-          <div className="container mx-auto px-4 py-8 flex flex-col justify-center min-h-screen">
-            <div className="text-center mb-12">
-              <div className="flex items-center justify-center mb-4">
-                <img
-                  src={emdashLogo}
-                  alt="emdash"
-                  className="h-16"
-                />
-              </div>
-              <p className="text-sm sm:text-base text-gray-700 text-muted-foreground mb-6">
-                Run multiple Coding Agents in parallel
-              </p>
-              <RequirementsNotice
-                showGithubRequirement={showGithubRequirement}
-                needsGhInstall={needsGhInstall}
-                needsGhAuth={needsGhAuth}
-                showAgentRequirement={showAgentRequirement}
+      );
+    }
+
+    return (
+      <div className="flex-1 bg-background text-foreground overflow-y-auto">
+        <div className="container mx-auto px-4 py-8 flex flex-col justify-center min-h-screen">
+          <div className="text-center mb-12">
+            <div className="flex items-center justify-center mb-4">
+              <img
+                src={emdashLogo}
+                alt="emdash"
+                className="h-16"
               />
             </div>
+            <p className="text-sm sm:text-base text-gray-700 text-muted-foreground mb-6">
+              Run multiple Coding Agents in parallel
+            </p>
+            <RequirementsNotice
+              showGithubRequirement={showGithubRequirement}
+              needsGhInstall={needsGhInstall}
+              needsGhAuth={needsGhAuth}
+              showAgentRequirement={showAgentRequirement}
+            />
+          </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
-              <Button
-                onClick={handleOpenProject}
-                size="lg"
-                className="min-w-[200px] bg-black text-white hover:bg-gray-800 hover:text-white border-black"
-              >
-                <FolderOpen className="mr-2 h-5 w-5" />
-                Open Project
-              </Button>
-            </div>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+            <Button
+              onClick={handleOpenProject}
+              size="lg"
+              className="min-w-[200px] bg-black text-white hover:bg-gray-800 hover:text-white border-black"
+            >
+              <FolderOpen className="mr-2 h-5 w-5" />
+              Open Project
+            </Button>
+          </div>
 
-            {null}
+          {null}
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <SidebarProvider>
+      <div className="h-screen flex bg-background text-foreground">
+        <LeftSidebar
+          projects={projects}
+          selectedProject={selectedProject}
+          onSelectProject={handleSelectProject}
+          onGoHome={handleGoHome}
+          onSelectWorkspace={handleSelectWorkspace}
+          activeWorkspace={activeWorkspace || undefined}
+          onReorderProjects={handleReorderProjects}
+          onReorderProjectsFull={handleReorderProjectsFull}
+          githubInstalled={ghInstalled}
+          githubAuthenticated={isAuthenticated}
+          githubUser={user}
+        />
+
+        <div className="flex-1 flex flex-col overflow-hidden relative">
+          <SidebarToggleButton className="absolute left-3 top-3 z-20" />
+          <div className="flex-1 overflow-hidden flex flex-col">
+            {renderMainContent()}
           </div>
         </div>
-      )}
-
+      </div>
       <WorkspaceModal
         isOpen={showWorkspaceModal}
         onClose={() => setShowWorkspaceModal(false)}
@@ -607,7 +643,7 @@ const App: React.FC = () => {
         existingNames={(selectedProject?.workspaces || []).map((w) => w.name)}
       />
       <Toaster />
-    </div>
+    </SidebarProvider>
   );
 };
 

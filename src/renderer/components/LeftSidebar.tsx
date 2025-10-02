@@ -2,7 +2,6 @@ import React from "react";
 import ReorderList from "./ReorderList";
 import { Button } from "./ui/button";
 import {
-  SidebarProvider,
   Sidebar,
   SidebarContent,
   SidebarGroup,
@@ -79,9 +78,8 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   );
 
   return (
-    <SidebarProvider>
-      <Sidebar>
-        <SidebarContent>
+    <Sidebar>
+      <SidebarContent>
           <SidebarGroup className="mb-2">
             <SidebarGroupContent>
               <SidebarMenu>
@@ -204,26 +202,25 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-        </SidebarContent>
-        <SidebarFooter className="border-t border-gray-200 dark:border-gray-800 px-2 py-2 sm:px-4 sm:py-4">
-          <SidebarMenu className="w-full">
-            <SidebarMenuItem>
-              <SidebarMenuButton
-                tabIndex={-1}
-                onClick={(e) => e.preventDefault()}
-                className="flex w-full items-center justify-start gap-2 px-2 py-2 text-sm text-muted-foreground cursor-default hover:bg-transparent focus-visible:outline-none focus-visible:ring-0"
-              >
-                <div className="flex flex-1 flex-col min-w-0 text-left gap-1">
-                  <div className="hidden sm:block truncate">
-                    {renderGithubStatus()}
-                  </div>
+      </SidebarContent>
+      <SidebarFooter className="border-t border-gray-200 dark:border-gray-800 px-2 py-2 sm:px-4 sm:py-4">
+        <SidebarMenu className="w-full">
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              tabIndex={-1}
+              onClick={(e) => e.preventDefault()}
+              className="flex w-full items-center justify-start gap-2 px-2 py-2 text-sm text-muted-foreground cursor-default hover:bg-transparent focus-visible:outline-none focus-visible:ring-0"
+            >
+              <div className="flex flex-1 flex-col min-w-0 text-left gap-1">
+                <div className="hidden sm:block truncate">
+                  {renderGithubStatus()}
                 </div>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        </SidebarFooter>
-      </Sidebar>
-    </SidebarProvider>
+              </div>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+      </SidebarFooter>
+    </Sidebar>
   );
 };
 
