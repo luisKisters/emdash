@@ -1,9 +1,10 @@
-import { exec } from "child_process";
+import { execFile } from "child_process";
 import { promisify } from "util";
 import path from "path";
 import fs from "fs";
+import crypto from "crypto";
 
-const execAsync = promisify(exec);
+const execFileAsync = promisify(execFile);
 
 export interface WorktreeInfo {
   id: string;
@@ -20,6 +21,22 @@ export class WorktreeService {
   private worktrees = new Map<string, WorktreeInfo>();
 
   /**
+   * Slugify workspace name to make it shell-safe
+   */
+  private slugify(name: string): string {
+    return name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+  }
+
+  /**
+   * Generate a stable ID from the absolute worktree path.
+   */
+  private stableIdFromPath(worktreePath: string): string {
+    const abs = path.resolve(worktreePath)
+    const h = crypto.createHash('sha1').update(abs).digest('hex').slice(0, 12)
+    return `wt-${h}`
+  }
+
+  /**
    * Create a new Git worktree for an agent workspace
    */
   async createWorktree(
@@ -28,15 +45,15 @@ export class WorktreeService {
     projectId: string
   ): Promise<WorktreeInfo> {
     try {
-      // Generate unique branch name with more randomness
+      const sluggedName = this.slugify(workspaceName);
       const timestamp = Date.now();
-      const random = Math.random().toString(36).substring(2, 8);
-      const branchName = `agent/${workspaceName}-${timestamp}-${random}`;
+      const branchName = `agent/${sluggedName}-${timestamp}`;
       const worktreePath = path.join(
         projectPath,
         "..",
-        `worktrees/${workspaceName}-${timestamp}`
+        `worktrees/${sluggedName}-${timestamp}`
       );
+      const worktreeId = this.stableIdFromPath(worktreePath);
 
       console.log(`Creating worktree: ${branchName} -> ${worktreePath}`);
 
@@ -52,8 +69,9 @@ export class WorktreeService {
       }
 
       // Create the worktree
-      const { stdout, stderr } = await execAsync(
-        `git worktree add -b "${branchName}" "${worktreePath}"`,
+      const { stdout, stderr } = await execFileAsync(
+        'git',
+        ['worktree', 'add', '-b', branchName, worktreePath],
         { cwd: projectPath }
       );
 
@@ -100,7 +118,7 @@ export class WorktreeService {
       } catch {}
 
       const worktreeInfo: WorktreeInfo = {
-        id: `${projectId}-${workspaceName}`,
+        id: worktreeId,
         name: workspaceName,
         branch: branchName,
         path: worktreePath,
@@ -115,7 +133,7 @@ export class WorktreeService {
 
       // Push the new branch to origin and set upstream so PRs work out of the box
       try {
-        await execAsync(`git push --set-upstream origin ${JSON.stringify(branchName)}`, {
+        await execFileAsync('git', ['push', '--set-upstream', 'origin', branchName], {
           cwd: worktreePath,
         });
         console.log(`Pushed branch ${branchName} to origin with upstream tracking`);
@@ -136,7 +154,7 @@ export class WorktreeService {
    */
   async listWorktrees(projectPath: string): Promise<WorktreeInfo[]> {
     try {
-      const { stdout } = await execAsync("git worktree list", {
+      const { stdout } = await execFileAsync('git', ['worktree', 'list'], {
         cwd: projectPath,
       });
 
@@ -152,10 +170,14 @@ export class WorktreeService {
 
           // Only include worktrees that are agent workspaces
           if (branch.startsWith("agent/")) {
-            const workspaceName = path.basename(worktreePath);
-            worktrees.push({
-              id: `${path.basename(projectPath)}-${workspaceName}`,
-              name: workspaceName,
+            // Try to find existing worktree in memory by path
+            const existing = Array.from(this.worktrees.values()).find(
+              wt => wt.path === worktreePath
+            );
+
+            worktrees.push(existing ?? {
+              id: this.stableIdFromPath(worktreePath),
+              name: path.basename(worktreePath),
               branch,
               path: worktreePath,
               projectId: path.basename(projectPath),
@@ -194,7 +216,7 @@ export class WorktreeService {
 
       // Remove the worktree directory via git first
       try {
-        await execAsync(`git worktree remove "${pathToRemove}"`, {
+        await execFileAsync('git', ['worktree', 'remove', pathToRemove], {
           cwd: projectPath,
         });
       } catch (gitError) {
@@ -208,7 +230,7 @@ export class WorktreeService {
 
       if (branchToDelete) {
         try {
-          await execAsync(`git branch -D ${branchToDelete}`, { cwd: projectPath });
+          await execFileAsync('git', ['branch', '-D', branchToDelete], { cwd: projectPath });
         } catch (branchError) {
           console.warn(`Failed to delete branch ${branchToDelete}:`, branchError);
         }
@@ -236,7 +258,7 @@ export class WorktreeService {
     untrackedFiles: string[];
   }> {
     try {
-      const { stdout: status } = await execAsync("git status --porcelain", {
+      const { stdout: status } = await execFileAsync('git', ['status', '--porcelain'], {
         cwd: worktreePath,
       });
 
@@ -289,6 +311,21 @@ export class WorktreeService {
   }
 
   /**
+   * Get the default branch of a repository
+   */
+  private async getDefaultBranch(projectPath: string): Promise<string> {
+    try {
+      const { stdout } = await execFileAsync('git', ['remote', 'show', 'origin'], {
+        cwd: projectPath,
+      });
+      const match = stdout.match(/HEAD branch:\s*(\S+)/);
+      return match ? match[1] : "main";
+    } catch {
+      return "main";
+    }
+  }
+
+  /**
    * Merge worktree changes back to main branch
    */
   async mergeWorktreeChanges(
@@ -301,11 +338,13 @@ export class WorktreeService {
         throw new Error("Worktree not found");
       }
 
-      // Switch to main branch
-      await execAsync("git checkout main", { cwd: projectPath });
+      const defaultBranch = await this.getDefaultBranch(projectPath);
+
+      // Switch to default branch
+      await execFileAsync('git', ['checkout', defaultBranch], { cwd: projectPath });
 
       // Merge the worktree branch
-      await execAsync(`git merge ${worktree.branch}`, { cwd: projectPath });
+      await execFileAsync('git', ['merge', worktree.branch], { cwd: projectPath });
 
       // Remove the worktree
       await this.removeWorktree(projectPath, worktreeId);
