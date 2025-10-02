@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import { Button } from "./ui/button";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ChevronLeft } from "lucide-react";
 import openaiLogo from "../../assets/images/openai.png";
 import claudeLogo from "../../assets/images/claude.png";
 import factoryLogo from "../../assets/images/factorydroid.png";
@@ -88,6 +88,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [mentionQuery, setMentionQuery] = useState("");
   const [mentionStart, setMentionStart] = useState<number | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
+
+  const [isSelectOpen, setIsSelectOpen] = useState(false);
 
   const mentionResults = mentionOpen ? search(mentionQuery, 12) : [];
 
@@ -281,6 +283,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     onProviderChange &&
                       onProviderChange(v as "codex" | "claude" | "droid");
                 }}
+                onOpenChange={setIsSelectOpen}
                 disabled={selectDisabled}
               >
                 {selectDisabled ? (
@@ -348,6 +351,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                       )}
                       <SelectValue placeholder="Select provider" />
                     </div>
+                    <ChevronLeft
+                      className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
+                        isSelectOpen ? "rotate-90" : ""
+                      }`}
+                    />
                   </SelectTrigger>
                 )}
                 <SelectContent>
