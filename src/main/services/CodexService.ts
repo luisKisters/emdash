@@ -33,6 +33,54 @@ export class CodexService extends EventEmitter {
   // Track the active conversation for a workspace while a stream is running
   private activeConversations: Map<string, string> = new Map();
 
+  /**
+   * Resolve CLI args for Codex exec based on env vars.
+   *
+   * - If CODEX_DANGEROUSLY_BYPASS (or CODEX_SANDBOX_MODE=danger-full-access)
+   *   is set, prefer the unified `--dangerously-bypass-approvals-and-sandbox` flag.
+   * - Otherwise, pass `--sandbox <mode>` and optionally `--approval <policy>`.
+   *
+   * This keeps the default behavior safe (workspace-write) while enabling
+   * power users to opt out explicitly.
+   */
+  private buildCodexExecArgs(message: string): string[] {
+    const bypassEnv = (process.env.CODEX_DANGEROUSLY_BYPASS || process.env.CODEX_DANGEROUSLY_BYPASS_APPROVALS_AND_SANDBOX || '').trim().toLowerCase();
+    const sandboxEnv = (process.env.CODEX_SANDBOX_MODE || '').trim().toLowerCase();
+    const approvalEnv = (process.env.CODEX_APPROVAL_POLICY || '').trim().toLowerCase();
+
+    const truthy = (v: string) => v === '1' || v === 'true' || v === 'yes' || v === 'y';
+    const bypass = truthy(bypassEnv) || sandboxEnv === 'danger-full-access';
+
+    if (bypass) {
+      return ['exec', '--dangerously-bypass-approvals-and-sandbox', message];
+    }
+
+    // sandbox mode fallback
+    let sandbox: 'read-only' | 'workspace-write' = 'workspace-write';
+    if (sandboxEnv === 'read-only' || sandboxEnv === 'workspace-write') {
+      sandbox = sandboxEnv;
+    }
+
+    const args = ['exec', '--sandbox', sandbox] as string[];
+
+    // Optional approval policy if explicitly provided
+    switch (approvalEnv) {
+      case 'never':
+      case 'on-request':
+      case 'on-failure':
+      case 'untrusted':
+      case 'auto':
+        args.push('--approval', approvalEnv);
+        break;
+      default:
+        // ignore invalid/empty
+        break;
+    }
+
+    args.push(message);
+    return args;
+  }
+
   constructor() {
     super();
     this.checkCodexInstallation();
@@ -234,7 +282,7 @@ export class CodexService extends EventEmitter {
 
     try {
       // Spawn codex directly with args to avoid shell quoting issues (backticks, quotes, etc.)
-      const args = ['exec', '--sandbox', 'workspace-write', message];
+      const args = this.buildCodexExecArgs(message);
       console.log(
         `Executing: codex ${args.map((a) => (a.includes(' ') ? '"' + a + '"' : a)).join(' ')} in ${agent.worktreePath}`
       );
@@ -420,7 +468,7 @@ export class CodexService extends EventEmitter {
     agent.lastMessage = message;
 
     try {
-      const args = ['exec', '--sandbox', 'workspace-write', message];
+      const args = this.buildCodexExecArgs(message);
       console.log(
         `Executing: codex ${args.map((a) => (a.includes(' ') ? '"' + a + '"' : a)).join(' ')} in ${agent.worktreePath}`
       );
