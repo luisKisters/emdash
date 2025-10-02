@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Button } from "./components/ui/button";
 
-import { FolderOpen, PanelLeft } from "lucide-react";
+import { FolderOpen } from "lucide-react";
 import LeftSidebar from "./components/LeftSidebar";
 import ProjectMainView from "./components/ProjectMainView";
 import WorkspaceModal from "./components/WorkspaceModal";
@@ -13,23 +13,26 @@ import RequirementsNotice from "./components/RequirementsNotice";
 import { useToast } from "./hooks/use-toast";
 import { useGithubAuth } from "./hooks/useGithubAuth";
 import emdashLogo from "../assets/images/emdash/emdash_logo.svg";
+import Titlebar from "./components/titlebar/Titlebar";
 import { SidebarProvider, useSidebar } from "./components/ui/sidebar";
-import { cn } from "./lib/utils";
 
-const SidebarToggleButton: React.FC<{ className?: string }> = ({ className }) => {
-  const { open, toggle } = useSidebar();
+const SidebarHotkeys: React.FC = () => {
+  const { toggle } = useSidebar();
 
-  return (
-    <Button
-      variant="ghost"
-      size="icon"
-      onClick={toggle}
-      className={cn("h-9 w-9 text-muted-foreground hover:bg-background/80", className)}
-      aria-label={open ? "Collapse sidebar" : "Expand sidebar"}
-    >
-      <PanelLeft className="h-4 w-4" />
-    </Button>
-  );
+  useEffect(() => {
+    if (typeof window === "undefined") return undefined;
+    const handler = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "b") {
+        event.preventDefault();
+        toggle();
+      }
+    };
+
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [toggle]);
+
+  return null;
 };
 
 interface Project {
@@ -612,7 +615,9 @@ const App: React.FC = () => {
 
   return (
     <SidebarProvider>
-      <div className="h-screen flex bg-background text-foreground">
+      <SidebarHotkeys />
+      <Titlebar />
+      <div className="mt-9 flex h-[calc(100vh-36px)] w-full bg-background text-foreground overflow-hidden">
         <LeftSidebar
           projects={projects}
           selectedProject={selectedProject}
@@ -627,11 +632,8 @@ const App: React.FC = () => {
           githubUser={user}
         />
 
-        <div className="flex-1 flex flex-col overflow-hidden relative">
-          <SidebarToggleButton className="absolute left-3 top-3 z-20" />
-          <div className="flex-1 overflow-hidden flex flex-col">
-            {renderMainContent()}
-          </div>
+        <div className="flex-1 overflow-hidden flex flex-col">
+          {renderMainContent()}
         </div>
       </div>
       <WorkspaceModal
