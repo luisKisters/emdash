@@ -57,12 +57,12 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ workspace }) => {
                 Select a workspace to review file changes.
               </div>
             </div>
-            <div className="flex flex-1 flex-col bg-background">
+            <div className="flex flex-1 flex-col bg-background border-t border-border">
+              <div className="px-3 py-2 border-b border-border bg-gray-50 dark:bg-gray-900 text-foreground text-sm font-medium">
+                Terminal
+              </div>
               <div className="flex flex-1 items-center justify-center px-4 text-center">
                 Select a workspace to open its terminal.
-              </div>
-              <div className="px-3 py-2 border-t border-border bg-gray-50 dark:bg-gray-900 text-foreground text-sm font-medium">
-                Terminal
               </div>
             </div>
           </div>
