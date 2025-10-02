@@ -35,7 +35,7 @@ Either download the DMG from Releases (or click the link above), or run the app 
 
 ## Requirements
 
-- Node.js 18+ and Git
+- Node.js 22.12.0+ and Git
 - One or more providers (install as needed):
   - [OpenAI Codex CLI](https://github.com/openai/codex) (install + authenticate)
   - Optional: [Claude Code CLI](https://www.npmjs.com/package/@anthropic-ai/claude-code) (install + authenticate)
@@ -246,6 +246,7 @@ find "$HOME" -type f -name 'emdash.db*' -print
 ```
 
 ## What's Next
+
 - [ ] Additional providers (e.g., Gemini CLI, aider, Warp)
 - [ ] Workspace lifecycle hooks to run custom scripts on create, run, and archive (e.g., install deps, copy env files, clean up resources)
 - [ ] Planning chat with controlled execution (draft actions in a separate chat, then run them one by one)
