@@ -11,13 +11,14 @@ import {
   SidebarMenuItem,
   SidebarMenuButton,
   SidebarFooter,
+  useSidebar,
 } from "./ui/sidebar";
 import {
   Collapsible,
   CollapsibleTrigger,
   CollapsibleContent,
 } from "./ui/collapsible";
-import { Home, ChevronDown } from "lucide-react";
+import { Home, ChevronDown} from "lucide-react";
 import GithubStatus from "./GithubStatus";
 import { WorkspaceItem } from "./WorkspaceItem";
 
@@ -45,6 +46,22 @@ interface Workspace {
   status: "active" | "idle" | "running";
   agentId?: string;
 }
+
+const SidebarToggleButton: React.FC = () => {
+  const { toggle } = useSidebar();
+
+  return (
+    <Button
+      variant="ghost"
+      size="icon"
+      onClick={toggle}
+      className="absolute -right-3 top-4 z-20 hidden h-9 w-9 items-center justify-center text-muted-foreground hover:bg-background/80 rounded-md lg:inline-flex"
+      aria-label="Toggle sidebar"
+    >
+
+    </Button>
+  );
+};
 
 interface LeftSidebarProps {
   projects: Project[];
@@ -78,8 +95,9 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   );
 
   return (
-    <Sidebar>
-      <SidebarContent>
+    <div className="relative h-full">
+      <Sidebar>
+        <SidebarContent>
           <SidebarGroup className="mb-2">
             <SidebarGroupContent>
               <SidebarMenu>
@@ -89,7 +107,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                       variant="ghost"
                       onClick={onGoHome}
                       aria-label="Home"
-                      className="justify-start mt-5"
+                      className="justify-start"
                     >
                       <Home className="w-5 h-5 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400" />
                       <span className="hidden sm:inline text-sm font-medium">Home</span>
@@ -202,25 +220,27 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-      </SidebarContent>
-      <SidebarFooter className="border-t border-gray-200 dark:border-gray-800 px-2 py-2 sm:px-4 sm:py-4">
-        <SidebarMenu className="w-full">
-          <SidebarMenuItem>
-            <SidebarMenuButton
-              tabIndex={-1}
-              onClick={(e) => e.preventDefault()}
-              className="flex w-full items-center justify-start gap-2 px-2 py-2 text-sm text-muted-foreground cursor-default hover:bg-transparent focus-visible:outline-none focus-visible:ring-0"
-            >
-              <div className="flex flex-1 flex-col min-w-0 text-left gap-1">
-                <div className="hidden sm:block truncate">
-                  {renderGithubStatus()}
+        </SidebarContent>
+        <SidebarFooter className="border-t border-gray-200 dark:border-gray-800 px-2 py-2 sm:px-4 sm:py-4">
+          <SidebarMenu className="w-full">
+            <SidebarMenuItem>
+              <SidebarMenuButton
+                tabIndex={-1}
+                onClick={(e) => e.preventDefault()}
+                className="flex w-full items-center justify-start gap-2 px-2 py-2 text-sm text-muted-foreground cursor-default hover:bg-transparent focus-visible:outline-none focus-visible:ring-0"
+              >
+                <div className="flex flex-1 flex-col min-w-0 text-left gap-1">
+                  <div className="hidden sm:block truncate">
+                    {renderGithubStatus()}
+                  </div>
                 </div>
-              </div>
-            </SidebarMenuButton>
-          </SidebarMenuItem>
-        </SidebarMenu>
-      </SidebarFooter>
-    </Sidebar>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          </SidebarMenu>
+        </SidebarFooter>
+      </Sidebar>
+      <SidebarToggleButton />
+    </div>
   );
 };
 

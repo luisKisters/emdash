@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 interface SidebarContextValue {
   open: boolean;
   isMobile: boolean;
-  setOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setOpen: (next: boolean) => void;
   toggle: () => void;
 }
 
@@ -47,24 +47,50 @@ export function SidebarProvider({
   children,
 }: SidebarProviderProps) {
   const isMobile = useMediaQuery("(max-width: 1024px)");
-  const [open, setOpen] = React.useState<boolean>(
-    defaultOpen && typeof window !== "undefined" ? !isMobile : defaultOpen
-  );
+  const storageKey = "emdash.sidebarOpen";
+
+  const [open, setOpenState] = React.useState<boolean>(() => {
+    if (typeof window === "undefined") return defaultOpen;
+    try {
+      const stored = window.localStorage.getItem(storageKey);
+      if (stored === null) return defaultOpen;
+      return stored === "true";
+    } catch {
+      return defaultOpen;
+    }
+  });
 
   React.useEffect(() => {
     if (isMobile) {
-      setOpen(false);
+      setOpenState(false);
     }
   }, [isMobile]);
+
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      window.localStorage.setItem(storageKey, open ? "true" : "false");
+    } catch {
+      // ignore persistence errors
+    }
+  }, [open, storageKey]);
+
+  const setOpen = React.useCallback((next: boolean) => {
+    setOpenState(next);
+  }, []);
+
+  const toggle = React.useCallback(() => {
+    setOpenState((prev) => !prev);
+  }, []);
 
   const value = React.useMemo(
     () => ({
       open,
       isMobile,
       setOpen,
-      toggle: () => setOpen((prev) => !prev),
+      toggle,
     }),
-    [open, isMobile]
+    [open, isMobile, setOpen, toggle]
   );
 
   return (
@@ -90,7 +116,7 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
 
     const baseClasses =
       variant === "default"
-        ? "group/sidebar relative z-50 flex h-full flex-col border-r border-border bg-muted/10 text-sm text-foreground transition-all duration-200 ease-linear overflow-x-hidden"
+        ? "group/sidebar relative z-50 flex h-full flex-col border-r border-border bg-muted/10 text-sm text-foreground transition-all duration-200 ease-linear overflow-hidden flex-shrink-0 data-[state=collapsed]:border-r-0 data-[state=collapsed]:pointer-events-none"
         : "";
     const responsiveClasses =
       variant === "default"
@@ -99,10 +125,7 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
               "fixed inset-y-0 left-0 w-[var(--sidebar-width-mobile,18rem)] bg-background shadow-lg",
               open ? "translate-x-0" : "-translate-x-full"
             )
-          : cn(
-              "w-[var(--sidebar-width,18rem)]",
-              open ? "" : "w-[var(--sidebar-width-icon,3.5rem)]"
-            )
+          : cn(open ? "w-[var(--sidebar-width,18rem)]" : "w-0")
         : "";
 
     return (
