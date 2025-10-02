@@ -1,7 +1,7 @@
 import React, { useRef, useState } from "react";
 import { useReducedMotion } from "motion/react";
 import { Button } from "./ui/button";
-import { ArrowRight, ChevronLeft } from "lucide-react";
+import { ArrowRight, ChevronDown } from "lucide-react";
 import openaiLogo from "../../assets/images/openai.png";
 import claudeLogo from "../../assets/images/claude.png";
 import factoryLogo from "../../assets/images/factorydroid.png";
@@ -351,9 +351,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                       )}
                       <SelectValue placeholder="Select provider" />
                     </div>
-                    <ChevronLeft
+                    <ChevronDown
                       className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
-                        isSelectOpen ? "rotate-90" : ""
+                        isSelectOpen ? "rotate-180" : ""
                       }`}
                     />
                   </SelectTrigger>
