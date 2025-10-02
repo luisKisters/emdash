@@ -51,10 +51,18 @@ declare global {
       worktreeGet: (args: {
         worktreeId: string;
       }) => Promise<{ success: boolean; worktree?: any; error?: string }>;
-      worktreeGetAll: () => Promise<{ success: boolean; worktrees?: any[]; error?: string }>;
+      worktreeGetAll: () => Promise<{
+        success: boolean;
+        worktrees?: any[];
+        error?: string;
+      }>;
 
       // Project management
-      openProject: () => Promise<{ success: boolean; path?: string; error?: string }>;
+      openProject: () => Promise<{
+        success: boolean;
+        path?: string;
+        error?: string;
+      }>;
       getGitInfo: (projectPath: string) => Promise<{
         isGitRepo: boolean;
         remote?: string;
@@ -75,7 +83,13 @@ declare global {
       }>;
       getFileDiff: (args: { workspacePath: string; filePath: string }) => Promise<{
         success: boolean;
-        diff?: { lines: Array<{ left?: string; right?: string; type: 'context' | 'add' | 'del' }> };
+        diff?: {
+          lines: Array<{
+            left?: string;
+            right?: string;
+            type: 'context' | 'add' | 'del';
+          }>;
+        };
         error?: string;
       }>;
       gitCommitAndPush: (args: {
@@ -83,7 +97,12 @@ declare global {
         commitMessage?: string;
         createBranchIfOnDefault?: boolean;
         branchPrefix?: string;
-      }) => Promise<{ success: boolean; branch?: string; output?: string; error?: string }>;
+      }) => Promise<{
+        success: boolean;
+        branch?: string;
+        output?: string;
+        error?: string;
+      }>;
       createPullRequest: (args: {
         workspacePath: string;
         title?: string;
@@ -93,7 +112,12 @@ declare global {
         draft?: boolean;
         web?: boolean;
         fill?: boolean;
-      }) => Promise<{ success: boolean; url?: string; output?: string; error?: string }>;
+      }) => Promise<{
+        success: boolean;
+        url?: string;
+        output?: string;
+        error?: string;
+      }>;
       getPrStatus: (args: { workspacePath: string }) => Promise<{
         success: boolean;
         pr?: {
@@ -110,9 +134,12 @@ declare global {
         error?: string;
       }>;
       openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
-      connectToGitHub: (
-        projectPath: string
-      ) => Promise<{ success: boolean; repository?: string; branch?: string; error?: string }>;
+      connectToGitHub: (projectPath: string) => Promise<{
+        success: boolean;
+        repository?: string;
+        branch?: string;
+        error?: string;
+      }>;
 
       // Filesystem helpers
       fsList: (
@@ -141,9 +168,18 @@ declare global {
       removeRunEventListeners: () => void;
 
       // GitHub integration
-      githubAuth: () => Promise<{ success: boolean; token?: string; user?: any; error?: string }>;
+      githubAuth: () => Promise<{
+        success: boolean;
+        token?: string;
+        user?: any;
+        error?: string;
+      }>;
       githubIsAuthenticated: () => Promise<boolean>;
-      githubGetStatus: () => Promise<{ installed: boolean; authenticated: boolean; user?: any }>;
+      githubGetStatus: () => Promise<{
+        installed: boolean;
+        authenticated: boolean;
+        user?: any;
+      }>;
       githubGetUser: () => Promise<any>;
       githubGetRepositories: () => Promise<any[]>;
       githubLogout: () => Promise<void>;
@@ -188,7 +224,8 @@ declare global {
       ) => Promise<{ success: boolean; response?: any; error?: string }>;
       codexSendMessageStream: (
         workspaceId: string,
-        message: string
+        message: string,
+        conversationId?: string
       ) => Promise<{ success: boolean; error?: string }>;
       codexStopStream: (
         workspaceId: string
@@ -196,7 +233,11 @@ declare global {
       codexGetAgentStatus: (
         workspaceId: string
       ) => Promise<{ success: boolean; agent?: any; error?: string }>;
-      codexGetAllAgents: () => Promise<{ success: boolean; agents?: any[]; error?: string }>;
+      codexGetAllAgents: () => Promise<{
+        success: boolean;
+        agents?: any[];
+        error?: string;
+      }>;
       codexRemoveAgent: (
         workspaceId: string
       ) => Promise<{ success: boolean; removed?: boolean; error?: string }>;
@@ -269,10 +310,18 @@ export interface ElectronAPI {
   worktreeGet: (args: {
     worktreeId: string;
   }) => Promise<{ success: boolean; worktree?: any; error?: string }>;
-  worktreeGetAll: () => Promise<{ success: boolean; worktrees?: any[]; error?: string }>;
+  worktreeGetAll: () => Promise<{
+    success: boolean;
+    worktrees?: any[];
+    error?: string;
+  }>;
 
   // Project management
-  openProject: () => Promise<{ success: boolean; path?: string; error?: string }>;
+  openProject: () => Promise<{
+    success: boolean;
+    path?: string;
+    error?: string;
+  }>;
   getGitInfo: (projectPath: string) => Promise<{
     isGitRepo: boolean;
     remote?: string;
@@ -289,10 +338,18 @@ export interface ElectronAPI {
     draft?: boolean;
     web?: boolean;
     fill?: boolean;
-  }) => Promise<{ success: boolean; url?: string; output?: string; error?: string }>;
-  connectToGitHub: (
-    projectPath: string
-  ) => Promise<{ success: boolean; repository?: string; branch?: string; error?: string }>;
+  }) => Promise<{
+    success: boolean;
+    url?: string;
+    output?: string;
+    error?: string;
+  }>;
+  connectToGitHub: (projectPath: string) => Promise<{
+    success: boolean;
+    repository?: string;
+    branch?: string;
+    error?: string;
+  }>;
 
   // Filesystem
   fsList: (
@@ -321,7 +378,12 @@ export interface ElectronAPI {
   removeRunEventListeners: () => void;
 
   // GitHub integration
-  githubAuth: () => Promise<{ success: boolean; token?: string; user?: any; error?: string }>;
+  githubAuth: () => Promise<{
+    success: boolean;
+    token?: string;
+    user?: any;
+    error?: string;
+  }>;
   githubIsAuthenticated: () => Promise<boolean>;
   githubGetUser: () => Promise<any>;
   githubGetRepositories: () => Promise<any[]>;
@@ -373,13 +435,20 @@ export interface ElectronAPI {
   codexStopStream: (
     workspaceId: string
   ) => Promise<{ success: boolean; stopped?: boolean; error?: string }>;
-  codexGetStreamTail: (
-    workspaceId: string
-  ) => Promise<{ success: boolean; tail?: string; startedAt?: string; error?: string }>;
+  codexGetStreamTail: (workspaceId: string) => Promise<{
+    success: boolean;
+    tail?: string;
+    startedAt?: string;
+    error?: string;
+  }>;
   codexGetAgentStatus: (
     workspaceId: string
   ) => Promise<{ success: boolean; agent?: any; error?: string }>;
-  codexGetAllAgents: () => Promise<{ success: boolean; agents?: any[]; error?: string }>;
+  codexGetAllAgents: () => Promise<{
+    success: boolean;
+    agents?: any[];
+    error?: string;
+  }>;
   codexRemoveAgent: (
     workspaceId: string
   ) => Promise<{ success: boolean; removed?: boolean; error?: string }>;

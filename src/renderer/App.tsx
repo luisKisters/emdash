@@ -312,7 +312,7 @@ const App: React.FC = () => {
       });
 
       if (saveResult.success) {
-        // If there's an initial prompt, create conversation and save it as first message
+        // If there's an initial prompt, create conversation and save it as first message, then trigger agent response
         if (initialPrompt) {
           try {
             const conversationResult = await window.electronAPI.getOrCreateDefaultConversation(
@@ -328,6 +328,47 @@ const App: React.FC = () => {
               };
 
               await window.electronAPI.saveMessage(userMessage);
+
+              // Trigger agent response to the initial prompt
+              // Use codex as default provider for initial prompts
+              // TODO: add input for other providers
+              // TODO: unify the check, create, and send for chat and initial prompt
+              try {
+                // First check if Codex is installed
+                const installResult =
+                  await window.electronAPI.codexCheckInstallation();
+                if (installResult.success && installResult.isInstalled) {
+                  // Create agent for the new workspace
+                  const agentResult = await window.electronAPI.codexCreateAgent(
+                    newWorkspace.id,
+                    newWorkspace.path
+                  );
+
+                  if (agentResult.success) {
+                    // Now send the initial prompt
+                    await window.electronAPI.codexSendMessageStream(
+                      newWorkspace.id,
+                      initialPrompt,
+                      conversationResult.conversation.id ?? undefined
+                    );
+                  } else {
+                    console.error(
+                      "Failed to create Codex agent:",
+                      agentResult.error
+                    );
+                  }
+                } else {
+                  console.warn(
+                    "Codex not installed, skipping initial prompt agent response"
+                  );
+                }
+              } catch (agentError) {
+                console.error(
+                  "Failed to send initial prompt to agent:",
+                  agentError
+                );
+                // Don't fail workspace creation if agent response fails
+              }
             }
           } catch (promptError) {
             console.error('Failed to save initial prompt:', promptError);
