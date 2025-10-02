@@ -69,6 +69,8 @@ interface Workspace {
   agentId?: string;
 }
 
+const TITLEBAR_HEIGHT = "36px";
+
 const App: React.FC = () => {
   const { toast } = useToast();
   const [version, setVersion] = useState<string>("");
@@ -492,7 +494,7 @@ const App: React.FC = () => {
     if (showHomeView) {
       return (
         <div className="flex-1 bg-background text-foreground overflow-y-auto">
-          <div className="container mx-auto px-4 py-8 flex flex-col justify-center min-h-screen">
+          <div className="container mx-auto px-4 py-8 flex flex-col justify-center min-h-full">
             <div className="text-center mb-12">
               <div className="flex items-center justify-center mb-4">
                 <div className="logo-shimmer-container">
@@ -570,7 +572,7 @@ const App: React.FC = () => {
 
     return (
       <div className="flex-1 bg-background text-foreground overflow-y-auto">
-        <div className="container mx-auto px-4 py-8 flex flex-col justify-center min-h-screen">
+        <div className="container mx-auto px-4 py-8 flex flex-col justify-center min-h-full">
           <div className="text-center mb-12">
             <div className="flex items-center justify-center mb-4">
               <img
@@ -608,16 +610,20 @@ const App: React.FC = () => {
   };
 
   return (
-    <SidebarProvider>
-      <RightSidebarProvider>
-        <SidebarHotkeys />
-        <Titlebar />
-        <div className="mt-9 flex h-[calc(100vh-36px)] w-full bg-background text-foreground overflow-hidden">
-          <LeftSidebar
-            projects={projects}
-            selectedProject={selectedProject}
-            onSelectProject={handleSelectProject}
-            onGoHome={handleGoHome}
+    <div
+      className="flex h-[100dvh] w-full flex-col bg-background text-foreground"
+      style={{ "--tb": TITLEBAR_HEIGHT } as React.CSSProperties}
+    >
+      <SidebarProvider>
+        <RightSidebarProvider>
+          <SidebarHotkeys />
+          <Titlebar />
+          <div className="flex flex-1 overflow-hidden pt-[var(--tb)]">
+            <LeftSidebar
+              projects={projects}
+              selectedProject={selectedProject}
+              onSelectProject={handleSelectProject}
+              onGoHome={handleGoHome}
             onSelectWorkspace={handleSelectWorkspace}
             activeWorkspace={activeWorkspace || undefined}
             onReorderProjects={handleReorderProjects}
@@ -627,22 +633,23 @@ const App: React.FC = () => {
             githubUser={user}
           />
 
-          <div className="flex-1 overflow-hidden flex flex-col bg-background text-foreground">
-            {renderMainContent()}
+            <div className="flex-1 overflow-hidden flex flex-col bg-background text-foreground">
+              {renderMainContent()}
+            </div>
+            <RightSidebar workspace={activeWorkspace} />
           </div>
-          <RightSidebar workspace={activeWorkspace} />
-        </div>
-        <WorkspaceModal
-          isOpen={showWorkspaceModal}
-          onClose={() => setShowWorkspaceModal(false)}
-          onCreateWorkspace={handleCreateWorkspace}
-          projectName={selectedProject?.name || ""}
-          defaultBranch={selectedProject?.gitInfo.branch || "main"}
-          existingNames={(selectedProject?.workspaces || []).map((w) => w.name)}
-        />
-        <Toaster />
-      </RightSidebarProvider>
-    </SidebarProvider>
+          <WorkspaceModal
+            isOpen={showWorkspaceModal}
+            onClose={() => setShowWorkspaceModal(false)}
+            onCreateWorkspace={handleCreateWorkspace}
+            projectName={selectedProject?.name || ""}
+            defaultBranch={selectedProject?.gitInfo.branch || "main"}
+            existingNames={(selectedProject?.workspaces || []).map((w) => w.name)}
+          />
+          <Toaster />
+        </RightSidebarProvider>
+      </SidebarProvider>
+    </div>
   );
 };
 
