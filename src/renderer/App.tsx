@@ -15,6 +15,7 @@ import { useGithubAuth } from "./hooks/useGithubAuth";
 import emdashLogo from "../assets/images/emdash/emdash_logo.svg";
 import Titlebar from "./components/titlebar/Titlebar";
 import { SidebarProvider, useSidebar } from "./components/ui/sidebar";
+import { RightSidebarProvider } from "./components/ui/right-sidebar";
 
 const SidebarHotkeys: React.FC = () => {
   const { toggle } = useSidebar();
@@ -615,36 +616,38 @@ const App: React.FC = () => {
 
   return (
     <SidebarProvider>
-      <SidebarHotkeys />
-      <Titlebar />
-      <div className="mt-9 flex h-[calc(100vh-36px)] w-full bg-background text-foreground overflow-hidden">
-        <LeftSidebar
-          projects={projects}
-          selectedProject={selectedProject}
-          onSelectProject={handleSelectProject}
-          onGoHome={handleGoHome}
-          onSelectWorkspace={handleSelectWorkspace}
-          activeWorkspace={activeWorkspace || undefined}
-          onReorderProjects={handleReorderProjects}
-          onReorderProjectsFull={handleReorderProjectsFull}
-          githubInstalled={ghInstalled}
-          githubAuthenticated={isAuthenticated}
-          githubUser={user}
-        />
+      <RightSidebarProvider>
+        <SidebarHotkeys />
+        <Titlebar />
+        <div className="mt-9 flex h-[calc(100vh-36px)] w-full bg-background text-foreground overflow-hidden">
+          <LeftSidebar
+            projects={projects}
+            selectedProject={selectedProject}
+            onSelectProject={handleSelectProject}
+            onGoHome={handleGoHome}
+            onSelectWorkspace={handleSelectWorkspace}
+            activeWorkspace={activeWorkspace || undefined}
+            onReorderProjects={handleReorderProjects}
+            onReorderProjectsFull={handleReorderProjectsFull}
+            githubInstalled={ghInstalled}
+            githubAuthenticated={isAuthenticated}
+            githubUser={user}
+          />
 
-        <div className="flex-1 overflow-hidden flex flex-col">
-          {renderMainContent()}
+          <div className="flex-1 overflow-hidden flex flex-col">
+            {renderMainContent()}
+          </div>
         </div>
-      </div>
-      <WorkspaceModal
-        isOpen={showWorkspaceModal}
-        onClose={() => setShowWorkspaceModal(false)}
-        onCreateWorkspace={handleCreateWorkspace}
-        projectName={selectedProject?.name || ""}
-        defaultBranch={selectedProject?.gitInfo.branch || "main"}
-        existingNames={(selectedProject?.workspaces || []).map((w) => w.name)}
-      />
-      <Toaster />
+        <WorkspaceModal
+          isOpen={showWorkspaceModal}
+          onClose={() => setShowWorkspaceModal(false)}
+          onCreateWorkspace={handleCreateWorkspace}
+          projectName={selectedProject?.name || ""}
+          defaultBranch={selectedProject?.gitInfo.branch || "main"}
+          existingNames={(selectedProject?.workspaces || []).map((w) => w.name)}
+        />
+        <Toaster />
+      </RightSidebarProvider>
     </SidebarProvider>
   );
 };
