@@ -1,14 +1,14 @@
-import React, { useEffect, useRef, useState } from "react";
-import { Folder } from "lucide-react";
-import { useToast } from "../hooks/use-toast";
-import ChatInput from "./ChatInput";
-import { TerminalPane } from "./TerminalPane";
-import MessageList from "./MessageList";
-import useCodexStream from "../hooks/useCodexStream";
-import useClaudeStream from "../hooks/useClaudeStream";
-import { useProviderPreference } from "../hooks/useProviderPreference";
-import { buildAttachmentsSection } from "../lib/attachments";
-import { Workspace, Message } from "../types/chat";
+import React, { useEffect, useRef, useState } from 'react';
+import { Folder } from 'lucide-react';
+import { useToast } from '../hooks/use-toast';
+import ChatInput from './ChatInput';
+import { TerminalPane } from './TerminalPane';
+import MessageList from './MessageList';
+import useCodexStream from '../hooks/useCodexStream';
+import useClaudeStream from '../hooks/useClaudeStream';
+import { useProviderPreference } from '../hooks/useProviderPreference';
+import { buildAttachmentsSection } from '../lib/attachments';
+import { Workspace, Message } from '../types/chat';
 
 declare const window: Window & {
   electronAPI: {
@@ -21,9 +21,7 @@ declare const window: Window & {
       workspaceId: string,
       worktreePath: string
     ) => Promise<{ success: boolean; agent?: any; error?: string }>;
-    saveMessage: (
-      message: any
-    ) => Promise<{ success: boolean; error?: string }>;
+    saveMessage: (message: any) => Promise<{ success: boolean; error?: string }>;
   };
 };
 
@@ -33,28 +31,19 @@ interface Props {
   className?: string;
 }
 
-const ChatInterface: React.FC<Props> = ({
-  workspace,
-  projectName,
-  className,
-}) => {
+const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) => {
   const { toast } = useToast();
-  const [inputValue, setInputValue] = useState("");
-  const [isCodexInstalled, setIsCodexInstalled] = useState<boolean | null>(
-    null
-  );
-  const [isClaudeInstalled, setIsClaudeInstalled] = useState<boolean | null>(
-    null
-  );
-  const [claudeInstructions, setClaudeInstructions] = useState<string | null>(
-    null
-  );
+  const [inputValue, setInputValue] = useState('');
+  const [isCodexInstalled, setIsCodexInstalled] = useState<boolean | null>(null);
+  const [isClaudeInstalled, setIsClaudeInstalled] = useState<boolean | null>(null);
+  const [claudeInstructions, setClaudeInstructions] = useState<string | null>(null);
   const [agentCreated, setAgentCreated] = useState(false);
-  const [provider, setProvider] = useState<"codex" | "claude" | "droid">(
-    "codex"
-  );
-  const [lockedProvider, setLockedProvider] = useState<"codex" | "claude" | "droid" | null>(null)
-  const [hasDroidActivity, setHasDroidActivity] = useState(false)
+  const [provider, setProvider] = useState<'codex' | 'claude' | 'droid' | 'gemini'>('codex');
+  const [lockedProvider, setLockedProvider] = useState<
+    'codex' | 'claude' | 'droid' | 'gemini' | null
+  >(null);
+  const [hasDroidActivity, setHasDroidActivity] = useState(false);
+  const [hasGeminiActivity, setHasGeminiActivity] = useState(false);
   const initializedConversationRef = useRef<string | null>(null);
 
   const codexStream = useCodexStream({
@@ -63,11 +52,9 @@ const ChatInterface: React.FC<Props> = ({
   });
 
   const claudeStream = useClaudeStream(
-    provider === "claude"
-      ? { workspaceId: workspace.id, workspacePath: workspace.path }
-      : null
+    provider === 'claude' ? { workspaceId: workspace.id, workspacePath: workspace.path } : null
   );
-  const activeStream = provider === "codex" ? codexStream : claudeStream;
+  const activeStream = provider === 'codex' ? codexStream : claudeStream;
 
   useEffect(() => {
     initializedConversationRef.current = null;
@@ -77,84 +64,91 @@ const ChatInterface: React.FC<Props> = ({
   // If a locked provider exists (including Droid), prefer locked.
   useEffect(() => {
     try {
-      const lastKey = `provider:last:${workspace.id}`
-      const lockedKey = `provider:locked:${workspace.id}`
+      const lastKey = `provider:last:${workspace.id}`;
+      const lockedKey = `provider:locked:${workspace.id}`;
       const last = window.localStorage.getItem(lastKey) as
-        | "codex"
-        | "claude"
-        | "droid"
-        | null
+        | 'codex'
+        | 'claude'
+        | 'droid'
+        | 'gemini'
+        | null;
       const locked = window.localStorage.getItem(lockedKey) as
-        | "codex"
-        | "claude"
-        | "droid"
-        | null
+        | 'codex'
+        | 'claude'
+        | 'droid'
+        | 'gemini'
+        | null;
 
-      setLockedProvider(locked)
-      setHasDroidActivity(locked === 'droid')
+      setLockedProvider(locked);
+      setHasDroidActivity(locked === 'droid');
+      setHasGeminiActivity(locked === 'gemini');
 
       if (locked === 'droid') {
-        setProvider('droid')
+        setProvider('droid');
       } else if (last === 'droid') {
-        setProvider('droid')
+        setProvider('droid');
+      } else if (locked === 'gemini') {
+        setProvider('gemini');
+      } else if (last === 'gemini') {
+        setProvider('gemini');
       } else if (locked === 'codex' || locked === 'claude') {
-        setProvider(locked)
+        setProvider(locked);
       } else if (last === 'codex' || last === 'claude') {
-        setProvider(last)
+        setProvider(last);
       } else {
-        setProvider('codex')
+        setProvider('codex');
       }
     } catch {
-      setProvider('codex')
+      setProvider('codex');
     }
-  }, [workspace.id])
+  }, [workspace.id]);
 
   // Persist last-selected provider per workspace (including Droid)
   useEffect(() => {
     try {
-      window.localStorage.setItem(`provider:last:${workspace.id}`, provider)
+      window.localStorage.setItem(`provider:last:${workspace.id}`, provider);
     } catch {}
-  }, [provider, workspace.id])
+  }, [provider, workspace.id]);
 
-  // When a chat becomes locked (first user message sent or Droid activity), persist the provider
+  // When a chat becomes locked (first user message sent or terminal activity), persist the provider
   useEffect(() => {
     try {
       const userLocked =
         provider !== 'droid' &&
+        provider !== 'gemini' &&
         activeStream.messages &&
-        activeStream.messages.some((m) => m.sender === 'user')
-      const droidLocked = provider === 'droid' && hasDroidActivity
+        activeStream.messages.some((m) => m.sender === 'user');
+      const droidLocked = provider === 'droid' && hasDroidActivity;
+      const geminiLocked = provider === 'gemini' && hasGeminiActivity;
 
-      if (userLocked || droidLocked) {
-        window.localStorage.setItem(`provider:locked:${workspace.id}`, provider)
-        setLockedProvider(provider)
+      if (userLocked || droidLocked || geminiLocked) {
+        window.localStorage.setItem(`provider:locked:${workspace.id}`, provider);
+        setLockedProvider(provider);
       }
     } catch {}
-  }, [provider, workspace.id, activeStream.messages, hasDroidActivity]);
+  }, [provider, workspace.id, activeStream.messages, hasDroidActivity, hasGeminiActivity]);
 
   // Check Claude Code installation when selected
   useEffect(() => {
     let cancelled = false;
-    if (provider !== "claude") {
+    if (provider !== 'claude') {
       setIsClaudeInstalled(null);
       setClaudeInstructions(null);
       return;
     }
     (async () => {
       try {
-        const res = await (window as any).electronAPI.agentCheckInstallation?.(
-          "claude"
-        );
+        const res = await (window as any).electronAPI.agentCheckInstallation?.('claude');
         if (cancelled) return;
         if (res?.success) {
           setIsClaudeInstalled(!!res.isInstalled);
           if (!res.isInstalled) {
-            const inst = await (
-              window as any
-            ).electronAPI.agentGetInstallationInstructions?.("claude");
+            const inst = await (window as any).electronAPI.agentGetInstallationInstructions?.(
+              'claude'
+            );
             setClaudeInstructions(
               inst?.instructions ||
-                "Install: npm install -g @anthropic-ai/claude-code\nThen run: claude and use /login"
+                'Install: npm install -g @anthropic-ai/claude-code\nThen run: claude and use /login'
             );
           } else {
             setClaudeInstructions(null);
@@ -175,11 +169,10 @@ const ChatInterface: React.FC<Props> = ({
   useEffect(() => {
     (async () => {
       try {
-        if (provider !== "codex")
-          await (window as any).electronAPI.codexStopStream?.(workspace.id);
-        if (provider !== "claude")
+        if (provider !== 'codex') await (window as any).electronAPI.codexStopStream?.(workspace.id);
+        if (provider !== 'claude')
           await (window as any).electronAPI.agentStopStream?.({
-            providerId: "claude",
+            providerId: 'claude',
             workspaceId: workspace.id,
           });
       } catch {}
@@ -199,7 +192,7 @@ const ChatInterface: React.FC<Props> = ({
       const welcomeMessage: Message = {
         id: `welcome-${Date.now()}`,
         content: `Hello! You're working in workspace **${workspace.name}**. What can the agent do for you?`,
-        sender: "agent",
+        sender: 'agent',
         timestamp: new Date(),
       };
 
@@ -212,7 +205,7 @@ const ChatInterface: React.FC<Props> = ({
           metadata: JSON.stringify({ isWelcome: true }),
         })
         .catch((error: unknown) => {
-          console.error("Failed to save welcome message:", error);
+          console.error('Failed to save welcome message:', error);
         })
         .finally(() => {
           codexStream.appendMessage(welcomeMessage);
@@ -240,24 +233,21 @@ const ChatInterface: React.FC<Props> = ({
             );
             if (agentResult.success) {
               setAgentCreated(true);
-              console.log("Codex agent created for workspace:", workspace.name);
+              console.log('Codex agent created for workspace:', workspace.name);
             } else {
-              console.error("Failed to create Codex agent:", agentResult.error);
+              console.error('Failed to create Codex agent:', agentResult.error);
               toast({
-                title: "Error",
-                description: "Failed to create Codex agent. Please try again.",
-                variant: "destructive",
+                title: 'Error',
+                description: 'Failed to create Codex agent. Please try again.',
+                variant: 'destructive',
               });
             }
           }
         } else {
-          console.error(
-            "Failed to check Codex installation:",
-            installResult.error
-          );
+          console.error('Failed to check Codex installation:', installResult.error);
         }
       } catch (error) {
-        console.error("Error initializing Codex:", error);
+        console.error('Error initializing Codex:', error);
       }
     };
 
@@ -269,121 +259,129 @@ const ChatInterface: React.FC<Props> = ({
 
   const handleSendMessage = async () => {
     if (!inputValue.trim()) return;
-    if (provider === "claude" && isClaudeInstalled === false) {
+    if (provider === 'claude' && isClaudeInstalled === false) {
       toast({
-        title: "Claude Code not installed",
-        description:
-          "Install Claude Code CLI and login first. See instructions below.",
-        variant: "destructive",
+        title: 'Claude Code not installed',
+        description: 'Install Claude Code CLI and login first. See instructions below.',
+        variant: 'destructive',
       });
       return;
     }
 
     const activeConversationId =
-      provider === "codex"
-        ? codexStream.conversationId
-        : claudeStream.conversationId;
+      provider === 'codex' ? codexStream.conversationId : claudeStream.conversationId;
     if (!activeConversationId) return;
 
-    const attachmentsSection = await buildAttachmentsSection(
-      workspace.path,
-      inputValue,
-      {
-        maxFiles: 6,
-        maxBytesPerFile: 200 * 1024,
-      }
-    );
+    const attachmentsSection = await buildAttachmentsSection(workspace.path, inputValue, {
+      maxFiles: 6,
+      maxBytesPerFile: 200 * 1024,
+    });
 
     const result =
-      provider === "codex"
+      provider === 'codex'
         ? await codexStream.send(inputValue, attachmentsSection)
         : await claudeStream.send(inputValue, attachmentsSection);
     if (!result.success) {
-      if (result.error && result.error !== "stream-in-progress") {
+      if (result.error && result.error !== 'stream-in-progress') {
         toast({
-          title: "Communication Error",
-          description: "Failed to start Codex stream. Please try again.",
-          variant: "destructive",
+          title: 'Communication Error',
+          description: 'Failed to start Codex stream. Please try again.',
+          variant: 'destructive',
         });
       }
       return;
     }
 
-    setInputValue("");
+    setInputValue('');
   };
 
   const handleCancelStream = async () => {
     if (!codexStream.isStreaming && !claudeStream.isStreaming) return;
-    const result =
-      provider === "codex"
-        ? await codexStream.cancel()
-        : await claudeStream.cancel();
+    const result = provider === 'codex' ? await codexStream.cancel() : await claudeStream.cancel();
     if (!result.success) {
       toast({
-        title: "Cancel Failed",
-        description: "Unable to stop Codex stream. Please try again.",
-        variant: "destructive",
+        title: 'Cancel Failed',
+        description: 'Unable to stop Codex stream. Please try again.',
+        variant: 'destructive',
       });
     }
   };
 
   const streamingOutputForList =
-    activeStream.isStreaming || activeStream.streamingOutput
-      ? activeStream.streamingOutput
-      : null;
+    activeStream.isStreaming || activeStream.streamingOutput ? activeStream.streamingOutput : null;
   // Allow switching providers freely while in Droid mode
-  const providerLocked = lockedProvider !== null
+  const providerLocked = lockedProvider !== null;
 
   return (
-    <div
-      className={`flex flex-col h-full bg-white dark:bg-gray-800 ${className}`}
-    >
-
-      {provider === "droid" ? (
+    <div className={`flex flex-col h-full bg-white dark:bg-gray-800 ${className}`}>
+      {provider === 'droid' || provider === 'gemini' ? (
         <div className="flex-1 flex flex-col min-h-0">
           <div className="px-6 pt-4">
             <div className="max-w-4xl mx-auto">
               <div className="rounded-md border border-gray-200 bg-gray-50 text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 p-3 text-sm">
                 <div className="whitespace-pre-wrap">
-                  Interact with Droid in the terminal below. To install and
-                  get started, see the Factory CLI Quickstart:
+                  {provider === 'droid'
+                    ? 'Interact with Droid in the terminal below. To install and get started, see the Factory CLI Quickstart:'
+                    : 'Interact with Gemini in the terminal below. To install and get started, visit the Gemini CLI project:'}
                 </div>
                 <button
                   type="button"
                   onClick={() =>
                     window.electronAPI.openExternal(
-                      "https://docs.factory.ai/cli/getting-started/quickstart"
+                      provider === 'droid'
+                        ? 'https://docs.factory.ai/cli/getting-started/quickstart'
+                        : 'https://github.com/google-gemini/gemini-cli'
                     )
                   }
                   className="mt-1 underline text-gray-800 hover:text-gray-600 dark:text-gray-200 dark:hover:text-gray-100"
                 >
-                  https://docs.factory.ai/cli/getting-started/quickstart
+                  {provider === 'droid'
+                    ? 'https://docs.factory.ai/cli/getting-started/quickstart'
+                    : 'https://github.com/google-gemini/gemini-cli'}
                 </button>
                 <div className="mt-2 text-xs opacity-90">
-                  Note: The Droid terminal session now persists while the app is open;
-                  leaving and returning to this chat will restore its output. Closing the app
-                  will terminate the session.
+                  Note: The terminal session now persists while the app is open; leaving and
+                  returning to this chat will restore its output. Closing the app will terminate the
+                  session.
                 </div>
               </div>
             </div>
           </div>
           <div className="flex-1 min-h-0 px-6 mt-4">
             <div className="max-w-4xl mx-auto h-full rounded-md overflow-hidden">
-              <TerminalPane
-                id={`droid-main-${workspace.id}`}
-                cwd={workspace.path}
-                shell="droid"
-                keepAlive={true}
-                onActivity={() => {
-                  try {
-                    setHasDroidActivity(true)
-                    window.localStorage.setItem(`provider:locked:${workspace.id}`, 'droid')
-                    setLockedProvider('droid')
-                  } catch {}
-                }}
-                variant="light"
-                className="h-full w-full"
-              />
+              {provider === 'droid' ? (
+                <TerminalPane
+                  id={`droid-main-${workspace.id}`}
+                  cwd={workspace.path}
+                  shell="droid"
+                  keepAlive={true}
+                  onActivity={() => {
+                    try {
+                      setHasDroidActivity(true);
+                      window.localStorage.setItem(`provider:locked:${workspace.id}`, 'droid');
+                      setLockedProvider('droid');
+                    } catch {}
+                  }}
+                  variant="light"
+                  className="h-full w-full"
+                />
+              ) : (
+                <TerminalPane
+                  id={`gemini-main-${workspace.id}`}
+                  cwd={workspace.path}
+                  shell="gemini"
+                  keepAlive={true}
+                  onActivity={() => {
+                    try {
+                      setHasGeminiActivity(true);
+                      window.localStorage.setItem(`provider:locked:${workspace.id}`, 'gemini');
+                      setLockedProvider('gemini');
+                    } catch {}
+                  }}
+                  variant="light"
+                  className="h-full w-full"
+                />
+              )}
             </div>
           </div>
         </div>
@@ -391,10 +389,8 @@ const ChatInterface: React.FC<Props> = ({
         <div
           className="flex-1 overflow-y-auto px-6 pt-6 pb-2"
           style={{
-            maskImage:
-              "linear-gradient(to bottom, black 0%, black 93%, transparent 100%)",
-            WebkitMaskImage:
-              "linear-gradient(to bottom, black 0%, black 93%, transparent 100%)",
+            maskImage: 'linear-gradient(to bottom, black 0%, black 93%, transparent 100%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 93%, transparent 100%)',
           }}
         >
           <div className="max-w-4xl mx-auto space-y-6">
@@ -407,12 +403,12 @@ const ChatInterface: React.FC<Props> = ({
         </div>
       ) : (
         <>
-          {provider === "claude" && isClaudeInstalled === false ? (
+          {provider === 'claude' && isClaudeInstalled === false ? (
             <div className="px-6 pt-4">
               <div className="max-w-4xl mx-auto">
                 <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 text-sm whitespace-pre-wrap">
                   {claudeInstructions ||
-                    "Install Claude Code: npm install -g @anthropic-ai/claude-code\nThen run: claude and use /login"}
+                    'Install Claude Code: npm install -g @anthropic-ai/claude-code\nThen run: claude and use /login'}
                 </div>
               </div>
             </div>
@@ -422,11 +418,9 @@ const ChatInterface: React.FC<Props> = ({
             streamingOutput={streamingOutputForList}
             isStreaming={activeStream.isStreaming}
             awaitingThinking={
-              provider === "codex"
-                ? codexStream.awaitingThinking
-                : claudeStream.awaitingThinking
+              provider === 'codex' ? codexStream.awaitingThinking : claudeStream.awaitingThinking
             }
-            providerId={provider === "codex" ? "codex" : "claude"}
+            providerId={provider === 'codex' ? 'codex' : 'claude'}
           />
         </>
       )}
@@ -436,8 +430,8 @@ const ChatInterface: React.FC<Props> = ({
         onChange={setInputValue}
         onSend={handleSendMessage}
         onCancel={handleCancelStream}
-        isLoading={provider === "droid" ? false : activeStream.isStreaming}
-        loadingSeconds={provider === "droid" ? 0 : activeStream.seconds}
+        isLoading={provider === 'droid' || provider === 'gemini' ? false : activeStream.isStreaming}
+        loadingSeconds={provider === 'droid' || provider === 'gemini' ? 0 : activeStream.seconds}
         isCodexInstalled={isCodexInstalled}
         agentCreated={agentCreated}
         workspacePath={workspace.path}
@@ -445,8 +439,9 @@ const ChatInterface: React.FC<Props> = ({
         onProviderChange={(p) => setProvider(p)}
         selectDisabled={providerLocked}
         disabled={
-          provider === "droid" ||
-          (provider === "claude" && isClaudeInstalled === false)
+          provider === 'droid' ||
+          provider === 'gemini' ||
+          (provider === 'claude' && isClaudeInstalled === false)
         }
       />
     </div>

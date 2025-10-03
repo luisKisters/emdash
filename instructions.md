@@ -5,6 +5,7 @@ Goal: Electron app that opens **multiple pseudo-terminals**, one per **Git workt
 ---
 
 ## Prereqs
+
 - Node 18+, Git 2.38+, pnpm (or npm/yarn)
 - Electron + Vite scaffold (or create one)
 - Optional CLIs installed on PATH: `aider`, `ollama`, `anthropic`, `openai`
@@ -12,7 +13,9 @@ Goal: Electron app that opens **multiple pseudo-terminals**, one per **Git workt
 ---
 
 ## Step 1 — Scaffold & Preload
+
 **Tasks**
+
 - Create or use an Electron+Vite project.
 - In `BrowserWindow`, enable `preload`, `contextIsolation:true`, `nodeIntegration:false`.
 - In `preload.ts`, `contextBridge.exposeInMainWorld('ipc', { invoke, on })`.
@@ -22,7 +25,9 @@ Goal: Electron app that opens **multiple pseudo-terminals**, one per **Git workt
 ---
 
 ## Step 2 — PTY & Terminal UI Basics
+
 **Tasks**
+
 - Install: `pnpm add node-pty xterm && pnpm add -D @types/node`
 - Create `src/main/ptyManager.ts` with:
   - `startPty(id, cwd, shell?) -> IPty` (stores in `Map`)
@@ -41,7 +46,9 @@ Goal: Electron app that opens **multiple pseudo-terminals**, one per **Git workt
 ---
 
 ## Step 3 — Worktrees (Branch Isolation)
+
 **Tasks**
+
 - Add `src/main/git.ts` with `ensureWorktree(mainRepo, name, branch): Promise<string>` using `child_process.execFile('git', ['worktree','add', worktreePath, branch], { cwd: mainRepo })`. Reuse if exists.
 - UI “New Session” modal:
   - Pick **main repo root**, enter **branch**, optional **worktree name** (default = branch).
@@ -52,7 +59,9 @@ Goal: Electron app that opens **multiple pseudo-terminals**, one per **Git workt
 ---
 
 ## Step 4 — Invoke CLI Assistants (Inside PTY)
+
 **Tasks**
+
 - Add `ipcMain.handle('agent:launchCli', ({ id, cmd, args }))` → `writePty(id, \`${cmd} ${args.join(' ')}\r\`)`.
 - UI: “Launch CLI” button with presets (`aider`, `ollama`, `anthropic`, `openai`) + freeform args.
 - Optional: PATH check (`which`/`where`) → show install tips if missing.
@@ -62,7 +71,9 @@ Goal: Electron app that opens **multiple pseudo-terminals**, one per **Git workt
 ---
 
 ## Step 5 — Multiple Sessions/Tabs
+
 **Tasks**
+
 - Simple session store: `{ id, label, cwd, cli? }`.
 - Render one `TerminalPane` per session (tabs or splits).
 - Controls per session: **Kill**, **Clear**, **Resize to fit**.
@@ -72,7 +83,9 @@ Goal: Electron app that opens **multiple pseudo-terminals**, one per **Git workt
 ---
 
 ## Step 6 — BYO Keys (Local Env)
+
 **Tasks**
+
 - Dev only: `dotenv` in **main**; ship `.env.example` with commented keys (e.g., `ANTHROPIC_API_KEY=`, `OPENAI_API_KEY=`).
 - Pass `env` to `node-pty.spawn` (merge `process.env` + optional per-session overrides stored locally).
 - Settings UI: allow per-session env overrides (never send secrets to renderer except for display with masking).
@@ -82,7 +95,9 @@ Goal: Electron app that opens **multiple pseudo-terminals**, one per **Git workt
 ---
 
 ## Step 7 — Quality-of-Life
+
 **Tasks**
+
 - Resize: call `pty.resize()` on container resize (e.g., via `ResizeObserver`).
 - Scrollback: 5k–10k lines in xterm.
 - Save logs: stream PTY output to `${worktree}/.agentlogs/session-YYYYMMDD-HHMM.log`.
@@ -93,7 +108,9 @@ Goal: Electron app that opens **multiple pseudo-terminals**, one per **Git workt
 ---
 
 ## Step 8 — Packaging & OSS Hygiene
+
 **Tasks**
+
 - Add `LICENSE` (MIT), `.env.example`, `.gitignore` for `.env`, `CONTRIBUTING.md`, `SECURITY.md`.
 - Configure packaging (`electron-builder`/`electron-vite`); rebuild native deps if needed.
 - Smoke test packaged app on your target OSes.
@@ -103,6 +120,7 @@ Goal: Electron app that opens **multiple pseudo-terminals**, one per **Git workt
 ---
 
 ## Minimal “Ask Codex” Prompts (per step)
+
 - **Step 1**: “Add preload and secure IPC in Electron+Vite; expose `ipc.invoke`/`ipc.on`; implement a ping handler.”
 - **Step 2**: “Add node-pty in main, xterm in renderer; wire IPC to echo shell output and keystrokes.”
 - **Step 3**: “Implement `ensureWorktree(mainRepo, name, branch)` using `git worktree`; add a modal to create and start a session.”
@@ -115,6 +133,7 @@ Goal: Electron app that opens **multiple pseudo-terminals**, one per **Git workt
 ---
 
 ## Gotchas (read once)
+
 - **node-pty** native ABI must match Electron: use `electron-rebuild` if needed.
 - **macOS GUI PATH** may be empty: set PATH in `env` or use login shell.
 - **Windows quoting**: keep args simple or wrap in `.cmd`/`.sh`.

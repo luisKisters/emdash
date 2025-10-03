@@ -1,11 +1,11 @@
-import React from 'react'
+import React from 'react';
 
 type Props = {
-  showGithubRequirement: boolean
-  needsGhInstall: boolean
-  needsGhAuth: boolean
-  showAgentRequirement: boolean
-}
+  showGithubRequirement: boolean;
+  needsGhInstall: boolean;
+  needsGhAuth: boolean;
+  showAgentRequirement: boolean;
+};
 
 const RequirementsNotice: React.FC<Props> = ({
   showGithubRequirement,
@@ -43,7 +43,8 @@ const RequirementsNotice: React.FC<Props> = ({
             <div>
               <span className="font-medium">Codex CLI</span>
               <div>
-                Install: <code className="bg-gray-100 px-1 rounded">npm install -g @openai/codex</code>
+                Install:{' '}
+                <code className="bg-gray-100 px-1 rounded">npm install -g @openai/codex</code>
               </div>
               <div>
                 Authenticate: <code className="bg-gray-100 px-1 rounded">codex auth login</code>
@@ -52,10 +53,14 @@ const RequirementsNotice: React.FC<Props> = ({
             <div>
               <span className="font-medium">Claude Code CLI</span>
               <div>
-                Install: <code className="bg-gray-100 px-1 rounded">npm install -g @anthropic-ai/claude-code</code>
+                Install:{' '}
+                <code className="bg-gray-100 px-1 rounded">
+                  npm install -g @anthropic-ai/claude-code
+                </code>
               </div>
               <div>
-                Login: <code className="bg-gray-100 px-1 rounded">claude</code> then <code className="bg-gray-100 px-1 rounded">/login</code>
+                Login: <code className="bg-gray-100 px-1 rounded">claude</code> then{' '}
+                <code className="bg-gray-100 px-1 rounded">/login</code>
               </div>
             </div>
             <div>
@@ -65,21 +70,38 @@ const RequirementsNotice: React.FC<Props> = ({
                 <button
                   type="button"
                   className="underline"
-                  onClick={() => (window as any).electronAPI.openExternal?.('https://docs.factory.ai/cli/getting-started/quickstart')}
+                  onClick={() =>
+                    (window as any).electronAPI.openExternal?.(
+                      'https://docs.factory.ai/cli/getting-started/quickstart'
+                    )
+                  }
                 >
                   docs.factory.ai/cli/getting-started/quickstart
                 </button>
               </div>
             </div>
-            <div className="text-[11px] text-gray-500">
-              Use Codex or Claude in chat, or Droid in the embedded terminal.
+            <div>
+              <span className="font-medium">Gemini CLI</span>
+              <div>
+                Project:{' '}
+                <button
+                  type="button"
+                  className="underline"
+                  onClick={() =>
+                    (window as any).electronAPI.openExternal?.(
+                      'https://github.com/google-gemini/gemini-cli'
+                    )
+                  }
+                >
+                  github.com/google-gemini/gemini-cli
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default RequirementsNotice
-
+export default RequirementsNotice;

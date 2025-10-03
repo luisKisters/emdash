@@ -44,7 +44,13 @@ export class CodexService extends EventEmitter {
    * power users to opt out explicitly.
    */
   private buildCodexExecArgs(message: string): string[] {
-    const bypassEnv = (process.env.CODEX_DANGEROUSLY_BYPASS || process.env.CODEX_DANGEROUSLY_BYPASS_APPROVALS_AND_SANDBOX || '').trim().toLowerCase();
+    const bypassEnv = (
+      process.env.CODEX_DANGEROUSLY_BYPASS ||
+      process.env.CODEX_DANGEROUSLY_BYPASS_APPROVALS_AND_SANDBOX ||
+      ''
+    )
+      .trim()
+      .toLowerCase();
     const sandboxEnv = (process.env.CODEX_SANDBOX_MODE || '').trim().toLowerCase();
     const approvalEnv = (process.env.CODEX_APPROVAL_POLICY || '').trim().toLowerCase();
 
@@ -246,7 +252,11 @@ export class CodexService extends EventEmitter {
   /**
    * Send message to a Codex agent with streaming output
    */
-  public async sendMessageStream(workspaceId: string, message: string, conversationId?: string): Promise<void> {
+  public async sendMessageStream(
+    workspaceId: string,
+    message: string,
+    conversationId?: string
+  ): Promise<void> {
     // Find agent for this workspace
 
     const agent = Array.from(this.agents.values()).find((a) => a.workspaceId === workspaceId);
@@ -258,9 +268,15 @@ export class CodexService extends EventEmitter {
 
     if (!this.isCodexInstalled) {
       this.initializeStreamLog(workspaceId, agent, message);
-      this.appendStreamLog(workspaceId, '\n[ERROR] Codex CLI is not installed. Please install it with: npm install -g @openai/codex\n');
+      this.appendStreamLog(
+        workspaceId,
+        '\n[ERROR] Codex CLI is not installed. Please install it with: npm install -g @openai/codex\n'
+      );
       this.finalizeStreamLog(workspaceId);
-      this.emit('codex:error', { workspaceId, error: 'Codex CLI is not installed. Please install it with: npm install -g @openai/codex' });
+      this.emit('codex:error', {
+        workspaceId,
+        error: 'Codex CLI is not installed. Please install it with: npm install -g @openai/codex',
+      });
       return;
     }
 
@@ -301,7 +317,12 @@ export class CodexService extends EventEmitter {
         this.appendStreamLog(workspaceId, output);
         agent.lastResponse = (agent.lastResponse || '') + output;
         const convId = this.activeConversations.get(workspaceId);
-        this.emit('codex:output', { workspaceId, output, agentId: agent.id, conversationId: convId });
+        this.emit('codex:output', {
+          workspaceId,
+          output,
+          agentId: agent.id,
+          conversationId: convId,
+        });
       });
 
       // Stream stderr
@@ -333,7 +354,7 @@ export class CodexService extends EventEmitter {
               conversationId: convId,
               content: raw,
               sender: 'agent',
-              metadata: JSON.stringify({ workspaceId, isStreaming: true })
+              metadata: JSON.stringify({ workspaceId, isStreaming: true }),
             });
           }
           emitConvId = convId;
@@ -342,7 +363,12 @@ export class CodexService extends EventEmitter {
         } finally {
           this.activeConversations.delete(workspaceId);
         }
-        this.emit('codex:complete', { workspaceId, exitCode: code, agentId: agent.id, conversationId: emitConvId });
+        this.emit('codex:complete', {
+          workspaceId,
+          exitCode: code,
+          agentId: agent.id,
+          conversationId: emitConvId,
+        });
       });
 
       // Handle errors
@@ -354,7 +380,12 @@ export class CodexService extends EventEmitter {
         this.pendingCancellationLogs.delete(workspaceId);
         this.finalizeStreamLog(workspaceId);
         const convId = this.activeConversations.get(workspaceId);
-        this.emit('codex:error', { workspaceId, error: error.message, agentId: agent.id, conversationId: convId });
+        this.emit('codex:error', {
+          workspaceId,
+          error: error.message,
+          agentId: agent.id,
+          conversationId: convId,
+        });
         this.activeConversations.delete(workspaceId);
       });
     } catch (error: any) {
@@ -365,7 +396,12 @@ export class CodexService extends EventEmitter {
       this.pendingCancellationLogs.delete(workspaceId);
       this.finalizeStreamLog(workspaceId);
       const convId = this.activeConversations.get(workspaceId);
-      this.emit('codex:error', { workspaceId, error: error.message, agentId: agent.id, conversationId: convId });
+      this.emit('codex:error', {
+        workspaceId,
+        error: error.message,
+        agentId: agent.id,
+        conversationId: convId,
+      });
       this.activeConversations.delete(workspaceId);
     }
   }
@@ -378,7 +414,7 @@ export class CodexService extends EventEmitter {
       return true;
     }
 
-    const agent = Array.from(this.agents.values()).find(a => a.workspaceId === workspaceId);
+    const agent = Array.from(this.agents.values()).find((a) => a.workspaceId === workspaceId);
     this.pendingCancellationLogs.add(workspaceId);
 
     const result = await new Promise<boolean>((resolve, reject) => {
@@ -410,7 +446,10 @@ export class CodexService extends EventEmitter {
       try {
         const killed = process.kill('SIGINT');
         if (!killed) {
-          console.warn('[CodexService] stopMessageStream: SIGINT not delivered, sending SIGTERM', workspaceId);
+          console.warn(
+            '[CodexService] stopMessageStream: SIGINT not delivered, sending SIGTERM',
+            workspaceId
+          );
           process.kill('SIGTERM');
         }
       } catch (err: any) {
@@ -473,17 +512,24 @@ export class CodexService extends EventEmitter {
         `Executing: codex ${args.map((a) => (a.includes(' ') ? '"' + a + '"' : a)).join(' ')} in ${agent.worktreePath}`
       );
 
-      const { stdout, stderr } = await new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
-        execFile('codex', args, { cwd: agent.worktreePath, timeout: 60000 }, (error, stdout, stderr) => {
-          if (error) {
-            (error as any).stderr = stderr;
-            (error as any).stdout = stdout;
-            reject(error);
-          } else {
-            resolve({ stdout, stderr });
-          }
-        });
-      });
+      const { stdout, stderr } = await new Promise<{ stdout: string; stderr: string }>(
+        (resolve, reject) => {
+          execFile(
+            'codex',
+            args,
+            { cwd: agent.worktreePath, timeout: 60000 },
+            (error, stdout, stderr) => {
+              if (error) {
+                (error as any).stderr = stderr;
+                (error as any).stdout = stdout;
+                reject(error);
+              } else {
+                resolve({ stdout, stderr });
+              }
+            }
+          );
+        }
+      );
 
       agent.status = 'idle';
       agent.lastResponse = stdout;

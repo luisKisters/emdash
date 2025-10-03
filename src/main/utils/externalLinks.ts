@@ -1,4 +1,4 @@
-import { BrowserWindow, shell } from 'electron'
+import { BrowserWindow, shell } from 'electron';
 
 /**
  * Ensure any external HTTP(S) links open in the user’s default browser
@@ -6,24 +6,23 @@ import { BrowserWindow, shell } from 'electron'
  * to our renderer while preserving expected link behavior.
  */
 export function registerExternalLinkHandlers(win: BrowserWindow, isDev: boolean) {
-  const wc = win.webContents
+  const wc = win.webContents;
 
   // Handle window.open and target="_blank"
   wc.setWindowOpenHandler(({ url }) => {
     if (/^https?:\/\//i.test(url)) {
-      shell.openExternal(url)
-      return { action: 'deny' }
+      shell.openExternal(url);
+      return { action: 'deny' };
     }
-    return { action: 'allow' }
-  })
+    return { action: 'allow' };
+  });
 
   // Intercept navigations that would leave the app
   wc.on('will-navigate', (event, url) => {
-    const isAppUrl = isDev ? url.startsWith('http://localhost:3000') : url.startsWith('file://')
+    const isAppUrl = isDev ? url.startsWith('http://localhost:3000') : url.startsWith('file://');
     if (!isAppUrl && /^https?:\/\//i.test(url)) {
-      event.preventDefault()
-      shell.openExternal(url)
+      event.preventDefault();
+      shell.openExternal(url);
     }
-  })
+  });
 }
-

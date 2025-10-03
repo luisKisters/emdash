@@ -1,15 +1,15 @@
-import React, { useState } from 'react'
-import { Repo, Run } from '../types'
-import RunLauncher from './RunLauncher'
-import RunList from './RunList'
-import { FolderOpen, Github, Globe } from 'lucide-react'
+import React, { useState } from 'react';
+import { Repo, Run } from '../types';
+import RunLauncher from './RunLauncher';
+import RunList from './RunList';
+import { FolderOpen, Github, Globe } from 'lucide-react';
 
 interface MainContentProps {
-  selectedRepo: Repo | null
-  runs: Run[]
-  selectedRun: Run | null
-  onRunSelect: (run: Run) => void
-  onCreateRun: (config: any) => void
+  selectedRepo: Repo | null;
+  runs: Run[];
+  selectedRun: Run | null;
+  onRunSelect: (run: Run) => void;
+  onCreateRun: (config: any) => void;
 }
 
 const MainContent: React.FC<MainContentProps> = ({
@@ -19,23 +19,26 @@ const MainContent: React.FC<MainContentProps> = ({
   onRunSelect,
   onCreateRun,
 }) => {
-  const [showRunLauncher, setShowRunLauncher] = useState(false)
+  const [showRunLauncher, setShowRunLauncher] = useState(false);
 
   const handleCreateRun = (config: any) => {
-    onCreateRun(config)
-    setShowRunLauncher(false)
-  }
+    onCreateRun(config);
+    setShowRunLauncher(false);
+  };
 
   if (!selectedRepo) {
     return (
       <div className="flex-1 bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="mb-8">
-            <h1 className="text-6xl font-bold text-white mb-4" style={{
-              fontFamily: 'monospace',
-              letterSpacing: '0.1em',
-              textShadow: '2px 2px 0px #000'
-            }}>
+            <h1
+              className="text-6xl font-bold text-white mb-4"
+              style={{
+                fontFamily: 'monospace',
+                letterSpacing: '0.1em',
+                textShadow: '2px 2px 0px #000',
+              }}
+            >
               emdash
             </h1>
             <h2 className="text-2xl text-gray-400">Codex</h2>
@@ -52,7 +55,7 @@ const MainContent: React.FC<MainContentProps> = ({
           </div>
         </div>
       </div>
-    )
+    );
   }
 
   return (
@@ -95,11 +98,7 @@ const MainContent: React.FC<MainContentProps> = ({
             </div>
           </div>
         ) : (
-          <RunList
-            runs={runs}
-            selectedRun={selectedRun}
-            onRunSelect={onRunSelect}
-          />
+          <RunList runs={runs} selectedRun={selectedRun} onRunSelect={onRunSelect} />
         )}
       </div>
 
@@ -113,7 +112,7 @@ const MainContent: React.FC<MainContentProps> = ({
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default MainContent
+export default MainContent;

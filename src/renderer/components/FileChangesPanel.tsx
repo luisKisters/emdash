@@ -1,44 +1,36 @@
-import React, { useState } from "react";
-import { Button } from "./ui/button";
-import { Spinner } from "./ui/spinner";
-import { useToast } from "../hooks/use-toast";
-import { useCreatePR } from "../hooks/useCreatePR";
-import ChangesDiffModal from "./ChangesDiffModal";
-import { useFileChanges, type FileChange } from "../hooks/useFileChanges";
-import { usePrStatus } from "../hooks/usePrStatus";
-import PrStatusSkeleton from "./ui/pr-status-skeleton";
-import FileTypeIcon from "./ui/file-type-icon";
+import React, { useState } from 'react';
+import { Button } from './ui/button';
+import { Spinner } from './ui/spinner';
+import { useToast } from '../hooks/use-toast';
+import { useCreatePR } from '../hooks/useCreatePR';
+import ChangesDiffModal from './ChangesDiffModal';
+import { useFileChanges, type FileChange } from '../hooks/useFileChanges';
+import { usePrStatus } from '../hooks/usePrStatus';
+import PrStatusSkeleton from './ui/pr-status-skeleton';
+import FileTypeIcon from './ui/file-type-icon';
 
 interface FileChangesPanelProps {
   workspaceId: string;
   className?: string;
 }
 
-export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
-  workspaceId,
-  className,
-}) => {
+const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceId, className }) => {
   const [showDiffModal, setShowDiffModal] = useState(false);
-  const [selectedPath, setSelectedPath] = useState<string | undefined>(
-    undefined
-  );
+  const [selectedPath, setSelectedPath] = useState<string | undefined>(undefined);
   const { isCreating: isCreatingPR, createPR } = useCreatePR();
-  const { fileChanges, isLoading, error, refreshChanges } =
-    useFileChanges(workspaceId);
+  const { fileChanges, isLoading, error, refreshChanges } = useFileChanges(workspaceId);
   const { toast } = useToast();
   const hasChanges = fileChanges.length > 0;
   const { pr, loading: prLoading, refresh: refreshPr } = usePrStatus(workspaceId);
 
   const renderPath = (p: string) => {
-    const last = p.lastIndexOf("/");
-    const dir = last >= 0 ? p.slice(0, last + 1) : "";
+    const last = p.lastIndexOf('/');
+    const dir = last >= 0 ? p.slice(0, last + 1) : '';
     const base = last >= 0 ? p.slice(last + 1) : p;
     return (
       <span className="truncate">
         {dir && <span className="text-gray-500 dark:text-gray-400">{dir}</span>}
-        <span className="text-gray-900 dark:text-gray-100 font-medium">
-          {base}
-        </span>
+        <span className="text-gray-900 dark:text-gray-100 font-medium">{base}</span>
       </span>
     );
   };
@@ -52,9 +44,7 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
   );
 
   return (
-    <div
-      className={`bg-white dark:bg-gray-800 shadow-sm flex flex-col h-full ${className}`}
-    >
+    <div className={`bg-white dark:bg-gray-800 shadow-sm flex flex-col h-full ${className}`}>
       <div className="px-3 py-2 bg-gray-50 dark:bg-gray-900 flex items-center">
         {hasChanges ? (
           <div className="flex items-center justify-between w-full">
@@ -85,21 +75,21 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
                     workspacePath: workspaceId,
                     onSuccess: async () => {
                       await refreshChanges();
-                      try { await refreshPr(); } catch {}
+                      try {
+                        await refreshPr();
+                      } catch {}
                     },
                   });
                 }}
               >
-                {isCreatingPR ? <Spinner size="sm" /> : "Create PR"}
+                {isCreatingPR ? <Spinner size="sm" /> : 'Create PR'}
               </Button>
             </div>
           </div>
         ) : (
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center gap-2 p-2">
-              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                Changes
-              </span>
+              <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Changes</span>
             </div>
             <div className="flex items-center gap-2">
               {prLoading ? (
@@ -143,14 +133,12 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
               <span className="inline-flex items-center justify-center w-4 h-4 text-gray-500">
                 <FileTypeIcon
                   path={change.path}
-                  type={change.status === "deleted" ? "file" : "file"}
+                  type={change.status === 'deleted' ? 'file' : 'file'}
                   size={14}
                 />
               </span>
               <div className="flex-1 min-w-0">
-                <div className="text-sm truncate">
-                  {renderPath(change.path)}
-                </div>
+                <div className="text-sm truncate">{renderPath(change.path)}</div>
               </div>
             </div>
             <div className="flex items-center gap-2 ml-3">
@@ -180,5 +168,6 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({
     </div>
   );
 };
+export const FileChangesPanel = React.memo(FileChangesPanelComponent);
 
 export default FileChangesPanel;

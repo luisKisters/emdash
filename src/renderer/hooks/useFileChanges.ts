@@ -16,16 +16,16 @@ export function useFileChanges(workspacePath: string) {
   useEffect(() => {
     const fetchFileChanges = async (isInitialLoad = false) => {
       if (!workspacePath) return;
-      
+
       if (isInitialLoad) {
         setIsLoading(true);
         setError(null);
       }
-      
+
       try {
         // Call main process to get git status
         const result = await window.electronAPI.getGitStatus(workspacePath);
-        
+
         if (result?.success && result.changes && result.changes.length > 0) {
           const changes: FileChange[] = result.changes.map((change: any) => ({
             path: change.path,
@@ -54,9 +54,9 @@ export function useFileChanges(workspacePath: string) {
 
     // Initial load with loading state
     fetchFileChanges(true);
-    
+
     const interval = setInterval(() => fetchFileChanges(false), 5000);
-    
+
     return () => clearInterval(interval);
   }, [workspacePath]);
 

@@ -1,8 +1,8 @@
-import { execFile } from "child_process";
-import { promisify } from "util";
-import path from "path";
-import fs from "fs";
-import crypto from "crypto";
+import { execFile } from 'child_process';
+import { promisify } from 'util';
+import path from 'path';
+import fs from 'fs';
+import crypto from 'crypto';
 
 const execFileAsync = promisify(execFile);
 
@@ -12,7 +12,7 @@ export interface WorktreeInfo {
   branch: string;
   path: string;
   projectId: string;
-  status: "active" | "paused" | "completed" | "error";
+  status: 'active' | 'paused' | 'completed' | 'error';
   createdAt: string;
   lastActivity?: string;
 }
@@ -24,16 +24,20 @@ export class WorktreeService {
    * Slugify workspace name to make it shell-safe
    */
   private slugify(name: string): string {
-    return name.toLowerCase().replace(/[^a-z0-9-]/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
+    return name
+      .toLowerCase()
+      .replace(/[^a-z0-9-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
   }
 
   /**
    * Generate a stable ID from the absolute worktree path.
    */
   private stableIdFromPath(worktreePath: string): string {
-    const abs = path.resolve(worktreePath)
-    const h = crypto.createHash('sha1').update(abs).digest('hex').slice(0, 12)
-    return `wt-${h}`
+    const abs = path.resolve(worktreePath);
+    const h = crypto.createHash('sha1').update(abs).digest('hex').slice(0, 12);
+    return `wt-${h}`;
   }
 
   /**
@@ -48,11 +52,7 @@ export class WorktreeService {
       const sluggedName = this.slugify(workspaceName);
       const timestamp = Date.now();
       const branchName = `agent/${sluggedName}-${timestamp}`;
-      const worktreePath = path.join(
-        projectPath,
-        "..",
-        `worktrees/${sluggedName}-${timestamp}`
-      );
+      const worktreePath = path.join(projectPath, '..', `worktrees/${sluggedName}-${timestamp}`);
       const worktreeId = this.stableIdFromPath(worktreePath);
 
       console.log(`Creating worktree: ${branchName} -> ${worktreePath}`);
@@ -75,14 +75,14 @@ export class WorktreeService {
         { cwd: projectPath }
       );
 
-      console.log("Git worktree stdout:", stdout);
-      console.log("Git worktree stderr:", stderr);
+      console.log('Git worktree stdout:', stdout);
+      console.log('Git worktree stderr:', stderr);
 
       // Check for errors in stderr
       if (
         stderr &&
-        !stderr.includes("Switched to a new branch") &&
-        !stderr.includes("Preparing worktree")
+        !stderr.includes('Switched to a new branch') &&
+        !stderr.includes('Preparing worktree')
       ) {
         throw new Error(`Git worktree creation failed: ${stderr}`);
       }
@@ -94,25 +94,30 @@ export class WorktreeService {
 
       // Ensure codex logs are ignored in this worktree
       try {
-        const gitMeta = path.join(worktreePath, '.git')
-        let gitDir = gitMeta
+        const gitMeta = path.join(worktreePath, '.git');
+        let gitDir = gitMeta;
         if (fs.existsSync(gitMeta) && fs.statSync(gitMeta).isFile()) {
           try {
-            const content = fs.readFileSync(gitMeta, 'utf8')
-            const m = content.match(/gitdir:\s*(.*)\s*$/i)
+            const content = fs.readFileSync(gitMeta, 'utf8');
+            const m = content.match(/gitdir:\s*(.*)\s*$/i);
             if (m && m[1]) {
-              gitDir = path.resolve(worktreePath, m[1].trim())
+              gitDir = path.resolve(worktreePath, m[1].trim());
             }
           } catch {}
         }
-        const excludePath = path.join(gitDir, 'info', 'exclude')
+        const excludePath = path.join(gitDir, 'info', 'exclude');
         try {
-          const dir = path.dirname(excludePath)
-          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true })
-          let current = ''
-          try { current = fs.readFileSync(excludePath, 'utf8') } catch {}
+          const dir = path.dirname(excludePath);
+          if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+          let current = '';
+          try {
+            current = fs.readFileSync(excludePath, 'utf8');
+          } catch {}
           if (!current.includes('codex-stream.log')) {
-            fs.appendFileSync(excludePath, (current.endsWith('\n') || current === '' ? '' : '\n') + 'codex-stream.log\n')
+            fs.appendFileSync(
+              excludePath,
+              (current.endsWith('\n') || current === '' ? '' : '\n') + 'codex-stream.log\n'
+            );
           }
         } catch {}
       } catch {}
@@ -123,7 +128,7 @@ export class WorktreeService {
         branch: branchName,
         path: worktreePath,
         projectId,
-        status: "active",
+        status: 'active',
         createdAt: new Date().toISOString(),
       };
 
@@ -144,7 +149,7 @@ export class WorktreeService {
 
       return worktreeInfo;
     } catch (error) {
-      console.error("Failed to create worktree:", error);
+      console.error('Failed to create worktree:', error);
       throw new Error(`Failed to create worktree: ${error}`);
     }
   }
@@ -159,38 +164,40 @@ export class WorktreeService {
       });
 
       const worktrees: WorktreeInfo[] = [];
-      const lines = stdout.trim().split("\n");
+      const lines = stdout.trim().split('\n');
 
       for (const line of lines) {
-        if (line.includes("[") && line.includes("]")) {
+        if (line.includes('[') && line.includes(']')) {
           const parts = line.split(/\s+/);
           const worktreePath = parts[0];
           const branchMatch = line.match(/\[([^\]]+)\]/);
-          const branch = branchMatch ? branchMatch[1] : "unknown";
+          const branch = branchMatch ? branchMatch[1] : 'unknown';
 
           // Only include worktrees that are agent workspaces
-          if (branch.startsWith("agent/")) {
+          if (branch.startsWith('agent/')) {
             // Try to find existing worktree in memory by path
             const existing = Array.from(this.worktrees.values()).find(
-              wt => wt.path === worktreePath
+              (wt) => wt.path === worktreePath
             );
 
-            worktrees.push(existing ?? {
-              id: this.stableIdFromPath(worktreePath),
-              name: path.basename(worktreePath),
-              branch,
-              path: worktreePath,
-              projectId: path.basename(projectPath),
-              status: "active",
-              createdAt: new Date().toISOString(),
-            });
+            worktrees.push(
+              existing ?? {
+                id: this.stableIdFromPath(worktreePath),
+                name: path.basename(worktreePath),
+                branch,
+                path: worktreePath,
+                projectId: path.basename(projectPath),
+                status: 'active',
+                createdAt: new Date().toISOString(),
+              }
+            );
           }
         }
       }
 
       return worktrees;
     } catch (error) {
-      console.error("Failed to list worktrees:", error);
+      console.error('Failed to list worktrees:', error);
       return [];
     }
   }
@@ -211,7 +218,7 @@ export class WorktreeService {
       let branchToDelete = worktree?.branch ?? branch;
 
       if (!pathToRemove) {
-        throw new Error("Worktree path not provided");
+        throw new Error('Worktree path not provided');
       }
 
       // Remove the worktree directory via git first
@@ -220,7 +227,7 @@ export class WorktreeService {
           cwd: projectPath,
         });
       } catch (gitError) {
-        console.warn("git worktree remove failed, attempting filesystem cleanup", gitError);
+        console.warn('git worktree remove failed, attempting filesystem cleanup', gitError);
       }
 
       // Ensure directory is removed even if git command failed
@@ -243,7 +250,7 @@ export class WorktreeService {
         console.log(`Removed worktree ${worktreeId}`);
       }
     } catch (error) {
-      console.error("Failed to remove worktree:", error);
+      console.error('Failed to remove worktree:', error);
       throw new Error(`Failed to remove worktree: ${error}`);
     }
   }
@@ -268,39 +275,32 @@ export class WorktreeService {
 
       const lines = status
         .trim()
-        .split("\n")
+        .split('\n')
         .filter((line) => line.length > 0);
 
       for (const line of lines) {
         const status = line.substring(0, 2);
         const file = line.substring(3);
 
-        if (
-          status.includes("A") ||
-          status.includes("M") ||
-          status.includes("D")
-        ) {
+        if (status.includes('A') || status.includes('M') || status.includes('D')) {
           stagedFiles.push(file);
         }
-        if (status.includes("M") || status.includes("D")) {
+        if (status.includes('M') || status.includes('D')) {
           unstagedFiles.push(file);
         }
-        if (status.includes("??")) {
+        if (status.includes('??')) {
           untrackedFiles.push(file);
         }
       }
 
       return {
-        hasChanges:
-          stagedFiles.length > 0 ||
-          unstagedFiles.length > 0 ||
-          untrackedFiles.length > 0,
+        hasChanges: stagedFiles.length > 0 || unstagedFiles.length > 0 || untrackedFiles.length > 0,
         stagedFiles,
         unstagedFiles,
         untrackedFiles,
       };
     } catch (error) {
-      console.error("Failed to get worktree status:", error);
+      console.error('Failed to get worktree status:', error);
       return {
         hasChanges: false,
         stagedFiles: [],
@@ -319,23 +319,20 @@ export class WorktreeService {
         cwd: projectPath,
       });
       const match = stdout.match(/HEAD branch:\s*(\S+)/);
-      return match ? match[1] : "main";
+      return match ? match[1] : 'main';
     } catch {
-      return "main";
+      return 'main';
     }
   }
 
   /**
    * Merge worktree changes back to main branch
    */
-  async mergeWorktreeChanges(
-    projectPath: string,
-    worktreeId: string
-  ): Promise<void> {
+  async mergeWorktreeChanges(projectPath: string, worktreeId: string): Promise<void> {
     try {
       const worktree = this.worktrees.get(worktreeId);
       if (!worktree) {
-        throw new Error("Worktree not found");
+        throw new Error('Worktree not found');
       }
 
       const defaultBranch = await this.getDefaultBranch(projectPath);
@@ -351,7 +348,7 @@ export class WorktreeService {
 
       console.log(`Merged worktree changes: ${worktree.name}`);
     } catch (error) {
-      console.error("Failed to merge worktree changes:", error);
+      console.error('Failed to merge worktree changes:', error);
       throw new Error(`Failed to merge worktree changes: ${error}`);
     }
   }
