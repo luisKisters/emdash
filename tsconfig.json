@@ -20,13 +20,6 @@
       "@/*": ["./src/renderer/*"]
     }
   },
-  "include": [
-    "src/renderer/**/*",
-    "src/types/**/*",
-    "src/renderer/types/**/*"
-  ],
-  "exclude": [
-    "node_modules",
-    "dist"
-  ]
+  "include": ["src/renderer/**/*", "src/types/**/*", "src/renderer/types/**/*"],
+  "exclude": ["node_modules", "dist"]
 }

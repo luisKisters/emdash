@@ -29,15 +29,15 @@ export function useWorkspaceChanges(workspacePath: string, workspaceId: string) 
   const fetchChanges = async (isInitialLoad = false) => {
     try {
       if (isInitialLoad) {
-        setChanges(prev => ({ ...prev, isLoading: true, error: undefined }));
+        setChanges((prev) => ({ ...prev, isLoading: true, error: undefined }));
       }
-      
+
       const result = await window.electronAPI.getGitStatus(workspacePath);
-      
+
       if (result.success && result.changes) {
         const totalAdditions = result.changes.reduce((sum, change) => sum + change.additions, 0);
         const totalDeletions = result.changes.reduce((sum, change) => sum + change.deletions, 0);
-        
+
         setChanges({
           workspaceId,
           changes: result.changes,
@@ -68,8 +68,8 @@ export function useWorkspaceChanges(workspacePath: string, workspaceId: string) 
   };
 
   useEffect(() => {
-    fetchChanges(true); 
-    
+    fetchChanges(true);
+
     // Poll for changes every 10 seconds without loading state
     const interval = setInterval(() => fetchChanges(false), 10000);
     return () => clearInterval(interval);

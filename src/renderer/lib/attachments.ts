@@ -27,9 +27,12 @@ export function getFenceLang(p: string): string {
 }
 
 export function stripMentions(text: string): string {
-  if (!text) return ''
-  const re = /@[\w\-.\/]+/g
-  return text.replace(re, '').replace(/\s{2,}/g, ' ').trim()
+  if (!text) return '';
+  const re = /@[\w\-.\/]+/g;
+  return text
+    .replace(re, '')
+    .replace(/\s{2,}/g, ' ')
+    .trim();
 }
 
 export async function buildAttachmentsSection(
@@ -39,7 +42,10 @@ export async function buildAttachmentsSection(
 ): Promise<string> {
   const mentions = extractMentions(text);
   const MAX_FILES = Math.max(1, Math.min(opts?.maxFiles ?? 6, 20));
-  const MAX_BYTES_PER_FILE = Math.max(1024, Math.min(opts?.maxBytesPerFile ?? 200 * 1024, 5 * 1024 * 1024));
+  const MAX_BYTES_PER_FILE = Math.max(
+    1024,
+    Math.min(opts?.maxBytesPerFile ?? 200 * 1024, 5 * 1024 * 1024)
+  );
   const limited = mentions.slice(0, MAX_FILES);
 
   const parts: string[] = [];
