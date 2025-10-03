@@ -83,8 +83,20 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [mentionQuery, setMentionQuery] = useState('');
   const [mentionStart, setMentionStart] = useState<number | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
+  const [mentionResults, setMentionResults] = useState<Array<{ path: string; type: 'file' | 'dir' }>>([]);
 
-  const mentionResults = mentionOpen ? search(mentionQuery, 12) : [];
+  // Debounce mention search to avoid heavy sync work on every keystroke in large repos
+  useEffect(() => {
+    if (!mentionOpen) { setMentionResults([]); return; }
+    const handle = setTimeout(() => {
+      try {
+        setMentionResults(search(mentionQuery, 12));
+      } catch {
+        setMentionResults([]);
+      }
+    }, 120);
+    return () => clearTimeout(handle);
+  }, [mentionOpen, mentionQuery, search]);
 
   // Provider dropdown
 

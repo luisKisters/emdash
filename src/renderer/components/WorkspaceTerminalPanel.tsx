@@ -15,7 +15,10 @@ interface Props {
   className?: string;
 }
 
-export const WorkspaceTerminalPanel: React.FC<Props> = ({ workspace, className }) => {
+const WorkspaceTerminalPanelComponent: React.FC<Props> = ({
+  workspace,
+  className,
+}) => {
   if (!workspace) {
     return (
       <div
@@ -53,5 +56,6 @@ export const WorkspaceTerminalPanel: React.FC<Props> = ({ workspace, className }
     </div>
   );
 };
+export const WorkspaceTerminalPanel = React.memo(WorkspaceTerminalPanelComponent);
 
 export default WorkspaceTerminalPanel;

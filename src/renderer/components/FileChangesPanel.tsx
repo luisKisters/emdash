@@ -14,7 +14,10 @@ interface FileChangesPanelProps {
   className?: string;
 }
 
-export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({ workspaceId, className }) => {
+const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({
+  workspaceId,
+  className,
+}) => {
   const [showDiffModal, setShowDiffModal] = useState(false);
   const [selectedPath, setSelectedPath] = useState<string | undefined>(undefined);
   const { isCreating: isCreatingPR, createPR } = useCreatePR();
@@ -168,5 +171,6 @@ export const FileChangesPanel: React.FC<FileChangesPanelProps> = ({ workspaceId,
     </div>
   );
 };
+export const FileChangesPanel = React.memo(FileChangesPanelComponent);
 
 export default FileChangesPanel;
