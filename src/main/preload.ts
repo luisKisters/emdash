@@ -292,18 +292,14 @@ export interface ElectronAPI {
 
   // Project management
   openProject: () => Promise<{ success: boolean; path?: string; error?: string }>;
-  getGitInfo: (
-    projectPath: string
-  ) => Promise<{
+  getGitInfo: (projectPath: string) => Promise<{
     isGitRepo: boolean;
     remote?: string;
     branch?: string;
     path?: string;
     error?: string;
   }>;
-  getGitStatus: (
-    workspacePath: string
-  ) => Promise<{
+  getGitStatus: (workspacePath: string) => Promise<{
     success: boolean;
     changes?: Array<{
       path: string;
@@ -314,10 +310,7 @@ export interface ElectronAPI {
     }>;
     error?: string;
   }>;
-  getFileDiff: (args: {
-    workspacePath: string;
-    filePath: string;
-  }) => Promise<{
+  getFileDiff: (args: { workspacePath: string; filePath: string }) => Promise<{
     success: boolean;
     diff?: { lines: Array<{ left?: string; right?: string; type: 'context' | 'add' | 'del' }> };
     error?: string;

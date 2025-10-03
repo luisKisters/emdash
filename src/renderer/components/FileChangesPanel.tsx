@@ -14,10 +14,7 @@ interface FileChangesPanelProps {
   className?: string;
 }
 
-const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({
-  workspaceId,
-  className,
-}) => {
+const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceId, className }) => {
   const [showDiffModal, setShowDiffModal] = useState(false);
   const [selectedPath, setSelectedPath] = useState<string | undefined>(undefined);
   const { isCreating: isCreatingPR, createPR } = useCreatePR();

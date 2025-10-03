@@ -80,8 +80,22 @@ const RequirementsNotice: React.FC<Props> = ({
                 </button>
               </div>
             </div>
-            <div className="text-[11px] text-gray-500">
-              Use Codex or Claude in chat, or Droid in the embedded terminal.
+            <div>
+              <span className="font-medium">Gemini CLI</span>
+              <div>
+                Project:{' '}
+                <button
+                  type="button"
+                  className="underline"
+                  onClick={() =>
+                    (window as any).electronAPI.openExternal?.(
+                      'https://github.com/google-gemini/gemini-cli'
+                    )
+                  }
+                >
+                  github.com/google-gemini/gemini-cli
+                </button>
+              </div>
             </div>
           </div>
         </div>
