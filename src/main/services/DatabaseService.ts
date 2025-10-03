@@ -182,13 +182,27 @@ export class DatabaseService {
   async saveProject(project: Omit<Project, 'createdAt' | 'updatedAt'>): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
 
+    // Important: avoid INSERT OR REPLACE on projects. REPLACE deletes the existing
+    // row to satisfy UNIQUE(path) which can cascade-delete related workspaces
+    // (workspaces.project_id ON DELETE CASCADE). Use an UPSERT on the unique
+    // path constraint that updates fields in-place and preserves the existing id.
+    //
+    // Semantics:
+    // - If no row exists for this path: insert with the provided id.
+    // - If a row exists for this path: update fields; do NOT change id or path.
+    // - created_at remains intact on updates; updated_at is bumped.
     return new Promise((resolve, reject) => {
       this.db!.run(
-        `
-        INSERT OR REPLACE INTO projects 
-        (id, name, path, git_remote, git_branch, github_repository, github_connected, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-      `,
+        `INSERT INTO projects (id, name, path, git_remote, git_branch, github_repository, github_connected, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+         ON CONFLICT(path) DO UPDATE SET
+           name = excluded.name,
+           git_remote = excluded.git_remote,
+           git_branch = excluded.git_branch,
+           github_repository = excluded.github_repository,
+           github_connected = excluded.github_connected,
+           updated_at = CURRENT_TIMESTAMP
+        `,
         [
           project.id,
           project.name,
