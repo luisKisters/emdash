@@ -5,12 +5,14 @@ Thanks for your interest in contributing! We favor small, focused PRs and clear 
 ## Quick Start
 
 Prerequisites
+
 - Node.js 18+ and Git
 - Optional (recommended for end‑to‑end):
   - Codex CLI (`npm install -g @openai/codex` or `brew install codex`; then run `codex` to authenticate)
   - GitHub CLI (`brew install gh`; then `gh auth login`)
 
 Setup
+
 ```
 # Fork this repo, then clone your fork
  git clone https://github.com/<you>/emdash.git
@@ -38,36 +40,42 @@ Tip: During development, the renderer hot‑reloads. Changes to the Electron mai
 
 ## Development Workflow
 
-1) Create a feature branch
+1. Create a feature branch
+
 ```
  git checkout -b feat/<short-slug>
 ```
 
-2) Make changes and keep PRs small and focused
+2. Make changes and keep PRs small and focused
+
 - Prefer a series of small PRs over one large one.
 - Include UI screenshots/GIFs when modifying the interface.
 - Update docs (README or inline help) when behavior changes.
 
-3) Run checks locally
+3. Run checks locally
+
 ```
  npm run type-check
  npm run lint
  npm run build
 ```
 
-4) Commit using Conventional Commits
+4. Commit using Conventional Commits
+
 - `feat:` – new user‑facing capability
 - `fix:` – bug fix
 - `chore:`, `refactor:`, `docs:`, `perf:`, `test:` etc.
 
 Examples
+
 ```
 fix(chat): preserve stream state across workspace switches
 
 feat(ci): add type-check + build workflow for PRs
 ```
 
-5) Open a Pull Request
+5. Open a Pull Request
+
 - Describe the change, rationale, and testing steps.
 - Link related Issues.
 - Keep the PR title in Conventional Commit format if possible.
@@ -75,15 +83,18 @@ feat(ci): add type-check + build workflow for PRs
 ## Code Style and Patterns
 
 TypeScript + ESLint
+
 - Keep code type‑safe. Run `npm run type-check` before pushing.
 - Run `npm run lint` and address warnings where reasonable.
 
 Electron main (Node side)
+
 - Prefer `execFile` over `exec` to avoid shell quoting issues.
 - Never write logs into Git worktrees. Stream logs belong in the Electron `userData` folder.
 - Be conservative with console logging; noisy logs reduce signal. Use clear prefixes.
 
 Git and worktrees
+
 - The app creates worktrees in a sibling `../worktrees/` folder.
 - Do not delete worktree folders from Finder/Explorer; if you need cleanup, use:
   - `git worktree prune` (from the main repo)
@@ -91,6 +102,7 @@ Git and worktrees
 - The file `codex-stream.log` is intentionally excluded from Git status and auto‑ignored in new worktrees.
 
 Renderer (React)
+
 - Components live under `src/renderer/components`; hooks under `src/renderer/hooks`.
 - Streaming UI conventions:
   - “Reasoning” content renders inside a collapsible.
@@ -100,6 +112,7 @@ Renderer (React)
 - Aim for accessible elements (labels, `aria-*` where appropriate).
 
 Local DB (SQLite)
+
 - Location (Electron `app.getPath('userData')`):
   - macOS: `~/Library/Application Support/emdash/emdash.db`
   - Linux: `~/.config/emdash/emdash.db`
@@ -107,6 +120,7 @@ Local DB (SQLite)
 - Reset: quit the app, delete the file, relaunch (the schema is recreated).
 
 ## Issue Reports and Feature Requests
+
 - Use GitHub Issues. Include:
   - OS, Node version
   - Steps to reproduce
@@ -114,6 +128,7 @@ Local DB (SQLite)
   - Screenshots/GIFs for UI issues
 
 ## Release Process (maintainers)
+
 - Bump version in `package.json`.
 - Tag and publish a GitHub Release.
 - Keep the CHANGELOG concise and user‑facing.

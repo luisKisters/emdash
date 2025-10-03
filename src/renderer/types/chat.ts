@@ -3,13 +3,13 @@ export interface Workspace {
   name: string;
   branch: string;
   path: string;
-  status: "active" | "idle" | "running";
+  status: 'active' | 'idle' | 'running';
 }
 
 export interface Message {
   id: string;
   content: string;
-  sender: "user" | "agent";
+  sender: 'user' | 'agent';
   timestamp: Date;
   attachments?: string[];
 }

@@ -1,23 +1,23 @@
-import React from 'react'
-import { Button } from './ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card'
-import { Spinner } from './ui/spinner'
-import { GitBranch, Bot, Play, Pause, Plus } from 'lucide-react'
+import React from 'react';
+import { Button } from './ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Spinner } from './ui/spinner';
+import { GitBranch, Bot, Play, Pause, Plus } from 'lucide-react';
 
 interface Workspace {
-  id: string
-  name: string
-  branch: string
-  path: string
-  status: 'active' | 'idle' | 'running'
+  id: string;
+  name: string;
+  branch: string;
+  path: string;
+  status: 'active' | 'idle' | 'running';
 }
 
 interface Props {
-  workspaces: Workspace[]
-  activeWorkspace: Workspace | null
-  onSelectWorkspace: (workspace: Workspace) => void
-  onCreateWorkspace: () => void
-  isCreatingWorkspace?: boolean
+  workspaces: Workspace[];
+  activeWorkspace: Workspace | null;
+  onSelectWorkspace: (workspace: Workspace) => void;
+  onCreateWorkspace: () => void;
+  isCreatingWorkspace?: boolean;
 }
 
 export const WorkspaceList: React.FC<Props> = ({
@@ -30,13 +30,13 @@ export const WorkspaceList: React.FC<Props> = ({
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'running':
-        return <Play className="w-4 h-4 text-green-500" />
+        return <Play className="w-4 h-4 text-green-500" />;
       case 'idle':
-        return <Pause className="w-4 h-4 text-yellow-500" />
+        return <Pause className="w-4 h-4 text-yellow-500" />;
       default:
-        return <Bot className="w-4 h-4 text-blue-500" />
+        return <Bot className="w-4 h-4 text-blue-500" />;
     }
-  }
+  };
 
   return (
     <div className="flex flex-col h-full p-4">
@@ -97,7 +97,7 @@ export const WorkspaceList: React.FC<Props> = ({
         </div>
       )}
     </div>
-  )
-}
+  );
+};
 
-export default WorkspaceList
+export default WorkspaceList;

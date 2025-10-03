@@ -1,6 +1,6 @@
-import React from "react";
-import SidebarLeftToggleButton from "./SidebarLeftToggleButton";
-import SidebarRightToggleButton from "./SidebarRightToggleButton";
+import React from 'react';
+import SidebarLeftToggleButton from './SidebarLeftToggleButton';
+import SidebarRightToggleButton from './SidebarRightToggleButton';
 
 const Titlebar: React.FC = () => {
   return (

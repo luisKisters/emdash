@@ -1,14 +1,21 @@
-import React, { useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion, useReducedMotion } from "motion/react";
-import { Button } from "./ui/button";
-import { ArrowRight } from "lucide-react";
-import openaiLogo from "../../assets/images/openai.png";
-import claudeLogo from "../../assets/images/claude.png";
-import factoryLogo from "../../assets/images/factorydroid.png";
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem, SelectItemText } from "./ui/select";
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "./ui/tooltip";
-import { useFileIndex } from "../hooks/useFileIndex";
-import FileTypeIcon from "./ui/file-type-icon";
+import React, { useEffect, useRef, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { Button } from './ui/button';
+import { ArrowRight } from 'lucide-react';
+import openaiLogo from '../../assets/images/openai.png';
+import claudeLogo from '../../assets/images/claude.png';
+import factoryLogo from '../../assets/images/factorydroid.png';
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+  SelectItemText,
+} from './ui/select';
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
+import { useFileIndex } from '../hooks/useFileIndex';
+import FileTypeIcon from './ui/file-type-icon';
 
 interface ChatInputProps {
   value: string;
@@ -29,14 +36,14 @@ interface ChatInputProps {
 const MAX_LOADING_SECONDS = 60 * 60; // 60 minutes
 
 const formatLoadingTime = (seconds: number): string => {
-  if (seconds <= 0) return "0s";
+  if (seconds <= 0) return '0s';
 
   const clamped = Math.min(seconds, MAX_LOADING_SECONDS);
   const minutes = Math.floor(clamped / 60);
   const remainingSeconds = clamped % 60;
 
   if (minutes >= 60) {
-    return "60m";
+    return '60m';
   }
 
   if (minutes === 0) {
@@ -49,7 +56,6 @@ const formatLoadingTime = (seconds: number): string => {
 
   return `${minutes}m ${remainingSeconds}s`;
 };
-
 
 export const ChatInput: React.FC<ChatInputProps> = ({
   value,
@@ -74,7 +80,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   // File index for @ mention
   const { search } = useFileIndex(workspacePath);
   const [mentionOpen, setMentionOpen] = useState(false);
-  const [mentionQuery, setMentionQuery] = useState("");
+  const [mentionQuery, setMentionQuery] = useState('');
   const [mentionStart, setMentionStart] = useState<number | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
 
@@ -83,37 +89,37 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   // Provider dropdown
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-  // Send on Enter (unless Shift) when mention is closed
-  if (e.key === "Enter" && !e.shiftKey && !mentionOpen) {
-  e.preventDefault();
-  if (!isLoading) onSend();
-  return;
-  }
+    // Send on Enter (unless Shift) when mention is closed
+    if (e.key === 'Enter' && !e.shiftKey && !mentionOpen) {
+      e.preventDefault();
+      if (!isLoading) onSend();
+      return;
+    }
 
-  // Mention navigation
-  if (mentionOpen) {
-  if (e.key === "ArrowDown") {
-  e.preventDefault();
-  setMentionIndex((i) => Math.min(i + 1, Math.max(mentionResults.length - 1, 0)));
-  return;
-  }
-  if (e.key === "ArrowUp") {
-  e.preventDefault();
-  setMentionIndex((i) => Math.max(i - 1, 0));
-  return;
-  }
-  if (e.key === "Enter") {
-  e.preventDefault();
-  const pick = mentionResults[mentionIndex];
-  if (pick) applyMention(pick.path);
-  return;
-  }
-  if (e.key === "Escape") {
-  e.preventDefault();
-  closeMention();
-  return;
-  }
-  }
+    // Mention navigation
+    if (mentionOpen) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setMentionIndex((i) => Math.min(i + 1, Math.max(mentionResults.length - 1, 0)));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setMentionIndex((i) => Math.max(i - 1, 0));
+        return;
+      }
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const pick = mentionResults[mentionIndex];
+        if (pick) applyMention(pick.path);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        closeMention();
+        return;
+      }
+    }
   };
 
   function openMention(start: number, query: string) {
@@ -125,7 +131,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   function closeMention() {
     setMentionOpen(false);
-    setMentionQuery("");
+    setMentionQuery('');
     setMentionStart(null);
     setMentionIndex(0);
   }
@@ -136,11 +142,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     let i = caret - 1;
     while (i >= 0) {
       const ch = nextValue[i];
-      if (ch === "@") break;
+      if (ch === '@') break;
       if (/\s/.test(ch)) return closeMention();
       i--;
     }
-    if (i < 0 || nextValue[i] !== "@") return closeMention();
+    if (i < 0 || nextValue[i] !== '@') return closeMention();
 
     const start = i; // position of '@'
     const query = nextValue.slice(start + 1, caret);
@@ -169,33 +175,34 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   const getPlaceholder = () => {
     if (provider === 'codex' && !isCodexInstalled) {
-      return "Codex CLI not installed...";
+      return 'Codex CLI not installed...';
     }
     if (!agentCreated) {
-      return "Initializing...";
+      return 'Initializing...';
     }
-    if (provider === 'claude') return "Tell Claude Code what to do...";
-    if (provider === 'droid') return "Factory Droid uses the terminal above.";
-    return "Tell Codex what to do...";
+    if (provider === 'claude') return 'Tell Claude Code what to do...';
+    if (provider === 'droid') return 'Factory Droid uses the terminal above.';
+    return 'Tell Codex what to do...';
   };
 
   const trimmedValue = value.trim();
-  const baseDisabled = disabled || (
-    provider === 'codex'
-      ? (!isCodexInstalled || !agentCreated)
+  const baseDisabled =
+    disabled ||
+    (provider === 'codex'
+      ? !isCodexInstalled || !agentCreated
       : provider === 'claude'
         ? !agentCreated
-        : true // droid: input disabled, terminal-only
-  );
+        : true); // droid: input disabled, terminal-only
   const textareaDisabled = baseDisabled || isLoading;
-  const sendDisabled = provider === 'droid' ? true : (isLoading ? baseDisabled : baseDisabled || !trimmedValue);
+  const sendDisabled =
+    provider === 'droid' ? true : isLoading ? baseDisabled : baseDisabled || !trimmedValue;
 
   return (
     <div className="px-6 pt-4 pb-6">
       <div className="max-w-4xl mx-auto">
         <div
           className={`relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md transition-shadow duration-200 ${
-            isFocused ? "shadow-2xl" : "shadow-lg"
+            isFocused ? 'shadow-2xl' : 'shadow-lg'
           }`}
         >
           <div className="p-4">
@@ -215,7 +222,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               placeholder={getPlaceholder()}
               rows={2}
               disabled={textareaDisabled}
-              style={{ minHeight: "56px" }}
+              style={{ minHeight: '56px' }}
             />
             {/* Mention dropdown */}
             {mentionOpen && mentionResults.length > 0 && (
@@ -230,7 +237,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                         applyMention(item.path);
                       }}
                       className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
-                        idx === mentionIndex ? "bg-gray-100 dark:bg-gray-700" : ""
+                        idx === mentionIndex ? 'bg-gray-100 dark:bg-gray-700' : ''
                       }`}
                     >
                       <span className="inline-flex items-center justify-center w-4 h-4 text-gray-500">
@@ -251,21 +258,35 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             <div className="relative inline-block w-[12rem]">
               <Select
                 value={provider}
-                onValueChange={(v) => { if (!selectDisabled) onProviderChange && onProviderChange(v as 'codex' | 'claude' | 'droid') }}
+                onValueChange={(v) => {
+                  if (!selectDisabled)
+                    onProviderChange && onProviderChange(v as 'codex' | 'claude' | 'droid');
+                }}
                 disabled={selectDisabled}
               >
                 {selectDisabled ? (
                   <TooltipProvider delayDuration={250}>
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <SelectTrigger aria-disabled className={`h-9 bg-gray-100 dark:bg-gray-700 border-none ${selectDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                        <SelectTrigger
+                          aria-disabled
+                          className={`h-9 bg-gray-100 dark:bg-gray-700 border-none ${selectDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+                        >
                           <div className="flex items-center gap-2">
                             {provider === 'claude' ? (
-                              <img src={claudeLogo} alt="Claude Code" className="w-4 h-4 shrink-0" />
+                              <img
+                                src={claudeLogo}
+                                alt="Claude Code"
+                                className="w-4 h-4 shrink-0"
+                              />
                             ) : provider === 'codex' ? (
                               <img src={openaiLogo} alt="Codex" className="w-4 h-4 shrink-0" />
                             ) : (
-                              <img src={factoryLogo} alt="Factory Droid" className="w-4 h-4 shrink-0" />
+                              <img
+                                src={factoryLogo}
+                                alt="Factory Droid"
+                                className="w-4 h-4 shrink-0"
+                              />
                             )}
                             <SelectValue placeholder="Select provider" />
                           </div>
@@ -325,10 +346,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 disabled={sendDisabled}
                 className={`group relative h-9 w-9 p-0 rounded-md text-gray-600 dark:text-gray-300 transition-colors disabled:opacity-50 disabled:pointer-events-none ${
                   isLoading
-                    ? "bg-gray-200 dark:bg-gray-700 hover:bg-red-300 hover:text-white dark:hover:text-white"
-                    : "bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600"
+                    ? 'bg-gray-200 dark:bg-gray-700 hover:bg-red-300 hover:text-white dark:hover:text-white'
+                    : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
-                aria-label={provider === 'droid' ? 'Droid uses terminal' : (isLoading ? "Stop Codex" : "Send")}
+                aria-label={
+                  provider === 'droid' ? 'Droid uses terminal' : isLoading ? 'Stop Codex' : 'Send'
+                }
               >
                 {provider === 'droid' ? (
                   <div className="flex items-center justify-center w-full h-full">

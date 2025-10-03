@@ -47,41 +47,44 @@ export class GitHubService {
     try {
       // Check if gh CLI is installed and authenticated
       const { stdout } = await execAsync('gh auth status');
-      
+
       if (stdout.includes('Logged in')) {
         // Get token from gh CLI
         const { stdout: token } = await execAsync('gh auth token');
         const cleanToken = token.trim();
-        
+
         if (cleanToken) {
           // Store token securely
           await this.storeToken(cleanToken);
-          
+
           // Get user info
           const user = await this.getUserInfo(cleanToken);
-          
+
           return { success: true, token: cleanToken, user: user || undefined };
         }
       }
-      
-      return { 
-        success: false, 
-        error: 'GitHub CLI not authenticated.\n\nTo fix this:\n1. Open your terminal\n2. Run: gh auth login\n3. Follow the authentication steps\n4. Try again in orchbench' 
+
+      return {
+        success: false,
+        error:
+          'GitHub CLI not authenticated.\n\nTo fix this:\n1. Open your terminal\n2. Run: gh auth login\n3. Follow the authentication steps\n4. Try again in orchbench',
       };
     } catch (error) {
       console.error('GitHub authentication failed:', error);
-      
+
       // Check if gh CLI is installed
       try {
         await execAsync('gh --version');
-        return { 
-          success: false, 
-          error: 'GitHub CLI not authenticated.\n\nTo fix this:\n1. Open your terminal\n2. Run: gh auth login\n3. Follow the authentication steps\n4. Try again in orchbench' 
+        return {
+          success: false,
+          error:
+            'GitHub CLI not authenticated.\n\nTo fix this:\n1. Open your terminal\n2. Run: gh auth login\n3. Follow the authentication steps\n4. Try again in orchbench',
         };
       } catch {
-        return { 
-          success: false, 
-          error: 'GitHub CLI not installed.\n\nTo install GitHub CLI:\n\nOn macOS:\nbrew install gh\n\nOn Linux:\nsudo apt install gh\n\nOn Windows:\nwinget install GitHub.cli\n\nAfter installation, run: gh auth login' 
+        return {
+          success: false,
+          error:
+            'GitHub CLI not installed.\n\nTo install GitHub CLI:\n\nOn macOS:\nbrew install gh\n\nOn Linux:\nsudo apt install gh\n\nOn Windows:\nwinget install GitHub.cli\n\nAfter installation, run: gh auth login',
         };
       }
     }
@@ -94,19 +97,19 @@ export class GitHubService {
     try {
       // Test the token by getting user info
       const user = await this.getUserInfo(token);
-      
+
       if (user) {
         // Store token securely
         await this.storeToken(token);
         return { success: true, token, user };
       }
-      
+
       return { success: false, error: 'Invalid token' };
     } catch (error) {
       console.error('Token authentication failed:', error);
-      return { 
-        success: false, 
-        error: 'Invalid token or network error' 
+      return {
+        success: false,
+        error: 'Invalid token or network error',
       };
     }
   }
@@ -143,7 +146,7 @@ export class GitHubService {
       // Use gh CLI to get user info
       const { stdout } = await execAsync('gh api user');
       const userData = JSON.parse(stdout);
-      
+
       return {
         id: userData.id,
         login: userData.login,
@@ -163,9 +166,11 @@ export class GitHubService {
   async getRepositories(token: string): Promise<GitHubRepo[]> {
     try {
       // Use gh CLI to get repositories with correct field names
-      const { stdout } = await execAsync('gh repo list --limit 100 --json name,nameWithOwner,description,url,defaultBranchRef,isPrivate,updatedAt,primaryLanguage,stargazerCount,forkCount');
+      const { stdout } = await execAsync(
+        'gh repo list --limit 100 --json name,nameWithOwner,description,url,defaultBranchRef,isPrivate,updatedAt,primaryLanguage,stargazerCount,forkCount'
+      );
       const repos = JSON.parse(stdout);
-      
+
       return repos.map((repo: any) => ({
         id: Math.random(), // gh CLI doesn't provide ID, so we generate one
         name: repo.name,
@@ -190,7 +195,10 @@ export class GitHubService {
   /**
    * Clone a repository to local workspace
    */
-  async cloneRepository(repoUrl: string, localPath: string): Promise<{ success: boolean; error?: string }> {
+  async cloneRepository(
+    repoUrl: string,
+    localPath: string
+  ): Promise<{ success: boolean; error?: string }> {
     try {
       // Ensure the local path directory exists
       const dir = path.dirname(localPath);
@@ -200,13 +208,13 @@ export class GitHubService {
 
       // Clone the repository
       await execAsync(`git clone "${repoUrl}" "${localPath}"`);
-      
+
       return { success: true };
     } catch (error) {
       console.error('Failed to clone repository:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Clone failed' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Clone failed',
       };
     }
   }

@@ -1,4 +1,4 @@
-import { app } from 'electron'
+import { app } from 'electron';
 // Ensure PATH matches the user's shell when launched from Finder (macOS)
 // so Homebrew/NPM global binaries like `gh` and `codex` are found.
 try {
@@ -31,27 +31,27 @@ if (process.platform === 'darwin') {
     }
   } catch {}
 }
-import { createMainWindow } from './app/window'
-import { registerAppLifecycle } from './app/lifecycle'
-import { registerAllIpc } from './ipc'
-import { databaseService } from './services/DatabaseService'
+import { createMainWindow } from './app/window';
+import { registerAppLifecycle } from './app/lifecycle';
+import { registerAllIpc } from './ipc';
+import { databaseService } from './services/DatabaseService';
 
 // App bootstrap
 app.whenReady().then(async () => {
   // Initialize database
   try {
-    await databaseService.initialize()
-    console.log('Database initialized successfully')
+    await databaseService.initialize();
+    console.log('Database initialized successfully');
   } catch (error) {
-    console.error('Failed to initialize database:', error)
+    console.error('Failed to initialize database:', error);
   }
 
   // Register IPC handlers
-  registerAllIpc()
+  registerAllIpc();
 
   // Create main window
-  createMainWindow()
-})
+  createMainWindow();
+});
 
 // App lifecycle handlers
-registerAppLifecycle()
+registerAppLifecycle();
