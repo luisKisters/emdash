@@ -39,7 +39,9 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
   const [claudeInstructions, setClaudeInstructions] = useState<string | null>(null);
   const [agentCreated, setAgentCreated] = useState(false);
   const [provider, setProvider] = useState<'codex' | 'claude' | 'droid' | 'gemini'>('codex');
-  const [lockedProvider, setLockedProvider] = useState<'codex' | 'claude' | 'droid' | 'gemini' | null>(null);
+  const [lockedProvider, setLockedProvider] = useState<
+    'codex' | 'claude' | 'droid' | 'gemini' | null
+  >(null);
   const [hasDroidActivity, setHasDroidActivity] = useState(false);
   const [hasGeminiActivity, setHasGeminiActivity] = useState(false);
   const initializedConversationRef = useRef<string | null>(null);
@@ -64,8 +66,18 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
     try {
       const lastKey = `provider:last:${workspace.id}`;
       const lockedKey = `provider:locked:${workspace.id}`;
-      const last = window.localStorage.getItem(lastKey) as 'codex' | 'claude' | 'droid' | 'gemini' | null;
-      const locked = window.localStorage.getItem(lockedKey) as 'codex' | 'claude' | 'droid' | 'gemini' | null;
+      const last = window.localStorage.getItem(lastKey) as
+        | 'codex'
+        | 'claude'
+        | 'droid'
+        | 'gemini'
+        | null;
+      const locked = window.localStorage.getItem(lockedKey) as
+        | 'codex'
+        | 'claude'
+        | 'droid'
+        | 'gemini'
+        | null;
 
       setLockedProvider(locked);
       setHasDroidActivity(locked === 'droid');
@@ -102,7 +114,8 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
   useEffect(() => {
     try {
       const userLocked =
-        provider !== 'droid' && provider !== 'gemini' &&
+        provider !== 'droid' &&
+        provider !== 'gemini' &&
         activeStream.messages &&
         activeStream.messages.some((m) => m.sender === 'user');
       const droidLocked = provider === 'droid' && hasDroidActivity;
@@ -426,7 +439,9 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
         onProviderChange={(p) => setProvider(p)}
         selectDisabled={providerLocked}
         disabled={
-          provider === 'droid' || provider === 'gemini' || (provider === 'claude' && isClaudeInstalled === false)
+          provider === 'droid' ||
+          provider === 'gemini' ||
+          (provider === 'claude' && isClaudeInstalled === false)
         }
       />
     </div>

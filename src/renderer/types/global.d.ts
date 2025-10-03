@@ -48,18 +48,14 @@ declare global {
       }) => Promise<{ success: boolean; worktree?: any; error?: string }>;
       worktreeGetAll: () => Promise<{ success: boolean; worktrees?: any[]; error?: string }>;
       openProject: () => Promise<{ success: boolean; path?: string; error?: string }>;
-      getGitInfo: (
-        projectPath: string
-      ) => Promise<{
+      getGitInfo: (projectPath: string) => Promise<{
         isGitRepo: boolean;
         remote?: string;
         branch?: string;
         path?: string;
         error?: string;
       }>;
-      getGitStatus: (
-        workspacePath: string
-      ) => Promise<{
+      getGitStatus: (workspacePath: string) => Promise<{
         success: boolean;
         changes?: Array<{
           path: string;

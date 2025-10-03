@@ -55,18 +55,14 @@ declare global {
 
       // Project management
       openProject: () => Promise<{ success: boolean; path?: string; error?: string }>;
-      getGitInfo: (
-        projectPath: string
-      ) => Promise<{
+      getGitInfo: (projectPath: string) => Promise<{
         isGitRepo: boolean;
         remote?: string;
         branch?: string;
         path?: string;
         error?: string;
       }>;
-      getGitStatus: (
-        workspacePath: string
-      ) => Promise<{
+      getGitStatus: (workspacePath: string) => Promise<{
         success: boolean;
         changes?: Array<{
           path: string;
@@ -77,10 +73,7 @@ declare global {
         }>;
         error?: string;
       }>;
-      getFileDiff: (args: {
-        workspacePath: string;
-        filePath: string;
-      }) => Promise<{
+      getFileDiff: (args: { workspacePath: string; filePath: string }) => Promise<{
         success: boolean;
         diff?: { lines: Array<{ left?: string; right?: string; type: 'context' | 'add' | 'del' }> };
         error?: string;
@@ -101,9 +94,7 @@ declare global {
         web?: boolean;
         fill?: boolean;
       }) => Promise<{ success: boolean; url?: string; output?: string; error?: string }>;
-      getPrStatus: (args: {
-        workspacePath: string;
-      }) => Promise<{
+      getPrStatus: (args: { workspacePath: string }) => Promise<{
         success: boolean;
         pr?: {
           number: number;
@@ -282,9 +273,7 @@ export interface ElectronAPI {
 
   // Project management
   openProject: () => Promise<{ success: boolean; path?: string; error?: string }>;
-  getGitInfo: (
-    projectPath: string
-  ) => Promise<{
+  getGitInfo: (projectPath: string) => Promise<{
     isGitRepo: boolean;
     remote?: string;
     branch?: string;

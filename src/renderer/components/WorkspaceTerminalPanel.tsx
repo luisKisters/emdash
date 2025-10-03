@@ -15,10 +15,7 @@ interface Props {
   className?: string;
 }
 
-const WorkspaceTerminalPanelComponent: React.FC<Props> = ({
-  workspace,
-  className,
-}) => {
+const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className }) => {
   if (!workspace) {
     return (
       <div

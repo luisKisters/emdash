@@ -84,11 +84,16 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [mentionQuery, setMentionQuery] = useState('');
   const [mentionStart, setMentionStart] = useState<number | null>(null);
   const [mentionIndex, setMentionIndex] = useState(0);
-  const [mentionResults, setMentionResults] = useState<Array<{ path: string; type: 'file' | 'dir' }>>([]);
+  const [mentionResults, setMentionResults] = useState<
+    Array<{ path: string; type: 'file' | 'dir' }>
+  >([]);
 
   // Debounce mention search to avoid heavy sync work on every keystroke in large repos
   useEffect(() => {
-    if (!mentionOpen) { setMentionResults([]); return; }
+    if (!mentionOpen) {
+      setMentionResults([]);
+      return;
+    }
     const handle = setTimeout(() => {
       try {
         setMentionResults(search(mentionQuery, 12));
@@ -209,7 +214,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         : true); // droid/gemini: input disabled, terminal-only
   const textareaDisabled = baseDisabled || isLoading;
   const sendDisabled =
-    provider === 'droid' || provider === 'gemini' ? true : isLoading ? baseDisabled : baseDisabled || !trimmedValue;
+    provider === 'droid' || provider === 'gemini'
+      ? true
+      : isLoading
+        ? baseDisabled
+        : baseDisabled || !trimmedValue;
 
   return (
     <div className="px-6 pt-4 pb-6">
@@ -273,7 +282,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 value={provider}
                 onValueChange={(v) => {
                   if (!selectDisabled)
-                    onProviderChange && onProviderChange(v as 'codex' | 'claude' | 'droid' | 'gemini');
+                    onProviderChange &&
+                      onProviderChange(v as 'codex' | 'claude' | 'droid' | 'gemini');
                 }}
                 disabled={selectDisabled}
               >
@@ -372,7 +382,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     ? 'bg-gray-200 dark:bg-gray-700 hover:bg-red-300 hover:text-white dark:hover:text-white'
                     : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
-                aria-label={provider === 'droid' || provider === 'gemini' ? 'Terminal-only provider' : isLoading ? 'Stop Codex' : 'Send'}
+                aria-label={
+                  provider === 'droid' || provider === 'gemini'
+                    ? 'Terminal-only provider'
+                    : isLoading
+                      ? 'Stop Codex'
+                      : 'Send'
+                }
               >
                 {provider === 'droid' || provider === 'gemini' ? (
                   <div className="flex items-center justify-center w-full h-full">
