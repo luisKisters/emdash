@@ -5,6 +5,7 @@ import { ArrowRight } from 'lucide-react';
 import openaiLogo from '../../assets/images/openai.png';
 import claudeLogo from '../../assets/images/claude.png';
 import factoryLogo from '../../assets/images/factorydroid.png';
+import geminiLogo from '../../assets/images/gemini.png';
 import {
   Select,
   SelectTrigger,
@@ -28,8 +29,8 @@ interface ChatInputProps {
   agentCreated: boolean;
   disabled?: boolean;
   workspacePath?: string;
-  provider?: 'codex' | 'claude' | 'droid';
-  onProviderChange?: (p: 'codex' | 'claude' | 'droid') => void;
+  provider?: 'codex' | 'claude' | 'droid' | 'gemini';
+  onProviderChange?: (p: 'codex' | 'claude' | 'droid' | 'gemini') => void;
   selectDisabled?: boolean;
 }
 
@@ -73,7 +74,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   selectDisabled = false,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
-  // Provider is controlled by parent (codex | claude | droid)
+  // Provider is controlled by parent (codex | claude | droid | gemini)
   const shouldReduceMotion = useReducedMotion();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -194,6 +195,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }
     if (provider === 'claude') return 'Tell Claude Code what to do...';
     if (provider === 'droid') return 'Factory Droid uses the terminal above.';
+    if (provider === 'gemini') return 'Gemini CLI uses the terminal above.';
     return 'Tell Codex what to do...';
   };
 
@@ -204,10 +206,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       ? !isCodexInstalled || !agentCreated
       : provider === 'claude'
         ? !agentCreated
-        : true); // droid: input disabled, terminal-only
+        : true); // droid/gemini: input disabled, terminal-only
   const textareaDisabled = baseDisabled || isLoading;
   const sendDisabled =
-    provider === 'droid' ? true : isLoading ? baseDisabled : baseDisabled || !trimmedValue;
+    provider === 'droid' || provider === 'gemini' ? true : isLoading ? baseDisabled : baseDisabled || !trimmedValue;
 
   return (
     <div className="px-6 pt-4 pb-6">
@@ -236,7 +238,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               disabled={textareaDisabled}
               style={{ minHeight: '56px' }}
             />
-            {/* Mention dropdown */}
             {mentionOpen && mentionResults.length > 0 && (
               <div className="absolute left-4 bottom-40 z-20 w-[520px] max-w-[calc(100%-2rem)] rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl overflow-hidden">
                 <div className="max-h-64 overflow-y-auto">
@@ -272,7 +273,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 value={provider}
                 onValueChange={(v) => {
                   if (!selectDisabled)
-                    onProviderChange && onProviderChange(v as 'codex' | 'claude' | 'droid');
+                    onProviderChange && onProviderChange(v as 'codex' | 'claude' | 'droid' | 'gemini');
                 }}
                 disabled={selectDisabled}
               >
@@ -293,12 +294,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                               />
                             ) : provider === 'codex' ? (
                               <img src={openaiLogo} alt="Codex" className="w-4 h-4 shrink-0" />
-                            ) : (
+                            ) : provider === 'droid' ? (
                               <img
                                 src={factoryLogo}
                                 alt="Factory Droid"
                                 className="w-4 h-4 shrink-0"
                               />
+                            ) : (
+                              <img src={geminiLogo} alt="Gemini CLI" className="w-4 h-4 shrink-0" />
                             )}
                             <SelectValue placeholder="Select provider" />
                           </div>
@@ -316,8 +319,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                         <img src={claudeLogo} alt="Claude Code" className="w-4 h-4 shrink-0" />
                       ) : provider === 'codex' ? (
                         <img src={openaiLogo} alt="Codex" className="w-4 h-4 shrink-0" />
-                      ) : (
+                      ) : provider === 'droid' ? (
                         <img src={factoryLogo} alt="Factory Droid" className="w-4 h-4 shrink-0" />
+                      ) : (
+                        <img src={geminiLogo} alt="Gemini CLI" className="w-4 h-4 shrink-0" />
                       )}
                       <SelectValue placeholder="Select provider" />
                     </div>
@@ -342,6 +347,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                       <SelectItemText>Droid</SelectItemText>
                     </div>
                   </SelectItem>
+                  <SelectItem value="gemini">
+                    <div className="flex items-center gap-2">
+                      <img src={geminiLogo} alt="Gemini CLI" className="w-4 h-4" />
+                      <SelectItemText>Gemini</SelectItemText>
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -361,11 +372,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     ? 'bg-gray-200 dark:bg-gray-700 hover:bg-red-300 hover:text-white dark:hover:text-white'
                     : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
-                aria-label={
-                  provider === 'droid' ? 'Droid uses terminal' : isLoading ? 'Stop Codex' : 'Send'
-                }
+                aria-label={provider === 'droid' || provider === 'gemini' ? 'Terminal-only provider' : isLoading ? 'Stop Codex' : 'Send'}
               >
-                {provider === 'droid' ? (
+                {provider === 'droid' || provider === 'gemini' ? (
                   <div className="flex items-center justify-center w-full h-full">
                     <div className="w-3.5 h-3.5 rounded-[3px] bg-gray-500 dark:bg-gray-300" />
                   </div>
