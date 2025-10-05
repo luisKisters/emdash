@@ -5,14 +5,8 @@ import { promisify } from 'util';
 
 const execCalls: string[] = [];
 
-type ExecPromisified = (command: string, options?: any) => Promise<{ stdout: string; stderr: string }>;
-
-type ExecMock = ((command: string, options?: any, callback?: any) => { kill: ReturnType<typeof vi.fn> }) & {
-  [promisify.custom]: ExecPromisified;
-};
-
 vi.mock('child_process', () => {
-  const execImpl = ((command: string, options?: any, callback?: any) => {
+  const execImpl = (command: string, options?: any, callback?: any) => {
     const cb = typeof options === 'function' ? options : callback;
     execCalls.push(command);
 
@@ -41,7 +35,7 @@ vi.mock('child_process', () => {
     }
 
     return { kill: vi.fn() };
-  }) as ExecMock;
+  };
 
   execImpl[promisify.custom] = (command: string, options?: any) => {
     return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
