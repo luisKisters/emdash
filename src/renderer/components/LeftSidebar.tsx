@@ -102,7 +102,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
 
   return (
     <div className="relative h-full">
-      <Sidebar>
+      <Sidebar className="lg:border-r-0">
         <SidebarContent>
           <SidebarGroup className="mb-2">
             <SidebarGroupContent>

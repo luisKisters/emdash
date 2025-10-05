@@ -75,7 +75,7 @@ const TITLEBAR_HEIGHT = '36px';
 const LEFT_PANEL_LAYOUT_STORAGE_KEY = 'emdash.layout.left-main';
 const DEFAULT_LEFT_PANEL_LAYOUT: [number, number] = [24, 76];
 const SIDEBAR_MIN_SIZE = 16;
-const SIDEBAR_MAX_SIZE = 50;
+const SIDEBAR_MAX_SIZE = 30;
 const clampSidebarSize = (value: number) =>
   Math.min(
     Math.max(Number.isFinite(value) ? value : DEFAULT_LEFT_PANEL_LAYOUT[0], SIDEBAR_MIN_SIZE),
@@ -697,7 +697,7 @@ const App: React.FC = () => {
               </ResizablePanel>
               <ResizableHandle
                 withHandle
-                className="hidden w-2 cursor-col-resize items-center justify-center bg-border/60 transition-colors hover:bg-border/80 lg:flex"
+                className="hidden cursor-col-resize items-center justify-center transition-colors hover:bg-border/80 lg:flex"
               />
               <ResizablePanel
                 defaultSize={defaultPanelLayout[1]}
