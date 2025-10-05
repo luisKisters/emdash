@@ -69,6 +69,7 @@ interface LeftSidebarProps {
   githubInstalled?: boolean;
   githubAuthenticated?: boolean;
   githubUser?: { login?: string; name?: string } | null;
+  onSidebarContextChange?: (state: { open: boolean; isMobile: boolean; setOpen: (next: boolean) => void }) => void;
 }
 
 const LeftSidebar: React.FC<LeftSidebarProps> = ({
@@ -83,7 +84,14 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   githubInstalled = true,
   githubAuthenticated = false,
   githubUser,
+  onSidebarContextChange,
 }) => {
+  const { open, isMobile, setOpen } = useSidebar();
+
+  React.useEffect(() => {
+    onSidebarContextChange?.({ open, isMobile, setOpen });
+  }, [open, isMobile, setOpen, onSidebarContextChange]);
+
   const renderGithubStatus = () => (
     <GithubStatus
       installed={githubInstalled}

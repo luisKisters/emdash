@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from './components/ui/button';
 
 import { FolderOpen } from 'lucide-react';
@@ -15,6 +15,9 @@ import Titlebar from './components/titlebar/Titlebar';
 import { SidebarProvider, useSidebar } from './components/ui/sidebar';
 import { RightSidebarProvider, useRightSidebar } from './components/ui/right-sidebar';
 import RightSidebar from './components/RightSidebar';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './components/ui/resizable';
+import { loadPanelSizes, savePanelSizes } from './lib/persisted-layout';
+import type { ImperativePanelHandle } from 'react-resizable-panels';
 
 const SidebarHotkeys: React.FC = () => {
   const { toggle: toggleLeftSidebar } = useSidebar();
@@ -69,6 +72,15 @@ interface Workspace {
 }
 
 const TITLEBAR_HEIGHT = '36px';
+const LEFT_PANEL_LAYOUT_STORAGE_KEY = 'emdash.layout.left-main';
+const DEFAULT_LEFT_PANEL_LAYOUT: [number, number] = [24, 76];
+const SIDEBAR_MIN_SIZE = 16;
+const SIDEBAR_MAX_SIZE = 50;
+const clampSidebarSize = (value: number) =>
+  Math.min(
+    Math.max(Number.isFinite(value) ? value : DEFAULT_LEFT_PANEL_LAYOUT[0], SIDEBAR_MIN_SIZE),
+    SIDEBAR_MAX_SIZE
+  );
 
 const App: React.FC = () => {
   const { toast } = useToast();
@@ -95,6 +107,74 @@ const App: React.FC = () => {
   // Show agent requirements block if none of the supported CLIs are detected locally.
   // We only actively detect Codex and Claude Code; Factory (Droid) docs are shown as an alternative.
   const showAgentRequirement = isCodexInstalled === false && isClaudeInstalled === false;
+
+  const defaultPanelLayout = React.useMemo(() => {
+    const stored = loadPanelSizes(LEFT_PANEL_LAYOUT_STORAGE_KEY, DEFAULT_LEFT_PANEL_LAYOUT);
+    const initialLeft = clampSidebarSize(stored?.[0] ?? DEFAULT_LEFT_PANEL_LAYOUT[0]);
+    return [initialLeft, 100 - initialLeft] as [number, number];
+  }, []);
+  const sidebarPanelRef = useRef<ImperativePanelHandle | null>(null);
+  const lastSidebarSizeRef = useRef<number>(defaultPanelLayout[0]);
+  const sidebarSetOpenRef = useRef<((next: boolean) => void) | null>(null);
+  const sidebarIsMobileRef = useRef<boolean>(false);
+
+  const handlePanelLayout = useCallback((sizes: number[]) => {
+    if (!Array.isArray(sizes) || sizes.length < 2) {
+      return;
+    }
+
+    if (sidebarIsMobileRef.current) {
+      return;
+    }
+
+    const [leftSize] = sizes;
+    if (typeof leftSize !== 'number') {
+      return;
+    }
+
+    if (leftSize <= 0.5) {
+      sidebarSetOpenRef.current?.(false);
+      return;
+    }
+
+    sidebarSetOpenRef.current?.(true);
+    const clamped = clampSidebarSize(leftSize);
+    lastSidebarSizeRef.current = clamped;
+    savePanelSizes(LEFT_PANEL_LAYOUT_STORAGE_KEY, [clamped, 100 - clamped]);
+  }, []);
+
+  const handleSidebarContextChange = useCallback(
+    ({ open, isMobile, setOpen }: { open: boolean; isMobile: boolean; setOpen: (next: boolean) => void }) => {
+      sidebarSetOpenRef.current = setOpen;
+      sidebarIsMobileRef.current = isMobile;
+      const panel = sidebarPanelRef.current;
+      if (!panel) {
+        return;
+      }
+
+      if (isMobile) {
+        const currentSize = panel.getSize();
+        if (typeof currentSize === 'number' && currentSize > 0) {
+          lastSidebarSizeRef.current = clampSidebarSize(currentSize);
+        }
+        panel.collapse();
+        return;
+      }
+
+      if (open) {
+        const target = clampSidebarSize(lastSidebarSizeRef.current || DEFAULT_LEFT_PANEL_LAYOUT[0]);
+        panel.expand();
+        panel.resize(target);
+      } else {
+        const currentSize = panel.getSize();
+        if (typeof currentSize === 'number' && currentSize > 0) {
+          lastSidebarSizeRef.current = clampSidebarSize(currentSize);
+        }
+        panel.collapse();
+      }
+    },
+    []
+  );
 
   // Persist and apply custom project order (by id)
   const ORDER_KEY = 'sidebarProjectOrder';
@@ -586,23 +666,49 @@ const App: React.FC = () => {
           <SidebarHotkeys />
           <Titlebar />
           <div className="flex flex-1 overflow-hidden pt-[var(--tb)]">
-            <LeftSidebar
-              projects={projects}
-              selectedProject={selectedProject}
-              onSelectProject={handleSelectProject}
-              onGoHome={handleGoHome}
-              onSelectWorkspace={handleSelectWorkspace}
-              activeWorkspace={activeWorkspace || undefined}
-              onReorderProjects={handleReorderProjects}
-              onReorderProjectsFull={handleReorderProjectsFull}
-              githubInstalled={ghInstalled}
-              githubAuthenticated={isAuthenticated}
-              githubUser={user}
-            />
-
-            <div className="flex-1 overflow-hidden flex flex-col bg-background text-foreground">
-              {renderMainContent()}
-            </div>
+            <ResizablePanelGroup
+              direction="horizontal"
+              className="flex-1 overflow-hidden"
+              onLayout={handlePanelLayout}
+            >
+              <ResizablePanel
+                ref={sidebarPanelRef}
+                defaultSize={defaultPanelLayout[0]}
+                minSize={SIDEBAR_MIN_SIZE}
+                maxSize={SIDEBAR_MAX_SIZE}
+                collapsedSize={0}
+                collapsible
+                order={1}
+              >
+                <LeftSidebar
+                  projects={projects}
+                  selectedProject={selectedProject}
+                  onSelectProject={handleSelectProject}
+                  onGoHome={handleGoHome}
+                  onSelectWorkspace={handleSelectWorkspace}
+                  activeWorkspace={activeWorkspace || undefined}
+                  onReorderProjects={handleReorderProjects}
+                  onReorderProjectsFull={handleReorderProjectsFull}
+                  githubInstalled={ghInstalled}
+                  githubAuthenticated={isAuthenticated}
+                  githubUser={user}
+                  onSidebarContextChange={handleSidebarContextChange}
+                />
+              </ResizablePanel>
+              <ResizableHandle
+                withHandle
+                className="hidden w-2 cursor-col-resize items-center justify-center bg-border/60 transition-colors hover:bg-border/80 lg:flex"
+              />
+              <ResizablePanel
+                defaultSize={defaultPanelLayout[1]}
+                minSize={100 - SIDEBAR_MAX_SIZE}
+                order={2}
+              >
+                <div className="flex-1 overflow-hidden flex flex-col bg-background text-foreground">
+                  {renderMainContent()}
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
             <RightSidebar workspace={activeWorkspace} />
           </div>
           <WorkspaceModal
