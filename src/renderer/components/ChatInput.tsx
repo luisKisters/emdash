@@ -1,7 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
-import { ArrowRight, ChevronDown } from "lucide-react";
+import { ArrowRight, ChevronUp } from 'lucide-react';
 import openaiLogo from '../../assets/images/openai.png';
 import claudeLogo from '../../assets/images/claude.png';
 import factoryLogo from '../../assets/images/factorydroid.png';
@@ -13,15 +13,10 @@ import {
   SelectContent,
   SelectItem,
   SelectItemText,
-} from "./ui/select";
-import {
-  TooltipProvider,
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-} from "./ui/tooltip";
-import { useFileIndex } from "../hooks/useFileIndex";
-import FileTypeIcon from "./ui/file-type-icon";
+} from './ui/select';
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
+import { useFileIndex } from '../hooks/useFileIndex';
+import FileTypeIcon from './ui/file-type-icon';
 
 interface ChatInputProps {
   value: string;
@@ -74,7 +69,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   agentCreated,
   disabled = false,
   workspacePath,
-  provider = "codex",
+  provider = 'codex',
   onProviderChange,
   selectDisabled = false,
 }) => {
@@ -110,8 +105,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }, 120);
     return () => clearTimeout(handle);
   }, [mentionOpen, mentionQuery, search]);
-
-  const mentionResults = mentionOpen ? search(mentionQuery, 12) : [];
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // Send on Enter (unless Shift) when mention is closed
@@ -217,15 +210,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     (provider === 'codex'
       ? !isCodexInstalled || !agentCreated
       : provider === 'claude'
-        ? !agentCreated
-        : true); // droid/gemini: input disabled, terminal-only
+      ? !agentCreated
+      : true); // droid/gemini: input disabled, terminal-only
   const textareaDisabled = baseDisabled || isLoading;
   const sendDisabled =
     provider === 'droid' || provider === 'gemini'
       ? true
       : isLoading
-        ? baseDisabled
-        : baseDisabled || !trimmedValue;
+      ? baseDisabled
+      : baseDisabled || !trimmedValue;
 
   return (
     <div className="px-6 pt-4 pb-6">
@@ -270,21 +263,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                       }`}
                     >
                       <span className="inline-flex items-center justify-center w-4 h-4 text-gray-500">
-                        <FileTypeIcon
-                          path={item.path}
-                          type={item.type}
-                          size={14}
-                        />
+                        <FileTypeIcon path={item.path} type={item.type} size={14} />
                       </span>
-                      <span className="truncate text-gray-800 dark:text-gray-200">
-                        {item.path}
-                      </span>
+                      <span className="truncate text-gray-800 dark:text-gray-200">{item.path}</span>
                     </button>
                   ))}
                 </div>
                 <div className="px-3 py-1 text-[10px] text-gray-500 border-t border-gray-200 dark:border-gray-700">
-                  Type to filter files and folders • ↑/↓ to navigate • Enter to
-                  insert
+                  Type to filter files and folders • ↑/↓ to navigate • Enter to insert
                 </div>
               </div>
             )}
@@ -299,6 +285,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     onProviderChange &&
                       onProviderChange(v as 'codex' | 'claude' | 'droid' | 'gemini');
                 }}
+                onOpenChange={setIsSelectOpen}
                 disabled={selectDisabled}
               >
                 {selectDisabled ? (
@@ -307,7 +294,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                       <TooltipTrigger asChild>
                         <SelectTrigger
                           aria-disabled
-                          className={`h-9 bg-gray-100 dark:bg-gray-700 border-none ${selectDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}
+                          className={`h-9 bg-gray-100 dark:bg-gray-700 border-none ${
+                            selectDisabled ? 'opacity-60 cursor-not-allowed' : ''
+                          }`}
                         >
                           <div className="flex items-center gap-2">
                             {provider === 'claude' ? (
@@ -350,9 +339,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                       )}
                       <SelectValue placeholder="Select provider" />
                     </div>
-                    <ChevronDown
+                    <ChevronUp
                       className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
-                        isSelectOpen ? "rotate-180" : ""
+                        isSelectOpen ? 'rotate-180' : ''
                       }`}
                     />
                   </SelectTrigger>
@@ -366,21 +355,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                   </SelectItem>
                   <SelectItem value="claude">
                     <div className="flex items-center gap-2">
-                      <img
-                        src={claudeLogo}
-                        alt="Claude Code"
-                        className="w-4 h-4"
-                      />
+                      <img src={claudeLogo} alt="Claude Code" className="w-4 h-4" />
                       <SelectItemText>Claude Code</SelectItemText>
                     </div>
                   </SelectItem>
                   <SelectItem value="droid">
                     <div className="flex items-center gap-2">
-                      <img
-                        src={factoryLogo}
-                        alt="Factory Droid"
-                        className="w-4 h-4"
-                      />
+                      <img src={factoryLogo} alt="Factory Droid" className="w-4 h-4" />
                       <SelectItemText>Droid</SelectItemText>
                     </div>
                   </SelectItem>
@@ -413,8 +394,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                   provider === 'droid' || provider === 'gemini'
                     ? 'Terminal-only provider'
                     : isLoading
-                      ? 'Stop Codex'
-                      : 'Send'
+                    ? 'Stop Codex'
+                    : 'Send'
                 }
               >
                 {provider === 'droid' || provider === 'gemini' ? (
