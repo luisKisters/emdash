@@ -1,22 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
-import { ArrowRight, ChevronUp } from 'lucide-react';
-import openaiLogo from '../../assets/images/openai.png';
-import claudeLogo from '../../assets/images/claude.png';
-import factoryLogo from '../../assets/images/factorydroid.png';
-import geminiLogo from '../../assets/images/gemini.png';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-  SelectItemText,
-} from './ui/select';
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
+import { ArrowRight } from 'lucide-react';
 import { useFileIndex } from '../hooks/useFileIndex';
 import FileTypeIcon from './ui/file-type-icon';
+import { ProviderSelector, type Provider } from './ProviderSelector';
 
 interface ChatInputProps {
   value: string;
@@ -29,8 +17,8 @@ interface ChatInputProps {
   agentCreated: boolean;
   disabled?: boolean;
   workspacePath?: string;
-  provider?: 'codex' | 'claude' | 'droid' | 'gemini';
-  onProviderChange?: (p: 'codex' | 'claude' | 'droid' | 'gemini') => void;
+  provider?: Provider;
+  onProviderChange?: (p: Provider) => void;
   selectDisabled?: boolean;
 }
 
@@ -87,8 +75,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [mentionResults, setMentionResults] = useState<
     Array<{ path: string; type: 'file' | 'dir' }>
   >([]);
-
-  const [isSelectOpen, setIsSelectOpen] = useState(false);
 
   // Debounce mention search to avoid heavy sync work on every keystroke in large repos
   useEffect(() => {
@@ -277,103 +263,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           </div>
 
           <div className="flex items-center justify-between px-4 py-3 rounded-b-xl">
-            <div className="relative inline-block w-[12rem]">
-              <Select
-                value={provider}
-                onValueChange={(v) => {
-                  if (!selectDisabled)
-                    onProviderChange &&
-                      onProviderChange(v as 'codex' | 'claude' | 'droid' | 'gemini');
-                }}
-                onOpenChange={setIsSelectOpen}
-                disabled={selectDisabled}
-              >
-                {selectDisabled ? (
-                  <TooltipProvider delayDuration={250}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <SelectTrigger
-                          aria-disabled
-                          className={`h-9 bg-gray-100 dark:bg-gray-700 border-none ${
-                            selectDisabled ? 'opacity-60 cursor-not-allowed' : ''
-                          }`}
-                        >
-                          <div className="flex items-center gap-2">
-                            {provider === 'claude' ? (
-                              <img
-                                src={claudeLogo}
-                                alt="Claude Code"
-                                className="w-4 h-4 shrink-0"
-                              />
-                            ) : provider === 'codex' ? (
-                              <img src={openaiLogo} alt="Codex" className="w-4 h-4 shrink-0" />
-                            ) : provider === 'droid' ? (
-                              <img
-                                src={factoryLogo}
-                                alt="Factory Droid"
-                                className="w-4 h-4 shrink-0"
-                              />
-                            ) : (
-                              <img src={geminiLogo} alt="Gemini CLI" className="w-4 h-4 shrink-0" />
-                            )}
-                            <SelectValue placeholder="Select provider" />
-                          </div>
-                        </SelectTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Provider is locked for this conversation.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                ) : (
-                  <SelectTrigger className="h-9 bg-gray-100 dark:bg-gray-700 border-none">
-                    <div className="flex items-center gap-2">
-                      {provider === 'claude' ? (
-                        <img src={claudeLogo} alt="Claude Code" className="w-4 h-4 shrink-0" />
-                      ) : provider === 'codex' ? (
-                        <img src={openaiLogo} alt="Codex" className="w-4 h-4 shrink-0" />
-                      ) : provider === 'droid' ? (
-                        <img src={factoryLogo} alt="Factory Droid" className="w-4 h-4 shrink-0" />
-                      ) : (
-                        <img src={geminiLogo} alt="Gemini CLI" className="w-4 h-4 shrink-0" />
-                      )}
-                      <SelectValue placeholder="Select provider" />
-                    </div>
-                    <ChevronUp
-                      className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
-                        isSelectOpen ? 'rotate-180' : ''
-                      }`}
-                    />
-                  </SelectTrigger>
-                )}
-                <SelectContent>
-                  <SelectItem value="codex">
-                    <div className="flex items-center gap-2">
-                      <img src={openaiLogo} alt="Codex" className="w-4 h-4" />
-                      <SelectItemText>Codex</SelectItemText>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="claude">
-                    <div className="flex items-center gap-2">
-                      <img src={claudeLogo} alt="Claude Code" className="w-4 h-4" />
-                      <SelectItemText>Claude Code</SelectItemText>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="droid">
-                    <div className="flex items-center gap-2">
-                      <img src={factoryLogo} alt="Factory Droid" className="w-4 h-4" />
-                      <SelectItemText>Droid</SelectItemText>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="gemini">
-                    <div className="flex items-center gap-2">
-                      <img src={geminiLogo} alt="Gemini CLI" className="w-4 h-4" />
-                      <SelectItemText>Gemini</SelectItemText>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <ProviderSelector
+              value={provider}
+              onChange={(v) => {
+                if (!selectDisabled && onProviderChange) {
+                  onProviderChange(v);
+                }
+              }}
+              disabled={selectDisabled}
+            />
 
             <div className="flex items-center gap-2">
               {isLoading && (

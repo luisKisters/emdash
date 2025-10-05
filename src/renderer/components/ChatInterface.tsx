@@ -7,6 +7,7 @@ import MessageList from './MessageList';
 import useCodexStream from '../hooks/useCodexStream';
 import useClaudeStream from '../hooks/useClaudeStream';
 import { useProviderPreference } from '../hooks/useProviderPreference';
+import { type Provider } from './ProviderSelector';
 import { buildAttachmentsSection } from '../lib/attachments';
 import { Workspace, Message } from '../types/chat';
 
@@ -38,10 +39,8 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
   const [isClaudeInstalled, setIsClaudeInstalled] = useState<boolean | null>(null);
   const [claudeInstructions, setClaudeInstructions] = useState<string | null>(null);
   const [agentCreated, setAgentCreated] = useState(false);
-  const [provider, setProvider] = useState<'codex' | 'claude' | 'droid' | 'gemini'>('codex');
-  const [lockedProvider, setLockedProvider] = useState<
-    'codex' | 'claude' | 'droid' | 'gemini' | null
-  >(null);
+  const [provider, setProvider] = useState<Provider>('codex');
+  const [lockedProvider, setLockedProvider] = useState<Provider | null>(null);
   const [hasDroidActivity, setHasDroidActivity] = useState(false);
   const [hasGeminiActivity, setHasGeminiActivity] = useState(false);
   const initializedConversationRef = useRef<string | null>(null);
