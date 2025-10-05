@@ -9,12 +9,11 @@ import {
 } from './ui/select';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 import { ChevronUp } from 'lucide-react';
+import { type Provider } from '../types';
 import openaiLogo from '../../assets/images/openai.png';
 import claudeLogo from '../../assets/images/claude.png';
 import factoryLogo from '../../assets/images/factorydroid.png';
 import geminiLogo from '../../assets/images/gemini.png';
-
-export type Provider = 'codex' | 'claude' | 'droid' | 'gemini';
 
 interface ProviderSelectorProps {
   value: Provider;

@@ -4,7 +4,8 @@ import { Button } from './ui/button';
 import { ArrowRight } from 'lucide-react';
 import { useFileIndex } from '../hooks/useFileIndex';
 import FileTypeIcon from './ui/file-type-icon';
-import { ProviderSelector, type Provider } from './ProviderSelector';
+import { ProviderSelector } from './ProviderSelector';
+import { type Provider } from '../types';
 
 interface ChatInputProps {
   value: string;
