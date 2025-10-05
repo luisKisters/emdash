@@ -1,44 +1,43 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react';
 
 export type PrStatus = {
-  number: number
-  url: string
-  state: 'OPEN' | 'CLOSED' | 'MERGED' | string
-  isDraft?: boolean
-  mergeStateStatus?: string
-  headRefName?: string
-  baseRefName?: string
-  title?: string
-}
+  number: number;
+  url: string;
+  state: 'OPEN' | 'CLOSED' | 'MERGED' | string;
+  isDraft?: boolean;
+  mergeStateStatus?: string;
+  headRefName?: string;
+  baseRefName?: string;
+  title?: string;
+};
 
 export function usePrStatus(workspacePath?: string) {
-  const [pr, setPr] = useState<PrStatus | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [pr, setPr] = useState<PrStatus | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const refresh = async () => {
-    if (!workspacePath) return
-    setLoading(true)
-    setError(null)
+    if (!workspacePath) return;
+    setLoading(true);
+    setError(null);
     try {
-      const res = await window.electronAPI.getPrStatus({ workspacePath })
+      const res = await window.electronAPI.getPrStatus({ workspacePath });
       if (res?.success) {
-        setPr((res.pr as any) || null)
+        setPr((res.pr as any) || null);
       } else {
-        setError(res?.error || 'Failed to load PR status')
+        setError(res?.error || 'Failed to load PR status');
       }
     } catch (e: any) {
-      setError(e?.message || String(e))
+      setError(e?.message || String(e));
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   useEffect(() => {
-    refresh()
+    refresh();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [workspacePath])
+  }, [workspacePath]);
 
-  return { pr, loading, error, refresh }
+  return { pr, loading, error, refresh };
 }
-

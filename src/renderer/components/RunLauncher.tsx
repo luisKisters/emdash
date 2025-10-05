@@ -1,34 +1,30 @@
-import React, { useState } from 'react'
-import { Repo } from '../types'
-import { useToast } from '../hooks/use-toast'
+import React, { useState } from 'react';
+import { Repo } from '../types';
+import { useToast } from '../hooks/use-toast';
 
 interface RunLauncherProps {
-  repo: Repo
-  onCreateRun: (config: any) => void
-  onCancel: () => void
+  repo: Repo;
+  onCreateRun: (config: any) => void;
+  onCancel: () => void;
 }
 
-const RunLauncher: React.FC<RunLauncherProps> = ({
-  repo,
-  onCreateRun,
-  onCancel,
-}) => {
-  const { toast } = useToast()
-  const [provider, setProvider] = useState<'claude-code' | 'openai-agents'>('claude-code')
-  const [prompt, setPrompt] = useState('')
-  const [numAgents, setNumAgents] = useState(1)
-  const [baseBranch, setBaseBranch] = useState(repo.defaultBranch)
+const RunLauncher: React.FC<RunLauncherProps> = ({ repo, onCreateRun, onCancel }) => {
+  const { toast } = useToast();
+  const [provider, setProvider] = useState<'claude-code' | 'openai-agents'>('claude-code');
+  const [prompt, setPrompt] = useState('');
+  const [numAgents, setNumAgents] = useState(1);
+  const [baseBranch, setBaseBranch] = useState(repo.defaultBranch);
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    
+    e.preventDefault();
+
     if (!prompt.trim()) {
       toast({
-        title: "Validation Error",
-        description: "Please enter a prompt",
-        variant: "destructive",
-      })
-      return
+        title: 'Validation Error',
+        description: 'Please enter a prompt',
+        variant: 'destructive',
+      });
+      return;
     }
 
     onCreateRun({
@@ -36,17 +32,14 @@ const RunLauncher: React.FC<RunLauncherProps> = ({
       prompt: prompt.trim(),
       numAgents,
       baseBranch,
-    })
-  }
+    });
+  };
 
   return (
     <div className="bg-gray-800 rounded-lg border border-gray-700 p-6 w-full max-w-2xl">
       <div className="flex items-center justify-between mb-6">
         <h3 className="text-xl font-semibold text-white">Start New Run</h3>
-        <button
-          className="text-gray-400 hover:text-white text-xl"
-          onClick={onCancel}
-        >
+        <button className="text-gray-400 hover:text-white text-xl" onClick={onCancel}>
           ×
         </button>
       </div>
@@ -54,9 +47,7 @@ const RunLauncher: React.FC<RunLauncherProps> = ({
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Provider Selection */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            AI Provider
-          </label>
+          <label className="block text-sm font-medium text-gray-300 mb-2">AI Provider</label>
           <div className="flex gap-4">
             <label className="flex items-center">
               <input
@@ -83,9 +74,7 @@ const RunLauncher: React.FC<RunLauncherProps> = ({
 
         {/* Prompt */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Prompt
-          </label>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Prompt</label>
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
@@ -97,9 +86,7 @@ const RunLauncher: React.FC<RunLauncherProps> = ({
 
         {/* Number of Agents */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Number of Agents
-          </label>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Number of Agents</label>
           <select
             value={numAgents}
             onChange={(e) => setNumAgents(parseInt(e.target.value))}
@@ -115,9 +102,7 @@ const RunLauncher: React.FC<RunLauncherProps> = ({
 
         {/* Base Branch */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">
-            Base Branch
-          </label>
+          <label className="block text-sm font-medium text-gray-300 mb-2">Base Branch</label>
           <input
             type="text"
             value={baseBranch}
@@ -155,7 +140,7 @@ const RunLauncher: React.FC<RunLauncherProps> = ({
         </div>
       </form>
     </div>
-  )
-}
+  );
+};
 
-export default RunLauncher
+export default RunLauncher;

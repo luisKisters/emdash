@@ -1,18 +1,13 @@
-import React from "react";
-import { Button } from "../ui/button";
-import { Command, PanelRight } from "lucide-react";
-import { useRightSidebar } from "../ui/right-sidebar";
-import {
-  Tooltip,
-  TooltipTrigger,
-  TooltipContent,
-  TooltipProvider,
-} from "../ui/tooltip";
+import React from 'react';
+import { Button } from '../ui/button';
+import { Command, PanelRight } from 'lucide-react';
+import { useRightSidebar } from '../ui/right-sidebar';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '../ui/tooltip';
 
 const SidebarRightToggleButton: React.FC = () => {
   const { toggle } = useRightSidebar();
 
-  const label = "Toggle right sidebar";
+  const label = 'Toggle right sidebar';
 
   const handleClick = () => {
     toggle();

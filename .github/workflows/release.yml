@@ -7,13 +7,13 @@ on:
   workflow_dispatch:
     inputs:
       arch:
-        description: "Architecture to build (arm64 | x64 | both)"
+        description: 'Architecture to build (arm64 | x64 | both)'
         required: false
-        default: "both"
+        default: 'both'
       dry_run:
-        description: "Build signed+stapled but DO NOT publish a GitHub Release (artifacts only)"
+        description: 'Build signed+stapled but DO NOT publish a GitHub Release (artifacts only)'
         required: false
-        default: "false"
+        default: 'false'
 
 permissions:
   contents: read
@@ -277,7 +277,7 @@ jobs:
             xcrun stapler validate "$DMG"
           done
 
-      - name: "End-to-end check: app inside DMG passes Gatekeeper"
+      - name: 'End-to-end check: app inside DMG passes Gatekeeper'
         run: |
           set -euo pipefail
           for DMG in release/*.dmg; do

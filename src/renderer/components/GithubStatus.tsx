@@ -1,7 +1,7 @@
-import React from "react";
-import { AlertCircle } from "lucide-react";
-import githubLogo from "../../assets/images/github.png";
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from "@/components/ui/tooltip";
+import React from 'react';
+import { AlertCircle } from 'lucide-react';
+import githubLogo from '../../assets/images/github.png';
+import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
 
 type GithubUser = { login?: string; name?: string } | null;
 
@@ -9,7 +9,7 @@ export function GithubStatus({
   installed,
   authenticated,
   user,
-  className = "",
+  className = '',
 }: {
   installed?: boolean;
   authenticated?: boolean;
@@ -21,7 +21,9 @@ export function GithubStatus({
       <TooltipProvider delayDuration={250}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className={`flex items-start space-x-2 text-xs text-gray-600 dark:text-gray-400 ${className}`}>
+            <div
+              className={`flex items-start space-x-2 text-xs text-gray-600 dark:text-gray-400 ${className}`}
+            >
               <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-medium">Install GitHub CLI</p>
@@ -44,7 +46,9 @@ export function GithubStatus({
       <TooltipProvider delayDuration={250}>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className={`flex items-start space-x-2 text-xs text-gray-600 dark:text-gray-300 ${className}`}>
+            <div
+              className={`flex items-start space-x-2 text-xs text-gray-600 dark:text-gray-300 ${className}`}
+            >
               <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
               <div>
                 <p className="font-medium">GitHub not authenticated</p>
@@ -62,7 +66,7 @@ export function GithubStatus({
     );
   }
 
-  const displayName = user?.login || user?.name || "GitHub account";
+  const displayName = user?.login || user?.name || 'GitHub account';
   return (
     <TooltipProvider delayDuration={250}>
       <Tooltip>
@@ -73,7 +77,7 @@ export function GithubStatus({
           </div>
         </TooltipTrigger>
         <TooltipContent>
-          <p>Authenticated via GitHub CLI{displayName ? ` as ${displayName}` : ""}</p>
+          <p>Authenticated via GitHub CLI{displayName ? ` as ${displayName}` : ''}</p>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
@@ -81,4 +85,3 @@ export function GithubStatus({
 }
 
 export default GithubStatus;
-

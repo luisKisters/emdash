@@ -96,7 +96,7 @@ export class DatabaseService {
           reject(err);
           return;
         }
-        
+
         this.createTables()
           .then(() => resolve())
           .catch(reject);
@@ -167,35 +167,59 @@ export class DatabaseService {
 
     // Create indexes
     await runAsync(`CREATE INDEX IF NOT EXISTS idx_projects_path ON projects (path)`);
-    await runAsync(`CREATE INDEX IF NOT EXISTS idx_workspaces_project_id ON workspaces (project_id)`);
-    await runAsync(`CREATE INDEX IF NOT EXISTS idx_conversations_workspace_id ON conversations (workspace_id)`);
-    await runAsync(`CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages (conversation_id)`);
+    await runAsync(
+      `CREATE INDEX IF NOT EXISTS idx_workspaces_project_id ON workspaces (project_id)`
+    );
+    await runAsync(
+      `CREATE INDEX IF NOT EXISTS idx_conversations_workspace_id ON conversations (workspace_id)`
+    );
+    await runAsync(
+      `CREATE INDEX IF NOT EXISTS idx_messages_conversation_id ON messages (conversation_id)`
+    );
     await runAsync(`CREATE INDEX IF NOT EXISTS idx_messages_timestamp ON messages (timestamp)`);
   }
 
   async saveProject(project: Omit<Project, 'createdAt' | 'updatedAt'>): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
 
+    // Important: avoid INSERT OR REPLACE on projects. REPLACE deletes the existing
+    // row to satisfy UNIQUE(path) which can cascade-delete related workspaces
+    // (workspaces.project_id ON DELETE CASCADE). Use an UPSERT on the unique
+    // path constraint that updates fields in-place and preserves the existing id.
+    //
+    // Semantics:
+    // - If no row exists for this path: insert with the provided id.
+    // - If a row exists for this path: update fields; do NOT change id or path.
+    // - created_at remains intact on updates; updated_at is bumped.
     return new Promise((resolve, reject) => {
-      this.db!.run(`
-        INSERT OR REPLACE INTO projects 
-        (id, name, path, git_remote, git_branch, github_repository, github_connected, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-      `, [
-        project.id,
-        project.name,
-        project.path,
-        project.gitInfo.remote || null,
-        project.gitInfo.branch || null,
-        project.githubInfo?.repository || null,
-        project.githubInfo?.connected ? 1 : 0
-      ], (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
+      this.db!.run(
+        `INSERT INTO projects (id, name, path, git_remote, git_branch, github_repository, github_connected, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+         ON CONFLICT(path) DO UPDATE SET
+           name = excluded.name,
+           git_remote = excluded.git_remote,
+           git_branch = excluded.git_branch,
+           github_repository = excluded.github_repository,
+           github_connected = excluded.github_connected,
+           updated_at = CURRENT_TIMESTAMP
+        `,
+        [
+          project.id,
+          project.name,
+          project.path,
+          project.gitInfo.remote || null,
+          project.gitInfo.branch || null,
+          project.githubInfo?.repository || null,
+          project.githubInfo?.connected ? 1 : 0,
+        ],
+        (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
         }
-      });
+      );
     });
   }
 
@@ -203,35 +227,40 @@ export class DatabaseService {
     if (!this.db) throw new Error('Database not initialized');
 
     return new Promise((resolve, reject) => {
-      this.db!.all(`
+      this.db!.all(
+        `
         SELECT 
           id, name, path, git_remote, git_branch, github_repository, github_connected,
           created_at, updated_at
         FROM projects 
         ORDER BY updated_at DESC
-      `, (err, rows: any[]) => {
-        if (err) {
-          reject(err);
-        } else {
-          const projects = rows.map(row => ({
-            id: row.id,
-            name: row.name,
-            path: row.path,
-            gitInfo: {
-              isGitRepo: !!(row.git_remote || row.git_branch),
-              remote: row.git_remote,
-              branch: row.git_branch,
-            },
-            githubInfo: row.github_repository ? {
-              repository: row.github_repository,
-              connected: !!row.github_connected,
-            } : undefined,
-            createdAt: row.created_at,
-            updatedAt: row.updated_at,
-          }));
-          resolve(projects);
+      `,
+        (err, rows: any[]) => {
+          if (err) {
+            reject(err);
+          } else {
+            const projects = rows.map((row) => ({
+              id: row.id,
+              name: row.name,
+              path: row.path,
+              gitInfo: {
+                isGitRepo: !!(row.git_remote || row.git_branch),
+                remote: row.git_remote,
+                branch: row.git_branch,
+              },
+              githubInfo: row.github_repository
+                ? {
+                    repository: row.github_repository,
+                    connected: !!row.github_connected,
+                  }
+                : undefined,
+              createdAt: row.created_at,
+              updatedAt: row.updated_at,
+            }));
+            resolve(projects);
+          }
         }
-      });
+      );
     });
   }
 
@@ -239,25 +268,29 @@ export class DatabaseService {
     if (!this.db) throw new Error('Database not initialized');
 
     return new Promise((resolve, reject) => {
-      this.db!.run(`
+      this.db!.run(
+        `
         INSERT OR REPLACE INTO workspaces 
         (id, project_id, name, branch, path, status, agent_id, updated_at)
         VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-      `, [
-        workspace.id,
-        workspace.projectId,
-        workspace.name,
-        workspace.branch,
-        workspace.path,
-        workspace.status,
-        workspace.agentId || null
-      ], (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
+      `,
+        [
+          workspace.id,
+          workspace.projectId,
+          workspace.name,
+          workspace.branch,
+          workspace.path,
+          workspace.status,
+          workspace.agentId || null,
+        ],
+        (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
         }
-      });
+      );
     });
   }
 
@@ -284,7 +317,7 @@ export class DatabaseService {
         if (err) {
           reject(err);
         } else {
-          const workspaces = rows.map(row => ({
+          const workspaces = rows.map((row) => ({
             id: row.id,
             projectId: row.project_id,
             name: row.name,
@@ -330,25 +363,27 @@ export class DatabaseService {
   }
 
   // Conversation management methods
-  async saveConversation(conversation: Omit<Conversation, 'createdAt' | 'updatedAt'>): Promise<void> {
+  async saveConversation(
+    conversation: Omit<Conversation, 'createdAt' | 'updatedAt'>
+  ): Promise<void> {
     if (!this.db) throw new Error('Database not initialized');
 
     return new Promise((resolve, reject) => {
-      this.db!.run(`
+      this.db!.run(
+        `
         INSERT OR REPLACE INTO conversations 
         (id, workspace_id, title, updated_at)
         VALUES (?, ?, ?, CURRENT_TIMESTAMP)
-      `, [
-        conversation.id,
-        conversation.workspaceId,
-        conversation.title
-      ], (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
+      `,
+        [conversation.id, conversation.workspaceId, conversation.title],
+        (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
         }
-      });
+      );
     });
   }
 
@@ -356,24 +391,28 @@ export class DatabaseService {
     if (!this.db) throw new Error('Database not initialized');
 
     return new Promise((resolve, reject) => {
-      this.db!.all(`
+      this.db!.all(
+        `
         SELECT * FROM conversations 
         WHERE workspace_id = ? 
         ORDER BY updated_at DESC
-      `, [workspaceId], (err, rows: any[]) => {
-        if (err) {
-          reject(err);
-        } else {
-          const conversations = rows.map(row => ({
-            id: row.id,
-            workspaceId: row.workspace_id,
-            title: row.title,
-            createdAt: row.created_at,
-            updatedAt: row.updated_at
-          }));
-          resolve(conversations);
+      `,
+        [workspaceId],
+        (err, rows: any[]) => {
+          if (err) {
+            reject(err);
+          } else {
+            const conversations = rows.map((row) => ({
+              id: row.id,
+              workspaceId: row.workspace_id,
+              title: row.title,
+              createdAt: row.created_at,
+              updatedAt: row.updated_at,
+            }));
+            resolve(conversations);
+          }
         }
-      });
+      );
     });
   }
 
@@ -382,49 +421,57 @@ export class DatabaseService {
 
     return new Promise((resolve, reject) => {
       // First, try to get existing conversations
-      this.db!.all(`
+      this.db!.all(
+        `
         SELECT * FROM conversations 
         WHERE workspace_id = ? 
         ORDER BY created_at ASC
         LIMIT 1
-      `, [workspaceId], (err, rows: any[]) => {
-        if (err) {
-          reject(err);
-          return;
-        }
+      `,
+        [workspaceId],
+        (err, rows: any[]) => {
+          if (err) {
+            reject(err);
+            return;
+          }
 
-        if (rows.length > 0) {
-          // Return existing conversation
-          const row = rows[0];
-          resolve({
-            id: row.id,
-            workspaceId: row.workspace_id,
-            title: row.title,
-            createdAt: row.created_at,
-            updatedAt: row.updated_at
-          });
-        } else {
-          // Create new default conversation
-          const conversationId = `conv-${workspaceId}-${Date.now()}`;
-          this.db!.run(`
+          if (rows.length > 0) {
+            // Return existing conversation
+            const row = rows[0];
+            resolve({
+              id: row.id,
+              workspaceId: row.workspace_id,
+              title: row.title,
+              createdAt: row.created_at,
+              updatedAt: row.updated_at,
+            });
+          } else {
+            // Create new default conversation
+            const conversationId = `conv-${workspaceId}-${Date.now()}`;
+            this.db!.run(
+              `
             INSERT INTO conversations 
             (id, workspace_id, title, created_at, updated_at)
             VALUES (?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)
-          `, [conversationId, workspaceId, 'Default Conversation'], (err) => {
-            if (err) {
-              reject(err);
-            } else {
-              resolve({
-                id: conversationId,
-                workspaceId,
-                title: 'Default Conversation',
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
-              });
-            }
-          });
+          `,
+              [conversationId, workspaceId, 'Default Conversation'],
+              (err) => {
+                if (err) {
+                  reject(err);
+                } else {
+                  resolve({
+                    id: conversationId,
+                    workspaceId,
+                    title: 'Default Conversation',
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                  });
+                }
+              }
+            );
+          }
         }
-      });
+      );
     });
   }
 
@@ -433,30 +480,38 @@ export class DatabaseService {
     if (!this.db) throw new Error('Database not initialized');
 
     return new Promise((resolve, reject) => {
-      this.db!.run(`
+      this.db!.run(
+        `
         INSERT INTO messages 
         (id, conversation_id, content, sender, metadata, timestamp)
         VALUES (?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-      `, [
-        message.id,
-        message.conversationId,
-        message.content,
-        message.sender,
-        message.metadata || null
-      ], (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          // Update conversation's updated_at timestamp
-          this.db!.run(`
+      `,
+        [
+          message.id,
+          message.conversationId,
+          message.content,
+          message.sender,
+          message.metadata || null,
+        ],
+        (err) => {
+          if (err) {
+            reject(err);
+          } else {
+            // Update conversation's updated_at timestamp
+            this.db!.run(
+              `
             UPDATE conversations 
             SET updated_at = CURRENT_TIMESTAMP 
             WHERE id = ?
-          `, [message.conversationId], () => {
-            resolve();
-          });
+          `,
+              [message.conversationId],
+              () => {
+                resolve();
+              }
+            );
+          }
         }
-      });
+      );
     });
   }
 
@@ -464,25 +519,29 @@ export class DatabaseService {
     if (!this.db) throw new Error('Database not initialized');
 
     return new Promise((resolve, reject) => {
-      this.db!.all(`
+      this.db!.all(
+        `
         SELECT * FROM messages 
         WHERE conversation_id = ? 
         ORDER BY timestamp ASC
-      `, [conversationId], (err, rows: any[]) => {
-        if (err) {
-          reject(err);
-        } else {
-          const messages = rows.map(row => ({
-            id: row.id,
-            conversationId: row.conversation_id,
-            content: row.content,
-            sender: row.sender as 'user' | 'agent',
-            timestamp: row.timestamp,
-            metadata: row.metadata
-          }));
-          resolve(messages);
+      `,
+        [conversationId],
+        (err, rows: any[]) => {
+          if (err) {
+            reject(err);
+          } else {
+            const messages = rows.map((row) => ({
+              id: row.id,
+              conversationId: row.conversation_id,
+              content: row.content,
+              sender: row.sender as 'user' | 'agent',
+              timestamp: row.timestamp,
+              metadata: row.metadata,
+            }));
+            resolve(messages);
+          }
         }
-      });
+      );
     });
   }
 

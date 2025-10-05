@@ -1,9 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import type { Message } from "../types/chat";
-import {
-  defaultPipeline,
-  type FilterContext,
-} from "../lib/filters";
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { Message } from '../types/chat';
+import { defaultPipeline, type FilterContext } from '../lib/filters';
 
 interface UseCodexStreamOptions {
   workspaceId: string;
@@ -33,9 +30,7 @@ declare const window: Window & {
     getMessages: (
       conversationId: string
     ) => Promise<{ success: boolean; messages?: any[]; error?: string }>;
-    saveMessage: (
-      message: any
-    ) => Promise<{ success: boolean; error?: string }>;
+    saveMessage: (message: any) => Promise<{ success: boolean; error?: string }>;
     codexSendMessageStream: (
       workspaceId: string,
       message: string,
@@ -70,24 +65,22 @@ declare const window: Window & {
     ) => () => void;
     codexGetStreamTail: (
       workspaceId: string
-    ) => Promise<{ success: boolean; tail?: string; startedAt?: string; error?: string }>
+    ) => Promise<{ success: boolean; tail?: string; startedAt?: string; error?: string }>;
   };
 };
 
-const useCodexStream = (
-  options?: UseCodexStreamOptions | null
-): UseCodexStreamResult => {
+const useCodexStream = (options?: UseCodexStreamOptions | null): UseCodexStreamResult => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const conversationIdRef = useRef<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  const [streamingOutput, setStreamingOutput] = useState("");
+  const [streamingOutput, setStreamingOutput] = useState('');
   const [isStreaming, setIsStreaming] = useState(false);
   const [awaitingThinking, setAwaitingThinking] = useState(false);
   const [seconds, setSeconds] = useState(0);
 
-  const streamBufferRef = useRef("");
+  const streamBufferRef = useRef('');
   const cancelledRef = useRef(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const frameRef = useRef<number | null>(null);
@@ -136,7 +129,7 @@ const useCodexStream = (
   const cancelScheduledFrame = useCallback(() => {
     const frameId = frameRef.current;
     if (frameId !== null) {
-      if (typeof window !== "undefined" && window.cancelAnimationFrame) {
+      if (typeof window !== 'undefined' && window.cancelAnimationFrame) {
         window.cancelAnimationFrame(frameId);
       }
       frameRef.current = null;
@@ -145,8 +138,8 @@ const useCodexStream = (
 
   const resetStreamState = useCallback(() => {
     cancelScheduledFrame();
-    streamBufferRef.current = "";
-    setStreamingOutput("");
+    streamBufferRef.current = '';
+    setStreamingOutput('');
     setAwaitingThinking(false);
   }, [cancelScheduledFrame]);
 
@@ -159,17 +152,17 @@ const useCodexStream = (
       if (!normalizedOptions) return;
 
       const ctx: FilterContext = {
-        phase: "chunk",
+        phase: 'chunk',
         workspaceId: normalizedOptions.workspaceId,
         conversationId: conversationIdRef.current,
       };
 
       // Guard: don't show raw stream until Codex has emitted a thinking/codex marker
-      const buf = streamBufferRef.current || "";
+      const buf = streamBufferRef.current || '';
       const hasMarker = /\[[0-9]{4}-[0-9]{2}-[0-9]{2}T[^\]]+\]\s*(thinking|codex)/i.test(buf);
       if (!hasMarker) {
         // keep streaming area blank to avoid flashing user prompt/tools output
-        setStreamingOutput("");
+        setStreamingOutput('');
         setAwaitingThinking(true);
         return;
       }
@@ -178,7 +171,7 @@ const useCodexStream = (
       setStreamingOutput(defaultPipeline(buf, ctx));
     };
 
-    if (typeof window !== "undefined" && window.requestAnimationFrame) {
+    if (typeof window !== 'undefined' && window.requestAnimationFrame) {
       frameRef.current = window.requestAnimationFrame(flush);
     } else {
       flush();
@@ -190,28 +183,28 @@ const useCodexStream = (
   }, []);
 
   const send = useCallback(
-    async (text: string, attachments: string = "") => {
+    async (text: string, attachments: string = '') => {
       if (!normalizedOptions) {
-        return { success: false, error: "workspace-unavailable" };
+        return { success: false, error: 'workspace-unavailable' };
       }
 
       if (isStreamingRef.current) {
-        return { success: false, error: "stream-in-progress" };
+        return { success: false, error: 'stream-in-progress' };
       }
 
       const convoId = conversationIdRef.current;
       if (!convoId) {
-        return { success: false, error: "conversation-unavailable" };
+        return { success: false, error: 'conversation-unavailable' };
       }
 
-      const { stripMentions, extractMentions } = await import("../lib/attachments");
+      const { stripMentions, extractMentions } = await import('../lib/attachments');
       const displayText = stripMentions(text);
       const mentionList = extractMentions(text);
 
       const userMessage: Message = {
         id: Date.now().toString(),
         content: displayText,
-        sender: "user",
+        sender: 'user',
         timestamp: new Date(),
         attachments: mentionList,
       };
@@ -228,7 +221,7 @@ const useCodexStream = (
           }),
         });
       } catch (error) {
-        console.error("Failed to save user message:", error);
+        console.error('Failed to save user message:', error);
       }
 
       appendMessage(userMessage);
@@ -241,12 +234,12 @@ const useCodexStream = (
       try {
         await window.electronAPI.codexSendMessageStream(
           normalizedOptions.workspaceId,
-          `${text}${attachments ?? ""}`,
+          `${text}${attachments ?? ''}`,
           conversationIdRef.current ?? undefined
         );
         return { success: true };
       } catch (error) {
-        console.error("Error starting Codex stream:", error);
+        console.error('Error starting Codex stream:', error);
         cancelledRef.current = false;
         setIsStreaming(false);
         setSeconds(0);
@@ -256,9 +249,9 @@ const useCodexStream = (
           error:
             error instanceof Error
               ? error.message
-              : typeof error === "string"
-              ? error
-              : "stream-start-failed",
+              : typeof error === 'string'
+                ? error
+                : 'stream-start-failed',
         };
       }
     },
@@ -267,37 +260,35 @@ const useCodexStream = (
 
   const cancel = useCallback(async () => {
     if (!normalizedOptions) {
-      return { success: false, error: "workspace-unavailable" };
+      return { success: false, error: 'workspace-unavailable' };
     }
 
     if (!isStreamingRef.current) {
-      return { success: false, error: "not-streaming" };
+      return { success: false, error: 'not-streaming' };
     }
 
     cancelledRef.current = true;
 
     try {
-      const result = await window.electronAPI.codexStopStream(
-        normalizedOptions.workspaceId
-      );
+      const result = await window.electronAPI.codexStopStream(normalizedOptions.workspaceId);
       if (!result?.success) {
         cancelledRef.current = false;
         return {
           success: false,
-          error: result?.error ?? "stop-stream-failed",
+          error: result?.error ?? 'stop-stream-failed',
         };
       }
     } catch (error) {
       cancelledRef.current = false;
-      console.error("Failed to stop Codex stream:", error);
+      console.error('Failed to stop Codex stream:', error);
       return {
         success: false,
         error:
           error instanceof Error
             ? error.message
-            : typeof error === "string"
-            ? error
-            : "stop-stream-error",
+            : typeof error === 'string'
+              ? error
+              : 'stop-stream-error',
       };
     }
 
@@ -333,10 +324,7 @@ const useCodexStream = (
           await window.electronAPI.getOrCreateDefaultConversation(workspaceId);
 
         if (!conversationResult.success || !conversationResult.conversation) {
-          console.error(
-            "Failed to load conversation:",
-            conversationResult.error
-          );
+          console.error('Failed to load conversation:', conversationResult.error);
           return;
         }
 
@@ -348,10 +336,7 @@ const useCodexStream = (
         const messagesResult = await window.electronAPI.getMessages(convoId);
 
         if (!messagesResult.success || !messagesResult.messages) {
-          console.error(
-            "Failed to load messages:",
-            messagesResult.error
-          );
+          console.error('Failed to load messages:', messagesResult.error);
           setMessages([]);
           return;
         }
@@ -360,17 +345,17 @@ const useCodexStream = (
 
         const loadedMessages: Message[] = messagesResult.messages.map((msg) => {
           const ctx: FilterContext = {
-            phase: "historical",
+            phase: 'historical',
             workspaceId: normalizedOptions.workspaceId,
             conversationId: convoId,
           };
 
-          let attachments: string[] | undefined
+          let attachments: string[] | undefined;
           try {
             if (msg.metadata && msg.sender === 'user') {
-              const meta = JSON.parse(msg.metadata)
+              const meta = JSON.parse(msg.metadata);
               if (meta && Array.isArray(meta.attachments) && meta.attachments.length > 0) {
-                attachments = meta.attachments
+                attachments = meta.attachments;
               }
             }
           } catch {}
@@ -378,7 +363,7 @@ const useCodexStream = (
           return {
             id: msg.id,
             content: defaultPipeline(msg.content, ctx),
-            sender: msg.sender as "user" | "agent",
+            sender: msg.sender as 'user' | 'agent',
             timestamp: new Date(msg.timestamp),
             attachments,
           };
@@ -389,24 +374,24 @@ const useCodexStream = (
         // If a stream is currently running for this workspace, seed the UI
         // with the current streaming tail so switching views doesn't lose context.
         try {
-          const tailRes = await window.electronAPI.codexGetStreamTail(workspaceId)
+          const tailRes = await window.electronAPI.codexGetStreamTail(workspaceId);
           if (tailRes?.success && typeof tailRes.tail === 'string' && tailRes.tail.trim()) {
             // Seed buffer and mark as streaming
-            streamBufferRef.current = tailRes.tail
-            setStreamingOutput(tailRes.tail)
+            streamBufferRef.current = tailRes.tail;
+            setStreamingOutput(tailRes.tail);
             // If we know when the stream started, compute elapsed seconds
             if (tailRes.startedAt) {
-              const started = Date.parse(tailRes.startedAt)
+              const started = Date.parse(tailRes.startedAt);
               if (!Number.isNaN(started)) {
-                const elapsed = Math.max(0, Math.floor((Date.now() - started) / 1000))
-                setSeconds(elapsed)
+                const elapsed = Math.max(0, Math.floor((Date.now() - started) / 1000));
+                setSeconds(elapsed);
               }
             }
-            setIsStreaming(true)
+            setIsStreaming(true);
           }
         } catch {}
       } catch (error) {
-        console.error("Error loading Codex conversation:", error);
+        console.error('Error loading Codex conversation:', error);
       } finally {
         if (!isCancelled) {
           setIsLoading(false);
@@ -468,7 +453,7 @@ const useCodexStream = (
         return;
       }
 
-      console.error("Codex streaming error:", data.error);
+      console.error('Codex streaming error:', data.error);
       cancelledRef.current = false;
       setIsStreaming(false);
       setSeconds(0);
@@ -514,7 +499,7 @@ const useCodexStream = (
       }
 
       const renderedContent = defaultPipeline(trimmed, {
-        phase: "final",
+        phase: 'final',
         workspaceId,
         conversationId: activeConversationId,
       });
@@ -522,7 +507,7 @@ const useCodexStream = (
       const agentMessage: Message = {
         id: Date.now().toString(),
         content: renderedContent,
-        sender: "agent",
+        sender: 'agent',
         timestamp: new Date(),
       };
 
@@ -532,13 +517,9 @@ const useCodexStream = (
       resetStreamState();
     };
 
-    const unsubscribeOutput = window.electronAPI.onCodexStreamOutput(
-      handleOutput
-    );
+    const unsubscribeOutput = window.electronAPI.onCodexStreamOutput(handleOutput);
     const unsubscribeError = window.electronAPI.onCodexStreamError(handleError);
-    const unsubscribeComplete = window.electronAPI.onCodexStreamComplete(
-      handleComplete
-    );
+    const unsubscribeComplete = window.electronAPI.onCodexStreamComplete(handleComplete);
 
     return () => {
       unsubscribeOutput?.();
