@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
+import { useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
 import { ArrowRight } from 'lucide-react';
 import openaiLogo from '../../assets/images/openai.png';
@@ -18,6 +18,8 @@ import {
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
 import { useFileIndex } from '../hooks/useFileIndex';
 import FileTypeIcon from './ui/file-type-icon';
+import { ProviderSelector } from './ProviderSelector';
+import { type Provider } from '../types';
 
 interface ChatInputProps {
   value: string;
@@ -104,8 +106,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     }, 120);
     return () => clearTimeout(handle);
   }, [mentionOpen, mentionQuery, search]);
-
-  // Provider dropdown
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     // Send on Enter (unless Shift) when mention is closed
@@ -214,13 +214,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       : provider === 'claude'
         ? !agentCreated
         : true); // droid/gemini/cursor: input disabled, terminal-only
+
   const textareaDisabled = baseDisabled || isLoading;
   const sendDisabled =
     provider === 'droid' || provider === 'gemini' || provider === 'cursor'
       ? true
       : isLoading
-        ? baseDisabled
-        : baseDisabled || !trimmedValue;
+      ? baseDisabled
+      : baseDisabled || !trimmedValue;
 
   return (
     <div className="px-6 pt-4 pb-6">
@@ -398,8 +399,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                   provider === 'droid' || provider === 'gemini' || provider === 'cursor'
                     ? 'Terminal-only provider'
                     : isLoading
-                      ? 'Stop Codex'
-                      : 'Send'
+                    ? 'Stop Codex'
+                    : 'Send'
                 }
               >
                 {provider === 'droid' || provider === 'gemini' || provider === 'cursor' ? (

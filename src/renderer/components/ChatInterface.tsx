@@ -1,12 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Folder } from 'lucide-react';
 import { useToast } from '../hooks/use-toast';
 import ChatInput from './ChatInput';
 import { TerminalPane } from './TerminalPane';
 import MessageList from './MessageList';
 import useCodexStream from '../hooks/useCodexStream';
 import useClaudeStream from '../hooks/useClaudeStream';
-import { useProviderPreference } from '../hooks/useProviderPreference';
+import { type Provider } from '../types';
 import { buildAttachmentsSection } from '../lib/attachments';
 import { Workspace, Message } from '../types/chat';
 
