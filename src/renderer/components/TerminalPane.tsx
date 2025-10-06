@@ -187,6 +187,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
         minHeight: '0',
         backgroundColor: variant === 'light' ? '#ffffff' : '#000000',
         overflow: 'hidden',
+        boxSizing: 'border-box',
       }}
       onClick={() => termRef.current?.focus()}
       onMouseDown={() => termRef.current?.focus()}
