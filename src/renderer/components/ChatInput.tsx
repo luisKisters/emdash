@@ -2,20 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
 import { ArrowRight } from 'lucide-react';
-import openaiLogo from '../../assets/images/openai.png';
-import claudeLogo from '../../assets/images/claude.png';
-import factoryLogo from '../../assets/images/factorydroid.png';
-import geminiLogo from '../../assets/images/gemini.png';
-import cursorLogo from '../../assets/images/cursorlogo.png';
-import {
-  Select,
-  SelectTrigger,
-  SelectValue,
-  SelectContent,
-  SelectItem,
-  SelectItemText,
-} from './ui/select';
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
+// Provider selection handled by ProviderSelector component
 import { useFileIndex } from '../hooks/useFileIndex';
 import FileTypeIcon from './ui/file-type-icon';
 import { ProviderSelector } from './ProviderSelector';
@@ -32,8 +19,8 @@ interface ChatInputProps {
   agentCreated: boolean;
   disabled?: boolean;
   workspacePath?: string;
-  provider?: 'codex' | 'claude' | 'droid' | 'gemini' | 'cursor';
-  onProviderChange?: (p: 'codex' | 'claude' | 'droid' | 'gemini' | 'cursor') => void;
+  provider?: Provider;
+  onProviderChange?: (p: Provider) => void;
   selectDisabled?: boolean;
 }
 
@@ -280,105 +267,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           </div>
 
           <div className="flex items-center justify-between px-4 py-3 rounded-b-xl">
-            <div className="relative inline-block w-[12rem]">
-              <Select
-                value={provider}
-                onValueChange={(v) => {
-                  if (!selectDisabled)
-                    onProviderChange &&
-                      onProviderChange(v as 'codex' | 'claude' | 'droid' | 'gemini' | 'cursor');
-                }}
-                disabled={selectDisabled}
-              >
-                {selectDisabled ? (
-                  <TooltipProvider delayDuration={250}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <SelectTrigger
-                          aria-disabled
-                          className={`h-9 bg-gray-100 dark:bg-gray-700 border-none ${selectDisabled ? 'opacity-60 cursor-not-allowed' : ''}`}
-                        >
-                          <div className="flex items-center gap-2">
-                            {provider === 'claude' ? (
-                              <img
-                                src={claudeLogo}
-                                alt="Claude Code"
-                                className="w-4 h-4 shrink-0"
-                              />
-                            ) : provider === 'codex' ? (
-                              <img src={openaiLogo} alt="Codex" className="w-4 h-4 shrink-0" />
-                            ) : provider === 'droid' ? (
-                              <img
-                                src={factoryLogo}
-                                alt="Factory Droid"
-                                className="w-4 h-4 shrink-0"
-                              />
-                            ) : provider === 'gemini' ? (
-                              <img src={geminiLogo} alt="Gemini CLI" className="w-4 h-4 shrink-0" />
-                            ) : provider === 'cursor' ? (
-                              <img src={cursorLogo} alt="Cursor CLI" className="w-4 h-4 shrink-0" />
-                            ) : null}
-                            <SelectValue placeholder="Select provider" />
-                          </div>
-                        </SelectTrigger>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>Provider is locked for this conversation.</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                ) : (
-                  <SelectTrigger className="h-9 bg-gray-100 dark:bg-gray-700 border-none">
-                    <div className="flex items-center gap-2">
-                      {provider === 'claude' ? (
-                        <img src={claudeLogo} alt="Claude Code" className="w-4 h-4 shrink-0" />
-                      ) : provider === 'codex' ? (
-                        <img src={openaiLogo} alt="Codex" className="w-4 h-4 shrink-0" />
-                      ) : provider === 'droid' ? (
-                        <img src={factoryLogo} alt="Factory Droid" className="w-4 h-4 shrink-0" />
-                      ) : provider === 'gemini' ? (
-                        <img src={geminiLogo} alt="Gemini CLI" className="w-4 h-4 shrink-0" />
-                      ) : provider === 'cursor' ? (
-                        <img src={cursorLogo} alt="Cursor CLI" className="w-4 h-4 shrink-0" />
-                      ) : null}
-                      <SelectValue placeholder="Select provider" />
-                    </div>
-                  </SelectTrigger>
-                )}
-                <SelectContent>
-                  <SelectItem value="codex">
-                    <div className="flex items-center gap-2">
-                      <img src={openaiLogo} alt="Codex" className="w-4 h-4" />
-                      <SelectItemText>Codex</SelectItemText>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="claude">
-                    <div className="flex items-center gap-2">
-                      <img src={claudeLogo} alt="Claude Code" className="w-4 h-4" />
-                      <SelectItemText>Claude Code</SelectItemText>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="droid">
-                    <div className="flex items-center gap-2">
-                      <img src={factoryLogo} alt="Factory Droid" className="w-4 h-4" />
-                      <SelectItemText>Droid</SelectItemText>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="gemini">
-                    <div className="flex items-center gap-2">
-                      <img src={geminiLogo} alt="Gemini CLI" className="w-4 h-4" />
-                      <SelectItemText>Gemini</SelectItemText>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="cursor">
-                    <div className="flex items-center gap-2">
-                      <img src={cursorLogo} alt="Cursor CLI" className="w-4 h-4" />
-                      <SelectItemText>Cursor</SelectItemText>
-                    </div>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+            <ProviderSelector
+              value={provider as Provider}
+              onChange={(v) => {
+                if (!selectDisabled && onProviderChange) onProviderChange(v);
+              }}
+              disabled={selectDisabled}
+            />
 
             <div className="flex items-center gap-2">
               {isLoading && (
