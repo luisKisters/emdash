@@ -2,6 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useToast } from '../hooks/use-toast';
 import ChatInput from './ChatInput';
 import { TerminalPane } from './TerminalPane';
+import { TerminalModeBanner } from './TerminalModeBanner';
+import { WorkspaceNotice } from './WorkspaceNotice';
+import { providerMeta } from '../providers/meta';
 import MessageList from './MessageList';
 import useCodexStream from '../hooks/useCodexStream';
 import useClaudeStream from '../hooks/useClaudeStream';
@@ -336,46 +339,15 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
         <div className="flex-1 flex flex-col min-h-0">
           <div className="px-6 pt-4">
             <div className="max-w-4xl mx-auto">
-              <div className="rounded-md border border-gray-200 bg-gray-50 text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 p-3 text-sm">
-                <div className="whitespace-pre-wrap">
-                  {provider === 'droid'
-                    ? 'Interact with Droid in the terminal below. To install and get started, see the Factory CLI Quickstart:'
-                    : provider === 'gemini'
-                    ? 'Interact with Gemini in the terminal below. To install and get started, visit the Gemini CLI project:'
-                    : 'Interact with Cursor in the terminal below. To install and get started, follow the Cursor CLI docs:'}
-                </div>
-                <button
-                  type="button"
-                  onClick={() =>
-                    window.electronAPI.openExternal(
-                      provider === 'droid'
-                        ? 'https://docs.factory.ai/cli/getting-started/quickstart'
-                        : provider === 'gemini'
-                        ? 'https://github.com/google-gemini/gemini-cli'
-                        : 'https://cursor.com/install'
-                    )
-                  }
-                  className="mt-1 underline text-gray-800 hover:text-gray-600 dark:text-gray-200 dark:hover:text-gray-100"
-                >
-                  {provider === 'droid'
-                    ? 'https://docs.factory.ai/cli/getting-started/quickstart'
-                    : provider === 'gemini'
-                    ? 'https://github.com/google-gemini/gemini-cli'
-                    : 'https://cursor.com/install'}
-                </button>
-                <div className="mt-2 text-xs opacity-90">
-                  Note: The terminal session now persists while the app is open; leaving and
-                  returning to this chat will restore its output. Closing the app will terminate the
-                  session.
-                </div>
-              </div>
+              <TerminalModeBanner
+                provider={provider as any}
+                onOpenExternal={(url) => window.electronAPI.openExternal(url)}
+              />
             </div>
           </div>
           <div className="px-6 mt-2">
             <div className="max-w-4xl mx-auto">
-              <div className="text-sm text-gray-700 dark:text-gray-200">
-                You're working in workspace <span className="font-medium">{workspace.name}</span>.
-              </div>
+              <WorkspaceNotice workspaceName={workspace.name} />
             </div>
           </div>
           <div className="flex-1 min-h-0 px-6 mt-4">
@@ -384,7 +356,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
                 <TerminalPane
                   id={`droid-main-${workspace.id}`}
                   cwd={workspace.path}
-                  shell="droid"
+                  shell={providerMeta.droid.cli}
                   keepAlive={true}
                   onActivity={() => {
                     try {
@@ -400,7 +372,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
                 <TerminalPane
                   id={`gemini-main-${workspace.id}`}
                   cwd={workspace.path}
-                  shell="gemini"
+                  shell={providerMeta.gemini.cli}
                   keepAlive={true}
                   onActivity={() => {
                     try {
@@ -416,7 +388,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
                 <TerminalPane
                   id={`cursor-main-${workspace.id}`}
                   cwd={workspace.path}
-                  shell="cursor-agent"
+                  shell={providerMeta.cursor.cli}
                   keepAlive={true}
                   onActivity={() => {
                     try {

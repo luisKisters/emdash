@@ -220,8 +220,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     provider === 'droid' || provider === 'gemini' || provider === 'cursor'
       ? true
       : isLoading
-      ? baseDisabled
-      : baseDisabled || !trimmedValue;
+        ? baseDisabled
+        : baseDisabled || !trimmedValue;
 
   return (
     <div className="px-6 pt-4 pb-6">
@@ -399,8 +399,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                   provider === 'droid' || provider === 'gemini' || provider === 'cursor'
                     ? 'Terminal-only provider'
                     : isLoading
-                    ? 'Stop Codex'
-                    : 'Send'
+                      ? 'Stop Codex'
+                      : 'Send'
                 }
               >
                 {provider === 'droid' || provider === 'gemini' || provider === 'cursor' ? (
