@@ -28,8 +28,8 @@ emdash is a UI layer for running multiple coding agents in parallel — currentl
 
 ## Install
 
-- Download for macOS (Apple Silicon): https://github.com/generalaction/emdash/releases/download/v0.2.3/emdash-arm64.dmg
-- Download for macOS (Intel x64): https://github.com/generalaction/emdash/releases/download/v0.2.3/emdash-x64.dmg
+- Download for macOS (Apple Silicon): https://github.com/generalaction/emdash/releases/latest/download/emdash-arm64.dmg
+- Download for macOS (Intel x64): https://github.com/generalaction/emdash/releases/latest/download/emdash-x64.dmg
 
 Either download the DMG from Releases (or click the link above), or run the app locally — see Requirements and Getting Started below.
 
