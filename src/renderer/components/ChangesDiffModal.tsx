@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { useFileDiff, type DiffLine } from '../hooks/useFileDiff';
@@ -63,15 +64,17 @@ export const ChangesDiffModal: React.FC<ChangesDiffModalProps> = ({
     return rows;
   }, [lines]);
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70"
+          role="dialog"
+          aria-modal="true"
           initial={shouldReduceMotion ? false : { opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={shouldReduceMotion ? { opacity: 1 } : { opacity: 0 }}
-          transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.1, ease: 'easeOut' }}
+          transition={shouldReduceMotion ? { duration: 0 } : { duration: 0.12, ease: 'easeOut' }}
           onClick={onClose}
         >
           <motion.div
@@ -153,7 +156,8 @@ export const ChangesDiffModal: React.FC<ChangesDiffModalProps> = ({
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };
 
