@@ -371,7 +371,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                   </SelectItem>
                   <SelectItem value="cursor">
                     <div className="flex items-center gap-2">
-                      <span className="inline-flex items-center justify-center w-4 h-4 text-[10px] leading-4 bg-gray-200 dark:bg-gray-700 rounded-sm text-gray-800 dark:text-gray-100">C</span>
+                      <img src={cursorLogo} alt="Cursor CLI" className="w-4 h-4" />
                       <SelectItemText>Cursor</SelectItemText>
                     </div>
                   </SelectItem>
