@@ -38,7 +38,9 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
   const [isClaudeInstalled, setIsClaudeInstalled] = useState<boolean | null>(null);
   const [claudeInstructions, setClaudeInstructions] = useState<string | null>(null);
   const [agentCreated, setAgentCreated] = useState(false);
-  const [provider, setProvider] = useState<'codex' | 'claude' | 'droid' | 'gemini' | 'cursor'>('codex');
+  const [provider, setProvider] = useState<'codex' | 'claude' | 'droid' | 'gemini' | 'cursor'>(
+    'codex'
+  );
   const [lockedProvider, setLockedProvider] = useState<
     'codex' | 'claude' | 'droid' | 'gemini' | 'cursor' | null
   >(null);
@@ -136,7 +138,14 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
         setLockedProvider(provider);
       }
     } catch {}
-  }, [provider, workspace.id, activeStream.messages, hasDroidActivity, hasGeminiActivity, hasCursorActivity]);
+  }, [
+    provider,
+    workspace.id,
+    activeStream.messages,
+    hasDroidActivity,
+    hasGeminiActivity,
+    hasCursorActivity,
+  ]);
 
   // Check Claude Code installation when selected
   useEffect(() => {
@@ -333,8 +342,8 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
                   {provider === 'droid'
                     ? 'Interact with Droid in the terminal below. To install and get started, see the Factory CLI Quickstart:'
                     : provider === 'gemini'
-                    ? 'Interact with Gemini in the terminal below. To install and get started, visit the Gemini CLI project:'
-                    : 'Interact with Cursor in the terminal below. To install and get started, follow the Cursor CLI docs:'}
+                      ? 'Interact with Gemini in the terminal below. To install and get started, visit the Gemini CLI project:'
+                      : 'Interact with Cursor in the terminal below. To install and get started, follow the Cursor CLI docs:'}
                 </div>
                 <button
                   type="button"
@@ -343,8 +352,8 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
                       provider === 'droid'
                         ? 'https://docs.factory.ai/cli/getting-started/quickstart'
                         : provider === 'gemini'
-                        ? 'https://github.com/google-gemini/gemini-cli'
-                        : 'https://cursor.com/install'
+                          ? 'https://github.com/google-gemini/gemini-cli'
+                          : 'https://cursor.com/install'
                     )
                   }
                   className="mt-1 underline text-gray-800 hover:text-gray-600 dark:text-gray-200 dark:hover:text-gray-100"
@@ -352,8 +361,8 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
                   {provider === 'droid'
                     ? 'https://docs.factory.ai/cli/getting-started/quickstart'
                     : provider === 'gemini'
-                    ? 'https://github.com/google-gemini/gemini-cli'
-                    : 'https://cursor.com/install'}
+                      ? 'https://github.com/google-gemini/gemini-cli'
+                      : 'https://cursor.com/install'}
                 </button>
                 <div className="mt-2 text-xs opacity-90">
                   Note: The terminal session now persists while the app is open; leaving and
