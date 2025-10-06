@@ -5,11 +5,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Input } from './ui/input';
 import { Spinner } from './ui/spinner';
 import { X, GitBranch } from 'lucide-react';
+import { ProviderSelector } from './ProviderSelector';
+import { type Provider } from '../types';
 
 interface WorkspaceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateWorkspace: (name: string, initialPrompt?: string) => void;
+  onCreateWorkspace: (name: string, initialPrompt?: string, selectedProvider?: Provider) => void;
   projectName: string;
   defaultBranch: string;
   existingNames?: string[];
@@ -25,6 +27,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
 }) => {
   const [workspaceName, setWorkspaceName] = useState('');
   const [initialPrompt, setInitialPrompt] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState<Provider>('codex');
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
@@ -61,9 +64,14 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
 
     setIsCreating(true);
     try {
-      await onCreateWorkspace(workspaceName.trim(), initialPrompt.trim() || undefined);
+      await onCreateWorkspace(
+        workspaceName.trim(),
+        initialPrompt.trim() || undefined,
+        selectedProvider
+      );
       setWorkspaceName('');
       setInitialPrompt('');
+      setSelectedProvider('codex');
       setError(null);
       onClose();
     } catch (error) {
@@ -142,6 +150,20 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                   </div>
 
                   <div>
+                    <label htmlFor="provider-selector" className="block text-sm font-medium mb-2">
+                      AI Provider
+                    </label>
+                    <ProviderSelector
+                      value={selectedProvider}
+                      onChange={setSelectedProvider}
+                      className="w-full"
+                    />
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Choose which AI provider to use for the initial prompt
+                    </p>
+                  </div>
+
+                  <div>
                     <label htmlFor="initial-prompt" className="block text-sm font-medium mb-2">
                       Initial prompt (optional)
                     </label>
@@ -149,7 +171,13 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                       id="initial-prompt"
                       value={initialPrompt}
                       onChange={(e) => setInitialPrompt(e.target.value)}
-                      placeholder="Add an initial prompt, outlining your goal and how you want to achieve it (this will be sent to codex)."
+                      placeholder={`Add an initial prompt, outlining your goal and how you want to achieve it (this will be sent to ${
+                        selectedProvider === 'codex'
+                          ? 'Codex'
+                          : selectedProvider === 'claude'
+                          ? 'Claude'
+                          : selectedProvider
+                      }).`}
                       className="w-full min-h-[80px] px-3 py-2 text-sm border border-input bg-background rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                       rows={3}
                     />

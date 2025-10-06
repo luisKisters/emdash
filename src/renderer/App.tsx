@@ -15,6 +15,7 @@ import Titlebar from './components/titlebar/Titlebar';
 import { SidebarProvider, useSidebar } from './components/ui/sidebar';
 import { RightSidebarProvider, useRightSidebar } from './components/ui/right-sidebar';
 import RightSidebar from './components/RightSidebar';
+import { type Provider } from './types';
 
 const SidebarHotkeys: React.FC = () => {
   const { toggle: toggleLeftSidebar } = useSidebar();
@@ -89,6 +90,7 @@ const App: React.FC = () => {
   const [showHomeView, setShowHomeView] = useState<boolean>(true);
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState<boolean>(false);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
+  const [activeWorkspaceProvider, setActiveWorkspaceProvider] = useState<Provider | null>(null);
   const [isCodexInstalled, setIsCodexInstalled] = useState<boolean | null>(null);
   const [isClaudeInstalled, setIsClaudeInstalled] = useState<boolean | null>(null);
   const showGithubRequirement = !ghInstalled || !isAuthenticated;
@@ -279,7 +281,11 @@ const App: React.FC = () => {
     }
   };
 
-  const handleCreateWorkspace = async (workspaceName: string, initialPrompt?: string) => {
+  const handleCreateWorkspace = async (
+    workspaceName: string,
+    initialPrompt?: string,
+    selectedProvider?: Provider
+  ) => {
     if (!selectedProject) return;
 
     setIsCreatingWorkspace(true);
@@ -329,45 +335,73 @@ const App: React.FC = () => {
 
               await window.electronAPI.saveMessage(userMessage);
 
-              // Trigger agent response to the initial prompt
-              // Use codex as default provider for initial prompts
-              // TODO: add input for other providers
-              // TODO: unify the check, create, and send for chat and initial prompt
-              try {
-                // First check if Codex is installed
-                const installResult =
-                  await window.electronAPI.codexCheckInstallation();
-                if (installResult.success && installResult.isInstalled) {
-                  // Create agent for the new workspace
-                  const agentResult = await window.electronAPI.codexCreateAgent(
-                    newWorkspace.id,
-                    newWorkspace.path
-                  );
+              // Trigger agent response to the initial prompt based on selected provider
+              await sendInitialPromptToProvider(selectedProvider || 'codex');
 
-                  if (agentResult.success) {
-                    // Now send the initial prompt
-                    await window.electronAPI.codexSendMessageStream(
-                      newWorkspace.id,
-                      initialPrompt,
-                      conversationResult.conversation.id ?? undefined
+              async function sendInitialPromptToProvider(provider: Provider) {
+                try {
+                  if (provider === 'codex') {
+                    // Check if Codex is installed
+                    const codexInstallResult = await window.electronAPI.codexCheckInstallation();
+                    if (codexInstallResult.success && codexInstallResult.isInstalled) {
+                      // Create Codex agent for the new workspace
+                      const codexAgentResult = await window.electronAPI.codexCreateAgent(
+                        newWorkspace.id,
+                        newWorkspace.path
+                      );
+
+                      if (codexAgentResult.success) {
+                        // Send the initial prompt to Codex
+                        await window.electronAPI.codexSendMessageStream(
+                          newWorkspace.id,
+                          initialPrompt || '',
+                          conversationResult.conversation.id ?? undefined
+                        );
+                      } else {
+                        console.error('Failed to create Codex agent:', codexAgentResult.error);
+                      }
+                    } else {
+                      console.warn('Codex not installed, skipping initial prompt');
+                    }
+                  } else if (provider === 'claude') {
+                    // Check if Claude is installed
+                    const claudeInstallResult = await window.electronAPI.agentCheckInstallation?.(
+                      'claude'
                     );
+                    if (claudeInstallResult?.success && claudeInstallResult.isInstalled) {
+                      // Send the initial prompt to Claude
+                      const claudeArgs: {
+                        providerId: 'claude';
+                        workspaceId: string;
+                        worktreePath: string;
+                        message: string;
+                        conversationId?: string;
+                      } = {
+                        providerId: 'claude',
+                        workspaceId: newWorkspace.id,
+                        worktreePath: newWorkspace.path,
+                        message: initialPrompt || '',
+                      };
+                      if (
+                        conversationResult.conversation.id &&
+                        typeof conversationResult.conversation.id === 'string'
+                      ) {
+                        claudeArgs.conversationId = conversationResult.conversation.id;
+                      }
+                      await window.electronAPI.agentSendMessageStream(claudeArgs);
+                    } else {
+                      console.warn('Claude not installed, skipping initial prompt');
+                    }
                   } else {
-                    console.error(
-                      "Failed to create Codex agent:",
-                      agentResult.error
+                    // Terminal-based providers (droid, gemini, cursor) don't support initial prompts
+                    console.log(
+                      `Provider ${provider} is terminal-based, initial prompt will be ignored`
                     );
                   }
-                } else {
-                  console.warn(
-                    "Codex not installed, skipping initial prompt agent response"
-                  );
+                } catch (error) {
+                  console.error(`Failed to send initial prompt to ${provider}:`, error);
+                  // Don't fail workspace creation if agent response fails
                 }
-              } catch (agentError) {
-                console.error(
-                  "Failed to send initial prompt to agent:",
-                  agentError
-                );
-                // Don't fail workspace creation if agent response fails
               }
             }
           } catch (promptError) {
@@ -395,6 +429,10 @@ const App: React.FC = () => {
               }
             : null
         );
+
+        // Set the active workspace and its provider
+        setActiveWorkspace(newWorkspace);
+        setActiveWorkspaceProvider(selectedProvider || 'codex');
 
         toast({
           title: 'Workspace Created',
@@ -434,6 +472,7 @@ const App: React.FC = () => {
 
   const handleSelectWorkspace = (workspace: Workspace) => {
     setActiveWorkspace(workspace);
+    setActiveWorkspaceProvider(null); // Clear provider when switching workspaces
   };
 
   const handleDeleteWorkspace = async (targetProject: Project, workspace: Workspace) => {
@@ -590,6 +629,7 @@ const App: React.FC = () => {
               workspace={activeWorkspace}
               projectName={selectedProject.name}
               className="flex-1 min-h-0"
+              initialProvider={activeWorkspaceProvider || undefined}
             />
           ) : (
             <ProjectMainView
