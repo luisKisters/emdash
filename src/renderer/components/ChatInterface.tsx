@@ -341,8 +341,8 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
                   {provider === 'droid'
                     ? 'Interact with Droid in the terminal below. To install and get started, see the Factory CLI Quickstart:'
                     : provider === 'gemini'
-                      ? 'Interact with Gemini in the terminal below. To install and get started, visit the Gemini CLI project:'
-                      : 'Interact with Cursor in the terminal below. To install and get started, follow the Cursor CLI docs:'}
+                    ? 'Interact with Gemini in the terminal below. To install and get started, visit the Gemini CLI project:'
+                    : 'Interact with Cursor in the terminal below. To install and get started, follow the Cursor CLI docs:'}
                 </div>
                 <button
                   type="button"
@@ -351,8 +351,8 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
                       provider === 'droid'
                         ? 'https://docs.factory.ai/cli/getting-started/quickstart'
                         : provider === 'gemini'
-                          ? 'https://github.com/google-gemini/gemini-cli'
-                          : 'https://cursor.com/install'
+                        ? 'https://github.com/google-gemini/gemini-cli'
+                        : 'https://cursor.com/install'
                     )
                   }
                   className="mt-1 underline text-gray-800 hover:text-gray-600 dark:text-gray-200 dark:hover:text-gray-100"
@@ -360,14 +360,21 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
                   {provider === 'droid'
                     ? 'https://docs.factory.ai/cli/getting-started/quickstart'
                     : provider === 'gemini'
-                      ? 'https://github.com/google-gemini/gemini-cli'
-                      : 'https://cursor.com/install'}
+                    ? 'https://github.com/google-gemini/gemini-cli'
+                    : 'https://cursor.com/install'}
                 </button>
                 <div className="mt-2 text-xs opacity-90">
                   Note: The terminal session now persists while the app is open; leaving and
                   returning to this chat will restore its output. Closing the app will terminate the
                   session.
                 </div>
+              </div>
+            </div>
+          </div>
+          <div className="px-6 mt-2">
+            <div className="max-w-4xl mx-auto">
+              <div className="text-sm text-gray-700 dark:text-gray-200">
+                You're working in workspace <span className="font-medium">{workspace.name}</span>.
               </div>
             </div>
           </div>
