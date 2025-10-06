@@ -44,3 +44,5 @@ export interface Workspace {
   name: string;
   repos: Repo[];
 }
+
+export type Provider = 'codex' | 'claude' | 'droid' | 'gemini';

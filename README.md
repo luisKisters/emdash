@@ -20,7 +20,7 @@
   alt="Emdash" width="900">
   </p>
 
-emdash is a UI layer for running multiple coding agents in parallel — currently supporting OpenAI Codex CLI, Claude Code CLI, and Droid (Factory CLI). Each agent runs in its own Git worktree so you can fan out tasks, keep changes compartmentalized, and manage everything from a single UI.
+emdash is a UI layer for running multiple coding agents in parallel — currently supporting OpenAI Codex CLI, Claude Code CLI, Droid (Factory CLI), and Gemini CLI. Each agent runs in its own Git worktree so you can fan out tasks, keep changes compartmentalized, and manage everything from a single UI.
 
 <p align="center">
     <img src="./docs/media/emdash-screenshot.png" alt="Emdash app screenshot" width="100%">
