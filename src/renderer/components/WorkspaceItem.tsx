@@ -68,7 +68,16 @@ export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({ workspace }) => {
         {workspace.agentId && <Bot className="w-3 h-3 text-purple-500 flex-shrink-0" />}
       </div>
       <div className="hidden sm:flex items-center space-x-2 flex-shrink-0">
-        {!isLoading && (totalAdditions > 0 || totalDeletions > 0) ? (
+        {pr && pr.state === 'CLOSED' ? (
+          <span
+            className={`text-[10px] px-1.5 py-0.5 rounded border 
+              bg-gray-100 text-gray-700 border-gray-200
+            `}
+            title={`${pr.title || 'Pull Request'} (#${pr.number})`}
+          >
+            {pr.isDraft ? 'draft' : pr.state.toLowerCase()}
+          </span>
+        ) : !isLoading && (totalAdditions > 0 || totalDeletions > 0) ? (
           <ChangesBadge additions={totalAdditions} deletions={totalDeletions} />
         ) : pr ? (
           <span
