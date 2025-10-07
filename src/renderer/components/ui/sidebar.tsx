@@ -118,7 +118,7 @@ const Sidebar = React.forwardRef<HTMLDivElement, SidebarProps>(
               'fixed inset-y-0 left-0 w-[var(--sidebar-width-mobile,18rem)] bg-background shadow-lg',
               open ? 'translate-x-0' : '-translate-x-full'
             )
-          : cn(open ? 'w-[var(--sidebar-width,18rem)]' : 'w-0')
+          : cn(open ? 'w-full' : 'w-0')
         : '';
 
     return (
