@@ -39,19 +39,28 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
 
   const normalizedExisting = existingNames.map((n) => n.toLowerCase());
 
+  // Convert input to valid workspace name format
+  const convertToWorkspaceName = (input: string): string => {
+    return input
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/[^a-z0-9-]/g, '') // Remove invalid characters
+      .replace(/-+/g, '-') // Replace multiple consecutive hyphens with single hyphen
+      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+  };
+
   const validate = (value: string): string | null => {
     const name = value.trim();
     if (!name) return 'Please enter a workspace name.';
-    // Allow lowercase letters, numbers, and single hyphens between segments
-    // Must start/end with alphanumeric; no spaces; no consecutive hyphens
-    const pattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-    if (!pattern.test(name)) {
-      return 'Use lowercase letters, numbers, and hyphens (no spaces).';
-    }
-    if (normalizedExisting.includes(name.toLowerCase())) {
+
+    const convertedName = convertToWorkspaceName(name);
+    if (!convertedName) return 'Please enter a valid workspace name.';
+
+    if (normalizedExisting.includes(convertedName)) {
       return 'A workspace with this name already exists.';
     }
-    if (name.length > 64) {
+    if (convertedName.length > 64) {
       return 'Name is too long (max 64 characters).';
     }
     return null;
@@ -69,7 +78,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
     setIsCreating(true);
     try {
       await onCreateWorkspace(
-        workspaceName.trim(),
+        convertToWorkspaceName(workspaceName),
         showAdvanced ? initialPrompt.trim() || undefined : undefined,
         showAdvanced ? selectedProvider : undefined
       );
@@ -119,25 +128,33 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
             }
             className="w-full max-w-md mx-4 will-change-transform transform-gpu"
           >
-            <Card className="w-full">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                <div>
-                  <CardTitle className="text-lg">New workspace</CardTitle>
-                  <CardDescription>
-                    {projectName} • Branching from origin/{defaultBranch}
-                  </CardDescription>
-                </div>
-                <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
-                  <X className="h-4 w-4" />
-                </Button>
+            <Card className="w-full relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="absolute top-2 right-2 h-8 w-8 p-0 z-10"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <CardHeader className="space-y-0 pb-2 pr-12">
+                <CardTitle className="text-lg">Create a new workspace</CardTitle>
+                <CardDescription>
+                  {projectName} • Branching from origin/{defaultBranch}
+                </CardDescription>
               </CardHeader>
 
               <CardContent>
+                <Separator className="mb-2" />
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label htmlFor="workspace-name" className="block text-sm font-medium mb-2">
-                      What are you working on?
+                    <label htmlFor="workspace-name" className="block text-sm font-medium">
+                      Name your workspace
                     </label>
+                    <p className="text-xs text-gray-500 mb-2">
+                      This desciption will be formatted to a valid workspace name (lowercase, no
+                      spaces, no special characters).
+                    </p>
                     <Input
                       id="workspace-name"
                       value={workspaceName}
@@ -156,12 +173,14 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                     )}
                   </div>
 
-                  <div className="flex items-center space-x-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                    <GitBranch className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {workspaceName || 'workspace-name'}
-                    </span>
-                  </div>
+                  {workspaceName && (
+                    <div className="flex items-center space-x-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                      <GitBranch className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400 break-all overflow-hidden">
+                        {convertToWorkspaceName(workspaceName)}
+                      </span>
+                    </div>
+                  )}
 
                   <Separator />
 
