@@ -78,7 +78,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
     setIsCreating(true);
     try {
       await onCreateWorkspace(
-        workspaceName.trim(),
+        convertToWorkspaceName(workspaceName),
         showAdvanced ? initialPrompt.trim() || undefined : undefined,
         showAdvanced ? selectedProvider : undefined
       );
@@ -169,12 +169,14 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                     )}
                   </div>
 
-                  <div className="flex items-center space-x-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                    <GitBranch className="w-4 h-4 text-gray-500" />
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {workspaceName || 'workspace-name'}
-                    </span>
-                  </div>
+                  {workspaceName && (
+                    <div className="flex items-center space-x-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
+                      <GitBranch className="w-4 h-4 text-gray-500" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                        {convertToWorkspaceName(workspaceName)}
+                      </span>
+                    </div>
+                  )}
 
                   <Separator />
 
