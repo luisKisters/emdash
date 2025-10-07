@@ -64,11 +64,14 @@ export const ChangesDiffModal: React.FC<ChangesDiffModalProps> = ({
     return rows;
   }, [lines]);
 
+  if (typeof document === 'undefined') {
+    return null;
+  }
   return createPortal(
     <AnimatePresence>
       {open && (
         <motion.div
-          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70"
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-sm"
           role="dialog"
           aria-modal="true"
           initial={shouldReduceMotion ? false : { opacity: 0 }}

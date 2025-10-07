@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Button } from './components/ui/button';
 
 import { FolderOpen } from 'lucide-react';
@@ -16,6 +16,9 @@ import { SidebarProvider, useSidebar } from './components/ui/sidebar';
 import { RightSidebarProvider, useRightSidebar } from './components/ui/right-sidebar';
 import RightSidebar from './components/RightSidebar';
 import { type Provider } from './types';
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './components/ui/resizable';
+import { loadPanelSizes, savePanelSizes } from './lib/persisted-layout';
+import type { ImperativePanelHandle } from 'react-resizable-panels';
 
 const SidebarHotkeys: React.FC = () => {
   const { toggle: toggleLeftSidebar } = useSidebar();
@@ -44,6 +47,27 @@ const SidebarHotkeys: React.FC = () => {
   return null;
 };
 
+const RightSidebarBridge: React.FC<{
+  onCollapsedChange: (collapsed: boolean) => void;
+  setCollapsedRef: React.MutableRefObject<((next: boolean) => void) | null>;
+}> = ({ onCollapsedChange, setCollapsedRef }) => {
+  const { collapsed, setCollapsed } = useRightSidebar();
+
+  useEffect(() => {
+    onCollapsedChange(collapsed);
+  }, [collapsed, onCollapsedChange]);
+
+  useEffect(() => {
+    setCollapsedRef.current = setCollapsed;
+    return () => {
+      setCollapsedRef.current = null;
+    };
+  }, [setCollapsed, setCollapsedRef]);
+
+  return null;
+};
+
+
 interface Project {
   id: string;
   name: string;
@@ -70,6 +94,23 @@ interface Workspace {
 }
 
 const TITLEBAR_HEIGHT = '36px';
+const PANEL_LAYOUT_STORAGE_KEY = 'emdash.layout.left-main-right.v1';
+const DEFAULT_PANEL_LAYOUT: [number, number, number] = [24, 56, 20];
+const LEFT_SIDEBAR_MIN_SIZE = 16;
+const LEFT_SIDEBAR_MAX_SIZE = 30;
+const RIGHT_SIDEBAR_MIN_SIZE = 16;
+const RIGHT_SIDEBAR_MAX_SIZE = 30;
+const clampLeftSidebarSize = (value: number) =>
+  Math.min(
+    Math.max(Number.isFinite(value) ? value : DEFAULT_PANEL_LAYOUT[0], LEFT_SIDEBAR_MIN_SIZE),
+    LEFT_SIDEBAR_MAX_SIZE
+  );
+const clampRightSidebarSize = (value: number) =>
+  Math.min(
+    Math.max(Number.isFinite(value) ? value : DEFAULT_PANEL_LAYOUT[2], RIGHT_SIDEBAR_MIN_SIZE),
+    RIGHT_SIDEBAR_MAX_SIZE
+  );
+const MAIN_PANEL_MIN_SIZE = 30;
 
 const App: React.FC = () => {
   const { toast } = useToast();
@@ -97,6 +138,119 @@ const App: React.FC = () => {
   // Show agent requirements block if none of the supported CLIs are detected locally.
   // We only actively detect Codex and Claude Code; Factory (Droid) docs are shown as an alternative.
   const showAgentRequirement = isCodexInstalled === false && isClaudeInstalled === false;
+
+  const defaultPanelLayout = React.useMemo(() => {
+    const stored = loadPanelSizes(PANEL_LAYOUT_STORAGE_KEY, DEFAULT_PANEL_LAYOUT);
+    const [storedLeft = DEFAULT_PANEL_LAYOUT[0], , storedRight = DEFAULT_PANEL_LAYOUT[2]] =
+      Array.isArray(stored) && stored.length === 3 ? stored : DEFAULT_PANEL_LAYOUT;
+    const left = clampLeftSidebarSize(storedLeft);
+    const right = clampRightSidebarSize(storedRight);
+    const middle = Math.max(0, 100 - left - right);
+    return [left, middle, right] as [number, number, number];
+  }, []);
+  const rightSidebarDefaultWidth = React.useMemo(
+    () => clampRightSidebarSize(defaultPanelLayout[2]),
+    [defaultPanelLayout]
+  );
+  const leftSidebarPanelRef = useRef<ImperativePanelHandle | null>(null);
+  const rightSidebarPanelRef = useRef<ImperativePanelHandle | null>(null);
+  const lastLeftSidebarSizeRef = useRef<number>(defaultPanelLayout[0]);
+  const lastRightSidebarSizeRef = useRef<number>(rightSidebarDefaultWidth);
+  const leftSidebarSetOpenRef = useRef<((next: boolean) => void) | null>(null);
+  const leftSidebarIsMobileRef = useRef<boolean>(false);
+  const rightSidebarSetCollapsedRef = useRef<((next: boolean) => void) | null>(null);
+  const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState<boolean>(true);
+
+  const handlePanelLayout = useCallback((sizes: number[]) => {
+    if (!Array.isArray(sizes) || sizes.length < 3) {
+      return;
+    }
+
+    if (leftSidebarIsMobileRef.current) {
+      return;
+    }
+
+    const [leftSize, , rightSize] = sizes;
+
+    let storedLeft = lastLeftSidebarSizeRef.current;
+    if (typeof leftSize === 'number') {
+      if (leftSize <= 0.5) {
+        leftSidebarSetOpenRef.current?.(false);
+      } else {
+        leftSidebarSetOpenRef.current?.(true);
+        storedLeft = clampLeftSidebarSize(leftSize);
+        lastLeftSidebarSizeRef.current = storedLeft;
+      }
+    }
+
+    let storedRight = lastRightSidebarSizeRef.current;
+    if (typeof rightSize === 'number') {
+      if (rightSize <= 0.5) {
+        rightSidebarSetCollapsedRef.current?.(true);
+      } else {
+        storedRight = clampRightSidebarSize(rightSize);
+        lastRightSidebarSizeRef.current = storedRight;
+        rightSidebarSetCollapsedRef.current?.(false);
+      }
+    }
+
+    const middle = Math.max(0, 100 - storedLeft - storedRight);
+    savePanelSizes(PANEL_LAYOUT_STORAGE_KEY, [storedLeft, middle, storedRight]);
+  }, []);
+
+  const handleSidebarContextChange = useCallback(
+    ({ open, isMobile, setOpen }: { open: boolean; isMobile: boolean; setOpen: (next: boolean) => void }) => {
+      leftSidebarSetOpenRef.current = setOpen;
+      leftSidebarIsMobileRef.current = isMobile;
+      const panel = leftSidebarPanelRef.current;
+      if (!panel) {
+        return;
+      }
+
+      if (isMobile) {
+        const currentSize = panel.getSize();
+        if (typeof currentSize === 'number' && currentSize > 0) {
+          lastLeftSidebarSizeRef.current = clampLeftSidebarSize(currentSize);
+        }
+        panel.collapse();
+        return;
+      }
+
+      if (open) {
+        const target = clampLeftSidebarSize(lastLeftSidebarSizeRef.current || DEFAULT_PANEL_LAYOUT[0]);
+        panel.expand();
+        panel.resize(target);
+      } else {
+        const currentSize = panel.getSize();
+        if (typeof currentSize === 'number' && currentSize > 0) {
+          lastLeftSidebarSizeRef.current = clampLeftSidebarSize(currentSize);
+        }
+        panel.collapse();
+      }
+    },
+    []
+  );
+
+  const handleRightSidebarCollapsedChange = useCallback((collapsed: boolean) => {
+    setRightSidebarCollapsed(collapsed);
+  }, []);
+
+  useEffect(() => {
+    const panel = rightSidebarPanelRef.current;
+    if (!panel) {
+      return;
+    }
+
+    if (rightSidebarCollapsed) {
+      panel.collapse();
+    } else {
+      const target = clampRightSidebarSize(
+        lastRightSidebarSizeRef.current || DEFAULT_PANEL_LAYOUT[2]
+      );
+      panel.expand();
+      panel.resize(target);
+    }
+  }, [rightSidebarCollapsed]);
 
   // Persist and apply custom project order (by id)
   const ORDER_KEY = 'sidebarProjectOrder';
@@ -571,10 +725,10 @@ const App: React.FC = () => {
   const renderMainContent = () => {
     if (showHomeView) {
       return (
-        <div className="flex-1 bg-background text-foreground overflow-y-auto">
-          <div className="container mx-auto px-4 py-8 flex flex-col justify-center min-h-full">
-            <div className="text-center mb-12">
-              <div className="flex items-center justify-center mb-4">
+        <div className="flex h-full flex-col bg-background text-foreground overflow-y-auto">
+          <div className="container mx-auto px-4 py-8 flex flex-1 flex-col justify-center min-h-full">
+            <div className="text-center mb-6">
+              <div className="flex items-center justify-center mb-2">
                 <div className="logo-shimmer-container">
                   <img src={emdashLogo} alt="emdash" className="logo-shimmer-image" />
                   <span
@@ -593,7 +747,7 @@ const App: React.FC = () => {
                   />
                 </div>
               </div>
-              <p className="text-sm sm:text-base text-gray-700 text-muted-foreground mb-6">
+              <p className="text-sm sm:text-base text-gray-700 text-muted-foreground">
                 Run multiple Coding Agents in parallel
               </p>
               <RequirementsNotice
@@ -604,7 +758,7 @@ const App: React.FC = () => {
               />
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
                 onClick={handleOpenProject}
                 size="lg"
@@ -646,8 +800,8 @@ const App: React.FC = () => {
     }
 
     return (
-      <div className="flex-1 bg-background text-foreground overflow-y-auto">
-        <div className="container mx-auto px-4 py-8 flex flex-col justify-center min-h-full">
+      <div className="flex h-full flex-col bg-background text-foreground overflow-y-auto">
+        <div className="container mx-auto px-4 py-8 flex flex-1 flex-col justify-center min-h-full">
           <div className="text-center mb-12">
             <div className="flex items-center justify-center mb-4">
               <img src={emdashLogo} alt="emdash" className="h-16" />
@@ -686,28 +840,72 @@ const App: React.FC = () => {
       style={{ '--tb': TITLEBAR_HEIGHT } as React.CSSProperties}
     >
       <SidebarProvider>
-        <RightSidebarProvider>
+        <RightSidebarProvider defaultCollapsed>
+          <RightSidebarBridge
+            onCollapsedChange={handleRightSidebarCollapsedChange}
+            setCollapsedRef={rightSidebarSetCollapsedRef}
+          />
           <SidebarHotkeys />
           <Titlebar />
           <div className="flex flex-1 overflow-hidden pt-[var(--tb)]">
-            <LeftSidebar
-              projects={projects}
-              selectedProject={selectedProject}
-              onSelectProject={handleSelectProject}
-              onGoHome={handleGoHome}
-              onSelectWorkspace={handleSelectWorkspace}
-              activeWorkspace={activeWorkspace || undefined}
-              onReorderProjects={handleReorderProjects}
-              onReorderProjectsFull={handleReorderProjectsFull}
-              githubInstalled={ghInstalled}
-              githubAuthenticated={isAuthenticated}
-              githubUser={user}
-            />
-
-            <div className="flex-1 overflow-hidden flex flex-col bg-background text-foreground">
-              {renderMainContent()}
-            </div>
-            <RightSidebar workspace={activeWorkspace} />
+            <ResizablePanelGroup
+              direction="horizontal"
+              className="flex-1 overflow-hidden"
+              onLayout={handlePanelLayout}
+            >
+              <ResizablePanel
+                ref={leftSidebarPanelRef}
+                defaultSize={defaultPanelLayout[0]}
+                minSize={LEFT_SIDEBAR_MIN_SIZE}
+                maxSize={LEFT_SIDEBAR_MAX_SIZE}
+                collapsedSize={0}
+                collapsible
+                order={1}
+              >
+                <LeftSidebar
+                  projects={projects}
+                  selectedProject={selectedProject}
+                  onSelectProject={handleSelectProject}
+                  onGoHome={handleGoHome}
+                  onSelectWorkspace={handleSelectWorkspace}
+                  activeWorkspace={activeWorkspace || undefined}
+                  onReorderProjects={handleReorderProjects}
+                  onReorderProjectsFull={handleReorderProjectsFull}
+                  githubInstalled={ghInstalled}
+                  githubAuthenticated={isAuthenticated}
+                  githubUser={user}
+                  onSidebarContextChange={handleSidebarContextChange}
+                />
+              </ResizablePanel>
+              <ResizableHandle
+                withHandle
+                className="hidden cursor-col-resize items-center justify-center transition-colors hover:bg-border/80 lg:flex"
+              />
+              <ResizablePanel
+                defaultSize={defaultPanelLayout[1]}
+                minSize={MAIN_PANEL_MIN_SIZE}
+                order={2}
+              >
+                <div className="flex h-full overflow-hidden flex-col bg-background text-foreground">
+                  {renderMainContent()}
+                </div>
+              </ResizablePanel>
+              <ResizableHandle
+                withHandle
+                className="hidden cursor-col-resize items-center justify-center transition-colors hover:bg-border/80 lg:flex"
+              />
+              <ResizablePanel
+                ref={rightSidebarPanelRef}
+                defaultSize={0}
+                minSize={RIGHT_SIDEBAR_MIN_SIZE}
+                maxSize={RIGHT_SIDEBAR_MAX_SIZE}
+                collapsedSize={0}
+                collapsible
+                order={3}
+              >
+                <RightSidebar workspace={activeWorkspace} className="lg:border-l-0" />
+              </ResizablePanel>
+            </ResizablePanelGroup>
           </div>
           <WorkspaceModal
             isOpen={showWorkspaceModal}
