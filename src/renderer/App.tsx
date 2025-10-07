@@ -888,6 +888,7 @@ const App: React.FC = () => {
             >
               <ResizablePanel
                 ref={leftSidebarPanelRef}
+                className="sidebar-panel sidebar-panel--left"
                 defaultSize={defaultPanelLayout[0]}
                 minSize={LEFT_SIDEBAR_MIN_SIZE}
                 maxSize={LEFT_SIDEBAR_MAX_SIZE}
@@ -915,6 +916,7 @@ const App: React.FC = () => {
                 className="hidden cursor-col-resize items-center justify-center transition-colors hover:bg-border/80 lg:flex"
               />
               <ResizablePanel
+                className="sidebar-panel sidebar-panel--main"
                 defaultSize={defaultPanelLayout[1]}
                 minSize={MAIN_PANEL_MIN_SIZE}
                 order={2}
@@ -929,6 +931,7 @@ const App: React.FC = () => {
               />
               <ResizablePanel
                 ref={rightSidebarPanelRef}
+                className="sidebar-panel sidebar-panel--right"
                 defaultSize={0}
                 minSize={RIGHT_SIDEBAR_MIN_SIZE}
                 maxSize={RIGHT_SIDEBAR_MAX_SIZE}
