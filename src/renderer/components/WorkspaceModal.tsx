@@ -4,12 +4,16 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Spinner } from './ui/spinner';
-import { X, GitBranch } from 'lucide-react';
+import { Switch } from './ui/switch';
+import { X, GitBranch, Settings } from 'lucide-react';
+import { ProviderSelector } from './ProviderSelector';
+import { type Provider } from '../types';
+import { Separator } from './ui/separator';
 
 interface WorkspaceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateWorkspace: (name: string) => void;
+  onCreateWorkspace: (name: string, initialPrompt?: string, selectedProvider?: Provider) => void;
   projectName: string;
   defaultBranch: string;
   existingNames?: string[];
@@ -24,6 +28,9 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   existingNames = [],
 }) => {
   const [workspaceName, setWorkspaceName] = useState('');
+  const [initialPrompt, setInitialPrompt] = useState('');
+  const [selectedProvider, setSelectedProvider] = useState<Provider>('codex');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
@@ -60,8 +67,15 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
 
     setIsCreating(true);
     try {
-      await onCreateWorkspace(workspaceName.trim());
+      await onCreateWorkspace(
+        workspaceName.trim(),
+        showAdvanced ? initialPrompt.trim() || undefined : undefined,
+        showAdvanced ? selectedProvider : undefined
+      );
       setWorkspaceName('');
+      setInitialPrompt('');
+      setSelectedProvider('codex');
+      setShowAdvanced(false);
       setError(null);
       onClose();
     } catch (error) {
@@ -139,12 +153,75 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                     )}
                   </div>
 
-                  <div className="flex items-center space-x-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <div className="flex items-center space-x-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
                     <GitBranch className="w-4 h-4 text-gray-500" />
                     <span className="text-sm text-gray-600 dark:text-gray-400">
                       {workspaceName || 'workspace-name'}
                     </span>
                   </div>
+
+                  <Separator />
+
+                  <div className="space-y-3">
+                    <div className="flex items-center gap-2">
+                      <Settings className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                      <label
+                        id="advanced-toggle-label"
+                        className="text-sm font-medium text-gray-900 dark:text-gray-100"
+                      >
+                        Advanced options
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <Switch
+                        id="advanced-toggle"
+                        checked={showAdvanced}
+                        onCheckedChange={setShowAdvanced}
+                      />
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        Choose agent and start it immediately with an initial prompt.
+                      </p>
+                    </div>
+                  </div>
+
+                  {showAdvanced && (
+                    <>
+                      <div>
+                        <label htmlFor="provider-selector" className="block text-sm font-medium">
+                          AI Provider
+                        </label>
+                        <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                          Choose coding agent for this workspace.
+                        </p>
+                        <ProviderSelector
+                          value={selectedProvider}
+                          onChange={setSelectedProvider}
+                          className="w-full"
+                        />
+                      </div>
+
+                      {(selectedProvider === 'codex' || selectedProvider === 'claude') && (
+                        <div>
+                          <label htmlFor="initial-prompt" className="block text-sm font-medium">
+                            Initial prompt
+                          </label>
+                          <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
+                            Optionally, add an initial prompt to help the agent get started.
+                          </p>
+                          <textarea
+                            id="initial-prompt"
+                            value={initialPrompt}
+                            onChange={(e) => setInitialPrompt(e.target.value)}
+                            placeholder={`Add an initial prompt for ${
+                              selectedProvider.charAt(0).toUpperCase() + selectedProvider.slice(1)
+                            }, outlining your goal and how you want to achieve it.`}
+                            className="w-full min-h-[80px] px-3 py-2 text-sm border border-input bg-background rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                            rows={3}
+                          />
+                        </div>
+                      )}
+                    </>
+                  )}
 
                   <div className="flex justify-end space-x-2">
                     <Button type="button" variant="outline" onClick={onClose} disabled={isCreating}>

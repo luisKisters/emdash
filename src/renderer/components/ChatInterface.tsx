@@ -31,21 +31,18 @@ interface Props {
   workspace: Workspace;
   projectName: string;
   className?: string;
+  initialProvider?: Provider;
 }
 
-const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) => {
+const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, initialProvider }) => {
   const { toast } = useToast();
   const [inputValue, setInputValue] = useState('');
   const [isCodexInstalled, setIsCodexInstalled] = useState<boolean | null>(null);
   const [isClaudeInstalled, setIsClaudeInstalled] = useState<boolean | null>(null);
   const [claudeInstructions, setClaudeInstructions] = useState<string | null>(null);
   const [agentCreated, setAgentCreated] = useState(false);
-  const [provider, setProvider] = useState<'codex' | 'claude' | 'droid' | 'gemini' | 'cursor'>(
-    'codex'
-  );
-  const [lockedProvider, setLockedProvider] = useState<
-    'codex' | 'claude' | 'droid' | 'gemini' | 'cursor' | null
-  >(null);
+  const [provider, setProvider] = useState<Provider>(initialProvider || 'codex');
+  const [lockedProvider, setLockedProvider] = useState<Provider | null>(null);
   const [hasDroidActivity, setHasDroidActivity] = useState(false);
   const [hasGeminiActivity, setHasGeminiActivity] = useState(false);
   const [hasCursorActivity, setHasCursorActivity] = useState(false);
@@ -67,31 +64,23 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
 
   // On workspace change, restore last-selected provider (including Droid).
   // If a locked provider exists (including Droid), prefer locked.
+  // If initialProvider is provided, use it as the highest priority.
   useEffect(() => {
     try {
       const lastKey = `provider:last:${workspace.id}`;
       const lockedKey = `provider:locked:${workspace.id}`;
-      const last = window.localStorage.getItem(lastKey) as
-        | 'codex'
-        | 'claude'
-        | 'droid'
-        | 'gemini'
-        | 'cursor'
-        | null;
-      const locked = window.localStorage.getItem(lockedKey) as
-        | 'codex'
-        | 'claude'
-        | 'droid'
-        | 'gemini'
-        | 'cursor'
-        | null;
+      const last = window.localStorage.getItem(lastKey) as Provider | null;
+      const locked = window.localStorage.getItem(lockedKey) as Provider | null;
 
       setLockedProvider(locked);
       setHasDroidActivity(locked === 'droid');
       setHasGeminiActivity(locked === 'gemini');
       setHasCursorActivity(locked === 'cursor');
 
-      if (locked === 'droid') {
+      // Priority: initialProvider > locked > last > default
+      if (initialProvider) {
+        setProvider(initialProvider);
+      } else if (locked === 'droid') {
         setProvider('droid');
       } else if (last === 'droid') {
         setProvider('droid');
@@ -111,9 +100,9 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
         setProvider('codex');
       }
     } catch {
-      setProvider('codex');
+      setProvider(initialProvider || 'codex');
     }
-  }, [workspace.id]);
+  }, [workspace.id, initialProvider]);
 
   // Persist last-selected provider per workspace (including Droid)
   useEffect(() => {
@@ -209,29 +198,50 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className }) =
 
     initializedConversationRef.current = convoId;
 
-    if (codexStream.messages.length === 0) {
-      const welcomeMessage: Message = {
-        id: `welcome-${Date.now()}`,
-        content: `Hello! You're working in workspace **${workspace.name}**. What can the agent do for you?`,
-        sender: 'agent',
-        timestamp: new Date(),
-      };
+    // Check if we need to add a welcome message
+    // This runs when messages are loaded but could be empty or contain initial prompt
+    const checkForWelcomeMessage = async () => {
+      if (codexStream.messages.length === 0) {
+        // Check database directly for any existing messages to see if there's an initial prompt
+        try {
+          const messagesResult = await window.electronAPI.getMessages(convoId);
+          if (messagesResult.success && messagesResult.messages) {
+            const hasInitialPrompt = messagesResult.messages.some((msg: any) => {
+              try {
+                const metadata = JSON.parse(msg.metadata || '{}');
+                return metadata.isInitialPrompt;
+              } catch {
+                return false;
+              }
+            });
 
-      window.electronAPI
-        .saveMessage({
-          id: welcomeMessage.id,
-          conversationId: convoId,
-          content: welcomeMessage.content,
-          sender: welcomeMessage.sender,
-          metadata: JSON.stringify({ isWelcome: true }),
-        })
-        .catch((error: unknown) => {
-          console.error('Failed to save welcome message:', error);
-        })
-        .finally(() => {
-          codexStream.appendMessage(welcomeMessage);
-        });
-    }
+            // Only add welcome message if there's no initial prompt and no messages at all
+            if (!hasInitialPrompt && messagesResult.messages.length === 0) {
+              const welcomeMessage: Message = {
+                id: `welcome-${Date.now()}`,
+                content: `Hello! You're working in workspace **${workspace.name}**. What can the agent do for you?`,
+                sender: 'agent',
+                timestamp: new Date(),
+              };
+
+              await window.electronAPI.saveMessage({
+                id: welcomeMessage.id,
+                conversationId: convoId,
+                content: welcomeMessage.content,
+                sender: welcomeMessage.sender,
+                metadata: JSON.stringify({ isWelcome: true }),
+              });
+
+              codexStream.appendMessage(welcomeMessage);
+            }
+          }
+        } catch (error) {
+          console.error('Failed to check for welcome message:', error);
+        }
+      }
+    };
+
+    checkForWelcomeMessage();
   }, [
     codexStream.isReady,
     codexStream.conversationId,

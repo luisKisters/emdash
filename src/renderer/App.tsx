@@ -15,6 +15,7 @@ import Titlebar from './components/titlebar/Titlebar';
 import { SidebarProvider, useSidebar } from './components/ui/sidebar';
 import { RightSidebarProvider, useRightSidebar } from './components/ui/right-sidebar';
 import RightSidebar from './components/RightSidebar';
+import { type Provider } from './types';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './components/ui/resizable';
 import { loadPanelSizes, savePanelSizes } from './lib/persisted-layout';
 import type { ImperativePanelHandle } from 'react-resizable-panels';
@@ -130,6 +131,7 @@ const App: React.FC = () => {
   const [showHomeView, setShowHomeView] = useState<boolean>(true);
   const [isCreatingWorkspace, setIsCreatingWorkspace] = useState<boolean>(false);
   const [activeWorkspace, setActiveWorkspace] = useState<Workspace | null>(null);
+  const [activeWorkspaceProvider, setActiveWorkspaceProvider] = useState<Provider | null>(null);
   const [isCodexInstalled, setIsCodexInstalled] = useState<boolean | null>(null);
   const [isClaudeInstalled, setIsClaudeInstalled] = useState<boolean | null>(null);
   const showGithubRequirement = !ghInstalled || !isAuthenticated;
@@ -364,8 +366,8 @@ const App: React.FC = () => {
                   platform === 'darwin'
                     ? 'Tip: Update GitHub CLI with: brew upgrade gh — then restart emdash.'
                     : platform === 'win32'
-                      ? 'Tip: Update GitHub CLI with: winget upgrade GitHub.cli — then restart emdash.'
-                      : 'Tip: Update GitHub CLI via your package manager (e.g., apt/dnf) and restart emdash.';
+                    ? 'Tip: Update GitHub CLI with: winget upgrade GitHub.cli — then restart emdash.'
+                    : 'Tip: Update GitHub CLI via your package manager (e.g., apt/dnf) and restart emdash.';
                 toast({
                   title: 'GitHub Connection Failed',
                   description: `Git repository detected but couldn't connect to GitHub: ${githubInfo.error}\n\n${updateHint}`,
@@ -433,7 +435,11 @@ const App: React.FC = () => {
     }
   };
 
-  const handleCreateWorkspace = async (workspaceName: string) => {
+  const handleCreateWorkspace = async (
+    workspaceName: string,
+    initialPrompt?: string,
+    selectedProvider?: Provider
+  ) => {
     if (!selectedProject) return;
 
     setIsCreatingWorkspace(true);
@@ -466,6 +472,98 @@ const App: React.FC = () => {
       });
 
       if (saveResult.success) {
+        // If there's an initial prompt, create conversation and save it as first message, then trigger agent response
+        if (initialPrompt) {
+          try {
+            const conversationResult = await window.electronAPI.getOrCreateDefaultConversation(
+              newWorkspace.id
+            );
+            if (conversationResult.success && conversationResult.conversation) {
+              const userMessage = {
+                id: `initial-${Date.now()}`,
+                conversationId: conversationResult.conversation.id,
+                content: initialPrompt,
+                sender: 'user' as const,
+                metadata: JSON.stringify({ isInitialPrompt: true }),
+              };
+
+              await window.electronAPI.saveMessage(userMessage);
+
+              // Trigger agent response to the initial prompt based on selected provider
+              await sendInitialPromptToProvider(selectedProvider || 'codex');
+
+              async function sendInitialPromptToProvider(provider: Provider) {
+                try {
+                  if (provider === 'codex') {
+                    // Check if Codex is installed
+                    const codexInstallResult = await window.electronAPI.codexCheckInstallation();
+                    if (codexInstallResult.success && codexInstallResult.isInstalled) {
+                      // Create Codex agent for the new workspace
+                      const codexAgentResult = await window.electronAPI.codexCreateAgent(
+                        newWorkspace.id,
+                        newWorkspace.path
+                      );
+
+                      if (codexAgentResult.success) {
+                        // Send the initial prompt to Codex
+                        await window.electronAPI.codexSendMessageStream(
+                          newWorkspace.id,
+                          initialPrompt || '',
+                          conversationResult.conversation.id ?? undefined
+                        );
+                      } else {
+                        console.error('Failed to create Codex agent:', codexAgentResult.error);
+                      }
+                    } else {
+                      console.warn('Codex not installed, skipping initial prompt');
+                    }
+                  } else if (provider === 'claude') {
+                    // Check if Claude is installed
+                    const claudeInstallResult = await window.electronAPI.agentCheckInstallation?.(
+                      'claude'
+                    );
+                    if (claudeInstallResult?.success && claudeInstallResult.isInstalled) {
+                      // Send the initial prompt to Claude
+                      const claudeArgs: {
+                        providerId: 'claude';
+                        workspaceId: string;
+                        worktreePath: string;
+                        message: string;
+                        conversationId?: string;
+                      } = {
+                        providerId: 'claude',
+                        workspaceId: newWorkspace.id,
+                        worktreePath: newWorkspace.path,
+                        message: initialPrompt || '',
+                      };
+                      if (
+                        conversationResult.conversation.id &&
+                        typeof conversationResult.conversation.id === 'string'
+                      ) {
+                        claudeArgs.conversationId = conversationResult.conversation.id;
+                      }
+                      await window.electronAPI.agentSendMessageStream(claudeArgs);
+                    } else {
+                      console.warn('Claude not installed, skipping initial prompt');
+                    }
+                  } else {
+                    // Terminal-based providers (droid, gemini, cursor) don't support initial prompts
+                    console.log(
+                      `Provider ${provider} is terminal-based, initial prompt will be ignored`
+                    );
+                  }
+                } catch (error) {
+                  console.error(`Failed to send initial prompt to ${provider}:`, error);
+                  // Don't fail workspace creation if agent response fails
+                }
+              }
+            }
+          } catch (promptError) {
+            console.error('Failed to save initial prompt:', promptError);
+            // Don't fail workspace creation if prompt saving fails
+          }
+        }
+
         setProjects((prev) =>
           prev.map((project) =>
             project.id === selectedProject.id
@@ -485,6 +583,10 @@ const App: React.FC = () => {
               }
             : null
         );
+
+        // Set the active workspace and its provider
+        setActiveWorkspace(newWorkspace);
+        setActiveWorkspaceProvider(selectedProvider || 'codex');
 
         toast({
           title: 'Workspace Created',
@@ -524,6 +626,7 @@ const App: React.FC = () => {
 
   const handleSelectWorkspace = (workspace: Workspace) => {
     setActiveWorkspace(workspace);
+    setActiveWorkspaceProvider(null); // Clear provider when switching workspaces
   };
 
   const handleDeleteWorkspace = async (targetProject: Project, workspace: Workspace) => {
@@ -680,6 +783,7 @@ const App: React.FC = () => {
               workspace={activeWorkspace}
               projectName={selectedProject.name}
               className="flex-1 min-h-0"
+              initialProvider={activeWorkspaceProvider || undefined}
             />
           ) : (
             <ProjectMainView
