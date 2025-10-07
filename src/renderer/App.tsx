@@ -93,8 +93,8 @@ interface Workspace {
 }
 
 const TITLEBAR_HEIGHT = '36px';
-const PANEL_LAYOUT_STORAGE_KEY = 'emdash.layout.left-main-right.v1';
-const DEFAULT_PANEL_LAYOUT: [number, number, number] = [24, 56, 20];
+const PANEL_LAYOUT_STORAGE_KEY = 'emdash.layout.left-main-right.v2';
+const DEFAULT_PANEL_LAYOUT: [number, number, number] = [20, 60, 20];
 const LEFT_SIDEBAR_MIN_SIZE = 16;
 const LEFT_SIDEBAR_MAX_SIZE = 30;
 const RIGHT_SIDEBAR_MIN_SIZE = 16;
@@ -141,12 +141,15 @@ const App: React.FC = () => {
   const defaultPanelLayout = React.useMemo(() => {
     const stored = loadPanelSizes(PANEL_LAYOUT_STORAGE_KEY, DEFAULT_PANEL_LAYOUT);
     const [storedLeft = DEFAULT_PANEL_LAYOUT[0], , storedRight = DEFAULT_PANEL_LAYOUT[2]] =
-      Array.isArray(stored) && stored.length === 3 ? stored : DEFAULT_PANEL_LAYOUT;
+      Array.isArray(stored) && stored.length === 3
+        ? (stored as [number, number, number])
+        : DEFAULT_PANEL_LAYOUT;
     const left = clampLeftSidebarSize(storedLeft);
     const right = clampRightSidebarSize(storedRight);
     const middle = Math.max(0, 100 - left - right);
     return [left, middle, right] as [number, number, number];
   }, []);
+
   const rightSidebarDefaultWidth = React.useMemo(
     () => clampRightSidebarSize(defaultPanelLayout[2]),
     [defaultPanelLayout]
@@ -157,6 +160,7 @@ const App: React.FC = () => {
   const lastRightSidebarSizeRef = useRef<number>(rightSidebarDefaultWidth);
   const leftSidebarSetOpenRef = useRef<((next: boolean) => void) | null>(null);
   const leftSidebarIsMobileRef = useRef<boolean>(false);
+  const leftSidebarOpenRef = useRef<boolean>(true);
   const rightSidebarSetCollapsedRef = useRef<((next: boolean) => void) | null>(null);
   const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState<boolean>(true);
 
@@ -170,15 +174,20 @@ const App: React.FC = () => {
     }
 
     const [leftSize, , rightSize] = sizes;
+    const rightCollapsed = typeof rightSize === 'number' && rightSize <= 0.5;
 
     let storedLeft = lastLeftSidebarSizeRef.current;
     if (typeof leftSize === 'number') {
       if (leftSize <= 0.5) {
         leftSidebarSetOpenRef.current?.(false);
+        leftSidebarOpenRef.current = false;
       } else {
         leftSidebarSetOpenRef.current?.(true);
-        storedLeft = clampLeftSidebarSize(leftSize);
-        lastLeftSidebarSizeRef.current = storedLeft;
+        leftSidebarOpenRef.current = true;
+        if (!rightCollapsed) {
+          storedLeft = clampLeftSidebarSize(leftSize);
+          lastLeftSidebarSizeRef.current = storedLeft;
+        }
       }
     }
 
@@ -209,6 +218,7 @@ const App: React.FC = () => {
     }) => {
       leftSidebarSetOpenRef.current = setOpen;
       leftSidebarIsMobileRef.current = isMobile;
+      leftSidebarOpenRef.current = open;
       const panel = leftSidebarPanelRef.current;
       if (!panel) {
         return;
@@ -245,20 +255,35 @@ const App: React.FC = () => {
   }, []);
 
   useEffect(() => {
-    const panel = rightSidebarPanelRef.current;
-    if (!panel) {
+    const rightPanel = rightSidebarPanelRef.current;
+    if (rightPanel) {
+      if (rightSidebarCollapsed) {
+        rightPanel.collapse();
+      } else {
+        const targetRight = clampRightSidebarSize(
+          lastRightSidebarSizeRef.current || DEFAULT_PANEL_LAYOUT[2]
+        );
+        lastRightSidebarSizeRef.current = targetRight;
+        rightPanel.expand();
+        rightPanel.resize(targetRight);
+      }
+    }
+
+    if (leftSidebarIsMobileRef.current || !leftSidebarOpenRef.current) {
       return;
     }
 
-    if (rightSidebarCollapsed) {
-      panel.collapse();
-    } else {
-      const target = clampRightSidebarSize(
-        lastRightSidebarSizeRef.current || DEFAULT_PANEL_LAYOUT[2]
-      );
-      panel.expand();
-      panel.resize(target);
+    const leftPanel = leftSidebarPanelRef.current;
+    if (!leftPanel) {
+      return;
     }
+
+    const targetLeft = clampLeftSidebarSize(
+      lastLeftSidebarSizeRef.current || DEFAULT_PANEL_LAYOUT[0]
+    );
+    lastLeftSidebarSizeRef.current = targetLeft;
+    leftPanel.expand();
+    leftPanel.resize(targetLeft);
   }, [rightSidebarCollapsed]);
 
   // Persist and apply custom project order (by id)
