@@ -49,9 +49,8 @@ const SidebarHotkeys: React.FC = () => {
 const RightSidebarBridge: React.FC<{
   onCollapsedChange: (collapsed: boolean) => void;
   setCollapsedRef: React.MutableRefObject<((next: boolean) => void) | null>;
-  setWidthRef: React.MutableRefObject<((next: number) => void) | null>;
-}> = ({ onCollapsedChange, setCollapsedRef, setWidthRef }) => {
-  const { collapsed, setCollapsed, setWidth } = useRightSidebar();
+}> = ({ onCollapsedChange, setCollapsedRef }) => {
+  const { collapsed, setCollapsed } = useRightSidebar();
 
   useEffect(() => {
     onCollapsedChange(collapsed);
@@ -59,12 +58,10 @@ const RightSidebarBridge: React.FC<{
 
   useEffect(() => {
     setCollapsedRef.current = setCollapsed;
-    setWidthRef.current = setWidth;
     return () => {
       setCollapsedRef.current = null;
-      setWidthRef.current = null;
     };
-  }, [setCollapsed, setWidth, setCollapsedRef, setWidthRef]);
+  }, [setCollapsed, setCollapsedRef]);
 
   return null;
 };
@@ -149,14 +146,17 @@ const App: React.FC = () => {
     const middle = Math.max(0, 100 - left - right);
     return [left, middle, right] as [number, number, number];
   }, []);
+  const rightSidebarDefaultWidth = React.useMemo(
+    () => clampRightSidebarSize(defaultPanelLayout[2]),
+    [defaultPanelLayout]
+  );
   const leftSidebarPanelRef = useRef<ImperativePanelHandle | null>(null);
   const rightSidebarPanelRef = useRef<ImperativePanelHandle | null>(null);
   const lastLeftSidebarSizeRef = useRef<number>(defaultPanelLayout[0]);
-  const lastRightSidebarSizeRef = useRef<number>(defaultPanelLayout[2]);
+  const lastRightSidebarSizeRef = useRef<number>(rightSidebarDefaultWidth);
   const leftSidebarSetOpenRef = useRef<((next: boolean) => void) | null>(null);
   const leftSidebarIsMobileRef = useRef<boolean>(false);
   const rightSidebarSetCollapsedRef = useRef<((next: boolean) => void) | null>(null);
-  const rightSidebarSetWidthRef = useRef<((next: number) => void) | null>(null);
   const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState<boolean>(true);
 
   const handlePanelLayout = useCallback((sizes: number[]) => {
@@ -189,7 +189,6 @@ const App: React.FC = () => {
         storedRight = clampRightSidebarSize(rightSize);
         lastRightSidebarSizeRef.current = storedRight;
         rightSidebarSetCollapsedRef.current?.(false);
-        rightSidebarSetWidthRef.current?.(storedRight);
       }
     }
 
@@ -248,7 +247,6 @@ const App: React.FC = () => {
       );
       panel.expand();
       panel.resize(target);
-      rightSidebarSetWidthRef.current?.(target);
     }
   }, [rightSidebarCollapsed]);
 
@@ -738,11 +736,10 @@ const App: React.FC = () => {
       style={{ '--tb': TITLEBAR_HEIGHT } as React.CSSProperties}
     >
       <SidebarProvider>
-        <RightSidebarProvider defaultWidth={defaultPanelLayout[2]}>
+        <RightSidebarProvider defaultCollapsed>
           <RightSidebarBridge
             onCollapsedChange={handleRightSidebarCollapsedChange}
             setCollapsedRef={rightSidebarSetCollapsedRef}
-            setWidthRef={rightSidebarSetWidthRef}
           />
           <SidebarHotkeys />
           <Titlebar />
@@ -795,7 +792,7 @@ const App: React.FC = () => {
               />
               <ResizablePanel
                 ref={rightSidebarPanelRef}
-                defaultSize={defaultPanelLayout[2]}
+                defaultSize={0}
                 minSize={RIGHT_SIDEBAR_MIN_SIZE}
                 maxSize={RIGHT_SIDEBAR_MAX_SIZE}
                 collapsedSize={0}
