@@ -175,8 +175,8 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
 
                   {workspaceName && (
                     <div className="flex items-center space-x-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                      <GitBranch className="w-4 h-4 text-gray-500" />
-                      <span className="text-sm text-gray-600 dark:text-gray-400">
+                      <GitBranch className="w-4 h-4 text-gray-500 flex-shrink-0" />
+                      <span className="text-sm text-gray-600 dark:text-gray-400 break-all overflow-hidden">
                         {convertToWorkspaceName(workspaceName)}
                       </span>
                     </div>
