@@ -548,10 +548,10 @@ const App: React.FC = () => {
   const renderMainContent = () => {
     if (showHomeView) {
       return (
-        <div className="flex-1 bg-background text-foreground overflow-y-auto">
-          <div className="container mx-auto px-4 py-8 flex flex-col justify-center min-h-full">
-            <div className="text-center mb-12">
-              <div className="flex items-center justify-center mb-4">
+        <div className="flex h-full flex-col bg-background text-foreground overflow-y-auto">
+          <div className="container mx-auto px-4 py-8 flex flex-1 flex-col justify-center min-h-full">
+            <div className="text-center mb-6">
+              <div className="flex items-center justify-center mb-2">
                 <div className="logo-shimmer-container">
                   <img src={emdashLogo} alt="emdash" className="logo-shimmer-image" />
                   <span
@@ -570,7 +570,7 @@ const App: React.FC = () => {
                   />
                 </div>
               </div>
-              <p className="text-sm sm:text-base text-gray-700 text-muted-foreground mb-6">
+              <p className="text-sm sm:text-base text-gray-700 text-muted-foreground">
                 Run multiple Coding Agents in parallel
               </p>
               <RequirementsNotice
@@ -581,7 +581,7 @@ const App: React.FC = () => {
               />
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Button
                 onClick={handleOpenProject}
                 size="lg"
@@ -622,8 +622,8 @@ const App: React.FC = () => {
     }
 
     return (
-      <div className="flex-1 bg-background text-foreground overflow-y-auto">
-        <div className="container mx-auto px-4 py-8 flex flex-col justify-center min-h-full">
+      <div className="flex h-full flex-col bg-background text-foreground overflow-y-auto">
+        <div className="container mx-auto px-4 py-8 flex flex-1 flex-col justify-center min-h-full">
           <div className="text-center mb-12">
             <div className="flex items-center justify-center mb-4">
               <img src={emdashLogo} alt="emdash" className="h-16" />
@@ -704,7 +704,7 @@ const App: React.FC = () => {
                 minSize={100 - SIDEBAR_MAX_SIZE}
                 order={2}
               >
-                <div className="flex-1 overflow-hidden flex flex-col bg-background text-foreground">
+                <div className="flex h-full overflow-hidden flex-col bg-background text-foreground">
                   {renderMainContent()}
                 </div>
               </ResizablePanel>
