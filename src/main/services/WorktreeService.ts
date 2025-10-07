@@ -78,14 +78,9 @@ export class WorktreeService {
       console.log('Git worktree stdout:', stdout);
       console.log('Git worktree stderr:', stderr);
 
-      // Check for errors in stderr
-      if (
-        stderr &&
-        !stderr.includes('Switched to a new branch') &&
-        !stderr.includes('Preparing worktree')
-      ) {
-        throw new Error(`Git worktree creation failed: ${stderr}`);
-      }
+      // Do not treat localized/progress stderr as failure.
+      // Many git commands emit progress to stderr; rely on exit code instead.
+      // If execFileAsync didn't throw, assume success and verify on-disk state below.
 
       // Verify the worktree was actually created
       if (!fs.existsSync(worktreePath)) {
