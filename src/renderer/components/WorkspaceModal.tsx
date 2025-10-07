@@ -128,20 +128,24 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
             }
             className="w-full max-w-md mx-4 will-change-transform transform-gpu"
           >
-            <Card className="w-full">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
-                <div>
-                  <CardTitle className="text-lg">New workspace</CardTitle>
-                  <CardDescription>
-                    {projectName} • Branching from origin/{defaultBranch}
-                  </CardDescription>
-                </div>
-                <Button variant="ghost" size="sm" onClick={onClose} className="h-8 w-8 p-0">
-                  <X className="h-4 w-4" />
-                </Button>
+            <Card className="w-full relative">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="absolute top-2 right-2 h-8 w-8 p-0 z-10"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+              <CardHeader className="space-y-0 pb-2 pr-12">
+                <CardTitle className="text-lg">Create a new workspace</CardTitle>
+                <CardDescription>
+                  {projectName} • Branching from origin/{defaultBranch}
+                </CardDescription>
               </CardHeader>
 
               <CardContent>
+                <Separator className="mb-2" />
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
                     <label htmlFor="workspace-name" className="block text-sm font-medium">
