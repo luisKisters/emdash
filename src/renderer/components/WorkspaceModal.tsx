@@ -39,19 +39,28 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
 
   const normalizedExisting = existingNames.map((n) => n.toLowerCase());
 
+  // Convert input to valid workspace name format
+  const convertToWorkspaceName = (input: string): string => {
+    return input
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .replace(/[^a-z0-9-]/g, '') // Remove invalid characters
+      .replace(/-+/g, '-') // Replace multiple consecutive hyphens with single hyphen
+      .replace(/^-+|-+$/g, ''); // Remove leading/trailing hyphens
+  };
+
   const validate = (value: string): string | null => {
     const name = value.trim();
     if (!name) return 'Please enter a workspace name.';
-    // Allow lowercase letters, numbers, and single hyphens between segments
-    // Must start/end with alphanumeric; no spaces; no consecutive hyphens
-    const pattern = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-    if (!pattern.test(name)) {
-      return 'Use lowercase letters, numbers, and hyphens (no spaces).';
-    }
-    if (normalizedExisting.includes(name.toLowerCase())) {
+
+    const convertedName = convertToWorkspaceName(name);
+    if (!convertedName) return 'Please enter a valid workspace name.';
+
+    if (normalizedExisting.includes(convertedName)) {
       return 'A workspace with this name already exists.';
     }
-    if (name.length > 64) {
+    if (convertedName.length > 64) {
       return 'Name is too long (max 64 characters).';
     }
     return null;
@@ -135,9 +144,13 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
               <CardContent>
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label htmlFor="workspace-name" className="block text-sm font-medium mb-2">
-                      What are you working on?
+                    <label htmlFor="workspace-name" className="block text-sm font-medium">
+                      Name your workspace
                     </label>
+                    <p className="text-xs text-gray-500 mb-2">
+                      This desciption will be formatted to a valid workspace name (lowercase, no
+                      spaces, no special characters).
+                    </p>
                     <Input
                       id="workspace-name"
                       value={workspaceName}
