@@ -13,11 +13,11 @@ export interface RightSidebarWorkspace {
   agentId?: string;
 }
 
-interface RightSidebarProps {
+interface RightSidebarProps extends React.HTMLAttributes<HTMLElement> {
   workspace: RightSidebarWorkspace | null;
 }
 
-const RightSidebar: React.FC<RightSidebarProps> = ({ workspace }) => {
+const RightSidebar: React.FC<RightSidebarProps> = ({ workspace, className, ...rest }) => {
   const { collapsed } = useRightSidebar();
 
   return (
@@ -25,9 +25,11 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ workspace }) => {
       data-state={collapsed ? 'collapsed' : 'open'}
       className={cn(
         'group/right-sidebar relative z-[60] flex h-full w-full min-w-0 flex-col border-l border-border bg-muted/10 transition-all duration-200 ease-linear overflow-hidden flex-shrink-0',
-        'data-[state=collapsed]:border-l-0 data-[state=collapsed]:pointer-events-none'
+        'data-[state=collapsed]:border-l-0 data-[state=collapsed]:pointer-events-none',
+        className
       )}
       aria-hidden={collapsed}
+      {...rest}
     >
       <div className="flex h-full w-full min-w-0 flex-col">
         {workspace ? (

@@ -802,7 +802,7 @@ const App: React.FC = () => {
                 collapsible
                 order={3}
               >
-                <RightSidebar workspace={activeWorkspace} />
+                <RightSidebar workspace={activeWorkspace} className="lg:border-l-0" />
               </ResizablePanel>
             </ResizablePanelGroup>
           </div>
