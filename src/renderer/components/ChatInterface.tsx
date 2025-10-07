@@ -352,7 +352,10 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
 
   return (
     <div className={`flex flex-col h-full bg-white dark:bg-gray-800 ${className}`}>
-      {provider === 'droid' || provider === 'gemini' || provider === 'cursor' || provider === 'copilot' ? (
+      {provider === 'droid' ||
+      provider === 'gemini' ||
+      provider === 'cursor' ||
+      provider === 'copilot' ? (
         <div className="flex-1 flex flex-col min-h-0">
           <div className="px-6 pt-4">
             <div className="max-w-4xl mx-auto">
@@ -483,12 +486,18 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
         onSend={handleSendMessage}
         onCancel={handleCancelStream}
         isLoading={
-          provider === 'droid' || provider === 'gemini' || provider === 'cursor' || provider === 'copilot'
+          provider === 'droid' ||
+          provider === 'gemini' ||
+          provider === 'cursor' ||
+          provider === 'copilot'
             ? false
             : activeStream.isStreaming
         }
         loadingSeconds={
-          provider === 'droid' || provider === 'gemini' || provider === 'cursor' || provider === 'copilot'
+          provider === 'droid' ||
+          provider === 'gemini' ||
+          provider === 'cursor' ||
+          provider === 'copilot'
             ? 0
             : activeStream.seconds
         }

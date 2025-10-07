@@ -292,14 +292,20 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
                 aria-label={
-                  provider === 'droid' || provider === 'gemini' || provider === 'cursor' || provider === 'copilot'
+                  provider === 'droid' ||
+                  provider === 'gemini' ||
+                  provider === 'cursor' ||
+                  provider === 'copilot'
                     ? 'Terminal-only provider'
                     : isLoading
                       ? 'Stop Codex'
                       : 'Send'
                 }
               >
-                {provider === 'droid' || provider === 'gemini' || provider === 'cursor' || provider === 'copilot' ? (
+                {provider === 'droid' ||
+                provider === 'gemini' ||
+                provider === 'cursor' ||
+                provider === 'copilot' ? (
                   <div className="flex items-center justify-center w-full h-full">
                     <div className="w-3.5 h-3.5 rounded-[3px] bg-gray-500 dark:bg-gray-300" />
                   </div>
