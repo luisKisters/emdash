@@ -64,7 +64,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   selectDisabled = false,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
-  // Provider is controlled by parent (codex | claude | droid | gemini | cursor)
+  // Provider is controlled by parent (codex | claude | droid | gemini | cursor | copilot)
   const shouldReduceMotion = useReducedMotion();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -190,6 +190,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     if (provider === 'droid') return 'Factory Droid uses the terminal above.';
     if (provider === 'gemini') return 'Gemini CLI uses the terminal above.';
     if (provider === 'cursor') return 'Cursor CLI runs in the terminal above.';
+    if (provider === 'copilot') return 'Copilot CLI runs in the terminal above.';
     return 'Tell Codex what to do...';
   };
 
@@ -200,11 +201,11 @@ export const ChatInput: React.FC<ChatInputProps> = ({
       ? !isCodexInstalled || !agentCreated
       : provider === 'claude'
         ? !agentCreated
-        : true); // droid/gemini/cursor: input disabled, terminal-only
+        : true); // droid/gemini/cursor/copilot: input disabled, terminal-only
 
   const textareaDisabled = baseDisabled || isLoading;
   const sendDisabled =
-    provider === 'droid' || provider === 'gemini' || provider === 'cursor'
+    provider === 'droid' || provider === 'gemini' || provider === 'cursor' || provider === 'copilot'
       ? true
       : isLoading
         ? baseDisabled
@@ -291,14 +292,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
                 aria-label={
-                  provider === 'droid' || provider === 'gemini' || provider === 'cursor'
+                  provider === 'droid' || provider === 'gemini' || provider === 'cursor' || provider === 'copilot'
                     ? 'Terminal-only provider'
                     : isLoading
                       ? 'Stop Codex'
                       : 'Send'
                 }
               >
-                {provider === 'droid' || provider === 'gemini' || provider === 'cursor' ? (
+                {provider === 'droid' || provider === 'gemini' || provider === 'cursor' || provider === 'copilot' ? (
                   <div className="flex items-center justify-center w-full h-full">
                     <div className="w-3.5 h-3.5 rounded-[3px] bg-gray-500 dark:bg-gray-300" />
                   </div>

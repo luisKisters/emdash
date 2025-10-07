@@ -15,7 +15,9 @@ export const TerminalModeBanner: React.FC<Props> = ({ provider, onOpenExternal }
       ? 'Interact with Droid in the terminal below. To install and get started, see the Factory CLI Quickstart:'
       : provider === 'gemini'
         ? 'Interact with Gemini in the terminal below. To install and get started, visit the Gemini CLI project:'
-        : 'Interact with Cursor in the terminal below. To install and get started, follow the Cursor CLI docs:';
+        : provider === 'cursor'
+          ? 'Interact with Cursor in the terminal below. To install and get started, follow the Cursor CLI docs:'
+          : 'Interact with Copilot in the terminal below. To install and get started, follow the GitHub Copilot CLI docs:';
 
   return (
     <div className="rounded-md border border-gray-200 bg-gray-50 text-gray-800 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-200 p-3 text-sm">
@@ -26,7 +28,7 @@ export const TerminalModeBanner: React.FC<Props> = ({ provider, onOpenExternal }
           onClick={() => onOpenExternal(helpUrl)}
           className="mt-1 underline text-gray-800 hover:text-gray-600 dark:text-gray-200 dark:hover:text-gray-100"
         >
-          {helpUrl}
+          Docs
         </button>
       ) : null}
       <div className="mt-2 text-xs opacity-90">

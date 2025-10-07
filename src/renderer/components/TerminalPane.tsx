@@ -122,11 +122,25 @@ const TerminalPaneComponent: React.FC<Props> = ({
     });
 
     // Listen for history first, then live data, then start/attach to PTY
+    const sanitizeEchoArtifacts = (chunk: string) => {
+      try {
+        // Strip common terminal response artifacts that sometimes get echoed by TTY in cooked mode
+        // Examples observed: "1;2c" (DA response) and similar patterns.
+        // 1) Remove proper ANSI DA responses if they appear in output stream
+        let s = chunk.replace(/\x1b\[\?\d+(?:;\d+)*c/g, '');
+        // 2) Remove bare echoed fragments like "1;2c" or "24;80R" when ESC sequences were stripped by echo
+        s = s.replace(/(^|[\s>])\d+(?:;\d+)*[cR](?=$|\s)/g, '$1');
+        return s;
+      } catch {
+        return chunk;
+      }
+    };
+
     const offHistory = (window as any).electronAPI.onPtyHistory?.(id, (data: string) => {
-      term.write(data);
+      term.write(sanitizeEchoArtifacts(data));
     });
     const offData = window.electronAPI.onPtyData(id, (data) => {
-      term.write(data);
+      term.write(sanitizeEchoArtifacts(data));
     });
     const handleResize = () => {
       if (termRef.current && el) {
