@@ -88,6 +88,22 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
 }) => {
   const { open, isMobile, setOpen } = useSidebar();
 
+  const githubProfileUrl = React.useMemo(() => {
+    if (!githubAuthenticated) {
+      return null;
+    }
+    const login = githubUser?.login?.trim();
+    return login ? `https://github.com/${login}` : null;
+  }, [githubAuthenticated, githubUser?.login]);
+
+  const handleGithubProfileClick = React.useCallback(() => {
+    if (!githubProfileUrl || typeof window === 'undefined') {
+      return;
+    }
+    const api = (window as any).electronAPI;
+    api?.openExternal?.(githubProfileUrl);
+  }, [githubProfileUrl]);
+
   React.useEffect(() => {
     onSidebarContextChange?.({ open, isMobile, setOpen });
   }, [open, isMobile, setOpen, onSidebarContextChange]);
@@ -230,9 +246,20 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
           <SidebarMenu className="w-full">
             <SidebarMenuItem>
               <SidebarMenuButton
-                tabIndex={-1}
-                onClick={(e) => e.preventDefault()}
-                className="flex w-full items-center justify-start gap-2 px-2 py-2 text-sm text-muted-foreground cursor-default hover:bg-transparent focus-visible:outline-none focus-visible:ring-0"
+                tabIndex={githubProfileUrl ? 0 : -1}
+                onClick={(e) => {
+                  if (!githubProfileUrl) {
+                    return;
+                  }
+                  e.preventDefault();
+                  handleGithubProfileClick();
+                }}
+                className={`flex w-full items-center justify-start gap-2 px-2 py-2 text-sm text-muted-foreground focus-visible:outline-none focus-visible:ring-0 ${
+                  githubProfileUrl
+                    ? 'hover:bg-black/5 dark:hover:bg-white/5'
+                    : 'cursor-default hover:bg-transparent'
+                }`}
+                aria-label={githubProfileUrl ? 'Open GitHub profile' : undefined}
               >
                 <div className="flex flex-1 flex-col min-w-0 text-left gap-1">
                   <div className="hidden sm:block truncate">{renderGithubStatus()}</div>
