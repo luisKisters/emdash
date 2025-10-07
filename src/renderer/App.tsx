@@ -67,7 +67,6 @@ const RightSidebarBridge: React.FC<{
   return null;
 };
 
-
 interface Project {
   id: string;
   name: string;
@@ -199,7 +198,15 @@ const App: React.FC = () => {
   }, []);
 
   const handleSidebarContextChange = useCallback(
-    ({ open, isMobile, setOpen }: { open: boolean; isMobile: boolean; setOpen: (next: boolean) => void }) => {
+    ({
+      open,
+      isMobile,
+      setOpen,
+    }: {
+      open: boolean;
+      isMobile: boolean;
+      setOpen: (next: boolean) => void;
+    }) => {
       leftSidebarSetOpenRef.current = setOpen;
       leftSidebarIsMobileRef.current = isMobile;
       const panel = leftSidebarPanelRef.current;
@@ -217,7 +224,9 @@ const App: React.FC = () => {
       }
 
       if (open) {
-        const target = clampLeftSidebarSize(lastLeftSidebarSizeRef.current || DEFAULT_PANEL_LAYOUT[0]);
+        const target = clampLeftSidebarSize(
+          lastLeftSidebarSizeRef.current || DEFAULT_PANEL_LAYOUT[0]
+        );
         panel.expand();
         panel.resize(target);
       } else {
@@ -366,8 +375,8 @@ const App: React.FC = () => {
                   platform === 'darwin'
                     ? 'Tip: Update GitHub CLI with: brew upgrade gh — then restart emdash.'
                     : platform === 'win32'
-                    ? 'Tip: Update GitHub CLI with: winget upgrade GitHub.cli — then restart emdash.'
-                    : 'Tip: Update GitHub CLI via your package manager (e.g., apt/dnf) and restart emdash.';
+                      ? 'Tip: Update GitHub CLI with: winget upgrade GitHub.cli — then restart emdash.'
+                      : 'Tip: Update GitHub CLI via your package manager (e.g., apt/dnf) and restart emdash.';
                 toast({
                   title: 'GitHub Connection Failed',
                   description: `Git repository detected but couldn't connect to GitHub: ${githubInfo.error}\n\n${updateHint}`,
@@ -519,9 +528,8 @@ const App: React.FC = () => {
                     }
                   } else if (provider === 'claude') {
                     // Check if Claude is installed
-                    const claudeInstallResult = await window.electronAPI.agentCheckInstallation?.(
-                      'claude'
-                    );
+                    const claudeInstallResult =
+                      await window.electronAPI.agentCheckInstallation?.('claude');
                     if (claudeInstallResult?.success && claudeInstallResult.isInstalled) {
                       // Send the initial prompt to Claude
                       const claudeArgs: {

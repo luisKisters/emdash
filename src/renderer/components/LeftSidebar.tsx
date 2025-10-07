@@ -69,7 +69,11 @@ interface LeftSidebarProps {
   githubInstalled?: boolean;
   githubAuthenticated?: boolean;
   githubUser?: { login?: string; name?: string } | null;
-  onSidebarContextChange?: (state: { open: boolean; isMobile: boolean; setOpen: (next: boolean) => void }) => void;
+  onSidebarContextChange?: (state: {
+    open: boolean;
+    isMobile: boolean;
+    setOpen: (next: boolean) => void;
+  }) => void;
 }
 
 const LeftSidebar: React.FC<LeftSidebarProps> = ({
