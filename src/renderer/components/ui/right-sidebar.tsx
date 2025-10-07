@@ -11,8 +11,8 @@ interface RightSidebarContextValue {
 const RightSidebarContext = React.createContext<RightSidebarContextValue | undefined>(undefined);
 
 const COLLAPSED_STORAGE_KEY = 'emdash.rightSidebarCollapsed.v2';
-const WIDTH_STORAGE_KEY = 'emdash.rightSidebarWidth';
-const DEFAULT_WIDTH = 320; // Tailwind w-80 => 20rem => 320px
+const WIDTH_STORAGE_KEY = 'emdash.rightSidebarWidth.v2';
+const DEFAULT_WIDTH = 20;
 
 export interface RightSidebarProviderProps {
   children: React.ReactNode;

@@ -46,6 +46,30 @@ const SidebarHotkeys: React.FC = () => {
   return null;
 };
 
+const RightSidebarBridge: React.FC<{
+  onCollapsedChange: (collapsed: boolean) => void;
+  setCollapsedRef: React.MutableRefObject<((next: boolean) => void) | null>;
+  setWidthRef: React.MutableRefObject<((next: number) => void) | null>;
+}> = ({ onCollapsedChange, setCollapsedRef, setWidthRef }) => {
+  const { collapsed, setCollapsed, setWidth } = useRightSidebar();
+
+  useEffect(() => {
+    onCollapsedChange(collapsed);
+  }, [collapsed, onCollapsedChange]);
+
+  useEffect(() => {
+    setCollapsedRef.current = setCollapsed;
+    setWidthRef.current = setWidth;
+    return () => {
+      setCollapsedRef.current = null;
+      setWidthRef.current = null;
+    };
+  }, [setCollapsed, setWidth, setCollapsedRef, setWidthRef]);
+
+  return null;
+};
+
+
 interface Project {
   id: string;
   name: string;
@@ -72,15 +96,23 @@ interface Workspace {
 }
 
 const TITLEBAR_HEIGHT = '36px';
-const LEFT_PANEL_LAYOUT_STORAGE_KEY = 'emdash.layout.left-main';
-const DEFAULT_LEFT_PANEL_LAYOUT: [number, number] = [24, 76];
-const SIDEBAR_MIN_SIZE = 16;
-const SIDEBAR_MAX_SIZE = 30;
-const clampSidebarSize = (value: number) =>
+const PANEL_LAYOUT_STORAGE_KEY = 'emdash.layout.left-main-right.v1';
+const DEFAULT_PANEL_LAYOUT: [number, number, number] = [24, 56, 20];
+const LEFT_SIDEBAR_MIN_SIZE = 16;
+const LEFT_SIDEBAR_MAX_SIZE = 30;
+const RIGHT_SIDEBAR_MIN_SIZE = 14;
+const RIGHT_SIDEBAR_MAX_SIZE = 36;
+const clampLeftSidebarSize = (value: number) =>
   Math.min(
-    Math.max(Number.isFinite(value) ? value : DEFAULT_LEFT_PANEL_LAYOUT[0], SIDEBAR_MIN_SIZE),
-    SIDEBAR_MAX_SIZE
+    Math.max(Number.isFinite(value) ? value : DEFAULT_PANEL_LAYOUT[0], LEFT_SIDEBAR_MIN_SIZE),
+    LEFT_SIDEBAR_MAX_SIZE
   );
+const clampRightSidebarSize = (value: number) =>
+  Math.min(
+    Math.max(Number.isFinite(value) ? value : DEFAULT_PANEL_LAYOUT[2], RIGHT_SIDEBAR_MIN_SIZE),
+    RIGHT_SIDEBAR_MAX_SIZE
+  );
+const MAIN_PANEL_MIN_SIZE = 30;
 
 const App: React.FC = () => {
   const { toast } = useToast();
@@ -109,45 +141,67 @@ const App: React.FC = () => {
   const showAgentRequirement = isCodexInstalled === false && isClaudeInstalled === false;
 
   const defaultPanelLayout = React.useMemo(() => {
-    const stored = loadPanelSizes(LEFT_PANEL_LAYOUT_STORAGE_KEY, DEFAULT_LEFT_PANEL_LAYOUT);
-    const initialLeft = clampSidebarSize(stored?.[0] ?? DEFAULT_LEFT_PANEL_LAYOUT[0]);
-    return [initialLeft, 100 - initialLeft] as [number, number];
+    const stored = loadPanelSizes(PANEL_LAYOUT_STORAGE_KEY, DEFAULT_PANEL_LAYOUT);
+    const [storedLeft = DEFAULT_PANEL_LAYOUT[0], , storedRight = DEFAULT_PANEL_LAYOUT[2]] =
+      Array.isArray(stored) && stored.length === 3 ? stored : DEFAULT_PANEL_LAYOUT;
+    const left = clampLeftSidebarSize(storedLeft);
+    const right = clampRightSidebarSize(storedRight);
+    const middle = Math.max(0, 100 - left - right);
+    return [left, middle, right] as [number, number, number];
   }, []);
-  const sidebarPanelRef = useRef<ImperativePanelHandle | null>(null);
-  const lastSidebarSizeRef = useRef<number>(defaultPanelLayout[0]);
-  const sidebarSetOpenRef = useRef<((next: boolean) => void) | null>(null);
-  const sidebarIsMobileRef = useRef<boolean>(false);
+  const leftSidebarPanelRef = useRef<ImperativePanelHandle | null>(null);
+  const rightSidebarPanelRef = useRef<ImperativePanelHandle | null>(null);
+  const lastLeftSidebarSizeRef = useRef<number>(defaultPanelLayout[0]);
+  const lastRightSidebarSizeRef = useRef<number>(defaultPanelLayout[2]);
+  const leftSidebarSetOpenRef = useRef<((next: boolean) => void) | null>(null);
+  const leftSidebarIsMobileRef = useRef<boolean>(false);
+  const rightSidebarSetCollapsedRef = useRef<((next: boolean) => void) | null>(null);
+  const rightSidebarSetWidthRef = useRef<((next: number) => void) | null>(null);
+  const [rightSidebarCollapsed, setRightSidebarCollapsed] = useState<boolean>(true);
 
   const handlePanelLayout = useCallback((sizes: number[]) => {
-    if (!Array.isArray(sizes) || sizes.length < 2) {
+    if (!Array.isArray(sizes) || sizes.length < 3) {
       return;
     }
 
-    if (sidebarIsMobileRef.current) {
+    if (leftSidebarIsMobileRef.current) {
       return;
     }
 
-    const [leftSize] = sizes;
-    if (typeof leftSize !== 'number') {
-      return;
+    const [leftSize, , rightSize] = sizes;
+
+    let storedLeft = lastLeftSidebarSizeRef.current;
+    if (typeof leftSize === 'number') {
+      if (leftSize <= 0.5) {
+        leftSidebarSetOpenRef.current?.(false);
+      } else {
+        leftSidebarSetOpenRef.current?.(true);
+        storedLeft = clampLeftSidebarSize(leftSize);
+        lastLeftSidebarSizeRef.current = storedLeft;
+      }
     }
 
-    if (leftSize <= 0.5) {
-      sidebarSetOpenRef.current?.(false);
-      return;
+    let storedRight = lastRightSidebarSizeRef.current;
+    if (typeof rightSize === 'number') {
+      if (rightSize <= 0.5) {
+        rightSidebarSetCollapsedRef.current?.(true);
+      } else {
+        storedRight = clampRightSidebarSize(rightSize);
+        lastRightSidebarSizeRef.current = storedRight;
+        rightSidebarSetCollapsedRef.current?.(false);
+        rightSidebarSetWidthRef.current?.(storedRight);
+      }
     }
 
-    sidebarSetOpenRef.current?.(true);
-    const clamped = clampSidebarSize(leftSize);
-    lastSidebarSizeRef.current = clamped;
-    savePanelSizes(LEFT_PANEL_LAYOUT_STORAGE_KEY, [clamped, 100 - clamped]);
+    const middle = Math.max(0, 100 - storedLeft - storedRight);
+    savePanelSizes(PANEL_LAYOUT_STORAGE_KEY, [storedLeft, middle, storedRight]);
   }, []);
 
   const handleSidebarContextChange = useCallback(
     ({ open, isMobile, setOpen }: { open: boolean; isMobile: boolean; setOpen: (next: boolean) => void }) => {
-      sidebarSetOpenRef.current = setOpen;
-      sidebarIsMobileRef.current = isMobile;
-      const panel = sidebarPanelRef.current;
+      leftSidebarSetOpenRef.current = setOpen;
+      leftSidebarIsMobileRef.current = isMobile;
+      const panel = leftSidebarPanelRef.current;
       if (!panel) {
         return;
       }
@@ -155,26 +209,48 @@ const App: React.FC = () => {
       if (isMobile) {
         const currentSize = panel.getSize();
         if (typeof currentSize === 'number' && currentSize > 0) {
-          lastSidebarSizeRef.current = clampSidebarSize(currentSize);
+          lastLeftSidebarSizeRef.current = clampLeftSidebarSize(currentSize);
         }
         panel.collapse();
         return;
       }
 
       if (open) {
-        const target = clampSidebarSize(lastSidebarSizeRef.current || DEFAULT_LEFT_PANEL_LAYOUT[0]);
+        const target = clampLeftSidebarSize(lastLeftSidebarSizeRef.current || DEFAULT_PANEL_LAYOUT[0]);
         panel.expand();
         panel.resize(target);
       } else {
         const currentSize = panel.getSize();
         if (typeof currentSize === 'number' && currentSize > 0) {
-          lastSidebarSizeRef.current = clampSidebarSize(currentSize);
+          lastLeftSidebarSizeRef.current = clampLeftSidebarSize(currentSize);
         }
         panel.collapse();
       }
     },
     []
   );
+
+  const handleRightSidebarCollapsedChange = useCallback((collapsed: boolean) => {
+    setRightSidebarCollapsed(collapsed);
+  }, []);
+
+  useEffect(() => {
+    const panel = rightSidebarPanelRef.current;
+    if (!panel) {
+      return;
+    }
+
+    if (rightSidebarCollapsed) {
+      panel.collapse();
+    } else {
+      const target = clampRightSidebarSize(
+        lastRightSidebarSizeRef.current || DEFAULT_PANEL_LAYOUT[2]
+      );
+      panel.expand();
+      panel.resize(target);
+      rightSidebarSetWidthRef.current?.(target);
+    }
+  }, [rightSidebarCollapsed]);
 
   // Persist and apply custom project order (by id)
   const ORDER_KEY = 'sidebarProjectOrder';
@@ -662,7 +738,12 @@ const App: React.FC = () => {
       style={{ '--tb': TITLEBAR_HEIGHT } as React.CSSProperties}
     >
       <SidebarProvider>
-        <RightSidebarProvider>
+        <RightSidebarProvider defaultWidth={defaultPanelLayout[2]}>
+          <RightSidebarBridge
+            onCollapsedChange={handleRightSidebarCollapsedChange}
+            setCollapsedRef={rightSidebarSetCollapsedRef}
+            setWidthRef={rightSidebarSetWidthRef}
+          />
           <SidebarHotkeys />
           <Titlebar />
           <div className="flex flex-1 overflow-hidden pt-[var(--tb)]">
@@ -672,10 +753,10 @@ const App: React.FC = () => {
               onLayout={handlePanelLayout}
             >
               <ResizablePanel
-                ref={sidebarPanelRef}
+                ref={leftSidebarPanelRef}
                 defaultSize={defaultPanelLayout[0]}
-                minSize={SIDEBAR_MIN_SIZE}
-                maxSize={SIDEBAR_MAX_SIZE}
+                minSize={LEFT_SIDEBAR_MIN_SIZE}
+                maxSize={LEFT_SIDEBAR_MAX_SIZE}
                 collapsedSize={0}
                 collapsible
                 order={1}
@@ -701,15 +782,29 @@ const App: React.FC = () => {
               />
               <ResizablePanel
                 defaultSize={defaultPanelLayout[1]}
-                minSize={100 - SIDEBAR_MAX_SIZE}
+                minSize={MAIN_PANEL_MIN_SIZE}
                 order={2}
               >
                 <div className="flex h-full overflow-hidden flex-col bg-background text-foreground">
                   {renderMainContent()}
                 </div>
               </ResizablePanel>
+              <ResizableHandle
+                withHandle
+                className="hidden cursor-col-resize items-center justify-center transition-colors hover:bg-border/80 lg:flex"
+              />
+              <ResizablePanel
+                ref={rightSidebarPanelRef}
+                defaultSize={defaultPanelLayout[2]}
+                minSize={RIGHT_SIDEBAR_MIN_SIZE}
+                maxSize={RIGHT_SIDEBAR_MAX_SIZE}
+                collapsedSize={0}
+                collapsible
+                order={3}
+              >
+                <RightSidebar workspace={activeWorkspace} />
+              </ResizablePanel>
             </ResizablePanelGroup>
-            <RightSidebar workspace={activeWorkspace} />
           </div>
           <WorkspaceModal
             isOpen={showWorkspaceModal}

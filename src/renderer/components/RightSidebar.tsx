@@ -18,24 +18,18 @@ interface RightSidebarProps {
 }
 
 const RightSidebar: React.FC<RightSidebarProps> = ({ workspace }) => {
-  const { collapsed, width } = useRightSidebar();
-  const resolvedWidth = Math.max(width, 0);
-  const style = {
-    '--right-sidebar-width': `${resolvedWidth}px`,
-  } as React.CSSProperties;
+  const { collapsed } = useRightSidebar();
 
   return (
     <aside
       data-state={collapsed ? 'collapsed' : 'open'}
       className={cn(
-        'group/right-sidebar relative z-[60] flex h-full flex-col border-l border-border bg-muted/10 transition-all duration-200 ease-linear overflow-hidden flex-shrink-0',
-        'w-[var(--right-sidebar-width,20rem)] min-w-[var(--right-sidebar-width,20rem)]',
-        'data-[state=collapsed]:w-0 data-[state=collapsed]:min-w-0 data-[state=collapsed]:border-l-0 data-[state=collapsed]:pointer-events-none'
+        'group/right-sidebar relative z-[60] flex h-full w-full min-w-0 flex-col border-l border-border bg-muted/10 transition-all duration-200 ease-linear overflow-hidden flex-shrink-0',
+        'data-[state=collapsed]:border-l-0 data-[state=collapsed]:pointer-events-none'
       )}
-      style={style}
       aria-hidden={collapsed}
     >
-      <div className="flex h-full w-[var(--right-sidebar-width,20rem)] min-w-[var(--right-sidebar-width,20rem)] flex-shrink-0 flex-col">
+      <div className="flex h-full w-full min-w-0 flex-col">
         {workspace ? (
           <div className="flex h-full flex-col">
             <FileChangesPanel
