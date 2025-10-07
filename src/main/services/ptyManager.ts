@@ -29,7 +29,7 @@ export function startPty(options: {
 
   const useShell = shell || getDefaultShell();
   const useCwd = cwd || process.cwd() || os.homedir();
-  const useEnv = { ...process.env, ...(env || {}) };
+  const useEnv = { TERM: 'xterm-256color', ...process.env, ...(env || {}) };
 
   const proc = pty.spawn(useShell, [], {
     name: 'xterm-256color',

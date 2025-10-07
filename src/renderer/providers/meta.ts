@@ -1,4 +1,4 @@
-export type UiProvider = 'codex' | 'claude' | 'droid' | 'gemini' | 'cursor';
+export type UiProvider = 'codex' | 'claude' | 'droid' | 'gemini' | 'cursor' | 'copilot';
 
 export type ProviderMeta = {
   label: string;
@@ -39,5 +39,12 @@ export const providerMeta: Record<UiProvider, ProviderMeta> = {
     terminalOnly: true,
     cli: 'cursor-agent',
     helpUrl: 'https://cursor.com/install',
+  },
+  copilot: {
+    label: 'Copilot',
+    icon: '../../assets/images/ghcopilot.png',
+    terminalOnly: true,
+    cli: 'copilot',
+    helpUrl: 'https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli',
   },
 };

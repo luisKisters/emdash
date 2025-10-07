@@ -15,6 +15,7 @@ import claudeLogo from '../../assets/images/claude.png';
 import factoryLogo from '../../assets/images/factorydroid.png';
 import geminiLogo from '../../assets/images/gemini.png';
 import cursorLogo from '../../assets/images/cursorlogo.png';
+import copilotLogo from '../../assets/images/ghcopilot.png';
 
 interface ProviderSelectorProps {
   value: Provider;
@@ -48,6 +49,11 @@ const providerConfig = {
     name: 'Cursor',
     logo: cursorLogo,
     alt: 'Cursor CLI',
+  },
+  copilot: {
+    name: 'Copilot',
+    logo: copilotLogo,
+    alt: 'GitHub Copilot CLI',
   },
 } as const;
 

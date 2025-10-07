@@ -46,6 +46,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
   const [hasDroidActivity, setHasDroidActivity] = useState(false);
   const [hasGeminiActivity, setHasGeminiActivity] = useState(false);
   const [hasCursorActivity, setHasCursorActivity] = useState(false);
+  const [hasCopilotActivity, setHasCopilotActivity] = useState(false);
   const initializedConversationRef = useRef<string | null>(null);
 
   const codexStream = useCodexStream({
@@ -76,6 +77,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
       setHasDroidActivity(locked === 'droid');
       setHasGeminiActivity(locked === 'gemini');
       setHasCursorActivity(locked === 'cursor');
+      setHasCopilotActivity(locked === 'copilot');
 
       // Priority: initialProvider > locked > last > default
       if (initialProvider) {
@@ -92,6 +94,10 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
         setProvider('cursor');
       } else if (last === 'cursor') {
         setProvider('cursor');
+      } else if (locked === 'copilot') {
+        setProvider('copilot');
+      } else if (last === 'copilot') {
+        setProvider('copilot');
       } else if (locked === 'codex' || locked === 'claude') {
         setProvider(locked);
       } else if (last === 'codex' || last === 'claude') {
@@ -123,8 +129,9 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
       const droidLocked = provider === 'droid' && hasDroidActivity;
       const geminiLocked = provider === 'gemini' && hasGeminiActivity;
       const cursorLocked = provider === 'cursor' && hasCursorActivity;
+      const copilotLocked = provider === 'copilot' && hasCopilotActivity;
 
-      if (userLocked || droidLocked || geminiLocked || cursorLocked) {
+      if (userLocked || droidLocked || geminiLocked || cursorLocked || copilotLocked) {
         window.localStorage.setItem(`provider:locked:${workspace.id}`, provider);
         setLockedProvider(provider);
       }
@@ -345,7 +352,10 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
 
   return (
     <div className={`flex flex-col h-full bg-white dark:bg-gray-800 ${className}`}>
-      {provider === 'droid' || provider === 'gemini' || provider === 'cursor' ? (
+      {provider === 'droid' ||
+      provider === 'gemini' ||
+      provider === 'cursor' ||
+      provider === 'copilot' ? (
         <div className="flex-1 flex flex-col min-h-0">
           <div className="px-6 pt-4">
             <div className="max-w-4xl mx-auto">
@@ -394,7 +404,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
                   variant="light"
                   className="h-full w-full"
                 />
-              ) : (
+              ) : provider === 'cursor' ? (
                 <TerminalPane
                   id={`cursor-main-${workspace.id}`}
                   cwd={workspace.path}
@@ -405,6 +415,22 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
                       setHasCursorActivity(true);
                       window.localStorage.setItem(`provider:locked:${workspace.id}`, 'cursor');
                       setLockedProvider('cursor');
+                    } catch {}
+                  }}
+                  variant="light"
+                  className="h-full w-full"
+                />
+              ) : (
+                <TerminalPane
+                  id={`copilot-main-${workspace.id}`}
+                  cwd={workspace.path}
+                  shell={providerMeta.copilot.cli}
+                  keepAlive={true}
+                  onActivity={() => {
+                    try {
+                      setHasCopilotActivity(true);
+                      window.localStorage.setItem(`provider:locked:${workspace.id}`, 'copilot');
+                      setLockedProvider('copilot');
                     } catch {}
                   }}
                   variant="light"
@@ -460,12 +486,18 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
         onSend={handleSendMessage}
         onCancel={handleCancelStream}
         isLoading={
-          provider === 'droid' || provider === 'gemini' || provider === 'cursor'
+          provider === 'droid' ||
+          provider === 'gemini' ||
+          provider === 'cursor' ||
+          provider === 'copilot'
             ? false
             : activeStream.isStreaming
         }
         loadingSeconds={
-          provider === 'droid' || provider === 'gemini' || provider === 'cursor'
+          provider === 'droid' ||
+          provider === 'gemini' ||
+          provider === 'cursor' ||
+          provider === 'copilot'
             ? 0
             : activeStream.seconds
         }
@@ -479,6 +511,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
           provider === 'droid' ||
           provider === 'gemini' ||
           provider === 'cursor' ||
+          provider === 'copilot' ||
           (provider === 'claude' && isClaudeInstalled === false)
         }
       />
