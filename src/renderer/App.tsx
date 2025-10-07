@@ -100,8 +100,8 @@ const PANEL_LAYOUT_STORAGE_KEY = 'emdash.layout.left-main-right.v1';
 const DEFAULT_PANEL_LAYOUT: [number, number, number] = [24, 56, 20];
 const LEFT_SIDEBAR_MIN_SIZE = 16;
 const LEFT_SIDEBAR_MAX_SIZE = 30;
-const RIGHT_SIDEBAR_MIN_SIZE = 14;
-const RIGHT_SIDEBAR_MAX_SIZE = 36;
+const RIGHT_SIDEBAR_MIN_SIZE = 16;
+const RIGHT_SIDEBAR_MAX_SIZE = 30;
 const clampLeftSidebarSize = (value: number) =>
   Math.min(
     Math.max(Number.isFinite(value) ? value : DEFAULT_PANEL_LAYOUT[0], LEFT_SIDEBAR_MIN_SIZE),
