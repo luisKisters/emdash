@@ -14,6 +14,7 @@ import openaiLogo from '../../assets/images/openai.png';
 import claudeLogo from '../../assets/images/claude.png';
 import factoryLogo from '../../assets/images/factorydroid.png';
 import geminiLogo from '../../assets/images/gemini.png';
+import cursorLogo from '../../assets/images/cursorlogo.png';
 
 interface ProviderSelectorProps {
   value: Provider;
@@ -42,6 +43,11 @@ const providerConfig = {
     name: 'Gemini',
     logo: geminiLogo,
     alt: 'Gemini CLI',
+  },
+  cursor: {
+    name: 'Cursor',
+    logo: cursorLogo,
+    alt: 'Cursor CLI',
   },
 } as const;
 

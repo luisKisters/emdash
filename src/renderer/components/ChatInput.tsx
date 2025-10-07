@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
 import { ArrowRight } from 'lucide-react';
+// Provider selection handled by ProviderSelector component
 import { useFileIndex } from '../hooks/useFileIndex';
 import FileTypeIcon from './ui/file-type-icon';
 import { ProviderSelector } from './ProviderSelector';
@@ -63,7 +64,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   selectDisabled = false,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
-  // Provider is controlled by parent (codex | claude | droid | gemini)
+  // Provider is controlled by parent (codex | claude | droid | gemini | cursor)
   const shouldReduceMotion = useReducedMotion();
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -188,6 +189,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     if (provider === 'claude') return 'Tell Claude Code what to do...';
     if (provider === 'droid') return 'Factory Droid uses the terminal above.';
     if (provider === 'gemini') return 'Gemini CLI uses the terminal above.';
+    if (provider === 'cursor') return 'Cursor CLI runs in the terminal above.';
     return 'Tell Codex what to do...';
   };
 
@@ -197,15 +199,16 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     (provider === 'codex'
       ? !isCodexInstalled || !agentCreated
       : provider === 'claude'
-      ? !agentCreated
-      : true); // droid/gemini: input disabled, terminal-only
+        ? !agentCreated
+        : true); // droid/gemini/cursor: input disabled, terminal-only
+
   const textareaDisabled = baseDisabled || isLoading;
   const sendDisabled =
-    provider === 'droid' || provider === 'gemini'
+    provider === 'droid' || provider === 'gemini' || provider === 'cursor'
       ? true
       : isLoading
-      ? baseDisabled
-      : baseDisabled || !trimmedValue;
+        ? baseDisabled
+        : baseDisabled || !trimmedValue;
 
   return (
     <div className="px-6 pt-4 pb-6">
@@ -265,11 +268,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
           <div className="flex items-center justify-between px-4 py-3 rounded-b-xl">
             <ProviderSelector
-              value={provider}
+              value={provider as Provider}
               onChange={(v) => {
-                if (!selectDisabled && onProviderChange) {
-                  onProviderChange(v);
-                }
+                if (!selectDisabled && onProviderChange) onProviderChange(v);
               }}
               disabled={selectDisabled}
             />
@@ -290,14 +291,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                     : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
                 aria-label={
-                  provider === 'droid' || provider === 'gemini'
+                  provider === 'droid' || provider === 'gemini' || provider === 'cursor'
                     ? 'Terminal-only provider'
                     : isLoading
-                    ? 'Stop Codex'
-                    : 'Send'
+                      ? 'Stop Codex'
+                      : 'Send'
                 }
               >
-                {provider === 'droid' || provider === 'gemini' ? (
+                {provider === 'droid' || provider === 'gemini' || provider === 'cursor' ? (
                   <div className="flex items-center justify-center w-full h-full">
                     <div className="w-3.5 h-3.5 rounded-[3px] bg-gray-500 dark:bg-gray-300" />
                   </div>

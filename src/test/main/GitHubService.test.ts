@@ -38,7 +38,7 @@ vi.mock('child_process', () => {
   };
 
   // Avoid TS7022 by annotating via any-cast for the Symbol-based property
-  ;(execImpl as any)[promisify.custom] = (command: string, options?: any) => {
+  (execImpl as any)[promisify.custom] = (command: string, options?: any) => {
     return new Promise<{ stdout: string; stderr: string }>((resolve, reject) => {
       execImpl(command, options, (err: any, stdout: string, stderr: string) => {
         if (err) {
@@ -92,4 +92,3 @@ describe('GitHubService.isAuthenticated', () => {
     expect(setPasswordMock).toHaveBeenCalledWith('emdash-github', 'github-token', 'gho_mocktoken');
   });
 });
-
