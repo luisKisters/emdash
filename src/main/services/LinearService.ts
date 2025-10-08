@@ -120,7 +120,7 @@ export class LinearService {
 
     const query = `
       query SearchIssues($term: String!, $limit: Int!) {
-        searchIssues(query: $term, first: $limit) {
+        searchIssues(term: $term, first: $limit) {
           nodes {
             id
             identifier
