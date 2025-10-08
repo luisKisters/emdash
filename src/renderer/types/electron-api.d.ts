@@ -215,6 +215,13 @@ declare global {
         issues?: any[];
         error?: string;
       }>;
+      linearListIssues?: (
+        limit?: number
+      ) => Promise<{
+        success: boolean;
+        issues?: any[];
+        error?: string;
+      }>;
 
       // Database operations
       getProjects: () => Promise<any[]>;

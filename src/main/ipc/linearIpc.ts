@@ -49,6 +49,32 @@ export function registerLinearIpc() {
       return { success: false, error: message };
     }
   });
+
+  ipcMain.handle('linear:listIssues', async (_event, limit?: number) => {
+    console.log('[Linear IPC] listIssues requested', {
+      limit: typeof limit === 'number' && Number.isFinite(limit) ? limit : undefined,
+      timestamp: new Date().toISOString(),
+    });
+    try {
+      const issues = await linearService.listIssues(
+        typeof limit === 'number' && Number.isFinite(limit) ? limit : undefined
+      );
+      console.log('[Linear IPC] listIssues succeeded', {
+        count: Array.isArray(issues) ? issues.length : null,
+        timestamp: new Date().toISOString(),
+      });
+      return { success: true, issues };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unable to load Linear issues right now.';
+      console.error('[Linear IPC] listIssues failed', {
+        error: message,
+        originalError: error,
+        timestamp: new Date().toISOString(),
+      });
+      return { success: false, error: message };
+    }
+  });
 }
 
 export default registerLinearIpc;

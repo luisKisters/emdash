@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
@@ -6,11 +6,19 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Input } from './ui/input';
 import { Spinner } from './ui/spinner';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
-import { X, GitBranch, Plus, Search, Loader2 } from 'lucide-react';
+import { X, GitBranch, ChevronDown } from 'lucide-react';
 import { ProviderSelector } from './ProviderSelector';
 import { type Provider } from '../types';
 import { Separator } from './ui/separator';
 import { type LinearIssueSummary } from '../types/linear';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectItemText,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 
 interface WorkspaceModalProps {
   isOpen: boolean;
@@ -36,15 +44,18 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
-  const [issueSearchTerm, setIssueSearchTerm] = useState('');
-  const [issueSearchResults, setIssueSearchResults] = useState<LinearIssueSummary[]>([]);
-  const [issueSearchError, setIssueSearchError] = useState<string | null>(null);
-  const [isSearchingIssues, setIsSearchingIssues] = useState(false);
-  const [isIssueDropdownOpen, setIsIssueDropdownOpen] = useState(false);
-  const [selectedIssue, setSelectedIssue] = useState<LinearIssueSummary | null>(null);
-  const issueInputRef = useRef<HTMLInputElement | null>(null);
-  const issueDropdownRef = useRef<HTMLDivElement | null>(null);
+  const [availableIssues, setAvailableIssues] = useState<LinearIssueSummary[]>([]);
+  const [isLoadingIssues, setIsLoadingIssues] = useState(false);
+  const [issueListError, setIssueListError] = useState<string | null>(null);
+  const [selectedIssueIdentifier, setSelectedIssueIdentifier] = useState<string>('');
+  const [hasRequestedIssues, setHasRequestedIssues] = useState(false);
   const shouldReduceMotion = useReducedMotion();
+  const selectedIssue = useMemo(
+    () =>
+      availableIssues.find((issue) => issue.identifier === selectedIssueIdentifier) ?? null,
+    [availableIssues, selectedIssueIdentifier]
+  );
+  const issuesLoaded = availableIssues.length > 0;
 
   const normalizedExisting = existingNames.map((n) => n.toLowerCase());
 
@@ -94,6 +105,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
       setWorkspaceName('');
       setInitialPrompt('');
       setSelectedProvider('codex');
+      setSelectedIssueIdentifier('');
       setShowAdvanced(false);
       setError(null);
       onClose();
@@ -110,101 +122,78 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
     setError(validate(val));
   };
 
-  const canSearchLinear =
-    typeof window !== 'undefined' && !!window.electronAPI?.linearSearchIssues;
+  const canListLinear =
+    typeof window !== 'undefined' && !!window.electronAPI?.linearListIssues;
+
+  const isMountedRef = useRef(true);
 
   useEffect(() => {
-    if (!isIssueDropdownOpen) return;
-
-    const handleClick = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (issueDropdownRef.current?.contains(target)) return;
-      if (issueInputRef.current?.contains(target)) return;
-      setIsIssueDropdownOpen(false);
-    };
-
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIsIssueDropdownOpen(false);
-        issueInputRef.current?.blur();
-      }
-    };
-
-    document.addEventListener('mousedown', handleClick);
-    document.addEventListener('keydown', handleKey);
     return () => {
-      document.removeEventListener('mousedown', handleClick);
-      document.removeEventListener('keydown', handleKey);
+      isMountedRef.current = false;
     };
-  }, [isIssueDropdownOpen]);
+  }, []);
 
-  useEffect(() => {
-    if (!canSearchLinear || !isIssueDropdownOpen) return;
-
-    const term = issueSearchTerm.trim();
-    if (!term) {
-      setIssueSearchResults([]);
-      setIssueSearchError(null);
-      setIsSearchingIssues(false);
+  const loadLinearIssues = useCallback(async () => {
+    if (!canListLinear) {
       return;
     }
 
-    setIsSearchingIssues(true);
-    let cancelled = false;
-    const handle = setTimeout(async () => {
-      try {
-        const api = window.electronAPI;
-        if (!api?.linearSearchIssues) {
-          throw new Error('Linear search unavailable in this build.');
-        }
-        const result = await api.linearSearchIssues(term, 8);
-        if (cancelled) return;
-        if (!result?.success) {
-          throw new Error(result?.error || 'Failed to search Linear issues.');
-        }
-        setIssueSearchResults(result.issues ?? []);
-        setIssueSearchError(null);
-      } catch (error) {
-        if (cancelled) return;
-        setIssueSearchResults([]);
-        setIssueSearchError(
-          error instanceof Error ? error.message : 'Failed to search Linear issues.'
-        );
-      } finally {
-        if (!cancelled) {
-          setIsSearchingIssues(false);
-        }
-      }
-    }, 250);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(handle);
-    };
-  }, [issueSearchTerm, canSearchLinear, isIssueDropdownOpen]);
-
-  const handleSelectIssue = (issue: LinearIssueSummary) => {
-    setSelectedIssue(issue);
-    setIssueSearchTerm(issue.identifier);
-    setIssueSearchResults([]);
-    setIssueSearchError(null);
-    setIsIssueDropdownOpen(false);
-  };
-
-  const handleIssueInputChange = (value: string) => {
-    setSelectedIssue(null);
-    setIssueSearchTerm(value);
-    if (canSearchLinear && !isIssueDropdownOpen) {
-      setIsIssueDropdownOpen(true);
+    const api = window.electronAPI;
+    if (!api?.linearListIssues) {
+      setAvailableIssues([]);
+      setIssueListError('Linear issue list unavailable in this build.');
+      setHasRequestedIssues(true);
+      return;
     }
+
+    setIsLoadingIssues(true);
+    try {
+      const result = await api.linearListIssues();
+      if (!isMountedRef.current) return;
+      if (!result?.success) {
+        throw new Error(result?.error || 'Failed to load Linear issues.');
+      }
+      setAvailableIssues(result.issues ?? []);
+      setIssueListError(null);
+    } catch (error) {
+      if (!isMountedRef.current) return;
+      setAvailableIssues([]);
+      setIssueListError(
+        error instanceof Error ? error.message : 'Failed to load Linear issues.'
+      );
+    } finally {
+      if (!isMountedRef.current) return;
+      setIsLoadingIssues(false);
+      setHasRequestedIssues(true);
+    }
+  }, [canListLinear]);
+
+  useEffect(() => {
+    if (!isOpen || !showAdvanced || !canListLinear) {
+      return;
+    }
+    if (isLoadingIssues || hasRequestedIssues) {
+      return;
+    }
+    loadLinearIssues();
+  }, [isOpen, showAdvanced, canListLinear, isLoadingIssues, hasRequestedIssues, loadLinearIssues]);
+
+  const retryLoadIssues = () => {
+    if (isLoadingIssues) return;
+    setIssueListError(null);
+    setAvailableIssues([]);
+    setHasRequestedIssues(false);
   };
 
   const issueHelperText = (() => {
-    if (!canSearchLinear) {
-      return 'Connect Linear in Settings to search issues.';
+    if (!canListLinear) {
+      return 'Connect Linear in Settings to browse issues.';
     }
     if (selectedIssue) {
       return selectedIssue.title;
+    }
+    if (hasRequestedIssues && !isLoadingIssues && !issuesLoaded && !issueListError) {
+      return 'No Linear issues available.';
     }
     return null;
   })();
@@ -339,76 +328,71 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                             >
                               Linear issue
                             </label>
-                            <div className="relative flex-1" ref={issueDropdownRef}>
-                              <Input
-                                id="linear-issue"
-                                ref={issueInputRef}
-                                value={issueSearchTerm}
-                                onFocus={() => {
-                                  if (canSearchLinear) {
-                                    setIsIssueDropdownOpen(true);
-                                  }
-                                }}
-                                onChange={(event) => handleIssueInputChange(event.target.value)}
-                                placeholder={
-                                  canSearchLinear ? 'Search Linear issues…' : 'Linear search unavailable'
-                                }
-                                className="w-full pr-10"
-                                autoComplete="off"
-                              />
-                              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground">
-                                {isSearchingIssues ? (
-                                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                                ) : (
-                                  <Search className="h-4 w-4" aria-hidden="true" />
-                                )}
-                              </span>
-
-                              {isIssueDropdownOpen && canSearchLinear && (
-                                <div className="absolute left-0 right-0 top-[calc(100%+0.375rem)] z-40 rounded-md border border-border bg-popover text-popover-foreground shadow-lg">
-                                  {issueSearchError ? (
-                                    <div className="px-3 py-2 text-xs text-destructive">
-                                      {issueSearchError}
-                                    </div>
-                                  ) : issueSearchTerm.trim().length === 0 ? (
-                                    <div className="px-3 py-2 text-xs text-muted-foreground">
-                                      Start typing to search your Linear issues.
-                                    </div>
-                                  ) : issueSearchResults.length === 0 && !isSearchingIssues ? (
-                                    <div className="px-3 py-2 text-xs text-muted-foreground">
-                                      No issues found.
-                                    </div>
-                                  ) : (
-                                    <div className="max-h-60 overflow-y-auto py-1">
-                                      {issueSearchResults.map((issue) => (
-                                        <button
+                            <div className="flex-1">
+                              {canListLinear ? (
+                                <>
+                                  <Select
+                                    value={selectedIssueIdentifier || undefined}
+                                    onValueChange={setSelectedIssueIdentifier}
+                                    disabled={isLoadingIssues || !!issueListError || !issuesLoaded}
+                                  >
+                                    <SelectTrigger className="w-full pr-10">
+                                      <SelectValue
+                                        placeholder={
+                                          isLoadingIssues
+                                            ? 'Loading issues…'
+                                            : issueListError
+                                              ? 'Unable to load issues'
+                                              : 'Select a Linear issue'
+                                        }
+                                      />
+                                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {availableIssues.map((issue) => (
+                                        <SelectItem
                                           key={issue.id || issue.identifier}
-                                          type="button"
-                                          onClick={() => handleSelectIssue(issue)}
-                                          className="w-full px-3 py-2 text-left text-sm hover:bg-muted/80"
+                                          value={issue.identifier}
                                         >
-                                          <div className="font-medium text-foreground">
+                                          <SelectItemText>
                                             {issue.identifier}
-                                          </div>
-                                          <div className="text-xs text-muted-foreground truncate">
-                                            {issue.title}
-                                          </div>
-                                          <div className="mt-1 flex gap-2 text-[11px] text-muted-foreground">
-                                            {issue.team?.key ? <span>{issue.team.key}</span> : null}
-                                            {issue.state?.name ? <span>{issue.state.name}</span> : null}
-                                            {issue.assignee?.displayName
-                                              ? <span>{issue.assignee.displayName}</span>
-                                              : null}
-                                          </div>
-                                        </button>
+                                            {issue.title ? ` - ${issue.title}` : ''}
+                                          </SelectItemText>
+                                        </SelectItem>
                                       ))}
+                                    </SelectContent>
+                                  </Select>
+                                  {issueListError ? (
+                                    <div className="mt-2 flex items-center gap-2 text-xs text-destructive">
+                                      <span className="truncate">{issueListError}</span>
+                                      <button
+                                        type="button"
+                                        onClick={retryLoadIssues}
+                                        className="font-medium underline-offset-2 hover:underline"
+                                      >
+                                        Retry
+                                      </button>
                                     </div>
-                                  )}
-                                </div>
+                                  ) : null}
+                                  {issueHelperText ? (
+                                    <p className="mt-2 text-xs text-muted-foreground">
+                                      {issueHelperText}
+                                    </p>
+                                  ) : null}
+                                </>
+                              ) : (
+                                <>
+                                  <Input
+                                    id="linear-issue"
+                                    value=""
+                                    placeholder="Linear integration unavailable"
+                                    disabled
+                                  />
+                                  <p className="mt-2 text-xs text-muted-foreground">
+                                    Connect Linear in Settings to browse issues.
+                                  </p>
+                                </>
                               )}
-                              {issueHelperText ? (
-                                <p className="mt-2 text-xs text-muted-foreground">{issueHelperText}</p>
-                              ) : null}
                             </div>
                           </div>
                         </div>
