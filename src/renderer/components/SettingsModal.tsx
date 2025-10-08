@@ -3,7 +3,8 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
-import { X } from 'lucide-react';
+import { X, Settings2, User } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -11,6 +12,41 @@ interface SettingsModalProps {
 }
 
 type SettingsTab = 'general' | 'account';
+
+const TAB_DETAILS: Record<SettingsTab, {
+  icon: LucideIcon;
+  label: string;
+  title: string;
+  description: string;
+  sections: Array<{ title: string; description: string }>;
+}> = {
+  general: {
+    icon: Settings2,
+    label: 'General',
+    title: 'General',
+    description: '',
+    sections: [
+      {
+        title: 'Workspace defaults',
+        description: 'General configuration options will appear here soon.',
+      },
+    ],
+  },
+  account: {
+    icon: User,
+    label: 'Account',
+    title: 'Account',
+    description: '',
+    sections: [
+      {
+        title: 'Profile & security',
+        description: 'Account settings will appear here soon.',
+      },
+    ],
+  },
+};
+
+const ORDERED_TABS: SettingsTab[] = ['general', 'account'];
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
@@ -36,42 +72,25 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     return () => window.removeEventListener('keydown', handler);
   }, [isOpen, onClose]);
 
+  const activeTabDetails = TAB_DETAILS[activeTab];
+
   const renderContent = () => {
-    switch (activeTab) {
-      case 'account':
-        return (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-lg font-semibold">Account</h2>
-              <p className="text-sm text-muted-foreground">
-                Manage your personal details and authentication preferences.
-              </p>
-            </div>
-            <div className="rounded-lg border border-border/60 bg-muted/40 p-4">
-              <p className="text-sm text-muted-foreground">
-                Account settings will appear here soon.
-              </p>
-            </div>
-          </div>
-        );
-      case 'general':
-      default:
-        return (
-          <div className="space-y-6">
-            <div>
-              <h2 className="text-lg font-semibold">General</h2>
-              <p className="text-sm text-muted-foreground">
-                Customize your default experience across emdash.
-              </p>
-            </div>
-            <div className="rounded-lg border border-border/60 bg-muted/40 p-4">
-              <p className="text-sm text-muted-foreground">
-                General configuration options will appear here soon.
-              </p>
-            </div>
-          </div>
-        );
+    const { sections } = activeTabDetails;
+
+    if (!sections.length) {
+      return null;
     }
+
+    return (
+      <div className="space-y-6">
+        {sections.map((section) => (
+          <div key={section.title} className="rounded-lg border border-border/60 bg-muted/40 p-4">
+            <h3 className="text-sm font-semibold text-foreground">{section.title}</h3>
+            <p className="mt-1 text-sm text-muted-foreground">{section.description}</p>
+          </div>
+        ))}
+      </div>
+    );
   };
 
   return createPortal(
@@ -103,35 +122,36 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           >
             <div className="flex h-[520px]">
               <aside className="w-60 border-r border-border/60 bg-muted/20 p-6">
-                <div className="mb-6">
-                  <h1 className="text-xl font-semibold">Settings</h1>
-                  <p className="text-xs text-muted-foreground">Configure how emdash behaves.</p>
-                </div>
                 <nav className="space-y-1">
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('general')}
-                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${activeTab === 'general' ? 'bg-primary/10 text-foreground' : 'text-muted-foreground hover:bg-muted/60'}`}
-                  >
-                    <span>General</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTab('account')}
-                    className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${activeTab === 'account' ? 'bg-primary/10 text-foreground' : 'text-muted-foreground hover:bg-muted/60'}`}
-                  >
-                    <span>Account</span>
-                  </button>
+                  {ORDERED_TABS.map((tab) => {
+                    const { icon: Icon, label } = TAB_DETAILS[tab];
+
+                    return (
+                      <button
+                        key={tab}
+                        type="button"
+                        onClick={() => setActiveTab(tab)}
+                        className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${activeTab === tab ? 'bg-primary/10 text-foreground' : 'text-muted-foreground hover:bg-muted/60'}`}
+                      >
+                        <span className="flex items-center gap-2">
+                          <Icon className="h-4 w-4" aria-hidden="true" />
+                          <span>{label}</span>
+                        </span>
+                      </button>
+                    );
+                  })}
                 </nav>
               </aside>
 
-              <div className="flex flex-1 flex-col">
+                <div className="flex flex-1 flex-col">
                 <header className="flex items-center justify-between border-b border-border/60 px-6 py-4">
                   <div>
-                    <span className="text-xs uppercase tracking-[0.2em] text-muted-foreground">
-                      {activeTab}
-                    </span>
-                    <h2 className="text-lg font-semibold capitalize">{activeTab}</h2>
+                    <h2 className="text-lg font-semibold">{activeTabDetails.title}</h2>
+                    {activeTabDetails.description.trim() && (
+                      <p className="mt-1 text-sm text-muted-foreground">
+                        {activeTabDetails.description}
+                      </p>
+                    )}
                   </div>
                   <Button
                     type="button"
