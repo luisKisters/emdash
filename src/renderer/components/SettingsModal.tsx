@@ -51,34 +51,31 @@ const LinearIntegrationCard: React.FC = () => {
     let cancelled = false;
 
     const checkConnection = async () => {
+      const api = window.electronAPI;
+      if (!api?.linearCheckConnection) {
+        setStatus('error');
+        setMessage('Linear integration is unavailable in this build.');
+        return;
+      }
+
       try {
-        const api = window.electronAPI;
-        if (api?.linearCheckConnection) {
-          const result = await api.linearCheckConnection();
-          if (cancelled) return;
-          if (result?.connected) {
-            markConnected(result.workspaceName ?? null);
-          } else {
-            markDisconnected();
+        const result = await api.linearCheckConnection();
+        if (cancelled) return;
+
+        if (result?.connected) {
+          markConnected(result.workspaceName ?? null);
+        } else {
+          markDisconnected();
+          if (result?.error) {
+            setStatus('error');
+            setMessage(result.error);
           }
-          return;
         }
       } catch (error) {
         console.error('Failed to check Linear connection:', error);
         if (!cancelled) {
           setStatus('error');
           setMessage('Unable to verify Linear connection.');
-        }
-        return;
-      }
-
-      if (!cancelled) {
-        const cached =
-          typeof window !== 'undefined' ? window.localStorage.getItem('linear:connected') : null;
-        if (cached === 'true') {
-          markConnected();
-        } else {
-          markDisconnected();
         }
       }
     };
@@ -99,16 +96,16 @@ const LinearIntegrationCard: React.FC = () => {
 
     try {
       const api = window.electronAPI;
-      if (api?.linearSaveToken) {
-        const result = await api.linearSaveToken(trimmedKey);
-        if (!result?.success) {
-          throw new Error(result?.error || 'Failed to connect to Linear.');
-        }
-        markConnected(result.workspaceName ?? null);
-      } else {
-        console.warn('Linear IPC not available; falling back to local status only.');
-        markConnected();
+      if (!api?.linearSaveToken) {
+        throw new Error('Linear integration is unavailable in this build.');
       }
+
+      const result = await api.linearSaveToken(trimmedKey);
+      if (!result?.success) {
+        throw new Error(result?.error || 'Failed to connect to Linear.');
+      }
+
+      markConnected(result.workspaceName ?? null);
       setApiKey('');
     } catch (error) {
       console.error('Linear connection failed:', error);
