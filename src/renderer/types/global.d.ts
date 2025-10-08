@@ -108,6 +108,21 @@ declare global {
       githubLogout: () => Promise<void>;
       getSettings: () => Promise<any>;
       updateSettings: (settings: any) => Promise<void>;
+      linearCheckConnection?: () => Promise<{
+        connected: boolean;
+        workspaceName?: string;
+      }>;
+      linearSaveToken?: (
+        token: string
+      ) => Promise<{
+        success: boolean;
+        workspaceName?: string;
+        error?: string;
+      }>;
+      linearClearToken?: () => Promise<{
+        success: boolean;
+        error?: string;
+      }>;
       // Database methods
       getProjects: () => Promise<any[]>;
       saveProject: (project: any) => Promise<{ success: boolean; error?: string }>;

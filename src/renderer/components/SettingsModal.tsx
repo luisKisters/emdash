@@ -1,8 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
+import { Input } from './ui/input';
 import { X, Settings2, User } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 
@@ -13,12 +14,191 @@ interface SettingsModalProps {
 
 type SettingsTab = 'general' | 'account';
 
+interface SettingsSection {
+  title: string;
+  description?: string;
+  Component?: React.ComponentType;
+}
+
+const LinearIntegrationCard: React.FC = () => {
+  const [apiKey, setApiKey] = useState('');
+  const [status, setStatus] = useState<'unknown' | 'connected' | 'disconnected' | 'error'>(
+    'unknown'
+  );
+  const [workspaceName, setWorkspaceName] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const markConnected = useCallback((name?: string | null) => {
+    setStatus('connected');
+    setWorkspaceName(name ?? null);
+    setMessage(`Connected${name ? ` to ${name}` : ''}.`);
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('linear:connected', 'true');
+    }
+  }, []);
+
+  const markDisconnected = useCallback(() => {
+    setStatus('disconnected');
+    setWorkspaceName(null);
+    setMessage('Not connected.');
+    if (typeof window !== 'undefined') {
+      window.localStorage.removeItem('linear:connected');
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkConnection = async () => {
+      try {
+        const api = window.electronAPI;
+        if (api?.linearCheckConnection) {
+          const result = await api.linearCheckConnection();
+          if (cancelled) return;
+          if (result?.connected) {
+            markConnected(result.workspaceName ?? null);
+          } else {
+            markDisconnected();
+          }
+          return;
+        }
+      } catch (error) {
+        console.error('Failed to check Linear connection:', error);
+        if (!cancelled) {
+          setStatus('error');
+          setMessage('Unable to verify Linear connection.');
+        }
+        return;
+      }
+
+      if (!cancelled) {
+        const cached =
+          typeof window !== 'undefined' ? window.localStorage.getItem('linear:connected') : null;
+        if (cached === 'true') {
+          markConnected();
+        } else {
+          markDisconnected();
+        }
+      }
+    };
+
+    checkConnection();
+    return () => {
+      cancelled = true;
+    };
+  }, [markConnected, markDisconnected]);
+
+  const handleConnect = async () => {
+    if (!apiKey.trim()) return;
+    setIsSubmitting(true);
+    setMessage(null);
+
+    try {
+      const api = window.electronAPI;
+      if (api?.linearSaveToken) {
+        const result = await api.linearSaveToken(apiKey.trim());
+        if (!result?.success) {
+          throw new Error(result?.error || 'Failed to connect to Linear.');
+        }
+        markConnected(result.workspaceName ?? null);
+      } else {
+        console.warn('Linear IPC not available; falling back to local status only.');
+        markConnected();
+      }
+      setApiKey('');
+    } catch (error) {
+      console.error('Linear connection failed:', error);
+      setStatus('error');
+      setMessage(error instanceof Error ? error.message : 'Failed to connect to Linear.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleDisconnect = async () => {
+    setIsSubmitting(true);
+    setMessage(null);
+
+    try {
+      const api = window.electronAPI;
+      if (api?.linearClearToken) {
+        const result = await api.linearClearToken();
+        if (!result?.success) {
+          throw new Error(result?.error || 'Failed to disconnect from Linear.');
+        }
+      }
+      markDisconnected();
+    } catch (error) {
+      console.error('Linear disconnect failed:', error);
+      setStatus('error');
+      setMessage(error instanceof Error ? error.message : 'Failed to disconnect from Linear.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const isConnected = status === 'connected';
+
+  return (
+    <div className="space-y-4">
+      <div className="space-y-2">
+        <label htmlFor="linear-api-key" className="text-sm font-medium text-foreground">
+          Personal API key
+        </label>
+        <Input
+          id="linear-api-key"
+          type="password"
+          placeholder="lin_api_..."
+          autoComplete="off"
+          value={apiKey}
+          onChange={(event) => setApiKey(event.target.value)}
+          disabled={isSubmitting}
+        />
+        <p className="text-xs text-muted-foreground">
+          Paste a Linear personal API key with read access to issues. Keys are stored securely in your
+          system keychain.
+        </p>
+      </div>
+
+      <div className="flex items-center gap-2">
+        <Button type="button" onClick={handleConnect} disabled={!apiKey.trim() || isSubmitting}>
+          {isSubmitting ? 'Connecting…' : isConnected ? 'Reconnect' : 'Connect Linear'}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={handleDisconnect}
+          disabled={isSubmitting || !isConnected}
+        >
+          Disconnect
+        </Button>
+      </div>
+
+      {message ? (
+        <div
+          className={`text-sm ${
+            status === 'connected'
+              ? 'text-emerald-600 dark:text-emerald-400'
+              : status === 'error'
+              ? 'text-red-600 dark:text-red-400'
+              : 'text-muted-foreground'
+          }`}
+        >
+          {message}
+          {workspaceName ? ` Workspace: ${workspaceName}` : ''}
+        </div>
+      ) : null}
+    </div>
+  );
+};
+
 const TAB_DETAILS: Record<SettingsTab, {
   icon: LucideIcon;
   label: string;
   title: string;
   description: string;
-  sections: Array<{ title: string; description: string }>;
+  sections: SettingsSection[];
 }> = {
   general: {
     icon: Settings2,
@@ -39,8 +219,10 @@ const TAB_DETAILS: Record<SettingsTab, {
     description: '',
     sections: [
       {
-        title: 'Profile & security',
-        description: 'Account settings will appear here soon.',
+        title: 'Linear integration',
+        description:
+          'Connect a Linear workspace so chats can reference issues and pull contextual details.',
+        Component: LinearIntegrationCard,
       },
     ],
   },
@@ -84,9 +266,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     return (
       <div className="space-y-6">
         {sections.map((section) => (
-          <div key={section.title} className="rounded-lg border border-border/60 bg-muted/40 p-4">
-            <h3 className="text-sm font-semibold text-foreground">{section.title}</h3>
-            <p className="mt-1 text-sm text-muted-foreground">{section.description}</p>
+          <div key={section.title} className="space-y-4 rounded-lg border border-border/60 bg-muted/40 p-4">
+            <div>
+              <h3 className="text-sm font-semibold text-foreground">{section.title}</h3>
+              {section.description ? (
+                <p className="mt-1 text-sm text-muted-foreground">{section.description}</p>
+              ) : null}
+            </div>
+            {section.Component ? (
+              <section.Component />
+            ) : !section.description ? (
+              <p className="text-sm text-muted-foreground">Coming soon.</p>
+            ) : null}
           </div>
         ))}
       </div>
