@@ -10,6 +10,7 @@ import { type Provider } from '../types';
 import { Input as TextInput } from './ui/input';
 import { Badge } from './ui/badge';
 import { LinearIssueSummary } from '../types/linear';
+import linearLogo from '../../assets/images/linear.png';
 
 interface ChatInputProps {
   value: string;
@@ -445,8 +446,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 }
                 className="text-xs font-medium gap-2"
               >
-                <Link2 className="h-3.5 w-3.5" aria-hidden="true" />
-                Link Linear issue
+                <img src={linearLogo} alt="Linear" className="h-3.5 w-3.5" />
+                Add issue
               </Button>
             </div>
 
