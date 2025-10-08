@@ -16,6 +16,7 @@ import { SidebarProvider, useSidebar } from './components/ui/sidebar';
 import { RightSidebarProvider, useRightSidebar } from './components/ui/right-sidebar';
 import RightSidebar from './components/RightSidebar';
 import { type Provider } from './types';
+import { providerMeta, type UiProvider } from './providers/meta';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './components/ui/resizable';
 import { loadPanelSizes, savePanelSizes } from './lib/persisted-layout';
 import type { ImperativePanelHandle } from 'react-resizable-panels';
@@ -528,6 +529,14 @@ const App: React.FC = () => {
 
               async function sendInitialPromptToProvider(provider: Provider) {
                 try {
+                  // Skip for terminal-only providers (handled via embedded terminal)
+                  if (providerMeta[provider as UiProvider]?.terminalOnly) {
+                    console.log(
+                      `Provider ${provider} is terminal-based, initial prompt will be ignored`
+                    );
+                    return;
+                  }
+
                   if (provider === 'codex') {
                     // Check if Codex is installed
                     const codexInstallResult = await window.electronAPI.codexCheckInstallation();
@@ -579,11 +588,6 @@ const App: React.FC = () => {
                     } else {
                       console.warn('Claude not installed, skipping initial prompt');
                     }
-                  } else {
-                    // Terminal-based providers (droid, gemini, cursor) don't support initial prompts
-                    console.log(
-                      `Provider ${provider} is terminal-based, initial prompt will be ignored`
-                    );
                   }
                 } catch (error) {
                   console.error(`Failed to send initial prompt to ${provider}:`, error);
