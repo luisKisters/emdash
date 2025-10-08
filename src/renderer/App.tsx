@@ -19,7 +19,7 @@ import { type Provider } from './types';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './components/ui/resizable';
 import { loadPanelSizes, savePanelSizes } from './lib/persisted-layout';
 import type { ImperativePanelHandle } from 'react-resizable-panels';
-import SettingsPage from './components/SettingsPage';
+import SettingsModal from './components/SettingsModal';
 
 const SidebarHotkeys: React.FC = () => {
   const { toggle: toggleLeftSidebar } = useSidebar();
@@ -262,6 +262,10 @@ const App: React.FC = () => {
 
   const handleOpenSettings = useCallback(() => {
     setShowSettings(true);
+  }, []);
+
+  const handleCloseSettings = useCallback(() => {
+    setShowSettings(false);
   }, []);
 
   useEffect(() => {
@@ -797,10 +801,6 @@ const App: React.FC = () => {
   };
 
   const renderMainContent = () => {
-    if (showSettings) {
-      return <SettingsPage onClose={() => setShowSettings(false)} />;
-    }
-
     if (showHomeView) {
       return (
         <div className="flex h-full flex-col bg-background text-foreground overflow-y-auto">
@@ -990,6 +990,7 @@ const App: React.FC = () => {
               </ResizablePanel>
             </ResizablePanelGroup>
           </div>
+          <SettingsModal isOpen={showSettings} onClose={handleCloseSettings} />
           <WorkspaceModal
             isOpen={showWorkspaceModal}
             onClose={() => setShowWorkspaceModal(false)}
