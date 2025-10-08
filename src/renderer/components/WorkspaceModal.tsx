@@ -155,15 +155,12 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                       value={workspaceName}
                       onChange={(e) => onChange(e.target.value)}
                       onBlur={() => setTouched(true)}
-                      placeholder="e.g. Refactor API routes"
+                      placeholder="e.g. refactorApiRoutes"
                       className="w-full"
                       aria-invalid={touched && !!error}
                       aria-describedby="workspace-name-error"
                       autoFocus
                     />
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      A short name for this workspace or branch.
-                    </p>
                     {touched && error && (
                       <p id="workspace-name-error" className="mt-2 text-sm text-destructive">
                         {error}
