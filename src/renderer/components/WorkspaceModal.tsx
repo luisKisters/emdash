@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
@@ -6,10 +6,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Input } from './ui/input';
 import { Spinner } from './ui/spinner';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
-import { X, GitBranch, Plus, Search } from 'lucide-react';
+import { X, GitBranch, Plus, Search, Loader2 } from 'lucide-react';
 import { ProviderSelector } from './ProviderSelector';
 import { type Provider } from '../types';
 import { Separator } from './ui/separator';
+import { type LinearIssueSummary } from '../types/linear';
 
 interface WorkspaceModalProps {
   isOpen: boolean;
@@ -35,7 +36,14 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
-  const [linkedIssue, setLinkedIssue] = useState('');
+  const [issueSearchTerm, setIssueSearchTerm] = useState('');
+  const [issueSearchResults, setIssueSearchResults] = useState<LinearIssueSummary[]>([]);
+  const [issueSearchError, setIssueSearchError] = useState<string | null>(null);
+  const [isSearchingIssues, setIsSearchingIssues] = useState(false);
+  const [isIssueDropdownOpen, setIsIssueDropdownOpen] = useState(false);
+  const [selectedIssue, setSelectedIssue] = useState<LinearIssueSummary | null>(null);
+  const issueInputRef = useRef<HTMLInputElement | null>(null);
+  const issueDropdownRef = useRef<HTMLDivElement | null>(null);
   const shouldReduceMotion = useReducedMotion();
 
   const normalizedExisting = existingNames.map((n) => n.toLowerCase());
@@ -101,6 +109,105 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
     setWorkspaceName(val);
     setError(validate(val));
   };
+
+  const canSearchLinear =
+    typeof window !== 'undefined' && !!window.electronAPI?.linearSearchIssues;
+
+  useEffect(() => {
+    if (!isIssueDropdownOpen) return;
+
+    const handleClick = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (issueDropdownRef.current?.contains(target)) return;
+      if (issueInputRef.current?.contains(target)) return;
+      setIsIssueDropdownOpen(false);
+    };
+
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsIssueDropdownOpen(false);
+        issueInputRef.current?.blur();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [isIssueDropdownOpen]);
+
+  useEffect(() => {
+    if (!canSearchLinear || !isIssueDropdownOpen) return;
+
+    const term = issueSearchTerm.trim();
+    if (!term) {
+      setIssueSearchResults([]);
+      setIssueSearchError(null);
+      setIsSearchingIssues(false);
+      return;
+    }
+
+    setIsSearchingIssues(true);
+    let cancelled = false;
+    const handle = setTimeout(async () => {
+      try {
+        const api = window.electronAPI;
+        if (!api?.linearSearchIssues) {
+          throw new Error('Linear search unavailable in this build.');
+        }
+        const result = await api.linearSearchIssues(term, 8);
+        if (cancelled) return;
+        if (!result?.success) {
+          throw new Error(result?.error || 'Failed to search Linear issues.');
+        }
+        setIssueSearchResults(result.issues ?? []);
+        setIssueSearchError(null);
+      } catch (error) {
+        if (cancelled) return;
+        setIssueSearchResults([]);
+        setIssueSearchError(
+          error instanceof Error ? error.message : 'Failed to search Linear issues.'
+        );
+      } finally {
+        if (!cancelled) {
+          setIsSearchingIssues(false);
+        }
+      }
+    }, 250);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(handle);
+    };
+  }, [issueSearchTerm, canSearchLinear, isIssueDropdownOpen]);
+
+  const handleSelectIssue = (issue: LinearIssueSummary) => {
+    setSelectedIssue(issue);
+    setIssueSearchTerm(issue.identifier);
+    setIssueSearchResults([]);
+    setIssueSearchError(null);
+    setIsIssueDropdownOpen(false);
+  };
+
+  const handleIssueInputChange = (value: string) => {
+    setSelectedIssue(null);
+    setIssueSearchTerm(value);
+    if (canSearchLinear && !isIssueDropdownOpen) {
+      setIsIssueDropdownOpen(true);
+    }
+  };
+
+  const issueHelperText = (() => {
+    if (!canSearchLinear) {
+      return 'Connect Linear in Settings to search issues.';
+    }
+    if (selectedIssue) {
+      return selectedIssue.title;
+    }
+    return null;
+  })();
 
   return createPortal(
     <AnimatePresence>
@@ -190,7 +297,11 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                       <AccordionTrigger className="px-0 py-1 text-sm font-medium text-muted-foreground hover:no-underline">
                           Advanced options
                       </AccordionTrigger>
-                      <AccordionContent className="px-0 pt-2 space-y-4" id="workspace-advanced">
+                      <AccordionContent
+                        className="px-0 pt-2 space-y-4"
+                        contentClassName="overflow-visible"
+                        id="workspace-advanced"
+                      >
                         <div>
                           <label htmlFor="initial-prompt" className="block text-sm font-medium text-foreground">
                             Initial prompt
@@ -228,18 +339,76 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                             >
                               Linear issue
                             </label>
-                            <div className="relative flex-1">
+                            <div className="relative flex-1" ref={issueDropdownRef}>
                               <Input
                                 id="linear-issue"
-                                value={linkedIssue}
-                                onChange={(event) => setLinkedIssue(event.target.value)}
-                                placeholder="ABC-123 or search…"
-                                className="w-full pr-8"
+                                ref={issueInputRef}
+                                value={issueSearchTerm}
+                                onFocus={() => {
+                                  if (canSearchLinear) {
+                                    setIsIssueDropdownOpen(true);
+                                  }
+                                }}
+                                onChange={(event) => handleIssueInputChange(event.target.value)}
+                                placeholder={
+                                  canSearchLinear ? 'Search Linear issues…' : 'Linear search unavailable'
+                                }
+                                className="w-full pr-10"
+                                autoComplete="off"
                               />
-                              <Search
-                                className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
-                                aria-hidden="true"
-                              />
+                              <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground">
+                                {isSearchingIssues ? (
+                                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
+                                ) : (
+                                  <Search className="h-4 w-4" aria-hidden="true" />
+                                )}
+                              </span>
+
+                              {isIssueDropdownOpen && canSearchLinear && (
+                                <div className="absolute left-0 right-0 top-[calc(100%+0.375rem)] z-40 rounded-md border border-border bg-popover text-popover-foreground shadow-lg">
+                                  {issueSearchError ? (
+                                    <div className="px-3 py-2 text-xs text-destructive">
+                                      {issueSearchError}
+                                    </div>
+                                  ) : issueSearchTerm.trim().length === 0 ? (
+                                    <div className="px-3 py-2 text-xs text-muted-foreground">
+                                      Start typing to search your Linear issues.
+                                    </div>
+                                  ) : issueSearchResults.length === 0 && !isSearchingIssues ? (
+                                    <div className="px-3 py-2 text-xs text-muted-foreground">
+                                      No issues found.
+                                    </div>
+                                  ) : (
+                                    <div className="max-h-60 overflow-y-auto py-1">
+                                      {issueSearchResults.map((issue) => (
+                                        <button
+                                          key={issue.id || issue.identifier}
+                                          type="button"
+                                          onClick={() => handleSelectIssue(issue)}
+                                          className="w-full px-3 py-2 text-left text-sm hover:bg-muted/80"
+                                        >
+                                          <div className="font-medium text-foreground">
+                                            {issue.identifier}
+                                          </div>
+                                          <div className="text-xs text-muted-foreground truncate">
+                                            {issue.title}
+                                          </div>
+                                          <div className="mt-1 flex gap-2 text-[11px] text-muted-foreground">
+                                            {issue.team?.key ? <span>{issue.team.key}</span> : null}
+                                            {issue.state?.name ? <span>{issue.state.name}</span> : null}
+                                            {issue.assignee?.displayName
+                                              ? <span>{issue.assignee.displayName}</span>
+                                              : null}
+                                          </div>
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                              {issueHelperText ? (
+                                <p className="mt-2 text-xs text-muted-foreground">{issueHelperText}</p>
+                              ) : null}
                             </div>
                           </div>
                         </div>
