@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Input } from './ui/input';
 import { Spinner } from './ui/spinner';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
-import { X, GitBranch, Plus } from 'lucide-react';
+import { X, GitBranch, Plus, Search } from 'lucide-react';
 import { ProviderSelector } from './ProviderSelector';
 import { type Provider } from '../types';
 import { Separator } from './ui/separator';
@@ -35,6 +35,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
+  const [linkedIssue, setLinkedIssue] = useState('');
   const shouldReduceMotion = useReducedMotion();
 
   const normalizedExisting = existingNames.map((n) => n.toLowerCase());
@@ -187,10 +188,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                   >
                     <AccordionItem value="advanced" className="border-none">
                       <AccordionTrigger className="px-0 py-1 text-sm font-medium text-muted-foreground hover:no-underline">
-                        <span className="inline-flex items-center gap-2">
-                          <Plus className="h-4 w-4" aria-hidden="true" />
                           Advanced options
-                        </span>
                       </AccordionTrigger>
                       <AccordionContent className="px-0 pt-2 space-y-4" id="workspace-advanced">
                         <div>
@@ -207,21 +205,44 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                           />
                         </div>
 
-                        <div className="flex flex-col gap-3 md:flex-row md:items-center">
-                          <div>
-                            <label htmlFor="provider-selector" className="block text-sm font-medium text-foreground">
+                        <div className="flex flex-col gap-4">
+                          <div className="flex items-center gap-4">
+                            <label
+                              htmlFor="provider-selector"
+                              className="w-32 shrink-0 text-sm font-medium text-foreground"
+                            >
                               AI provider
                             </label>
-                            
+                            <div className="flex-1">
+                              <ProviderSelector
+                                value={selectedProvider}
+                                onChange={setSelectedProvider}
+                                className="w-full"
+                              />
+                            </div>
                           </div>
-                          <ProviderSelector
-                            value={selectedProvider}
-                            onChange={setSelectedProvider}
-                            className="md:ml-auto md:w-[220px]"
-                          />
+                          <div className="flex items-center gap-4">
+                            <label
+                              htmlFor="linear-issue"
+                              className="w-32 shrink-0 text-sm font-medium text-foreground"
+                            >
+                              Linear issue
+                            </label>
+                            <div className="relative flex-1">
+                              <Input
+                                id="linear-issue"
+                                value={linkedIssue}
+                                onChange={(event) => setLinkedIssue(event.target.value)}
+                                placeholder="ABC-123 or search…"
+                                className="w-full pr-8"
+                              />
+                              <Search
+                                className="pointer-events-none absolute right-2 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground"
+                                aria-hidden="true"
+                              />
+                            </div>
+                          </div>
                         </div>
-
-                        {/* Future: linked Linear issues can drop here */}
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
