@@ -50,7 +50,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
           <div className="flex items-center justify-between w-full">
             <div className="flex items-center space-x-2">
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium p-2 text-gray-900 dark:text-gray-100">
+                <span className="text-sm font-medium p-2 text-gray-900 dark:text-gray-100 whitespace-nowrap overflow-hidden text-ellipsis">
                   {fileChanges.length} files changed
                 </span>
                 <div className="flex items-center space-x-1 text-xs">
