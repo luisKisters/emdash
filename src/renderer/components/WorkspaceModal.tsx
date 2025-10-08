@@ -5,8 +5,7 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Spinner } from './ui/spinner';
-import { Switch } from './ui/switch';
-import { X, GitBranch, Settings } from 'lucide-react';
+import { X, GitBranch } from 'lucide-react';
 import { ProviderSelector } from './ProviderSelector';
 import { type Provider } from '../types';
 import { Separator } from './ui/separator';
@@ -137,10 +136,10 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
               >
                 <X className="h-4 w-4" />
               </Button>
-              <CardHeader className="space-y-0 pb-2 pr-12">
-                <CardTitle className="text-lg">Create a new workspace</CardTitle>
-                <CardDescription>
-                  {projectName} • Branching from origin/{defaultBranch}
+              <CardHeader className="space-y-1 pb-2 pr-12">
+                <CardTitle className="text-lg">New Workspace</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">
+                  {projectName} • from origin/{defaultBranch}
                 </CardDescription>
               </CardHeader>
 
@@ -148,24 +147,23 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                 <Separator className="mb-2" />
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <div>
-                    <label htmlFor="workspace-name" className="block text-sm font-medium">
-                      Name your workspace
+                    <label htmlFor="workspace-name" className="block text-sm font-medium text-foreground">
+                      Task name
                     </label>
-                    <p className="text-xs text-gray-500 mb-2">
-                      This desciption will be formatted to a valid workspace name (lowercase, no
-                      spaces, no special characters).
-                    </p>
                     <Input
                       id="workspace-name"
                       value={workspaceName}
                       onChange={(e) => onChange(e.target.value)}
                       onBlur={() => setTouched(true)}
-                      placeholder="Describe your task..."
+                      placeholder="e.g. Refactor API routes"
                       className="w-full"
                       aria-invalid={touched && !!error}
                       aria-describedby="workspace-name-error"
                       autoFocus
                     />
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      A short name for this workspace or branch.
+                    </p>
                     {touched && error && (
                       <p id="workspace-name-error" className="mt-2 text-sm text-destructive">
                         {error}
@@ -184,65 +182,45 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
 
                   <Separator />
 
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Settings className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                      <label
-                        id="advanced-toggle-label"
-                        className="text-sm font-medium text-gray-900 dark:text-gray-100"
-                      >
-                        Advanced options
-                      </label>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Switch
-                        id="advanced-toggle"
-                        checked={showAdvanced}
-                        onCheckedChange={setShowAdvanced}
-                      />
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Choose agent and start it immediately with an initial prompt.
-                      </p>
-                    </div>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowAdvanced((prev) => !prev)}
+                    className="w-full rounded-md border border-dashed border-gray-300 dark:border-gray-700 px-3 py-2 text-left text-sm text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                    aria-expanded={showAdvanced}
+                    aria-controls="workspace-advanced"
+                  >
+                    ⚙️ Advanced — Choose agent and start with an initial prompt.
+                  </button>
 
                   {showAdvanced && (
-                    <>
+                    <div id="workspace-advanced" className="space-y-4">
                       <div>
-                        <label htmlFor="provider-selector" className="block text-sm font-medium">
-                          AI Provider
+                        <label htmlFor="provider-selector" className="block text-sm font-medium text-foreground">
+                          AI provider
                         </label>
-                        <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                          Choose coding agent for this workspace.
-                        </p>
                         <ProviderSelector
                           value={selectedProvider}
                           onChange={setSelectedProvider}
-                          className="w-full"
+                          className="mt-2 w-full"
                         />
                       </div>
 
                       {(selectedProvider === 'codex' || selectedProvider === 'claude') && (
                         <div>
-                          <label htmlFor="initial-prompt" className="block text-sm font-medium">
+                          <label htmlFor="initial-prompt" className="block text-sm font-medium text-foreground">
                             Initial prompt
                           </label>
-                          <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                            Optionally, add an initial prompt to help the agent get started.
-                          </p>
                           <textarea
                             id="initial-prompt"
                             value={initialPrompt}
                             onChange={(e) => setInitialPrompt(e.target.value)}
-                            placeholder={`Add an initial prompt for ${
-                              selectedProvider.charAt(0).toUpperCase() + selectedProvider.slice(1)
-                            }, outlining your goal and how you want to achieve it.`}
-                            className="w-full min-h-[80px] px-3 py-2 text-sm border border-input bg-background rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                            placeholder="Describe what you'd like the agent to do first."
+                            className="mt-2 w-full min-h-[80px] px-3 py-2 text-sm border border-input bg-background rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                             rows={3}
                           />
                         </div>
                       )}
-                    </>
+                    </div>
                   )}
 
                   <div className="flex justify-end space-x-2">
@@ -252,7 +230,6 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                     <Button
                       type="submit"
                       disabled={!!validate(workspaceName) || isCreating}
-                      className="bg-black text-white hover:bg-gray-800"
                     >
                       {isCreating ? (
                         <>
@@ -260,16 +237,15 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                           Creating...
                         </>
                       ) : (
-                        'Create workspace'
+                        'Create'
                       )}
                     </Button>
                   </div>
                 </form>
 
                 <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    emdash runs a <strong>setup script</strong> each time you create a new
-                    workspace.
+                  <p className="text-xs text-muted-foreground">
+                    This will run your workspace setup script.
                   </p>
                 </div>
               </CardContent>
