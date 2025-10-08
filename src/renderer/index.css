@@ -83,7 +83,7 @@
     transition: flex-grow 300ms ease;
   }
 
-  [data-panel-group]:has([data-panel-resize-handle-state='drag']) .sidebar-panel {
+  [data-panel-group]:has([data-resize-handle-state='drag']) .sidebar-panel {
     transition-duration: 0ms;
   }
 
