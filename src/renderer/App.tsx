@@ -662,6 +662,17 @@ const App: React.FC = () => {
     setActiveWorkspaceProvider(null); // Clear provider when switching workspaces
   };
 
+  const handleStartCreateWorkspaceFromSidebar = useCallback(
+    (project: Project) => {
+      const targetProject = projects.find((p) => p.id === project.id) || project;
+      setSelectedProject(targetProject);
+      setShowHomeView(false);
+      setActiveWorkspace(null);
+      setShowWorkspaceModal(true);
+    },
+    [projects]
+  );
+
   const handleDeleteWorkspace = async (targetProject: Project, workspace: Workspace) => {
     try {
       try {
@@ -909,6 +920,8 @@ const App: React.FC = () => {
                   githubAuthenticated={isAuthenticated}
                   githubUser={user}
                   onSidebarContextChange={handleSidebarContextChange}
+                  onCreateWorkspaceForProject={handleStartCreateWorkspaceFromSidebar}
+                  isCreatingWorkspace={isCreatingWorkspace}
                 />
               </ResizablePanel>
               <ResizableHandle
