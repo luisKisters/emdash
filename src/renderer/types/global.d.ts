@@ -130,6 +130,14 @@ declare global {
         issues?: any[];
         error?: string;
       }>;
+      linearSearchIssues?: (
+        term: string,
+        limit?: number
+      ) => Promise<{
+        success: boolean;
+        issues?: any[];
+        error?: string;
+      }>;
       // Database methods
       getProjects: () => Promise<any[]>;
       saveProject: (project: any) => Promise<{ success: boolean; error?: string }>;

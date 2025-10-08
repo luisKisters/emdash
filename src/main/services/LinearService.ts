@@ -112,6 +112,38 @@ export class LinearService {
     return response?.issues?.nodes ?? [];
   }
 
+  async searchIssues(term: string, limit = 10): Promise<any[]> {
+    const token = await this.getStoredToken();
+    if (!token) {
+      throw new Error('Linear token not set. Connect Linear in settings first.');
+    }
+
+    const query = `
+      query SearchIssues($term: String!, $limit: Int!) {
+        searchIssues(query: $term, first: $limit) {
+          nodes {
+            id
+            identifier
+            title
+            url
+            state { name type }
+            team { name key }
+            project { name }
+            assignee { displayName name }
+            updatedAt
+          }
+        }
+      }
+    `;
+
+    const response = await this.graphql<{ searchIssues: { nodes: any[] } }>(token, query, {
+      term,
+      limit,
+    });
+
+    return response?.searchIssues?.nodes ?? [];
+  }
+
   private async fetchViewer(token: string): Promise<LinearViewer> {
     const query = `
       query ViewerInfo {

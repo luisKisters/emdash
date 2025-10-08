@@ -34,6 +34,21 @@ export function registerLinearIpc() {
       return { success: false, error: message };
     }
   });
+
+  ipcMain.handle('linear:searchIssues', async (_event, term: string, limit?: number) => {
+    if (!term || typeof term !== 'string') {
+      return { success: false, error: 'Search term is required.' };
+    }
+
+    try {
+      const issues = await linearService.searchIssues(term, limit ?? 10);
+      return { success: true, issues };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unable to search Linear issues right now.';
+      return { success: false, error: message };
+    }
+  });
 }
 
 export default registerLinearIpc;
