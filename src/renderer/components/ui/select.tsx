@@ -1,5 +1,6 @@
 import * as React from 'react';
 import * as SelectPrimitive from '@radix-ui/react-select';
+import { ChevronUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 export const Select = SelectPrimitive.Root;
@@ -15,7 +16,7 @@ export const SelectTrigger = React.forwardRef<
   <SelectPrimitive.Trigger
     ref={ref}
     className={cn(
-      'flex h-9 w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-sm',
+      'group flex h-9 w-full items-center justify-between rounded-md border bg-background px-3 py-2 text-sm',
       'ring-offset-background placeholder:text-muted-foreground focus:outline-none focus-visible:outline-none focus:ring-0 focus:ring-offset-0',
       'disabled:cursor-not-allowed disabled:opacity-50',
       className
@@ -23,6 +24,9 @@ export const SelectTrigger = React.forwardRef<
     {...props}
   >
     {children}
+    <SelectPrimitive.Icon asChild>
+      <ChevronUp className="h-4 w-4 text-muted-foreground transition-transform duration-200 group-data-[state=open]:rotate-180" />
+    </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ));
 SelectTrigger.displayName = SelectPrimitive.Trigger.displayName;

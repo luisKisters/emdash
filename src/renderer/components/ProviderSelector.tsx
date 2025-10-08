@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Select,
   SelectTrigger,
@@ -8,7 +8,6 @@ import {
   SelectItemText,
 } from './ui/select';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
-import { ChevronUp } from 'lucide-react';
 import { type Provider } from '../types';
 import openaiLogo from '../../assets/images/openai.png';
 import claudeLogo from '../../assets/images/claude.png';
@@ -63,8 +62,6 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
   disabled = false,
   className = '',
 }) => {
-  const [isSelectOpen, setIsSelectOpen] = useState(false);
-
   const currentProvider = providerConfig[value];
 
   return (
@@ -76,7 +73,6 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
             onChange(v as Provider);
           }
         }}
-        onOpenChange={setIsSelectOpen}
         disabled={disabled}
       >
         {disabled ? (
@@ -114,14 +110,9 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
               />
               <SelectValue placeholder="Select provider" />
             </div>
-            <ChevronUp
-              className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
-                isSelectOpen ? 'rotate-180' : ''
-              }`}
-            />
           </SelectTrigger>
         )}
-        <SelectContent>
+        <SelectContent side="top">
           {Object.entries(providerConfig).map(([key, config]) => (
             <SelectItem key={key} value={key}>
               <div className="flex items-center gap-2">

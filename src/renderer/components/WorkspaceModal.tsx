@@ -6,7 +6,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Input } from './ui/input';
 import { Spinner } from './ui/spinner';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
-import { X, GitBranch, ChevronDown } from 'lucide-react';
+import { X, GitBranch } from 'lucide-react';
 import { ProviderSelector } from './ProviderSelector';
 import { type Provider } from '../types';
 import { Separator } from './ui/separator';
@@ -333,7 +333,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                     onValueChange={setSelectedIssueIdentifier}
                                     disabled={isLoadingIssues || !!issueListError || !issuesLoaded}
                                   >
-                                    <SelectTrigger className="w-full pr-10">
+                                    <SelectTrigger className="w-full">
                                       <SelectValue
                                         placeholder={
                                           isLoadingIssues
@@ -343,9 +343,8 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                               : 'Select a Linear issue'
                                         }
                                       />
-                                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
                                     </SelectTrigger>
-                                    <SelectContent>
+                                    <SelectContent side="top">
                                       {availableIssues.map((issue) => (
                                         <SelectItem
                                           key={issue.id || issue.identifier}
