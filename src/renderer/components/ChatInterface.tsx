@@ -324,6 +324,71 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
       provider === 'codex' ? codexStream.conversationId : claudeStream.conversationId;
     if (!activeConversationId) return;
 
+    let issuesForPrompt: LinearIssueSummary[] = linkedIssues;
+
+    if (linkedIssues.length > 0) {
+      try {
+        const api = window.electronAPI;
+        const identifiers = linkedIssues.map((issue) => issue.identifier).filter(Boolean);
+
+        if (api?.linearGetIssues && identifiers.length > 0) {
+          const response = await api.linearGetIssues(identifiers);
+          if (response?.success && Array.isArray(response.issues) && response.issues.length > 0) {
+            const normalized = response.issues
+              .map((issue: any) => {
+                if (!issue) return null;
+                const identifier = issue.identifier ?? issue.id ?? '';
+                if (!identifier) return null;
+                const normalizedIssue: LinearIssueSummary = {
+                  id: String(issue.id ?? identifier),
+                  identifier,
+                  title: issue.title ?? 'Untitled issue',
+                  url: issue.url ?? undefined,
+                  state: issue.state ?? null,
+                  team: issue.team ?? null,
+                  project: issue.project ?? null,
+                  assignee: issue.assignee ?? null,
+                  updatedAt: issue.updatedAt ?? null,
+                };
+                return normalizedIssue;
+              })
+              .filter((issue): issue is LinearIssueSummary => issue !== null);
+
+            if (normalized.length > 0) {
+              issuesForPrompt = normalized;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Failed to refresh Linear issues:', error);
+        // Fall back to the cached search results already in linkedIssues.
+        issuesForPrompt = linkedIssues;
+      }
+    }
+
+    const linearContextBlock = (() => {
+      if (!issuesForPrompt.length) return '';
+
+      const lines = issuesForPrompt.map((issue) => {
+        const metaParts: string[] = [];
+        const stateName = issue.state?.name;
+        const assigneeName = issue.assignee?.displayName || issue.assignee?.name;
+        const teamKey = issue.team?.key;
+
+        if (stateName) metaParts.push(stateName);
+        if (assigneeName) metaParts.push(assigneeName);
+        if (teamKey) metaParts.push(teamKey);
+
+        const meta = metaParts.length ? ` (${metaParts.join(' · ')})` : '';
+        const url = issue.url ? ` — ${issue.url}` : '';
+        return `• ${issue.identifier} — ${issue.title}${meta}${url}`;
+      });
+
+      return `\n\n---\nLinear issues referenced:\n${lines.join('\n')}`;
+    })();
+
+    const messageWithContext = `${inputValue}${linearContextBlock}`;
+
     const attachmentsSection = await buildAttachmentsSection(workspace.path, inputValue, {
       maxFiles: 6,
       maxBytesPerFile: 200 * 1024,
@@ -331,8 +396,8 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
 
     const result =
       provider === 'codex'
-        ? await codexStream.send(inputValue, attachmentsSection)
-        : await claudeStream.send(inputValue, attachmentsSection);
+        ? await codexStream.send(messageWithContext, attachmentsSection)
+        : await claudeStream.send(messageWithContext, attachmentsSection);
     if (!result.success) {
       if (result.error && result.error !== 'stream-in-progress') {
         toast({
@@ -345,6 +410,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
     }
 
     setInputValue('');
+    setLinkedIssues([]);
   };
 
   const handleCancelStream = async () => {
