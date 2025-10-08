@@ -183,6 +183,38 @@ declare global {
       githubGetUser: () => Promise<any>;
       githubGetRepositories: () => Promise<any[]>;
       githubLogout: () => Promise<void>;
+      // Linear integration
+      linearCheckConnection?: () => Promise<{
+        connected: boolean;
+        workspaceName?: string;
+        error?: string;
+      }>;
+      linearSaveToken?: (
+        token: string
+      ) => Promise<{
+        success: boolean;
+        workspaceName?: string;
+        error?: string;
+      }>;
+      linearClearToken?: () => Promise<{
+        success: boolean;
+        error?: string;
+      }>;
+      linearGetIssues?: (
+        identifiers: string[]
+      ) => Promise<{
+        success: boolean;
+        issues?: any[];
+        error?: string;
+      }>;
+      linearSearchIssues?: (
+        term: string,
+        limit?: number
+      ) => Promise<{
+        success: boolean;
+        issues?: any[];
+        error?: string;
+      }>;
 
       // Database operations
       getProjects: () => Promise<any[]>;
@@ -411,6 +443,39 @@ export interface ElectronAPI {
   githubGetUser: () => Promise<any>;
   githubGetRepositories: () => Promise<any[]>;
   githubLogout: () => Promise<void>;
+
+  // Linear integration
+  linearCheckConnection?: () => Promise<{
+    connected: boolean;
+    workspaceName?: string;
+    error?: string;
+  }>;
+  linearSaveToken?: (
+    token: string
+  ) => Promise<{
+    success: boolean;
+    workspaceName?: string;
+    error?: string;
+  }>;
+  linearClearToken?: () => Promise<{
+    success: boolean;
+    error?: string;
+  }>;
+  linearGetIssues?: (
+    identifiers: string[]
+  ) => Promise<{
+    success: boolean;
+    issues?: any[];
+    error?: string;
+  }>;
+  linearSearchIssues?: (
+    term: string,
+    limit?: number
+  ) => Promise<{
+    success: boolean;
+    issues?: any[];
+    error?: string;
+  }>;
 
   // Database operations
   getProjects: () => Promise<any[]>;

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useToast } from '../hooks/use-toast';
 import ChatInput from './ChatInput';
 import { TerminalPane } from './TerminalPane';
@@ -11,6 +11,7 @@ import useClaudeStream from '../hooks/useClaudeStream';
 import { type Provider } from '../types';
 import { buildAttachmentsSection } from '../lib/attachments';
 import { Workspace, Message } from '../types/chat';
+import { LinearIssueSummary } from '../types/linear';
 
 declare const window: Window & {
   electronAPI: {
@@ -47,6 +48,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
   const [hasGeminiActivity, setHasGeminiActivity] = useState(false);
   const [hasCursorActivity, setHasCursorActivity] = useState(false);
   const [hasCopilotActivity, setHasCopilotActivity] = useState(false);
+  const [linkedIssues, setLinkedIssues] = useState<LinearIssueSummary[]>([]);
   const initializedConversationRef = useRef<string | null>(null);
 
   const codexStream = useCodexStream({
@@ -62,6 +64,18 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
   useEffect(() => {
     initializedConversationRef.current = null;
   }, [workspace.id]);
+
+  const handleAddLinkedIssue = useCallback((issue: LinearIssueSummary) => {
+    setLinkedIssues((prev) => {
+      const exists = prev.some((existing) => existing.identifier === issue.identifier);
+      if (exists) return prev;
+      return [...prev, issue];
+    });
+  }, []);
+
+  const handleRemoveLinkedIssue = useCallback((identifier: string) => {
+    setLinkedIssues((prev) => prev.filter((issue) => issue.identifier !== identifier));
+  }, []);
 
   // On workspace change, restore last-selected provider (including Droid).
   // If a locked provider exists (including Droid), prefer locked.
@@ -507,6 +521,9 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
         provider={provider}
         onProviderChange={(p) => setProvider(p)}
         selectDisabled={providerLocked}
+        linkedIssues={linkedIssues}
+        onLinkIssue={handleAddLinkedIssue}
+        onUnlinkIssue={handleRemoveLinkedIssue}
         disabled={
           provider === 'droid' ||
           provider === 'gemini' ||
