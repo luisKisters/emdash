@@ -1,5 +1,3 @@
-/// <reference types="vitest" />
-
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { promisify } from 'util';
 

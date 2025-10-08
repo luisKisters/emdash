@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
@@ -50,11 +50,6 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   const [selectedIssueIdentifier, setSelectedIssueIdentifier] = useState<string>('');
   const [hasRequestedIssues, setHasRequestedIssues] = useState(false);
   const shouldReduceMotion = useReducedMotion();
-  const selectedIssue = useMemo(
-    () =>
-      availableIssues.find((issue) => issue.identifier === selectedIssueIdentifier) ?? null,
-    [availableIssues, selectedIssueIdentifier]
-  );
   const issuesLoaded = availableIssues.length > 0;
 
   const normalizedExisting = existingNames.map((n) => n.toLowerCase());
@@ -310,7 +305,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                             >
                               AI provider
                             </label>
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                               <ProviderSelector
                                 value={selectedProvider}
                                 onChange={setSelectedProvider}
@@ -325,7 +320,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                             >
                               Linear issue
                             </label>
-                            <div className="flex-1">
+                            <div className="flex-1 min-w-0">
                               {canListLinear ? (
                                 <>
                                   <Select
@@ -335,6 +330,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                   >
                                     <SelectTrigger className="w-full">
                                       <SelectValue
+                                        className="truncate"
                                         placeholder={
                                           isLoadingIssues
                                             ? 'Loading issues…'
@@ -351,8 +347,19 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                           value={issue.identifier}
                                         >
                                           <SelectItemText>
-                                            {issue.identifier}
-                                            {issue.title ? ` - ${issue.title}` : ''}
+                                            <span className="flex min-w-0 items-center gap-2">
+                                              <span className="shrink-0 text-foreground">
+                                                {issue.identifier}
+                                              </span>
+                                              {issue.title ? (
+                                                <>
+                                                  <span className="shrink-0 text-muted-foreground">-</span>
+                                                  <span className="truncate text-muted-foreground">
+                                                    {issue.title}
+                                                  </span>
+                                                </>
+                                              ) : null}
+                                            </span>
                                           </SelectItemText>
                                         </SelectItem>
                                       ))}

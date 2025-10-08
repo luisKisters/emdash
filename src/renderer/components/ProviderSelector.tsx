@@ -65,7 +65,7 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
   const currentProvider = providerConfig[value];
 
   return (
-    <div className={`relative inline-block w-[12rem] ${className}`}>
+    <div className={`relative block min-w-0 w-[12rem] ${className}`}>
       <Select
         value={value}
         onValueChange={(v) => {
@@ -81,11 +81,11 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
               <TooltipTrigger asChild>
                 <SelectTrigger
                   aria-disabled
-                  className={`h-9 bg-gray-100 dark:bg-gray-700 border-none ${
+                  className={`h-9 w-full bg-gray-100 dark:bg-gray-700 border-none ${
                     disabled ? 'opacity-60 cursor-not-allowed' : ''
                   }`}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex w-full items-center gap-2 min-w-0 overflow-hidden">
                     <img
                       src={currentProvider.logo}
                       alt={currentProvider.alt}
@@ -101,8 +101,8 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
             </Tooltip>
           </TooltipProvider>
         ) : (
-          <SelectTrigger className="h-9 bg-gray-100 dark:bg-gray-700 border-none">
-            <div className="flex items-center gap-2">
+          <SelectTrigger className="h-9 w-full bg-gray-100 dark:bg-gray-700 border-none">
+            <div className="flex w-full items-center gap-2 min-w-0 overflow-hidden">
               <img
                 src={currentProvider.logo}
                 alt={currentProvider.alt}
