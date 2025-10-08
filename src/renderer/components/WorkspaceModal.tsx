@@ -416,10 +416,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                     </AccordionItem>
                   </Accordion>
 
-                  <div className="flex justify-end space-x-2">
-                    <Button type="button" variant="outline" onClick={onClose} disabled={isCreating}>
-                      Cancel
-                    </Button>
+                  <div className="flex justify-end">
                     <Button
                       type="submit"
                       disabled={!!validate(workspaceName) || isCreating}
