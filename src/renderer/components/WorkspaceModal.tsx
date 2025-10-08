@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
@@ -51,6 +51,11 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   const [hasRequestedIssues, setHasRequestedIssues] = useState(false);
   const shouldReduceMotion = useReducedMotion();
   const issuesLoaded = availableIssues.length > 0;
+  const selectedIssue = useMemo(
+    () =>
+      availableIssues.find((issue) => issue.identifier === selectedIssueIdentifier) ?? null,
+    [availableIssues, selectedIssueIdentifier]
+  );
 
   const normalizedExisting = existingNames.map((n) => n.toLowerCase());
 
@@ -189,6 +194,12 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
     }
     return null;
   })();
+
+  const issuePlaceholder = isLoadingIssues
+    ? 'Loading issues…'
+    : issueListError
+      ? 'Unable to load issues'
+      : 'Select a Linear issue';
 
   return createPortal(
     <AnimatePresence>
@@ -329,16 +340,29 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                     disabled={isLoadingIssues || !!issueListError || !issuesLoaded}
                                   >
                                     <SelectTrigger className="w-full">
-                                      <SelectValue
-                                        className="truncate"
-                                        placeholder={
-                                          isLoadingIssues
-                                            ? 'Loading issues…'
-                                            : issueListError
-                                              ? 'Unable to load issues'
-                                              : 'Select a Linear issue'
-                                        }
-                                      />
+                                      <SelectValue asChild placeholder={issuePlaceholder}>
+                                        <span className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                                          {selectedIssue ? (
+                                            <>
+                                              <span className="shrink-0 text-foreground">
+                                                {selectedIssue.identifier}
+                                              </span>
+                                              {selectedIssue.title ? (
+                                                <>
+                                                  <span className="shrink-0 text-muted-foreground">-</span>
+                                                  <span className="truncate text-muted-foreground">
+                                                    {selectedIssue.title}
+                                                  </span>
+                                                </>
+                                              ) : null}
+                                            </>
+                                          ) : (
+                                            <span className="truncate text-muted-foreground">
+                                              {issuePlaceholder}
+                                            </span>
+                                          )}
+                                        </span>
+                                      </SelectValue>
                                     </SelectTrigger>
                                     <SelectContent side="top">
                                       {availableIssues.map((issue) => (
