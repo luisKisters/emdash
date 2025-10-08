@@ -5,7 +5,8 @@ import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Spinner } from './ui/spinner';
-import { X, GitBranch } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { X, GitBranch, Plus } from 'lucide-react';
 import { ProviderSelector } from './ProviderSelector';
 import { type Provider } from '../types';
 import { Separator } from './ui/separator';
@@ -179,34 +180,26 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
 
                   <Separator />
 
-                  <button
-                    type="button"
-                    onClick={() => setShowAdvanced((prev) => !prev)}
-                    className="w-full rounded-md border border-dashed border-gray-300 dark:border-gray-700 px-3 py-2 text-left text-sm text-muted-foreground hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
-                    aria-expanded={showAdvanced}
-                    aria-controls="workspace-advanced"
+                  <Accordion
+                    type="single"
+                    collapsible
+                    value={showAdvanced ? 'advanced' : undefined}
+                    onValueChange={(val) => setShowAdvanced(val === 'advanced')}
+                    className="space-y-2"
                   >
-                    ⚙️ Advanced — Choose agent and start with an initial prompt.
-                  </button>
-
-                  {showAdvanced && (
-                    <div id="workspace-advanced" className="space-y-4">
-                      <div>
-                        <label htmlFor="provider-selector" className="block text-sm font-medium text-foreground">
-                          AI provider
-                        </label>
-                        <ProviderSelector
-                          value={selectedProvider}
-                          onChange={setSelectedProvider}
-                          className="mt-2 w-full"
-                        />
-                      </div>
-
-                      {(selectedProvider === 'codex' || selectedProvider === 'claude') && (
+                    <AccordionItem value="advanced" className="border-none">
+                      <AccordionTrigger className="px-0 py-1 text-sm font-medium text-muted-foreground hover:no-underline">
+                        <span className="inline-flex items-center gap-2">
+                          <Plus className="h-4 w-4" aria-hidden="true" />
+                          Advanced options
+                        </span>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-0 pt-2 space-y-4" id="workspace-advanced">
                         <div>
                           <label htmlFor="initial-prompt" className="block text-sm font-medium text-foreground">
                             Initial prompt
                           </label>
+                          <p className="mt-1 text-xs text-muted-foreground">Optional. The agent will run this first.</p>
                           <textarea
                             id="initial-prompt"
                             value={initialPrompt}
@@ -216,9 +209,25 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                             rows={3}
                           />
                         </div>
-                      )}
-                    </div>
-                  )}
+
+                        <div className="flex flex-col gap-3 md:flex-row md:items-center">
+                          <div>
+                            <label htmlFor="provider-selector" className="block text-sm font-medium text-foreground">
+                              AI provider
+                            </label>
+                            <p className="mt-1 text-xs text-muted-foreground">Choose which agent to use.</p>
+                          </div>
+                          <ProviderSelector
+                            value={selectedProvider}
+                            onChange={setSelectedProvider}
+                            className="md:ml-auto md:w-[220px]"
+                          />
+                        </div>
+
+                        {/* Future: linked Linear issues can drop here */}
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
 
                   <div className="flex justify-end space-x-2">
                     <Button type="button" variant="outline" onClick={onClose} disabled={isCreating}>
