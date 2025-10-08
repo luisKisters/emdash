@@ -178,8 +178,6 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                     </div>
                   )}
 
-                  <Separator />
-
                   <Accordion
                     type="single"
                     collapsible
@@ -199,12 +197,11 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                           <label htmlFor="initial-prompt" className="block text-sm font-medium text-foreground">
                             Initial prompt
                           </label>
-                          <p className="mt-1 text-xs text-muted-foreground">Optional. The agent will run this first.</p>
                           <textarea
                             id="initial-prompt"
                             value={initialPrompt}
                             onChange={(e) => setInitialPrompt(e.target.value)}
-                            placeholder="Describe what you'd like the agent to do first."
+                            placeholder="Optional. The agent will run this first."
                             className="mt-2 w-full min-h-[80px] px-3 py-2 text-sm border border-input bg-background rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
                             rows={3}
                           />
@@ -215,7 +212,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                             <label htmlFor="provider-selector" className="block text-sm font-medium text-foreground">
                               AI provider
                             </label>
-                            <p className="mt-1 text-xs text-muted-foreground">Choose which agent to use.</p>
+                            
                           </div>
                           <ProviderSelector
                             value={selectedProvider}
@@ -249,11 +246,6 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                   </div>
                 </form>
 
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <p className="text-xs text-muted-foreground">
-                    This will run your workspace setup script.
-                  </p>
-                </div>
               </CardContent>
             </Card>
           </motion.div>
