@@ -255,7 +255,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                                 disabled={isCreatingWorkspace}
                                 aria-label={`Add workspace to ${typedProject.name}`}
                               >
-                                <Plus className="h-4 w-4" />
+                                <Plus className="h-3 w-3 text-gray-400 flex-shrink-0" aria-hidden />
                                 <span className="truncate">Add workspace</span>
                               </button>
                             </div>
