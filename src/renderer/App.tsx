@@ -19,6 +19,7 @@ import { type Provider } from './types';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './components/ui/resizable';
 import { loadPanelSizes, savePanelSizes } from './lib/persisted-layout';
 import type { ImperativePanelHandle } from 'react-resizable-panels';
+import SettingsPage from './components/SettingsPage';
 
 const SidebarHotkeys: React.FC = () => {
   const { toggle: toggleLeftSidebar } = useSidebar();
@@ -133,6 +134,7 @@ const App: React.FC = () => {
   const [activeWorkspaceProvider, setActiveWorkspaceProvider] = useState<Provider | null>(null);
   const [isCodexInstalled, setIsCodexInstalled] = useState<boolean | null>(null);
   const [isClaudeInstalled, setIsClaudeInstalled] = useState<boolean | null>(null);
+  const [showSettings, setShowSettings] = useState<boolean>(false);
   const showGithubRequirement = !ghInstalled || !isAuthenticated;
   // Show agent requirements block if none of the supported CLIs are detected locally.
   // We only actively detect Codex and Claude Code; Factory (Droid) docs are shown as an alternative.
@@ -253,6 +255,34 @@ const App: React.FC = () => {
   const handleRightSidebarCollapsedChange = useCallback((collapsed: boolean) => {
     setRightSidebarCollapsed(collapsed);
   }, []);
+
+  const handleToggleSettings = useCallback(() => {
+    setShowSettings((prev) => !prev);
+  }, []);
+
+  const handleOpenSettings = useCallback(() => {
+    setShowSettings(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const handler = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey)) {
+        return;
+      }
+
+      const key = event.key?.toLowerCase();
+      const code = event.code?.toLowerCase();
+      if (key === ',' || code === 'comma') {
+        event.preventDefault();
+        handleOpenSettings();
+      }
+    };
+
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handleOpenSettings]);
 
   useEffect(() => {
     const rightPanel = rightSidebarPanelRef.current;
@@ -767,6 +797,10 @@ const App: React.FC = () => {
   };
 
   const renderMainContent = () => {
+    if (showSettings) {
+      return <SettingsPage onClose={() => setShowSettings(false)} />;
+    }
+
     if (showHomeView) {
       return (
         <div className="flex h-full flex-col bg-background text-foreground overflow-y-auto">
@@ -890,7 +924,7 @@ const App: React.FC = () => {
             setCollapsedRef={rightSidebarSetCollapsedRef}
           />
           <SidebarHotkeys />
-          <Titlebar />
+          <Titlebar onToggleSettings={handleToggleSettings} isSettingsOpen={showSettings} />
           <div className="flex flex-1 overflow-hidden pt-[var(--tb)]">
             <ResizablePanelGroup
               direction="horizontal"
