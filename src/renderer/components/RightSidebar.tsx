@@ -44,18 +44,22 @@ const RightSidebar: React.FC<RightSidebarProps> = ({ workspace, className, ...re
           <div className="flex h-full flex-col text-sm text-muted-foreground">
             <div className="flex flex-1 flex-col border-b border-border bg-background">
               <div className="px-3 py-2 border-b border-border bg-gray-50 dark:bg-gray-900 text-foreground text-sm font-medium">
-                Changes
+                <span className="whitespace-nowrap">Changes</span>
               </div>
               <div className="flex flex-1 items-center justify-center px-4 text-center">
-                Select a workspace to review file changes.
+                <span className="whitespace-nowrap text-ellipsis overflow-hidden">
+                  Select a workspace to review file changes.
+                </span>
               </div>
             </div>
             <div className="flex flex-1 flex-col bg-background border-t border-border">
               <div className="px-3 py-2 border-b border-border bg-gray-50 dark:bg-gray-900 text-foreground text-sm font-medium">
-                Terminal
+                <span className="whitespace-nowrap">Terminal</span>
               </div>
               <div className="flex flex-1 items-center justify-center px-4 text-center">
-                Select a workspace to open its terminal.
+                <span className="whitespace-nowrap text-ellipsis overflow-hidden">
+                  Select a workspace to open its terminal.
+                </span>
               </div>
             </div>
           </div>

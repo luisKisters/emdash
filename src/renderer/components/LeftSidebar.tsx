@@ -14,7 +14,7 @@ import {
   useSidebar,
 } from './ui/sidebar';
 import { Collapsible, CollapsibleTrigger, CollapsibleContent } from './ui/collapsible';
-import { Home, ChevronDown } from 'lucide-react';
+import { Home, ChevronDown, Plus } from 'lucide-react';
 import GithubStatus from './GithubStatus';
 import { WorkspaceItem } from './WorkspaceItem';
 
@@ -74,6 +74,8 @@ interface LeftSidebarProps {
     isMobile: boolean;
     setOpen: (next: boolean) => void;
   }) => void;
+  onCreateWorkspaceForProject?: (project: Project) => void;
+  isCreatingWorkspace?: boolean;
 }
 
 const LeftSidebar: React.FC<LeftSidebarProps> = ({
@@ -89,6 +91,8 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   githubAuthenticated = false,
   githubUser,
   onSidebarContextChange,
+  onCreateWorkspaceForProject,
+  isCreatingWorkspace,
 }) => {
   const { open, isMobile, setOpen } = useSidebar();
 
@@ -206,35 +210,54 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                           </div>
 
                           <CollapsibleContent asChild>
-                            <div>
-                              {typedProject.workspaces?.length ? (
-                                <div className="hidden sm:block mt-2 ml-7 space-y-1 min-w-0">
-                                  {typedProject.workspaces.map((workspace) => {
-                                    const isActive = activeWorkspace?.id === workspace.id;
-                                    return (
-                                      <div
-                                        key={workspace.id}
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          if (
-                                            onSelectProject &&
-                                            selectedProject?.id !== typedProject.id
-                                          ) {
-                                            onSelectProject(typedProject);
-                                          }
-                                          onSelectWorkspace && onSelectWorkspace(workspace);
-                                        }}
-                                        className={` px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 min-w-0 ${
-                                          isActive ? 'bg-black/5 dark:bg-white/5' : ''
-                                        }`}
-                                        title={workspace.name}
-                                      >
-                                        <WorkspaceItem workspace={workspace} />
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                              ) : null}
+                            <div className="mt-2 ml-7 space-y-1 min-w-0">
+                              <div className="hidden sm:block space-y-1 min-w-0">
+                                {typedProject.workspaces?.map((workspace) => {
+                                  const isActive = activeWorkspace?.id === workspace.id;
+                                  return (
+                                    <div
+                                      key={workspace.id}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (
+                                          onSelectProject &&
+                                          selectedProject?.id !== typedProject.id
+                                        ) {
+                                          onSelectProject(typedProject);
+                                        }
+                                        onSelectWorkspace && onSelectWorkspace(workspace);
+                                      }}
+                                      className={`px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 min-w-0 ${
+                                        isActive ? 'bg-black/5 dark:bg-white/5' : ''
+                                      }`}
+                                      title={workspace.name}
+                                    >
+                                      <WorkspaceItem workspace={workspace} />
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                              <button
+                                type="button"
+                                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (
+                                    onSelectProject &&
+                                    selectedProject?.id !== typedProject.id
+                                  ) {
+                                    onSelectProject(typedProject);
+                                  } else if (!selectedProject) {
+                                    onSelectProject?.(typedProject);
+                                  }
+                                  onCreateWorkspaceForProject?.(typedProject);
+                                }}
+                                disabled={isCreatingWorkspace}
+                                aria-label={`Add workspace to ${typedProject.name}`}
+                              >
+                                <Plus className="h-3 w-3 text-gray-400 flex-shrink-0" aria-hidden />
+                                <span className="truncate">Add workspace</span>
+                              </button>
                             </div>
                           </CollapsibleContent>
                         </Collapsible>

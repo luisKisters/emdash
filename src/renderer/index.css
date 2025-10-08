@@ -78,6 +78,20 @@
   body {
     @apply bg-background text-foreground;
   }
+
+  .sidebar-panel {
+    transition: flex-grow 300ms ease;
+  }
+
+  [data-panel-group]:has([data-resize-handle-state='drag']) .sidebar-panel {
+    transition-duration: 0ms;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .sidebar-panel {
+      transition-duration: 0ms;
+    }
+  }
 }
 
 @layer components {
