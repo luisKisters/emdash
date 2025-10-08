@@ -79,7 +79,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
     try {
       await onCreateWorkspace(
         convertToWorkspaceName(workspaceName),
-        showAdvanced ? initialPrompt.trim() || undefined : undefined,
+        /* initial prompt temporarily disabled */ undefined,
         showAdvanced ? selectedProvider : undefined
       );
       setWorkspaceName('');
@@ -201,7 +201,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                         onCheckedChange={setShowAdvanced}
                       />
                       <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Choose agent and start it immediately with an initial prompt.
+                        Choose the coding agent for this workspace.
                       </p>
                     </div>
                   </div>
@@ -222,26 +222,12 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                         />
                       </div>
 
-                      {(selectedProvider === 'codex' || selectedProvider === 'claude') && (
-                        <div>
-                          <label htmlFor="initial-prompt" className="block text-sm font-medium">
-                            Initial prompt
-                          </label>
-                          <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                            Optionally, add an initial prompt to help the agent get started.
-                          </p>
-                          <textarea
-                            id="initial-prompt"
-                            value={initialPrompt}
-                            onChange={(e) => setInitialPrompt(e.target.value)}
-                            placeholder={`Add an initial prompt for ${
-                              selectedProvider.charAt(0).toUpperCase() + selectedProvider.slice(1)
-                            }, outlining your goal and how you want to achieve it.`}
-                            className="w-full min-h-[80px] px-3 py-2 text-sm border border-input bg-background rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-                            rows={3}
-                          />
-                        </div>
-                      )}
+                      {/**
+                       * Initial prompt temporarily disabled while providers run in terminal mode
+                       * (selectedProvider === 'codex' || selectedProvider === 'claude') && (
+                       *  <div> ... initial prompt textarea ... </div>
+                       * )
+                       */}
                     </>
                   )}
 

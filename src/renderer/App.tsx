@@ -507,99 +507,13 @@ const App: React.FC = () => {
       });
 
       if (saveResult.success) {
-        // If there's an initial prompt, create conversation and save it as first message, then trigger agent response
-        if (initialPrompt) {
-          try {
-            const conversationResult = await window.electronAPI.getOrCreateDefaultConversation(
-              newWorkspace.id
-            );
-            if (conversationResult.success && conversationResult.conversation) {
-              const userMessage = {
-                id: `initial-${Date.now()}`,
-                conversationId: conversationResult.conversation.id,
-                content: initialPrompt,
-                sender: 'user' as const,
-                metadata: JSON.stringify({ isInitialPrompt: true }),
-              };
-
-              await window.electronAPI.saveMessage(userMessage);
-
-              // Trigger agent response to the initial prompt based on selected provider
-              await sendInitialPromptToProvider(selectedProvider || 'codex');
-
-              async function sendInitialPromptToProvider(provider: Provider) {
-                try {
-                  // Skip for terminal-only providers (handled via embedded terminal)
-                  if (providerMeta[provider as UiProvider]?.terminalOnly) {
-                    console.log(
-                      `Provider ${provider} is terminal-based, initial prompt will be ignored`
-                    );
-                    return;
-                  }
-
-                  if (provider === 'codex') {
-                    // Check if Codex is installed
-                    const codexInstallResult = await window.electronAPI.codexCheckInstallation();
-                    if (codexInstallResult.success && codexInstallResult.isInstalled) {
-                      // Create Codex agent for the new workspace
-                      const codexAgentResult = await window.electronAPI.codexCreateAgent(
-                        newWorkspace.id,
-                        newWorkspace.path
-                      );
-
-                      if (codexAgentResult.success) {
-                        // Send the initial prompt to Codex
-                        await window.electronAPI.codexSendMessageStream(
-                          newWorkspace.id,
-                          initialPrompt || '',
-                          conversationResult.conversation.id ?? undefined
-                        );
-                      } else {
-                        console.error('Failed to create Codex agent:', codexAgentResult.error);
-                      }
-                    } else {
-                      console.warn('Codex not installed, skipping initial prompt');
-                    }
-                  } else if (provider === 'claude') {
-                    // Check if Claude is installed
-                    const claudeInstallResult =
-                      await window.electronAPI.agentCheckInstallation?.('claude');
-                    if (claudeInstallResult?.success && claudeInstallResult.isInstalled) {
-                      // Send the initial prompt to Claude
-                      const claudeArgs: {
-                        providerId: 'claude';
-                        workspaceId: string;
-                        worktreePath: string;
-                        message: string;
-                        conversationId?: string;
-                      } = {
-                        providerId: 'claude',
-                        workspaceId: newWorkspace.id,
-                        worktreePath: newWorkspace.path,
-                        message: initialPrompt || '',
-                      };
-                      if (
-                        conversationResult.conversation.id &&
-                        typeof conversationResult.conversation.id === 'string'
-                      ) {
-                        claudeArgs.conversationId = conversationResult.conversation.id;
-                      }
-                      await window.electronAPI.agentSendMessageStream(claudeArgs);
-                    } else {
-                      console.warn('Claude not installed, skipping initial prompt');
-                    }
-                  }
-                } catch (error) {
-                  console.error(`Failed to send initial prompt to ${provider}:`, error);
-                  // Don't fail workspace creation if agent response fails
-                }
-              }
-            }
-          } catch (promptError) {
-            console.error('Failed to save initial prompt:', promptError);
-            // Don't fail workspace creation if prompt saving fails
-          }
-        }
+        /**
+         * Initial prompt flow temporarily disabled while providers run in terminal mode.
+         * Original behavior saved below for future restoration.
+         *
+         * // If there's an initial prompt, create conversation and save it as first message, then trigger agent response
+         * if (initialPrompt) { ... }
+         */
 
         setProjects((prev) =>
           prev.map((project) =>

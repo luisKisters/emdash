@@ -28,25 +28,27 @@ export const ProviderBar: React.FC<Props> = ({ provider }) => {
             <TooltipProvider delayDuration={250}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <div className="flex items-center gap-2 min-w-0 cursor-default select-none">
+                  <div
+                    className="h-9 inline-flex items-center gap-2 px-3 rounded-md bg-gray-100 dark:bg-gray-700 border border-transparent text-sm text-gray-800 dark:text-gray-200 cursor-default select-none"
+                    role="button"
+                    aria-disabled
+                  >
                     {cfg.logo ? (
                       <img
                         src={cfg.logo}
                         alt={cfg.name}
                         title={cfg.name}
-                        className="w-5 h-5 object-contain align-middle flex-shrink-0"
+                        className="w-4 h-4 object-contain align-middle flex-shrink-0"
                       />
                     ) : (
                       <div
-                        className="w-5 h-5 rounded-[4px] bg-gray-300 dark:bg-gray-600 text-[10px] text-gray-700 dark:text-gray-200 flex items-center justify-center flex-shrink-0"
+                        className="w-4 h-4 rounded-[3px] bg-gray-300 dark:bg-gray-600 text-[9px] text-gray-700 dark:text-gray-200 flex items-center justify-center flex-shrink-0"
                         aria-hidden
                       >
                         {cfg.name.slice(0, 1)}
                       </div>
                     )}
-                    <div className="text-sm text-gray-800 dark:text-gray-200 font-medium truncate">
-                      {cfg.name}
-                    </div>
+                    <span className="font-medium truncate max-w-[12rem]">{cfg.name}</span>
                   </div>
                 </TooltipTrigger>
                 <TooltipContent>
@@ -54,8 +56,7 @@ export const ProviderBar: React.FC<Props> = ({ provider }) => {
                 </TooltipContent>
               </Tooltip>
             </TooltipProvider>
-            <div />
-          </div>
+            </div>
         </div>
       </div>
     </div>
