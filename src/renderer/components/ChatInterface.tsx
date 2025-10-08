@@ -6,6 +6,7 @@ import { TerminalModeBanner } from './TerminalModeBanner';
 import { WorkspaceNotice } from './WorkspaceNotice';
 import { providerMeta } from '../providers/meta';
 import MessageList from './MessageList';
+import ProviderBar from './ProviderBar';
 import useCodexStream from '../hooks/useCodexStream';
 import useClaudeStream from '../hooks/useClaudeStream';
 import { type Provider } from '../types';
@@ -449,7 +450,8 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
         </>
       )}
 
-      <ChatInput
+      {isTerminal ? <ProviderBar provider={provider} /> : null}
+      {/* <ChatInput
         value={inputValue}
         onChange={setInputValue}
         onSend={handleSendMessage}
@@ -463,7 +465,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
         onProviderChange={(p) => setProvider(p)}
         selectDisabled={providerLocked}
         disabled={isTerminal || (provider === 'claude' && isClaudeInstalled === false)}
-      />
+      /> */}
     </div>
   );
 };
