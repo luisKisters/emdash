@@ -189,9 +189,6 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
     if (!canListLinear) {
       return 'Connect Linear in Settings to browse issues.';
     }
-    if (selectedIssue) {
-      return selectedIssue.title;
-    }
     if (hasRequestedIssues && !isLoadingIssues && !issuesLoaded && !issueListError) {
       return 'No Linear issues available.';
     }
