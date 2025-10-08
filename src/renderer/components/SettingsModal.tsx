@@ -89,15 +89,18 @@ const LinearIntegrationCard: React.FC = () => {
     };
   }, [markConnected, markDisconnected]);
 
+  const trimmedKey = apiKey.trim();
+  const hasKeyInput = trimmedKey.length > 0;
+
   const handleConnect = async () => {
-    if (!apiKey.trim()) return;
+    if (!hasKeyInput) return;
     setIsSubmitting(true);
     setMessage(null);
 
     try {
       const api = window.electronAPI;
       if (api?.linearSaveToken) {
-        const result = await api.linearSaveToken(apiKey.trim());
+        const result = await api.linearSaveToken(trimmedKey);
         if (!result?.success) {
           throw new Error(result?.error || 'Failed to connect to Linear.');
         }
@@ -116,36 +119,13 @@ const LinearIntegrationCard: React.FC = () => {
     }
   };
 
-  const handleDisconnect = async () => {
-    setIsSubmitting(true);
-    setMessage(null);
-
-    try {
-      const api = window.electronAPI;
-      if (api?.linearClearToken) {
-        const result = await api.linearClearToken();
-        if (!result?.success) {
-          throw new Error(result?.error || 'Failed to disconnect from Linear.');
-        }
-      }
-      markDisconnected();
-    } catch (error) {
-      console.error('Linear disconnect failed:', error);
-      setStatus('error');
-      setMessage(error instanceof Error ? error.message : 'Failed to disconnect from Linear.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const isConnected = status === 'connected';
+  const isIdleConnected = isConnected && !hasKeyInput && !isSubmitting;
+  const buttonLabel = isSubmitting ? 'Connecting…' : isIdleConnected ? 'Connected' : 'Connect';
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <label htmlFor="linear-api-key" className="text-sm font-medium text-foreground">
-          Personal API key
-        </label>
+    <div className="space-y-3">
+      <div className="flex items-center gap-3">
         <Input
           id="linear-api-key"
           type="password"
@@ -155,36 +135,26 @@ const LinearIntegrationCard: React.FC = () => {
           onChange={(event) => setApiKey(event.target.value)}
           disabled={isSubmitting}
         />
-        <p className="text-xs text-muted-foreground">
-          Paste a Linear personal API key with read access to issues. Keys are stored securely in your
-          system keychain.
-        </p>
-      </div>
-
-      <div className="flex items-center gap-2">
-        <Button type="button" onClick={handleConnect} disabled={!apiKey.trim() || isSubmitting}>
-          {isSubmitting ? 'Connecting…' : isConnected ? 'Reconnect' : 'Connect Linear'}
-        </Button>
         <Button
           type="button"
-          variant="ghost"
-          onClick={handleDisconnect}
-          disabled={isSubmitting || !isConnected}
+          onClick={handleConnect}
+          disabled={isSubmitting || (!hasKeyInput && !isIdleConnected)}
+          className={
+            isIdleConnected
+              ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20'
+              : undefined
+          }
         >
-          Disconnect
+          {buttonLabel}
         </Button>
       </div>
+      <p className="text-xs text-muted-foreground">
+        Paste a Linear personal API key with read access to issues. Keys are stored securely in your
+        system keychain.
+      </p>
 
-      {message ? (
-        <div
-          className={`text-sm ${
-            status === 'connected'
-              ? 'text-emerald-600 dark:text-emerald-400'
-              : status === 'error'
-              ? 'text-red-600 dark:text-red-400'
-              : 'text-muted-foreground'
-          }`}
-        >
+      {message && status === 'error' ? (
+        <div className="text-sm text-red-600 dark:text-red-400">
           {message}
           {workspaceName ? ` Workspace: ${workspaceName}` : ''}
         </div>
@@ -220,8 +190,6 @@ const TAB_DETAILS: Record<SettingsTab, {
     sections: [
       {
         title: 'Linear integration',
-        description:
-          'Connect a Linear workspace so chats can reference issues and pull contextual details.',
         Component: LinearIntegrationCard,
       },
     ],
