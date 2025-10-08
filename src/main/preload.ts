@@ -104,6 +104,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
   githubCloneRepository: (repoUrl: string, localPath: string) =>
     ipcRenderer.invoke('github:cloneRepository', repoUrl, localPath),
   githubLogout: () => ipcRenderer.invoke('github:logout'),
+  // Linear integration
+  linearSaveToken: (token: string) => ipcRenderer.invoke('linear:saveToken', token),
+  linearCheckConnection: () => ipcRenderer.invoke('linear:checkConnection'),
+  linearClearToken: () => ipcRenderer.invoke('linear:clearToken'),
+  linearGetIssues: (identifiers: string[]) =>
+    ipcRenderer.invoke('linear:getIssues', identifiers),
   // Database methods
   getProjects: () => ipcRenderer.invoke('db:getProjects'),
   saveProject: (project: any) => ipcRenderer.invoke('db:saveProject', project),

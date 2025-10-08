@@ -123,6 +123,13 @@ declare global {
         success: boolean;
         error?: string;
       }>;
+      linearGetIssues?: (
+        identifiers: string[]
+      ) => Promise<{
+        success: boolean;
+        issues?: any[];
+        error?: string;
+      }>;
       // Database methods
       getProjects: () => Promise<any[]>;
       saveProject: (project: any) => Promise<{ success: boolean; error?: string }>;
