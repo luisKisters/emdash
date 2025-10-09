@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useToast } from '../hooks/use-toast';
 import ChatInput from './ChatInput';
 import { TerminalPane } from './TerminalPane';
@@ -11,7 +11,6 @@ import useClaudeStream from '../hooks/useClaudeStream';
 import { type Provider } from '../types';
 import { buildAttachmentsSection } from '../lib/attachments';
 import { Workspace, Message } from '../types/chat';
-import { LinearIssueSummary } from '../types/linear';
 
 declare const window: Window & {
   electronAPI: {
@@ -48,7 +47,6 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
   const [hasGeminiActivity, setHasGeminiActivity] = useState(false);
   const [hasCursorActivity, setHasCursorActivity] = useState(false);
   const [hasCopilotActivity, setHasCopilotActivity] = useState(false);
-  const [linkedIssues, setLinkedIssues] = useState<LinearIssueSummary[]>([]);
   const initializedConversationRef = useRef<string | null>(null);
 
   const codexStream = useCodexStream({
@@ -64,18 +62,6 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
   useEffect(() => {
     initializedConversationRef.current = null;
   }, [workspace.id]);
-
-  const handleAddLinkedIssue = useCallback((issue: LinearIssueSummary) => {
-    setLinkedIssues((prev) => {
-      const exists = prev.some((existing) => existing.identifier === issue.identifier);
-      if (exists) return prev;
-      return [...prev, issue];
-    });
-  }, []);
-
-  const handleRemoveLinkedIssue = useCallback((identifier: string) => {
-    setLinkedIssues((prev) => prev.filter((issue) => issue.identifier !== identifier));
-  }, []);
 
   // On workspace change, restore last-selected provider (including Droid).
   // If a locked provider exists (including Droid), prefer locked.
@@ -324,70 +310,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
       provider === 'codex' ? codexStream.conversationId : claudeStream.conversationId;
     if (!activeConversationId) return;
 
-    let issuesForPrompt: LinearIssueSummary[] = linkedIssues;
-
-    if (linkedIssues.length > 0) {
-      try {
-        const api = window.electronAPI;
-        const identifiers = linkedIssues.map((issue) => issue.identifier).filter(Boolean);
-
-        if (api?.linearGetIssues && identifiers.length > 0) {
-          const response = await api.linearGetIssues(identifiers);
-          if (response?.success && Array.isArray(response.issues) && response.issues.length > 0) {
-            const normalized = response.issues
-              .map((issue: any) => {
-                if (!issue) return null;
-                const identifier = issue.identifier ?? issue.id ?? '';
-                if (!identifier) return null;
-                const normalizedIssue: LinearIssueSummary = {
-                  id: String(issue.id ?? identifier),
-                  identifier,
-                  title: issue.title ?? 'Untitled issue',
-                  url: issue.url ?? undefined,
-                  state: issue.state ?? null,
-                  team: issue.team ?? null,
-                  project: issue.project ?? null,
-                  assignee: issue.assignee ?? null,
-                  updatedAt: issue.updatedAt ?? null,
-                };
-                return normalizedIssue;
-              })
-              .filter((issue): issue is LinearIssueSummary => issue !== null);
-
-            if (normalized.length > 0) {
-              issuesForPrompt = normalized;
-            }
-          }
-        }
-      } catch (error) {
-        console.error('Failed to refresh Linear issues:', error);
-        // Fall back to the cached search results already in linkedIssues.
-        issuesForPrompt = linkedIssues;
-      }
-    }
-
-    const linearContextBlock = (() => {
-      if (!issuesForPrompt.length) return '';
-
-      const lines = issuesForPrompt.map((issue) => {
-        const metaParts: string[] = [];
-        const stateName = issue.state?.name;
-        const assigneeName = issue.assignee?.displayName || issue.assignee?.name;
-        const teamKey = issue.team?.key;
-
-        if (stateName) metaParts.push(stateName);
-        if (assigneeName) metaParts.push(assigneeName);
-        if (teamKey) metaParts.push(teamKey);
-
-        const meta = metaParts.length ? ` (${metaParts.join(' · ')})` : '';
-        const url = issue.url ? ` — ${issue.url}` : '';
-        return `• ${issue.identifier} — ${issue.title}${meta}${url}`;
-      });
-
-      return `\n\n---\nLinear issues referenced:\n${lines.join('\n')}`;
-    })();
-
-    const messageWithContext = `${inputValue}${linearContextBlock}`;
+    const messageWithContext = inputValue;
 
     const attachmentsSection = await buildAttachmentsSection(workspace.path, inputValue, {
       maxFiles: 6,
@@ -410,7 +333,6 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
     }
 
     setInputValue('');
-    setLinkedIssues([]);
   };
 
   const handleCancelStream = async () => {
@@ -587,9 +509,6 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
         provider={provider}
         onProviderChange={(p) => setProvider(p)}
         selectDisabled={providerLocked}
-        linkedIssues={linkedIssues}
-        onLinkIssue={handleAddLinkedIssue}
-        onUnlinkIssue={handleRemoveLinkedIssue}
         disabled={
           provider === 'droid' ||
           provider === 'gemini' ||

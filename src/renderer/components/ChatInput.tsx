@@ -1,16 +1,12 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
-import { ArrowRight, Link2, Loader2, Search, X as CloseIcon } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 // Provider selection handled by ProviderSelector component
 import { useFileIndex } from '../hooks/useFileIndex';
 import FileTypeIcon from './ui/file-type-icon';
 import { ProviderSelector } from './ProviderSelector';
 import { type Provider } from '../types';
-import { Input as TextInput } from './ui/input';
-import { Badge } from './ui/badge';
-import { LinearIssueSummary } from '../types/linear';
-import linearLogo from '../../assets/images/linear.png';
 
 interface ChatInputProps {
   value: string;
@@ -26,9 +22,6 @@ interface ChatInputProps {
   provider?: Provider;
   onProviderChange?: (p: Provider) => void;
   selectDisabled?: boolean;
-  linkedIssues?: LinearIssueSummary[];
-  onLinkIssue?: (issue: LinearIssueSummary) => void;
-  onUnlinkIssue?: (identifier: string) => void;
 }
 
 const MAX_LOADING_SECONDS = 60 * 60; // 60 minutes
@@ -69,9 +62,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   provider = 'codex',
   onProviderChange,
   selectDisabled = false,
-  linkedIssues = [],
-  onLinkIssue,
-  onUnlinkIssue,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   // Provider is controlled by parent (codex | claude | droid | gemini | cursor | copilot)
@@ -87,14 +77,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   const [mentionResults, setMentionResults] = useState<
     Array<{ path: string; type: 'file' | 'dir' }>
   >([]);
-  const [isLinkerOpen, setIsLinkerOpen] = useState(false);
-  const [linkSearchTerm, setLinkSearchTerm] = useState('');
-  const [linkSearchResults, setLinkSearchResults] = useState<LinearIssueSummary[]>([]);
-  const [linkSearchError, setLinkSearchError] = useState<string | null>(null);
-  const [isSearchingLinear, setIsSearchingLinear] = useState(false);
-  const linkButtonRef = useRef<HTMLButtonElement>(null);
-  const linkPopoverRef = useRef<HTMLDivElement>(null);
-  const linkSearchInputRef = useRef<HTMLInputElement>(null);
 
   // Debounce mention search to avoid heavy sync work on every keystroke in large repos
   useEffect(() => {
@@ -197,117 +179,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     });
   }
 
-  const canLinkLinear = typeof window !== 'undefined' && !!window.electronAPI?.linearSearchIssues;
-
-  const resetLinker = useCallback(() => {
-    setLinkSearchTerm('');
-    setLinkSearchResults([]);
-    setLinkSearchError(null);
-    setIsSearchingLinear(false);
-  }, []);
-
-  const closeLinker = useCallback(() => {
-    setIsLinkerOpen(false);
-    resetLinker();
-  }, [resetLinker]);
-
-  const openLinker = useCallback(() => {
-    setIsLinkerOpen(true);
-    resetLinker();
-    requestAnimationFrame(() => {
-      linkSearchInputRef.current?.focus();
-    });
-  }, [resetLinker]);
-
-  const toggleLinker = () => {
-    if (isLinkerOpen) {
-      closeLinker();
-    } else {
-      openLinker();
-    }
-  };
-
-  const handleSelectLinkedIssue = (issue: LinearIssueSummary) => {
-    if (onLinkIssue) {
-      onLinkIssue(issue);
-    }
-    closeLinker();
-  };
-
-  const handleRemoveLinkedIssue = (identifier: string) => {
-    if (onUnlinkIssue) {
-      onUnlinkIssue(identifier);
-    }
-  };
-
-  useEffect(() => {
-    if (!isLinkerOpen) return;
-
-    const handleClick = (event: MouseEvent) => {
-      const target = event.target as Node;
-      if (linkPopoverRef.current?.contains(target)) return;
-      if (linkButtonRef.current?.contains(target)) return;
-      closeLinker();
-    };
-
-    const handleKey = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        event.stopPropagation();
-        closeLinker();
-      }
-    };
-
-    document.addEventListener('mousedown', handleClick);
-    document.addEventListener('keydown', handleKey);
-    return () => {
-      document.removeEventListener('mousedown', handleClick);
-      document.removeEventListener('keydown', handleKey);
-    };
-  }, [isLinkerOpen, closeLinker]);
-
-  useEffect(() => {
-    if (!isLinkerOpen) return;
-    const term = linkSearchTerm.trim();
-    if (!term) {
-      setIsSearchingLinear(false);
-      setLinkSearchResults([]);
-      setLinkSearchError(null);
-      return;
-    }
-
-    setIsSearchingLinear(true);
-    let cancelled = false;
-    const handle = setTimeout(async () => {
-      try {
-        const api = window.electronAPI;
-        if (!api?.linearSearchIssues) {
-          throw new Error('Linear search unavailable in this build.');
-        }
-        const result = await api.linearSearchIssues(term, 10);
-        if (cancelled) return;
-        if (!result?.success) {
-          throw new Error(result?.error || 'Failed to search Linear issues.');
-        }
-        setLinkSearchResults(result.issues ?? []);
-        setLinkSearchError(null);
-      } catch (error) {
-        if (cancelled) return;
-        setLinkSearchResults([]);
-        setLinkSearchError(
-          error instanceof Error ? error.message : 'Failed to search Linear issues.'
-        );
-      } finally {
-        if (!cancelled) {
-          setIsSearchingLinear(false);
-        }
-      }
-    }, 240);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(handle);
-    };
-  }, [isLinkerOpen, linkSearchTerm]);
+  const linkButtonRef = useRef<HTMLButtonElement>(null);
 
   const getPlaceholder = () => {
     if (provider === 'codex' && !isCodexInstalled) {
@@ -395,29 +267,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 </div>
               </div>
             )}
-            {linkedIssues.length > 0 && (
-              <div className="mt-3 flex flex-wrap gap-2">
-                {linkedIssues.map((issue) => (
-                  <Badge
-                    key={issue.id || issue.identifier}
-                    className="bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-200 border border-gray-200 dark:border-gray-700 pr-1"
-                  >
-                    <span className="inline-flex items-center gap-1">
-                      <Link2 className="h-3 w-3" aria-hidden="true" />
-                      {issue.identifier}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveLinkedIssue(issue.identifier)}
-                      className="ml-1 inline-flex h-4 w-4 items-center justify-center rounded-sm hover:bg-gray-200 dark:hover:bg-gray-700"
-                      aria-label={`Remove ${issue.identifier}`}
-                    >
-                      <CloseIcon className="h-3 w-3" aria-hidden="true" />
-                    </button>
-                  </Badge>
-                ))}
-              </div>
-            )}
           </div>
 
           <div className="flex items-center justify-between px-4 py-3 rounded-b-xl relative">
@@ -429,26 +278,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 }}
                 disabled={selectDisabled}
               />
-              <Button
-                ref={linkButtonRef}
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={toggleLinker}
-                disabled={
-                  !canLinkLinear ||
-                  isLoading ||
-                  textareaDisabled ||
-                  provider === 'droid' ||
-                  provider === 'gemini' ||
-                  provider === 'cursor' ||
-                  provider === 'copilot'
-                }
-                className="text-xs font-medium gap-2"
-              >
-                <img src={linearLogo} alt="Linear" className="h-3.5 w-3.5" />
-                Add issue
-              </Button>
             </div>
 
             <div className="flex items-center gap-2">
@@ -494,67 +323,6 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               </Button>
             </div>
           </div>
-          {isLinkerOpen && (
-            <div
-              ref={linkPopoverRef}
-              className="absolute bottom-20 right-4 z-40 w-96 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-2xl"
-            >
-              <div className="flex items-center gap-2 border-b border-gray-200 dark:border-gray-700 px-3 py-2">
-                <Search className="h-4 w-4 text-gray-500" aria-hidden="true" />
-                <TextInput
-                  ref={linkSearchInputRef}
-                  type="text"
-                  value={linkSearchTerm}
-                  onChange={(event) => setLinkSearchTerm(event.target.value)}
-                  placeholder="Search Linear issues..."
-                  className="flex-1 h-8"
-                  autoComplete="off"
-                />
-                {isSearchingLinear && <Loader2 className="h-4 w-4 animate-spin text-gray-500" />}
-              </div>
-              {linkSearchError ? (
-                <div className="px-3 py-2 text-xs text-red-600 dark:text-red-400">
-                  {linkSearchError}
-                </div>
-              ) : null}
-              <div className="max-h-64 overflow-y-auto">
-                {linkSearchTerm.trim().length === 0 && !isSearchingLinear ? (
-                  <div className="px-3 py-4 text-xs text-gray-500 dark:text-gray-400">
-                    Start typing to search for issues in your Linear workspace.
-                  </div>
-                ) : linkSearchResults.length > 0 ? (
-                  linkSearchResults.map((issue) => (
-                    <button
-                      key={issue.id}
-                      type="button"
-                      onClick={() => handleSelectLinkedIssue(issue)}
-                      className="w-full text-left px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      <div className="text-sm font-medium text-gray-800 dark:text-gray-100">
-                        {issue.identifier}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                        {issue.title}
-                      </div>
-                      <div className="mt-1 text-[11px] text-gray-400 dark:text-gray-500 flex gap-2">
-                        {issue.team?.key ? <span>{issue.team.key}</span> : null}
-                        {issue.state?.name ? <span>{issue.state.name}</span> : null}
-                        {issue.assignee?.displayName ? <span>{issue.assignee.displayName}</span> : null}
-                      </div>
-                    </button>
-                  ))
-                ) : isSearchingLinear ? (
-                  <div className="px-3 py-4 text-xs text-gray-500 dark:text-gray-400">
-                    Searching…
-                  </div>
-                ) : (
-                  <div className="px-3 py-4 text-xs text-gray-500 dark:text-gray-400">
-                    No issues found.
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
         </div>
       </div>
     </div>
