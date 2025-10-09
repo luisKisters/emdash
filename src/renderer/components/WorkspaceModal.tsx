@@ -301,7 +301,6 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                       </AccordionTrigger>
                       <AccordionContent
                         className="px-0 pt-2 space-y-4"
-                        contentClassName="overflow-visible"
                         id="workspace-advanced"
                       >
                         <div>
