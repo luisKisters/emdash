@@ -348,9 +348,9 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                     onValueChange={setSelectedIssueIdentifier}
                                     disabled={isLoadingIssues || !!issueListError || !issuesLoaded}
                                   >
-                                    <SelectTrigger className="w-full">
+                                    <SelectTrigger className="h-9 w-full bg-gray-100 dark:bg-gray-700 border-none">
                                       <SelectValue asChild placeholder={issuePlaceholder}>
-                                        <span className="flex min-w-0 flex-1 items-center gap-2 text-left">
+                                        <span className="flex min-w-0 flex-1 items-center gap-2 text-left text-foreground">
                                           {selectedIssue ? (
                                             <>
                                               <span className="shrink-0 text-foreground">
@@ -358,15 +358,15 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                               </span>
                                               {selectedIssue.title ? (
                                                 <>
-                                                  <span className="shrink-0 text-muted-foreground">-</span>
-                                                  <span className="truncate text-muted-foreground">
+                                                  <span className="shrink-0 text-foreground">-</span>
+                                                  <span className="truncate">
                                                     {selectedIssue.title}
                                                   </span>
                                                 </>
                                               ) : null}
                                             </>
                                           ) : (
-                                            <span className="truncate text-muted-foreground">
+                                            <span className="truncate">
                                               {issuePlaceholder}
                                             </span>
                                           )}
