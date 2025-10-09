@@ -452,7 +452,9 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
         </>
       )}
 
-      {isTerminal ? <ProviderBar provider={provider} /> : null}
+      {isTerminal ? (
+        <ProviderBar provider={provider} linearIssue={workspace.metadata?.linearIssue || null} />
+      ) : null}
       {/* <ChatInput
         value={inputValue}
         onChange={setInputValue}
