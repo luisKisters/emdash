@@ -9,6 +9,7 @@ import MessageList from './MessageList';
 import ProviderBar from './ProviderBar';
 import useCodexStream from '../hooks/useCodexStream';
 import useClaudeStream from '../hooks/useClaudeStream';
+import { useInitialPromptInjection } from '../hooks/useInitialPromptInjection';
 import { type Provider } from '../types';
 import { buildAttachmentsSection } from '../lib/attachments';
 import { Workspace, Message } from '../types/chat';
@@ -362,43 +363,12 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
 
   const isTerminal = providerMeta[provider]?.terminalOnly === true;
 
-  // Inject initial prompt into terminal (one-shot) when PTY is ready
-  useEffect(() => {
-    if (!isTerminal) return;
-    const prompt = workspace.metadata?.initialPrompt?.trim();
-    if (!prompt) return;
-    const sentKey = `initialPromptSent:${workspace.id}`;
-    if (localStorage.getItem(sentKey) === '1') return;
-
-    const ptyId = `${provider}-main-${workspace.id}`;
-    let sent = false;
-    const send = () => {
-      try {
-        if (sent) return;
-        (window as any).electronAPI?.ptyInput?.({ id: ptyId, data: prompt + '\n' });
-        localStorage.setItem(sentKey, '1');
-        sent = true;
-      } catch {}
-    };
-    // Prefer to send on first data chunk from this PTY (most robust)
-    const offData = (window as any).electronAPI?.onPtyData?.(ptyId, (_chunk: string) => {
-      // slight debounce to allow prompt to settle
-      setTimeout(send, 150);
-      offData?.();
-      offStarted?.();
-    });
-    // Also listen for started as a backup signal
-    const offStarted = (window as any).electronAPI?.onPtyStarted?.((info: { id: string }) => {
-      if (info?.id === ptyId) setTimeout(send, 250);
-    });
-    // Final fallback: try after 2s if neither event fired (should be rare)
-    const t = setTimeout(send, 2000);
-    return () => {
-      clearTimeout(t);
-      offStarted?.();
-      offData?.();
-    };
-  }, [isTerminal, provider, workspace.id, workspace.metadata?.initialPrompt]);
+  useInitialPromptInjection({
+    workspaceId: workspace.id,
+    providerId: provider,
+    prompt: workspace.metadata?.initialPrompt || null,
+    enabled: isTerminal,
+  });
 
   return (
     <div className={`flex flex-col h-full bg-white dark:bg-gray-800 ${className}`}>

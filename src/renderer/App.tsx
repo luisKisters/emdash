@@ -735,6 +735,12 @@ const App: React.FC = () => {
   const handleDeleteWorkspace = async (targetProject: Project, workspace: Workspace) => {
     try {
       try {
+        // Clear initial prompt sent flag if present
+        const { initialPromptSentKey } = await import('./lib/keys');
+        const key = initialPromptSentKey(workspace.id);
+        localStorage.removeItem(key);
+      } catch {}
+      try {
         if (workspace.agentId) {
           const agentRemoval = await window.electronAPI.codexRemoveAgent(workspace.id);
           if (!agentRemoval.success) {
