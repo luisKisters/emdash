@@ -23,7 +23,12 @@ import {
 interface WorkspaceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateWorkspace: (name: string, initialPrompt?: string, selectedProvider?: Provider) => void;
+  onCreateWorkspace: (
+    name: string,
+    initialPrompt?: string,
+    selectedProvider?: Provider,
+    linkedIssue?: LinearIssueSummary | null
+  ) => void;
   projectName: string;
   defaultBranch: string;
   existingNames?: string[];
@@ -100,7 +105,8 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
       await onCreateWorkspace(
         convertToWorkspaceName(workspaceName),
         showAdvanced ? initialPrompt.trim() || undefined : undefined,
-        showAdvanced ? selectedProvider : undefined
+        showAdvanced ? selectedProvider : undefined,
+        showAdvanced ? selectedIssue ?? null : null
       );
       setWorkspaceName('');
       setInitialPrompt('');

@@ -16,6 +16,7 @@ import { SidebarProvider, useSidebar } from './components/ui/sidebar';
 import { RightSidebarProvider, useRightSidebar } from './components/ui/right-sidebar';
 import RightSidebar from './components/RightSidebar';
 import { type Provider } from './types';
+import { type LinearIssueSummary } from './types/linear';
 import { providerMeta, type UiProvider } from './providers/meta';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './components/ui/resizable';
 import { loadPanelSizes, savePanelSizes } from './lib/persisted-layout';
@@ -85,6 +86,10 @@ interface Project {
   workspaces?: Workspace[];
 }
 
+interface WorkspaceMetadata {
+  linearIssue?: LinearIssueSummary | null;
+}
+
 interface Workspace {
   id: string;
   name: string;
@@ -92,6 +97,7 @@ interface Workspace {
   path: string;
   status: 'active' | 'idle' | 'running';
   agentId?: string;
+  metadata?: WorkspaceMetadata | null;
 }
 
 const TITLEBAR_HEIGHT = '36px';
@@ -506,13 +512,18 @@ const App: React.FC = () => {
 
   const handleCreateWorkspace = async (
     workspaceName: string,
-    initialPrompt?: string,
-    selectedProvider?: Provider
+    _initialPrompt?: string,
+    selectedProvider?: Provider,
+    linkedLinearIssue: LinearIssueSummary | null = null
   ) => {
     if (!selectedProject) return;
 
     setIsCreatingWorkspace(true);
     try {
+      const workspaceMetadata: WorkspaceMetadata | null = linkedLinearIssue
+        ? { linearIssue: linkedLinearIssue }
+        : null;
+
       // Create Git worktree
       const worktreeResult = await window.electronAPI.worktreeCreate({
         projectPath: selectedProject.path,
@@ -532,12 +543,14 @@ const App: React.FC = () => {
         branch: worktree.branch,
         path: worktree.path,
         status: 'idle',
+        metadata: workspaceMetadata,
       };
 
       // Save workspace to database
       const saveResult = await window.electronAPI.saveWorkspace({
         ...newWorkspace,
         projectId: selectedProject.id,
+        metadata: workspaceMetadata,
       });
 
       if (saveResult.success) {
@@ -546,8 +559,55 @@ const App: React.FC = () => {
          * Original behavior saved below for future restoration.
          *
          * // If there's an initial prompt, create conversation and save it as first message, then trigger agent response
-         * if (initialPrompt) { ... }
+         * if (_initialPrompt) { ... }
          */
+
+        if (workspaceMetadata?.linearIssue) {
+          try {
+            const convoResult = await window.electronAPI.getOrCreateDefaultConversation(
+              newWorkspace.id
+            );
+
+            if (convoResult?.success && convoResult.conversation?.id) {
+              const issue = workspaceMetadata.linearIssue;
+              const detailParts: string[] = [];
+              const stateName = issue.state?.name?.trim();
+              const assigneeName = issue.assignee?.displayName?.trim() || issue.assignee?.name?.trim();
+              const teamKey = issue.team?.key?.trim();
+              const projectName = issue.project?.name?.trim();
+
+              if (stateName) detailParts.push(`State: ${stateName}`);
+              if (assigneeName) detailParts.push(`Assignee: ${assigneeName}`);
+              if (teamKey) detailParts.push(`Team: ${teamKey}`);
+              if (projectName) detailParts.push(`Project: ${projectName}`);
+
+              const lines = [
+                `Linked Linear issue: ${issue.identifier} — ${issue.title}`,
+              ];
+
+              if (detailParts.length) {
+                lines.push(`Details: ${detailParts.join(' • ')}`);
+              }
+
+              if (issue.url) {
+                lines.push(`URL: ${issue.url}`);
+              }
+
+              await window.electronAPI.saveMessage({
+                id: `linear-context-${newWorkspace.id}`,
+                conversationId: convoResult.conversation.id,
+                content: lines.join('\n'),
+                sender: 'agent',
+                metadata: JSON.stringify({
+                  isLinearContext: true,
+                  linearIssue: issue,
+                }),
+              });
+            }
+          } catch (seedError) {
+            console.error('Failed to seed workspace with Linear issue context:', seedError);
+          }
+        }
 
         setProjects((prev) =>
           prev.map((project) =>

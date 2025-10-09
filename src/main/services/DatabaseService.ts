@@ -29,6 +29,7 @@ export interface Workspace {
   path: string;
   status: 'active' | 'idle' | 'running';
   agentId?: string;
+  metadata?: any;
   createdAt: string;
   updatedAt: string;
 }
@@ -134,11 +135,20 @@ export class DatabaseService {
         path TEXT NOT NULL,
         status TEXT DEFAULT 'idle',
         agent_id TEXT,
+        metadata TEXT,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (project_id) REFERENCES projects (id) ON DELETE CASCADE
       )
     `);
+
+    try {
+      await runAsync(`ALTER TABLE workspaces ADD COLUMN metadata TEXT`);
+    } catch (error) {
+      if (!(error instanceof Error) || !/duplicate column name/i.test(error.message)) {
+        throw error;
+      }
+    }
 
     // Create conversations table
     await runAsync(`
@@ -271,8 +281,8 @@ export class DatabaseService {
       this.db!.run(
         `
         INSERT OR REPLACE INTO workspaces 
-        (id, project_id, name, branch, path, status, agent_id, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+        (id, project_id, name, branch, path, status, agent_id, metadata, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
       `,
         [
           workspace.id,
@@ -282,6 +292,11 @@ export class DatabaseService {
           workspace.path,
           workspace.status,
           workspace.agentId || null,
+          typeof workspace.metadata === 'string'
+            ? workspace.metadata
+            : workspace.metadata
+              ? JSON.stringify(workspace.metadata)
+              : null,
         ],
         (err) => {
           if (err) {
@@ -299,7 +314,7 @@ export class DatabaseService {
 
     let query = `
       SELECT 
-        id, project_id, name, branch, path, status, agent_id,
+        id, project_id, name, branch, path, status, agent_id, metadata,
         created_at, updated_at
       FROM workspaces
     `;
@@ -317,17 +332,30 @@ export class DatabaseService {
         if (err) {
           reject(err);
         } else {
-          const workspaces = rows.map((row) => ({
-            id: row.id,
-            projectId: row.project_id,
-            name: row.name,
-            branch: row.branch,
-            path: row.path,
-            status: row.status,
-            agentId: row.agent_id,
-            createdAt: row.created_at,
-            updatedAt: row.updated_at,
-          }));
+          const workspaces = rows.map((row) => {
+            let metadata: any = null;
+            if (row.metadata) {
+              try {
+                metadata = JSON.parse(row.metadata);
+              } catch (parseError) {
+                console.warn('Failed to parse workspace metadata for', row.id, parseError);
+                metadata = null;
+              }
+            }
+
+            return {
+              id: row.id,
+              projectId: row.project_id,
+              name: row.name,
+              branch: row.branch,
+              path: row.path,
+              status: row.status,
+              agentId: row.agent_id,
+              metadata,
+              createdAt: row.created_at,
+              updatedAt: row.updated_at,
+            };
+          });
           resolve(workspaces);
         }
       });
