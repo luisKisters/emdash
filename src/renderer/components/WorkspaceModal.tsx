@@ -133,6 +133,16 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
     };
   }, []);
 
+  useEffect(() => {
+    if (!isOpen) {
+      setAvailableIssues([]);
+      setSelectedIssueIdentifier('');
+      setHasRequestedIssues(false);
+      setIssueListError(null);
+      setIsLoadingIssues(false);
+    }
+  }, [isOpen]);
+
   const loadLinearIssues = useCallback(async () => {
     if (!canListLinear) {
       return;
