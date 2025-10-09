@@ -1,4 +1,5 @@
 import { ipcMain } from 'electron';
+import { log } from '../lib/logger';
 import { GitHubService } from '../services/GitHubService';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -35,7 +36,7 @@ export function registerGithubIpc() {
         };
       }
     } catch (error) {
-      console.error('Failed to connect to GitHub:', error);
+      log.error('Failed to connect to GitHub:', error);
       return { success: false, error: 'Failed to connect to GitHub' };
     }
   });
@@ -44,7 +45,7 @@ export function registerGithubIpc() {
     try {
       return await githubService.authenticate();
     } catch (error) {
-      console.error('GitHub authentication failed:', error);
+      log.error('GitHub authentication failed:', error);
       return { success: false, error: 'Authentication failed' };
     }
   });
@@ -53,7 +54,7 @@ export function registerGithubIpc() {
     try {
       return await githubService.isAuthenticated();
     } catch (error) {
-      console.error('GitHub authentication check failed:', error);
+      log.error('GitHub authentication check failed:', error);
       return false;
     }
   });
@@ -83,7 +84,7 @@ export function registerGithubIpc() {
 
       return { installed, authenticated, user };
     } catch (error) {
-      console.error('GitHub status check failed:', error);
+      log.error('GitHub status check failed:', error);
       return { installed: false, authenticated: false };
     }
   });
@@ -94,7 +95,7 @@ export function registerGithubIpc() {
       if (!token) return null;
       return await githubService.getUserInfo(token);
     } catch (error) {
-      console.error('Failed to get user info:', error);
+      log.error('Failed to get user info:', error);
       return null;
     }
   });
@@ -105,7 +106,7 @@ export function registerGithubIpc() {
       if (!token) throw new Error('Not authenticated');
       return await githubService.getRepositories(token);
     } catch (error) {
-      console.error('Failed to get repositories:', error);
+      log.error('Failed to get repositories:', error);
       return [];
     }
   });
@@ -114,7 +115,7 @@ export function registerGithubIpc() {
     try {
       return await githubService.cloneRepository(repoUrl, localPath);
     } catch (error) {
-      console.error('Failed to clone repository:', error);
+      log.error('Failed to clone repository:', error);
       return { success: false, error: 'Clone failed' };
     }
   });
@@ -123,7 +124,7 @@ export function registerGithubIpc() {
     try {
       await githubService.logout();
     } catch (error) {
-      console.error('Failed to logout:', error);
+      log.error('Failed to logout:', error);
     }
   });
 }

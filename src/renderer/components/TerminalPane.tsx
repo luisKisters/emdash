@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { Terminal } from '@xterm/xterm';
+import { log } from '../lib/logger';
 
 type Props = {
   id: string;
@@ -11,6 +12,8 @@ type Props = {
   variant?: 'dark' | 'light';
   keepAlive?: boolean;
   onActivity?: () => void;
+  onStartError?: (message: string) => void;
+  onStartSuccess?: () => void;
 };
 
 const TerminalPaneComponent: React.FC<Props> = ({
@@ -23,6 +26,8 @@ const TerminalPaneComponent: React.FC<Props> = ({
   variant = 'dark',
   keepAlive = false,
   onActivity,
+  onStartError,
+  onStartSuccess,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const termRef = useRef<Terminal | null>(null);
@@ -31,11 +36,11 @@ const TerminalPaneComponent: React.FC<Props> = ({
   useEffect(() => {
     const el = containerRef.current;
     if (!el) {
-      console.error('TerminalPane: No container element found');
+      log.error('TerminalPane: No container element found');
       return;
     }
 
-    console.log('TerminalPane: Creating terminal, container dimensions:', {
+    log.debug('TerminalPane: Creating terminal, container dimensions:', {
       width: el.offsetWidth,
       height: el.offsetHeight,
       clientWidth: el.clientWidth,
@@ -105,20 +110,14 @@ const TerminalPaneComponent: React.FC<Props> = ({
     setTimeout(() => term.focus(), 0);
 
     const keyDisp = term.onData((data) => {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.log('xterm onData', JSON.stringify(data));
-      }
+      log.debug('xterm onData', JSON.stringify(data));
       try {
         onActivity && onActivity();
       } catch {}
       window.electronAPI.ptyInput({ id, data });
     });
     const keyDisp2 = term.onKey((ev) => {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.log('xterm onKey', ev.key);
-      }
+      log.debug('xterm onKey', ev.key);
     });
 
     // Listen for history first, then live data, then start/attach to PTY
@@ -176,9 +175,20 @@ const TerminalPaneComponent: React.FC<Props> = ({
         });
         if (!res?.ok) {
           term.writeln('\x1b[31mFailed to start PTY:\x1b[0m ' + (res as any)?.error);
+          try {
+            onStartError && onStartError((res as any)?.error || 'Failed to start PTY');
+          } catch {}
+        }
+        if (res?.ok) {
+          try {
+            onStartSuccess && onStartSuccess();
+          } catch {}
         }
       } catch (e: any) {
         term.writeln('\x1b[31mError starting PTY:\x1b[0m ' + (e?.message || String(e)));
+        try {
+          onStartError && onStartError(e?.message || String(e));
+        } catch {}
       }
     })();
 

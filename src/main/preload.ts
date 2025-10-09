@@ -40,6 +40,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on(channel, wrapped);
     return () => ipcRenderer.removeListener(channel, wrapped);
   },
+  onPtyStarted: (listener: (data: { id: string }) => void) => {
+    const channel = 'pty:started';
+    const wrapped = (_: Electron.IpcRendererEvent, data: { id: string }) => listener(data);
+    ipcRenderer.on(channel, wrapped);
+    return () => ipcRenderer.removeListener(channel, wrapped);
+  },
 
   // Worktree management
   worktreeCreate: (args: { projectPath: string; workspaceName: string; projectId: string }) =>
@@ -104,6 +110,15 @@ contextBridge.exposeInMainWorld('electronAPI', {
   githubCloneRepository: (repoUrl: string, localPath: string) =>
     ipcRenderer.invoke('github:cloneRepository', repoUrl, localPath),
   githubLogout: () => ipcRenderer.invoke('github:logout'),
+  // Linear integration
+  linearSaveToken: (token: string) => ipcRenderer.invoke('linear:saveToken', token),
+  linearCheckConnection: () => ipcRenderer.invoke('linear:checkConnection'),
+  linearClearToken: () => ipcRenderer.invoke('linear:clearToken'),
+  linearGetIssues: (identifiers: string[]) => ipcRenderer.invoke('linear:getIssues', identifiers),
+  linearGetIssue: (identifier: string) => ipcRenderer.invoke('linear:getIssue', identifier),
+  linearSearchIssues: (term: string, limit?: number) =>
+    ipcRenderer.invoke('linear:searchIssues', term, limit),
+  linearListIssues: (limit?: number) => ipcRenderer.invoke('linear:listIssues', limit),
   // Database methods
   getProjects: () => ipcRenderer.invoke('db:getProjects'),
   saveProject: (project: any) => ipcRenderer.invoke('db:saveProject', project),

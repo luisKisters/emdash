@@ -1,4 +1,5 @@
 import { execFile } from 'child_process';
+import { log } from '../lib/logger';
 import { promisify } from 'util';
 import path from 'path';
 import fs from 'fs';
@@ -55,7 +56,7 @@ export class WorktreeService {
       const worktreePath = path.join(projectPath, '..', `worktrees/${sluggedName}-${timestamp}`);
       const worktreeId = this.stableIdFromPath(worktreePath);
 
-      console.log(`Creating worktree: ${branchName} -> ${worktreePath}`);
+      log.info(`Creating worktree: ${branchName} -> ${worktreePath}`);
 
       // Check if worktree path already exists
       if (fs.existsSync(worktreePath)) {
@@ -75,8 +76,8 @@ export class WorktreeService {
         { cwd: projectPath }
       );
 
-      console.log('Git worktree stdout:', stdout);
-      console.log('Git worktree stderr:', stderr);
+      log.debug('Git worktree stdout:', stdout);
+      log.debug('Git worktree stderr:', stderr);
 
       // Do not treat localized/progress stderr as failure.
       // Many git commands emit progress to stderr; rely on exit code instead.
@@ -129,22 +130,22 @@ export class WorktreeService {
 
       this.worktrees.set(worktreeInfo.id, worktreeInfo);
 
-      console.log(`Created worktree: ${workspaceName} -> ${branchName}`);
+      log.info(`Created worktree: ${workspaceName} -> ${branchName}`);
 
       // Push the new branch to origin and set upstream so PRs work out of the box
       try {
         await execFileAsync('git', ['push', '--set-upstream', 'origin', branchName], {
           cwd: worktreePath,
         });
-        console.log(`Pushed branch ${branchName} to origin with upstream tracking`);
+        log.info(`Pushed branch ${branchName} to origin with upstream tracking`);
       } catch (pushErr) {
-        console.warn('Initial push of worktree branch failed:', pushErr);
+        log.warn('Initial push of worktree branch failed:', pushErr as any);
         // Don't fail worktree creation if push fails - user can push manually later
       }
 
       return worktreeInfo;
     } catch (error) {
-      console.error('Failed to create worktree:', error);
+      log.error('Failed to create worktree:', error);
       throw new Error(`Failed to create worktree: ${error}`);
     }
   }
@@ -192,7 +193,7 @@ export class WorktreeService {
 
       return worktrees;
     } catch (error) {
-      console.error('Failed to list worktrees:', error);
+      log.error('Failed to list worktrees:', error);
       return [];
     }
   }
@@ -240,12 +241,12 @@ export class WorktreeService {
 
       if (worktree) {
         this.worktrees.delete(worktreeId);
-        console.log(`Removed worktree: ${worktree.name}`);
+        log.info(`Removed worktree: ${worktree.name}`);
       } else {
-        console.log(`Removed worktree ${worktreeId}`);
+        log.info(`Removed worktree ${worktreeId}`);
       }
     } catch (error) {
-      console.error('Failed to remove worktree:', error);
+      log.error('Failed to remove worktree:', error);
       throw new Error(`Failed to remove worktree: ${error}`);
     }
   }
@@ -295,7 +296,7 @@ export class WorktreeService {
         untrackedFiles,
       };
     } catch (error) {
-      console.error('Failed to get worktree status:', error);
+      log.error('Failed to get worktree status:', error);
       return {
         hasChanges: false,
         stagedFiles: [],
@@ -341,9 +342,9 @@ export class WorktreeService {
       // Remove the worktree
       await this.removeWorktree(projectPath, worktreeId);
 
-      console.log(`Merged worktree changes: ${worktree.name}`);
+      log.info(`Merged worktree changes: ${worktree.name}`);
     } catch (error) {
-      console.error('Failed to merge worktree changes:', error);
+      log.error('Failed to merge worktree changes:', error);
       throw new Error(`Failed to merge worktree changes: ${error}`);
     }
   }

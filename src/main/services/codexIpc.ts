@@ -1,4 +1,5 @@
 import { ipcMain } from 'electron';
+import { log } from '../lib/logger';
 import { codexService } from './CodexService';
 
 export function setupCodexIpc() {
@@ -69,12 +70,12 @@ export function setupCodexIpc() {
 
   ipcMain.handle('codex:stop-stream', async (event, workspaceId: string) => {
     try {
-      console.log('[codex:stop-stream] request received', workspaceId);
+      log.debug('[codex:stop-stream] request received', workspaceId);
       const stopped = await codexService.stopMessageStream(workspaceId);
-      console.log('[codex:stop-stream] result', { workspaceId, stopped });
+      log.debug('[codex:stop-stream] result', { workspaceId, stopped });
       return { success: stopped, stopped };
     } catch (error) {
-      console.error('[codex:stop-stream] failed', error);
+      log.error('[codex:stop-stream] failed', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
     }
   });
@@ -156,5 +157,5 @@ export function setupCodexIpc() {
     });
   });
 
-  console.log('✅ Codex IPC handlers registered');
+  log.info('✅ Codex IPC handlers registered');
 }

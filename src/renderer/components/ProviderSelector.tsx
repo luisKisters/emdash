@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Select,
   SelectTrigger,
@@ -8,7 +8,6 @@ import {
   SelectItemText,
 } from './ui/select';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from './ui/tooltip';
-import { ChevronUp } from 'lucide-react';
 import { type Provider } from '../types';
 import openaiLogo from '../../assets/images/openai.png';
 import claudeLogo from '../../assets/images/claude.png';
@@ -63,12 +62,10 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
   disabled = false,
   className = '',
 }) => {
-  const [isSelectOpen, setIsSelectOpen] = useState(false);
-
   const currentProvider = providerConfig[value];
 
   return (
-    <div className={`relative inline-block w-[12rem] ${className}`}>
+    <div className={`relative block min-w-0 w-[12rem] ${className}`}>
       <Select
         value={value}
         onValueChange={(v) => {
@@ -76,7 +73,6 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
             onChange(v as Provider);
           }
         }}
-        onOpenChange={setIsSelectOpen}
         disabled={disabled}
       >
         {disabled ? (
@@ -85,11 +81,11 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
               <TooltipTrigger asChild>
                 <SelectTrigger
                   aria-disabled
-                  className={`h-9 bg-gray-100 dark:bg-gray-700 border-none ${
+                  className={`h-9 w-full bg-gray-100 dark:bg-gray-700 border-none ${
                     disabled ? 'opacity-60 cursor-not-allowed' : ''
                   }`}
                 >
-                  <div className="flex items-center gap-2">
+                  <div className="flex w-full items-center gap-2 min-w-0 overflow-hidden">
                     <img
                       src={currentProvider.logo}
                       alt={currentProvider.alt}
@@ -105,8 +101,8 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
             </Tooltip>
           </TooltipProvider>
         ) : (
-          <SelectTrigger className="h-9 bg-gray-100 dark:bg-gray-700 border-none">
-            <div className="flex items-center gap-2">
+          <SelectTrigger className="h-9 w-full bg-gray-100 dark:bg-gray-700 border-none">
+            <div className="flex w-full items-center gap-2 min-w-0 overflow-hidden">
               <img
                 src={currentProvider.logo}
                 alt={currentProvider.alt}
@@ -114,14 +110,9 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
               />
               <SelectValue placeholder="Select provider" />
             </div>
-            <ChevronUp
-              className={`h-4 w-4 text-gray-500 transition-transform duration-200 ${
-                isSelectOpen ? 'rotate-180' : ''
-              }`}
-            />
           </SelectTrigger>
         )}
-        <SelectContent>
+        <SelectContent side="top">
           {Object.entries(providerConfig).map(([key, config]) => (
             <SelectItem key={key} value={key}>
               <div className="flex items-center gap-2">

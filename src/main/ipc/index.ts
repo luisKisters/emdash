@@ -10,6 +10,7 @@ import { registerDatabaseIpc } from './dbIpc';
 import { registerDebugIpc } from './debugIpc';
 import { registerGitIpc } from './gitIpc';
 import { registerAgentIpc } from './agentIpc';
+import { registerLinearIpc } from './linearIpc';
 
 export function registerAllIpc() {
   // Core app/utility IPC
@@ -28,6 +29,7 @@ export function registerAllIpc() {
   registerFsIpc();
   setupCodexIpc();
   registerAgentIpc();
+  registerLinearIpc();
 
-  console.log('✅ All IPC handlers registered');
+  // console.log('✅ All IPC handlers registered');
 }

@@ -1,20 +1,35 @@
-import React, { useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
 import { Spinner } from './ui/spinner';
-import { Switch } from './ui/switch';
-import { X, GitBranch, Settings } from 'lucide-react';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from './ui/accordion';
+import { X, GitBranch } from 'lucide-react';
 import { ProviderSelector } from './ProviderSelector';
 import { type Provider } from '../types';
 import { Separator } from './ui/separator';
+import linearLogo from '../../assets/images/linear.png';
+import { type LinearIssueSummary } from '../types/linear';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectItemText,
+  SelectTrigger,
+  SelectValue,
+} from './ui/select';
 
 interface WorkspaceModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onCreateWorkspace: (name: string, initialPrompt?: string, selectedProvider?: Provider) => void;
+  onCreateWorkspace: (
+    name: string,
+    initialPrompt?: string,
+    selectedProvider?: Provider,
+    linkedIssue?: LinearIssueSummary | null
+  ) => void;
   projectName: string;
   defaultBranch: string;
   existingNames?: string[];
@@ -29,13 +44,23 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   existingNames = [],
 }) => {
   const [workspaceName, setWorkspaceName] = useState('');
-  const [initialPrompt, setInitialPrompt] = useState('');
   const [selectedProvider, setSelectedProvider] = useState<Provider>('codex');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
+  const [initialPrompt, setInitialPrompt] = useState('');
+  const [availableIssues, setAvailableIssues] = useState<LinearIssueSummary[]>([]);
+  const [isLoadingIssues, setIsLoadingIssues] = useState(false);
+  const [issueListError, setIssueListError] = useState<string | null>(null);
+  const [selectedIssueIdentifier, setSelectedIssueIdentifier] = useState<string>('');
+  const [hasRequestedIssues, setHasRequestedIssues] = useState(false);
   const shouldReduceMotion = useReducedMotion();
+  const issuesLoaded = availableIssues.length > 0;
+  const selectedIssue = useMemo(
+    () => availableIssues.find((issue) => issue.identifier === selectedIssueIdentifier) ?? null,
+    [availableIssues, selectedIssueIdentifier]
+  );
 
   const normalizedExisting = existingNames.map((n) => n.toLowerCase());
 
@@ -66,40 +91,97 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
     return null;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setTouched(true);
-    const err = validate(workspaceName);
-    if (err) {
-      setError(err);
-      return;
-    }
-
-    setIsCreating(true);
-    try {
-      await onCreateWorkspace(
-        convertToWorkspaceName(workspaceName),
-        showAdvanced ? initialPrompt.trim() || undefined : undefined,
-        showAdvanced ? selectedProvider : undefined
-      );
-      setWorkspaceName('');
-      setInitialPrompt('');
-      setSelectedProvider('codex');
-      setShowAdvanced(false);
-      setError(null);
-      onClose();
-    } catch (error) {
-      console.error('Failed to create workspace:', error);
-    } finally {
-      setIsCreating(false);
-    }
-  };
-
   const onChange = (val: string) => {
     if (!touched) setTouched(true);
     setWorkspaceName(val);
     setError(validate(val));
   };
+
+  const canListLinear = typeof window !== 'undefined' && !!window.electronAPI?.linearListIssues;
+
+  const isMountedRef = useRef(true);
+
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setAvailableIssues([]);
+      setSelectedIssueIdentifier('');
+      setHasRequestedIssues(false);
+      setIssueListError(null);
+      setIsLoadingIssues(false);
+    }
+  }, [isOpen]);
+
+  const loadLinearIssues = useCallback(async () => {
+    if (!canListLinear) {
+      return;
+    }
+
+    const api = window.electronAPI;
+    if (!api?.linearListIssues) {
+      setAvailableIssues([]);
+      setIssueListError('Linear issue list unavailable in this build.');
+      setHasRequestedIssues(true);
+      return;
+    }
+
+    setIsLoadingIssues(true);
+    try {
+      const result = await api.linearListIssues();
+      if (!isMountedRef.current) return;
+      if (!result?.success) {
+        throw new Error(result?.error || 'Failed to load Linear issues.');
+      }
+      setAvailableIssues(result.issues ?? []);
+      setIssueListError(null);
+    } catch (error) {
+      if (!isMountedRef.current) return;
+      setAvailableIssues([]);
+      setIssueListError(error instanceof Error ? error.message : 'Failed to load Linear issues.');
+    } finally {
+      if (!isMountedRef.current) return;
+      setIsLoadingIssues(false);
+      setHasRequestedIssues(true);
+    }
+  }, [canListLinear]);
+
+  useEffect(() => {
+    if (!isOpen || !showAdvanced || !canListLinear) {
+      return;
+    }
+    if (isLoadingIssues || hasRequestedIssues) {
+      return;
+    }
+    loadLinearIssues();
+  }, [isOpen, showAdvanced, canListLinear, isLoadingIssues, hasRequestedIssues, loadLinearIssues]);
+
+  const retryLoadIssues = () => {
+    if (isLoadingIssues) return;
+    setIssueListError(null);
+    setAvailableIssues([]);
+    setHasRequestedIssues(false);
+  };
+
+  const issueHelperText = (() => {
+    if (!canListLinear) {
+      return 'Connect Linear in Settings to browse issues.';
+    }
+    if (hasRequestedIssues && !isLoadingIssues && !issuesLoaded && !issueListError) {
+      return 'No Linear issues available.';
+    }
+    return null;
+  })();
+
+  const issuePlaceholder = isLoadingIssues
+    ? 'Loading issues…'
+    : issueListError
+      ? 'Unable to load issues'
+      : 'Select a Linear issue';
 
   return createPortal(
     <AnimatePresence>
@@ -137,30 +219,61 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
               >
                 <X className="h-4 w-4" />
               </Button>
-              <CardHeader className="space-y-0 pb-2 pr-12">
-                <CardTitle className="text-lg">Create a new workspace</CardTitle>
-                <CardDescription>
-                  {projectName} • Branching from origin/{defaultBranch}
+              <CardHeader className="space-y-1 pb-2 pr-12">
+                <CardTitle className="text-lg">New Workspace</CardTitle>
+                <CardDescription className="text-xs text-muted-foreground">
+                  {projectName} • from origin/{defaultBranch}
                 </CardDescription>
               </CardHeader>
 
               <CardContent>
                 <Separator className="mb-2" />
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    setTouched(true);
+                    const err = validate(workspaceName);
+                    if (err) {
+                      setError(err);
+                      return;
+                    }
+                    setIsCreating(true);
+                    (async () => {
+                      try {
+                        await onCreateWorkspace(
+                          convertToWorkspaceName(workspaceName),
+                          showAdvanced ? initialPrompt.trim() || undefined : undefined,
+                          selectedProvider,
+                          selectedIssue
+                        );
+                        setWorkspaceName('');
+                        setInitialPrompt('');
+                        setSelectedProvider('codex');
+                        setShowAdvanced(false);
+                        setError(null);
+                        onClose();
+                      } catch (error) {
+                        console.error('Failed to create workspace:', error);
+                      } finally {
+                        setIsCreating(false);
+                      }
+                    })();
+                  }}
+                  className="space-y-4"
+                >
                   <div>
-                    <label htmlFor="workspace-name" className="block text-sm font-medium">
-                      Name your workspace
+                    <label
+                      htmlFor="workspace-name"
+                      className="block text-sm font-medium text-foreground"
+                    >
+                      Task name
                     </label>
-                    <p className="text-xs text-gray-500 mb-2">
-                      This desciption will be formatted to a valid workspace name (lowercase, no
-                      spaces, no special characters).
-                    </p>
                     <Input
                       id="workspace-name"
                       value={workspaceName}
                       onChange={(e) => onChange(e.target.value)}
                       onBlur={() => setTouched(true)}
-                      placeholder="Describe your task..."
+                      placeholder="e.g. refactorApiRoutes"
                       className="w-full"
                       aria-invalid={touched && !!error}
                       aria-describedby="workspace-name-error"
@@ -182,96 +295,190 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                     </div>
                   )}
 
-                  <Separator />
-
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2">
-                      <Settings className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                      <label
-                        id="advanced-toggle-label"
-                        className="text-sm font-medium text-gray-900 dark:text-gray-100"
-                      >
+                  <Accordion
+                    type="single"
+                    collapsible
+                    value={showAdvanced ? 'advanced' : undefined}
+                    onValueChange={(val) => setShowAdvanced(val === 'advanced')}
+                    className="space-y-2"
+                  >
+                    <AccordionItem value="advanced" className="border-none">
+                      <AccordionTrigger className="px-0 py-1 text-sm font-medium text-muted-foreground hover:no-underline">
                         Advanced options
-                      </label>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Switch
-                        id="advanced-toggle"
-                        checked={showAdvanced}
-                        onCheckedChange={setShowAdvanced}
-                      />
-                      <p className="text-xs text-gray-500 dark:text-gray-400">
-                        Choose agent and start it immediately with an initial prompt.
-                      </p>
-                    </div>
-                  </div>
+                      </AccordionTrigger>
+                      <AccordionContent className="px-0 pt-2 space-y-4" id="workspace-advanced">
+                        <div className="flex flex-col gap-4">
+                          <div className="flex items-center gap-4">
+                            <label
+                              htmlFor="provider-selector"
+                              className="w-32 shrink-0 text-sm font-medium text-foreground"
+                            >
+                              AI provider
+                            </label>
+                            <div className="flex-1 min-w-0">
+                              <ProviderSelector
+                                value={selectedProvider}
+                                onChange={setSelectedProvider}
+                                className="w-full"
+                              />
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-4">
+                            <label
+                              htmlFor="initial-prompt"
+                              className="w-32 shrink-0 text-sm font-medium text-foreground"
+                            >
+                              Initial prompt
+                            </label>
+                            <div className="flex-1 min-w-0">
+                              <textarea
+                                id="initial-prompt"
+                                value={initialPrompt}
+                                onChange={(e) => setInitialPrompt(e.target.value)}
+                                placeholder={
+                                  selectedIssue
+                                    ? `e.g. Fix the attached Linear ticket ${selectedIssue.identifier} — describe any constraints.`
+                                    : `e.g. Summarize the key problems and propose a plan.`
+                                }
+                                className="w-full min-h-[80px] px-3 py-2 text-sm border border-input bg-background rounded-md resize-none focus:outline-none "
+                                rows={3}
+                              />
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                The prompt will be added to the workspace when it opens.
+                              </p>
+                            </div>
+                          </div>
 
-                  {showAdvanced && (
-                    <>
-                      <div>
-                        <label htmlFor="provider-selector" className="block text-sm font-medium">
-                          AI Provider
-                        </label>
-                        <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                          Choose coding agent for this workspace.
-                        </p>
-                        <ProviderSelector
-                          value={selectedProvider}
-                          onChange={setSelectedProvider}
-                          className="w-full"
-                        />
-                      </div>
-
-                      {(selectedProvider === 'codex' || selectedProvider === 'claude') && (
-                        <div>
-                          <label htmlFor="initial-prompt" className="block text-sm font-medium">
-                            Initial prompt
-                          </label>
-                          <p className="mb-2 text-xs text-gray-500 dark:text-gray-400">
-                            Optionally, add an initial prompt to help the agent get started.
-                          </p>
-                          <textarea
-                            id="initial-prompt"
-                            value={initialPrompt}
-                            onChange={(e) => setInitialPrompt(e.target.value)}
-                            placeholder={`Add an initial prompt for ${
-                              selectedProvider.charAt(0).toUpperCase() + selectedProvider.slice(1)
-                            }, outlining your goal and how you want to achieve it.`}
-                            className="w-full min-h-[80px] px-3 py-2 text-sm border border-input bg-background rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-                            rows={3}
-                          />
+                          <div className="flex items-center gap-4">
+                            <label
+                              htmlFor="linear-issue"
+                              className="w-32 shrink-0 text-sm font-medium text-foreground"
+                            >
+                              Linear issue
+                            </label>
+                            <div className="flex-1 min-w-0">
+                              {canListLinear ? (
+                                <>
+                                  <Select
+                                    value={selectedIssueIdentifier || undefined}
+                                    onValueChange={setSelectedIssueIdentifier}
+                                    disabled={isLoadingIssues || !!issueListError || !issuesLoaded}
+                                  >
+                                    <SelectTrigger className="h-9 w-full bg-gray-100 dark:bg-gray-700 border-none">
+                                      <SelectValue asChild placeholder={issuePlaceholder}>
+                                        <span className="flex min-w-0 flex-1 items-center gap-2 text-left text-foreground">
+                                          {selectedIssue ? (
+                                            <>
+                                              <span className="inline-flex items-center gap-1.5 shrink-0 px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                                                <img
+                                                  src={linearLogo}
+                                                  alt="Linear"
+                                                  className="w-3.5 h-3.5"
+                                                />
+                                                <span className="text-[11px] font-medium text-foreground">
+                                                  {selectedIssue.identifier}
+                                                </span>
+                                              </span>
+                                              {selectedIssue.title ? (
+                                                <>
+                                                  <span className="shrink-0 text-foreground">
+                                                    -
+                                                  </span>
+                                                  <span className="truncate">
+                                                    {selectedIssue.title}
+                                                  </span>
+                                                </>
+                                              ) : null}
+                                            </>
+                                          ) : (
+                                            <span className="truncate">{issuePlaceholder}</span>
+                                          )}
+                                        </span>
+                                      </SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent side="top">
+                                      {availableIssues.map((issue) => (
+                                        <SelectItem
+                                          key={issue.id || issue.identifier}
+                                          value={issue.identifier}
+                                        >
+                                          <SelectItemText>
+                                            <span className="flex min-w-0 items-center gap-2">
+                                              <span className="inline-flex items-center gap-1.5 shrink-0 px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                                                <img
+                                                  src={linearLogo}
+                                                  alt="Linear"
+                                                  className="w-3.5 h-3.5"
+                                                />
+                                                <span className="text-[11px] font-medium text-foreground">
+                                                  {issue.identifier}
+                                                </span>
+                                              </span>
+                                              {issue.title ? (
+                                                <>
+                                                  <span className="truncate text-muted-foreground">
+                                                    {issue.title}
+                                                  </span>
+                                                </>
+                                              ) : null}
+                                            </span>
+                                          </SelectItemText>
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                  {issueListError ? (
+                                    <div className="mt-2 flex items-center gap-2 text-xs text-destructive">
+                                      <span className="truncate">{issueListError}</span>
+                                      <button
+                                        type="button"
+                                        onClick={retryLoadIssues}
+                                        className="font-medium underline-offset-2 hover:underline"
+                                      >
+                                        Retry
+                                      </button>
+                                    </div>
+                                  ) : null}
+                                  {issueHelperText ? (
+                                    <p className="mt-2 text-xs text-muted-foreground">
+                                      {issueHelperText}
+                                    </p>
+                                  ) : null}
+                                </>
+                              ) : (
+                                <>
+                                  <Input
+                                    id="linear-issue"
+                                    value=""
+                                    placeholder="Linear integration unavailable"
+                                    disabled
+                                  />
+                                  <p className="mt-2 text-xs text-muted-foreground">
+                                    Connect Linear in Settings to browse issues.
+                                  </p>
+                                </>
+                              )}
+                            </div>
+                          </div>
+                          
                         </div>
-                      )}
-                    </>
-                  )}
+                      </AccordionContent>
+                    </AccordionItem>
+                  </Accordion>
 
-                  <div className="flex justify-end space-x-2">
-                    <Button type="button" variant="outline" onClick={onClose} disabled={isCreating}>
-                      Cancel
-                    </Button>
-                    <Button
-                      type="submit"
-                      disabled={!!validate(workspaceName) || isCreating}
-                      className="bg-black text-white hover:bg-gray-800"
-                    >
+                  <div className="flex justify-end">
+                    <Button type="submit" disabled={!!validate(workspaceName) || isCreating}>
                       {isCreating ? (
                         <>
                           <Spinner size="sm" className="mr-2" />
                           Creating...
                         </>
                       ) : (
-                        'Create workspace'
+                        'Create'
                       )}
                     </Button>
                   </div>
                 </form>
-
-                <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                    emdash runs a <strong>setup script</strong> each time you create a new
-                    workspace.
-                  </p>
-                </div>
               </CardContent>
             </Card>
           </motion.div>

@@ -242,10 +242,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                                 className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  if (
-                                    onSelectProject &&
-                                    selectedProject?.id !== typedProject.id
-                                  ) {
+                                  if (onSelectProject && selectedProject?.id !== typedProject.id) {
                                     onSelectProject(typedProject);
                                   } else if (!selectedProject) {
                                     onSelectProject?.(typedProject);

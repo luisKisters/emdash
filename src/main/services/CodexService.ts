@@ -5,6 +5,7 @@ import { createWriteStream, existsSync, mkdirSync, WriteStream, readFileSync, st
 import path from 'path';
 import { app } from 'electron';
 import { databaseService } from './DatabaseService';
+import { log } from '../lib/logger';
 
 const execAsync = promisify(exec);
 
@@ -211,11 +212,11 @@ export class CodexService extends EventEmitter {
     try {
       await execAsync('codex --version');
       this.isCodexInstalled = true;
-      console.log('Codex CLI is installed');
+      log.info('Codex CLI is installed');
       return true;
     } catch (error) {
       this.isCodexInstalled = false;
-      console.log('Codex CLI is not installed');
+      log.info('Codex CLI is not installed');
       return false;
     }
   }
@@ -244,7 +245,7 @@ export class CodexService extends EventEmitter {
     };
 
     this.agents.set(agentId, agent);
-    console.log(`Created Codex agent ${agentId} for workspace ${workspaceId}`);
+    log.info(`Created Codex agent ${agentId} for workspace ${workspaceId}`);
 
     return agent;
   }
@@ -299,7 +300,7 @@ export class CodexService extends EventEmitter {
     try {
       // Spawn codex directly with args to avoid shell quoting issues (backticks, quotes, etc.)
       const args = this.buildCodexExecArgs(message);
-      console.log(
+      log.info(
         `Executing: codex ${args.map((a) => (a.includes(' ') ? '"' + a + '"' : a)).join(' ')} in ${agent.worktreePath}`
       );
 
@@ -337,7 +338,7 @@ export class CodexService extends EventEmitter {
       child.on('close', async (code) => {
         this.runningProcesses.delete(workspaceId);
         agent.status = 'idle';
-        console.log(`Codex completed with code ${code} in ${agent.worktreePath}`);
+        log.info(`Codex completed with code ${code} in ${agent.worktreePath}`);
         const exitCode = code !== null && code !== undefined ? code : 'null';
         this.appendStreamLog(workspaceId, `\n[COMPLETE] exit code ${exitCode}\n`);
         if (!this.pendingCancellationLogs.has(workspaceId)) {
@@ -508,7 +509,7 @@ export class CodexService extends EventEmitter {
 
     try {
       const args = this.buildCodexExecArgs(message);
-      console.log(
+      log.info(
         `Executing: codex ${args.map((a) => (a.includes(' ') ? '"' + a + '"' : a)).join(' ')} in ${agent.worktreePath}`
       );
 
@@ -534,9 +535,9 @@ export class CodexService extends EventEmitter {
       agent.status = 'idle';
       agent.lastResponse = stdout;
 
-      console.log(`Codex completed in ${agent.worktreePath}`);
-      console.log('Codex stdout:', stdout);
-      console.log('Codex stderr:', stderr);
+      log.info(`Codex completed in ${agent.worktreePath}`);
+      log.debug('Codex stdout:', stdout);
+      log.debug('Codex stderr:', stderr);
 
       return {
         success: true,
@@ -557,7 +558,7 @@ export class CodexService extends EventEmitter {
         errorMessage = error.message;
       }
 
-      console.error(`Error executing Codex in ${agent.worktreePath}:`, errorMessage);
+      log.error(`Error executing Codex in ${agent.worktreePath}:`, errorMessage);
 
       return {
         success: false,
@@ -588,7 +589,7 @@ export class CodexService extends EventEmitter {
     const agent = Array.from(this.agents.values()).find((a) => a.workspaceId === workspaceId);
     if (agent) {
       this.agents.delete(agent.id);
-      console.log(`Removed agent ${agent.id} for workspace ${workspaceId}`);
+      log.info(`Removed agent ${agent.id} for workspace ${workspaceId}`);
       return true;
     }
     return false;

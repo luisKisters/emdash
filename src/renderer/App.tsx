@@ -16,9 +16,12 @@ import { SidebarProvider, useSidebar } from './components/ui/sidebar';
 import { RightSidebarProvider, useRightSidebar } from './components/ui/right-sidebar';
 import RightSidebar from './components/RightSidebar';
 import { type Provider } from './types';
+import { type LinearIssueSummary } from './types/linear';
+import { providerMeta, type UiProvider } from './providers/meta';
 import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './components/ui/resizable';
 import { loadPanelSizes, savePanelSizes } from './lib/persisted-layout';
 import type { ImperativePanelHandle } from 'react-resizable-panels';
+import SettingsModal from './components/SettingsModal';
 
 const SidebarHotkeys: React.FC = () => {
   const { toggle: toggleLeftSidebar } = useSidebar();
@@ -83,6 +86,11 @@ interface Project {
   workspaces?: Workspace[];
 }
 
+interface WorkspaceMetadata {
+  linearIssue?: LinearIssueSummary | null;
+  initialPrompt?: string | null;
+}
+
 interface Workspace {
   id: string;
   name: string;
@@ -90,6 +98,7 @@ interface Workspace {
   path: string;
   status: 'active' | 'idle' | 'running';
   agentId?: string;
+  metadata?: WorkspaceMetadata | null;
 }
 
 const TITLEBAR_HEIGHT = '36px';
@@ -133,6 +142,7 @@ const App: React.FC = () => {
   const [activeWorkspaceProvider, setActiveWorkspaceProvider] = useState<Provider | null>(null);
   const [isCodexInstalled, setIsCodexInstalled] = useState<boolean | null>(null);
   const [isClaudeInstalled, setIsClaudeInstalled] = useState<boolean | null>(null);
+  const [showSettings, setShowSettings] = useState<boolean>(false);
   const showGithubRequirement = !ghInstalled || !isAuthenticated;
   // Show agent requirements block if none of the supported CLIs are detected locally.
   // We only actively detect Codex and Claude Code; Factory (Droid) docs are shown as an alternative.
@@ -254,6 +264,38 @@ const App: React.FC = () => {
     setRightSidebarCollapsed(collapsed);
   }, []);
 
+  const handleToggleSettings = useCallback(() => {
+    setShowSettings((prev) => !prev);
+  }, []);
+
+  const handleOpenSettings = useCallback(() => {
+    setShowSettings(true);
+  }, []);
+
+  const handleCloseSettings = useCallback(() => {
+    setShowSettings(false);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+
+    const handler = (event: KeyboardEvent) => {
+      if (!(event.metaKey || event.ctrlKey)) {
+        return;
+      }
+
+      const key = event.key?.toLowerCase();
+      const code = event.code?.toLowerCase();
+      if (key === ',' || code === 'comma') {
+        event.preventDefault();
+        handleOpenSettings();
+      }
+    };
+
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+  }, [handleOpenSettings]);
+
   useEffect(() => {
     const rightPanel = rightSidebarPanelRef.current;
     if (rightPanel) {
@@ -350,7 +392,8 @@ const App: React.FC = () => {
           setIsClaudeInstalled(false);
         }
       } catch (error) {
-        console.error('Failed to load app data:', error);
+        const { log } = await import('./lib/logger');
+        log.error('Failed to load app data:', error as any);
       }
     };
 
@@ -392,7 +435,8 @@ const App: React.FC = () => {
                   setProjects((prev) => [...prev, newProject]);
                   setSelectedProject(newProject);
                 } else {
-                  console.error('Failed to save project:', saveResult.error);
+                  const { log } = await import('./lib/logger');
+                  log.error('Failed to save project:', saveResult.error);
                 }
                 // alert(`✅ Project connected to GitHub!\n\nRepository: ${githubInfo.repository}\nBranch: ${githubInfo.branch}\nPath: ${result.path}`);
               } else {
@@ -433,7 +477,8 @@ const App: React.FC = () => {
                 setProjects((prev) => [...prev, newProject]);
                 setSelectedProject(newProject);
               } else {
-                console.error('Failed to save project:', saveResult.error);
+                const { log } = await import('./lib/logger');
+                log.error('Failed to save project:', saveResult.error);
               }
             }
           } else {
@@ -445,7 +490,8 @@ const App: React.FC = () => {
             });
           }
         } catch (error) {
-          console.error('Git detection error:', error);
+          const { log } = await import('./lib/logger');
+          log.error('Git detection error:', error as any);
           toast({
             title: 'Project Opened',
             description: `Could not detect Git information. Path: ${result.path}`,
@@ -460,7 +506,8 @@ const App: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Open project error:', error);
+      const { log } = await import('./lib/logger');
+      log.error('Open project error:', error as any);
       toast({
         title: 'Failed to Open Project',
         description: 'Please check the console for details.',
@@ -472,12 +519,74 @@ const App: React.FC = () => {
   const handleCreateWorkspace = async (
     workspaceName: string,
     initialPrompt?: string,
-    selectedProvider?: Provider
+    selectedProvider?: Provider,
+    linkedLinearIssue: LinearIssueSummary | null = null
   ) => {
     if (!selectedProject) return;
 
     setIsCreatingWorkspace(true);
     try {
+      let preparedPrompt: string | undefined = undefined;
+      if (initialPrompt && initialPrompt.trim()) {
+        const parts: string[] = [];
+        if (linkedLinearIssue) {
+          // Enrich linked issue with description from Linear, if available
+          let issue = linkedLinearIssue;
+          try {
+            const api: any = (window as any).electronAPI;
+            let description: string | undefined;
+            // Try bulk first
+            try {
+              const res = await api?.linearGetIssues?.([linkedLinearIssue.identifier]);
+              const arr = res?.issues || res || [];
+              const node = Array.isArray(arr)
+                ? arr.find(
+                    (n: any) => String(n?.identifier) === String(linkedLinearIssue.identifier)
+                  )
+                : null;
+              if (node?.description) description = String(node.description);
+            } catch {}
+            // Fallback to single issue endpoint
+            if (!description) {
+              const single = await api?.linearGetIssue?.(linkedLinearIssue.identifier);
+              if (single?.success && single.issue?.description) {
+                description = String(single.issue.description);
+              } else if (single?.description) {
+                description = String(single.description);
+              }
+            }
+            if (description) {
+              issue = { ...linkedLinearIssue, description } as any;
+            }
+          } catch {}
+          const detailParts: string[] = [];
+          const stateName = issue.state?.name?.trim();
+          const assigneeName = issue.assignee?.displayName?.trim() || issue.assignee?.name?.trim();
+          const teamKey = issue.team?.key?.trim();
+          const projectName = issue.project?.name?.trim();
+          if (stateName) detailParts.push(`State: ${stateName}`);
+          if (assigneeName) detailParts.push(`Assignee: ${assigneeName}`);
+          if (teamKey) detailParts.push(`Team: ${teamKey}`);
+          if (projectName) detailParts.push(`Project: ${projectName}`);
+          parts.push(`Linear: ${issue.identifier} — ${issue.title}`);
+          if (detailParts.length) parts.push(`Details: ${detailParts.join(' • ')}`);
+          if (issue.url) parts.push(`URL: ${issue.url}`);
+          if ((issue as any).description) {
+            parts.push('');
+            parts.push('Issue Description:');
+            parts.push(String((issue as any).description).trim());
+          }
+          parts.push('');
+        }
+        parts.push(initialPrompt.trim());
+        preparedPrompt = parts.join('\n');
+      }
+
+      const workspaceMetadata: WorkspaceMetadata | null =
+        linkedLinearIssue || preparedPrompt
+          ? { linearIssue: linkedLinearIssue ?? null, initialPrompt: preparedPrompt ?? null }
+          : null;
+
       // Create Git worktree
       const worktreeResult = await window.electronAPI.worktreeCreate({
         projectPath: selectedProject.path,
@@ -497,103 +606,61 @@ const App: React.FC = () => {
         branch: worktree.branch,
         path: worktree.path,
         status: 'idle',
+        metadata: workspaceMetadata,
       };
 
       // Save workspace to database
       const saveResult = await window.electronAPI.saveWorkspace({
         ...newWorkspace,
         projectId: selectedProject.id,
+        metadata: workspaceMetadata,
       });
 
       if (saveResult.success) {
-        // If there's an initial prompt, create conversation and save it as first message, then trigger agent response
-        if (initialPrompt) {
+        if (workspaceMetadata?.linearIssue) {
           try {
-            const conversationResult = await window.electronAPI.getOrCreateDefaultConversation(
+            const convoResult = await window.electronAPI.getOrCreateDefaultConversation(
               newWorkspace.id
             );
-            if (conversationResult.success && conversationResult.conversation) {
-              const userMessage = {
-                id: `initial-${Date.now()}`,
-                conversationId: conversationResult.conversation.id,
-                content: initialPrompt,
-                sender: 'user' as const,
-                metadata: JSON.stringify({ isInitialPrompt: true }),
-              };
 
-              await window.electronAPI.saveMessage(userMessage);
+            if (convoResult?.success && convoResult.conversation?.id) {
+              const issue = workspaceMetadata.linearIssue;
+              const detailParts: string[] = [];
+              const stateName = issue.state?.name?.trim();
+              const assigneeName =
+                issue.assignee?.displayName?.trim() || issue.assignee?.name?.trim();
+              const teamKey = issue.team?.key?.trim();
+              const projectName = issue.project?.name?.trim();
 
-              // Trigger agent response to the initial prompt based on selected provider
-              await sendInitialPromptToProvider(selectedProvider || 'codex');
+              if (stateName) detailParts.push(`State: ${stateName}`);
+              if (assigneeName) detailParts.push(`Assignee: ${assigneeName}`);
+              if (teamKey) detailParts.push(`Team: ${teamKey}`);
+              if (projectName) detailParts.push(`Project: ${projectName}`);
 
-              async function sendInitialPromptToProvider(provider: Provider) {
-                try {
-                  if (provider === 'codex') {
-                    // Check if Codex is installed
-                    const codexInstallResult = await window.electronAPI.codexCheckInstallation();
-                    if (codexInstallResult.success && codexInstallResult.isInstalled) {
-                      // Create Codex agent for the new workspace
-                      const codexAgentResult = await window.electronAPI.codexCreateAgent(
-                        newWorkspace.id,
-                        newWorkspace.path
-                      );
+              const lines = [`Linked Linear issue: ${issue.identifier} — ${issue.title}`];
 
-                      if (codexAgentResult.success) {
-                        // Send the initial prompt to Codex
-                        await window.electronAPI.codexSendMessageStream(
-                          newWorkspace.id,
-                          initialPrompt || '',
-                          conversationResult.conversation.id ?? undefined
-                        );
-                      } else {
-                        console.error('Failed to create Codex agent:', codexAgentResult.error);
-                      }
-                    } else {
-                      console.warn('Codex not installed, skipping initial prompt');
-                    }
-                  } else if (provider === 'claude') {
-                    // Check if Claude is installed
-                    const claudeInstallResult =
-                      await window.electronAPI.agentCheckInstallation?.('claude');
-                    if (claudeInstallResult?.success && claudeInstallResult.isInstalled) {
-                      // Send the initial prompt to Claude
-                      const claudeArgs: {
-                        providerId: 'claude';
-                        workspaceId: string;
-                        worktreePath: string;
-                        message: string;
-                        conversationId?: string;
-                      } = {
-                        providerId: 'claude',
-                        workspaceId: newWorkspace.id,
-                        worktreePath: newWorkspace.path,
-                        message: initialPrompt || '',
-                      };
-                      if (
-                        conversationResult.conversation.id &&
-                        typeof conversationResult.conversation.id === 'string'
-                      ) {
-                        claudeArgs.conversationId = conversationResult.conversation.id;
-                      }
-                      await window.electronAPI.agentSendMessageStream(claudeArgs);
-                    } else {
-                      console.warn('Claude not installed, skipping initial prompt');
-                    }
-                  } else {
-                    // Terminal-based providers (droid, gemini, cursor) don't support initial prompts
-                    console.log(
-                      `Provider ${provider} is terminal-based, initial prompt will be ignored`
-                    );
-                  }
-                } catch (error) {
-                  console.error(`Failed to send initial prompt to ${provider}:`, error);
-                  // Don't fail workspace creation if agent response fails
-                }
+              if (detailParts.length) {
+                lines.push(`Details: ${detailParts.join(' • ')}`);
               }
+
+              if (issue.url) {
+                lines.push(`URL: ${issue.url}`);
+              }
+
+              await window.electronAPI.saveMessage({
+                id: `linear-context-${newWorkspace.id}`,
+                conversationId: convoResult.conversation.id,
+                content: lines.join('\n'),
+                sender: 'agent',
+                metadata: JSON.stringify({
+                  isLinearContext: true,
+                  linearIssue: issue,
+                }),
+              });
             }
-          } catch (promptError) {
-            console.error('Failed to save initial prompt:', promptError);
-            // Don't fail workspace creation if prompt saving fails
+          } catch (seedError) {
+            const { log } = await import('./lib/logger');
+            log.error('Failed to seed workspace with Linear issue context:', seedError as any);
           }
         }
 
@@ -626,14 +693,16 @@ const App: React.FC = () => {
           description: `"${workspaceName}" workspace created successfully!`,
         });
       } else {
-        console.error('Failed to save workspace:', saveResult.error);
+        const { log } = await import('./lib/logger');
+        log.error('Failed to save workspace:', saveResult.error);
         toast({
           title: 'Error',
           description: 'Failed to create workspace. Please check the console for details.',
         });
       }
     } catch (error) {
-      console.error('Failed to create workspace:', error);
+      const { log } = await import('./lib/logger');
+      log.error('Failed to create workspace:', error as any);
       toast({
         title: 'Error',
         description:
@@ -676,14 +745,22 @@ const App: React.FC = () => {
   const handleDeleteWorkspace = async (targetProject: Project, workspace: Workspace) => {
     try {
       try {
+        // Clear initial prompt sent flag if present
+        const { initialPromptSentKey } = await import('./lib/keys');
+        const key = initialPromptSentKey(workspace.id);
+        localStorage.removeItem(key);
+      } catch {}
+      try {
         if (workspace.agentId) {
           const agentRemoval = await window.electronAPI.codexRemoveAgent(workspace.id);
           if (!agentRemoval.success) {
-            console.warn('codexRemoveAgent reported failure:', agentRemoval.error);
+            const { log } = await import('./lib/logger');
+            log.warn('codexRemoveAgent reported failure:', agentRemoval.error);
           }
         }
       } catch (agentError) {
-        console.warn('Failed to remove agent before deleting workspace:', agentError);
+        const { log } = await import('./lib/logger');
+        log.warn('Failed to remove agent before deleting workspace:', agentError as any);
       }
 
       const removeResult = await window.electronAPI.worktreeRemove({
@@ -730,7 +807,8 @@ const App: React.FC = () => {
         description: `"${workspace.name}" was removed.`,
       });
     } catch (error) {
-      console.error('Failed to delete workspace:', error);
+      const { log } = await import('./lib/logger');
+      log.error('Failed to delete workspace:', error as any);
       toast({
         title: 'Error',
         description:
@@ -890,7 +968,7 @@ const App: React.FC = () => {
             setCollapsedRef={rightSidebarSetCollapsedRef}
           />
           <SidebarHotkeys />
-          <Titlebar />
+          <Titlebar onToggleSettings={handleToggleSettings} isSettingsOpen={showSettings} />
           <div className="flex flex-1 overflow-hidden pt-[var(--tb)]">
             <ResizablePanelGroup
               direction="horizontal"
@@ -956,6 +1034,7 @@ const App: React.FC = () => {
               </ResizablePanel>
             </ResizablePanelGroup>
           </div>
+          <SettingsModal isOpen={showSettings} onClose={handleCloseSettings} />
           <WorkspaceModal
             isOpen={showWorkspaceModal}
             onClose={() => setShowWorkspaceModal(false)}

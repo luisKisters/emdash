@@ -179,6 +179,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     });
   }
 
+  const linkButtonRef = useRef<HTMLButtonElement>(null);
+
   const getPlaceholder = () => {
     if (provider === 'codex' && !isCodexInstalled) {
       return 'Codex CLI not installed...';
@@ -267,14 +269,16 @@ export const ChatInput: React.FC<ChatInputProps> = ({
             )}
           </div>
 
-          <div className="flex items-center justify-between px-4 py-3 rounded-b-xl">
-            <ProviderSelector
-              value={provider as Provider}
-              onChange={(v) => {
-                if (!selectDisabled && onProviderChange) onProviderChange(v);
-              }}
-              disabled={selectDisabled}
-            />
+          <div className="flex items-center justify-between px-4 py-3 rounded-b-xl relative">
+            <div className="flex items-center gap-2">
+              <ProviderSelector
+                value={provider as Provider}
+                onChange={(v) => {
+                  if (!selectDisabled && onProviderChange) onProviderChange(v);
+                }}
+                disabled={selectDisabled}
+              />
+            </div>
 
             <div className="flex items-center gap-2">
               {isLoading && (

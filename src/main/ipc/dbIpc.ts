@@ -1,4 +1,5 @@
 import { ipcMain } from 'electron';
+import { log } from '../lib/logger';
 import { databaseService } from '../services/DatabaseService';
 
 export function registerDatabaseIpc() {
@@ -6,7 +7,7 @@ export function registerDatabaseIpc() {
     try {
       return await databaseService.getProjects();
     } catch (error) {
-      console.error('Failed to get projects:', error);
+      log.error('Failed to get projects:', error);
       return [];
     }
   });
@@ -16,7 +17,7 @@ export function registerDatabaseIpc() {
       await databaseService.saveProject(project);
       return { success: true };
     } catch (error) {
-      console.error('Failed to save project:', error);
+      log.error('Failed to save project:', error);
       return { success: false, error: (error as Error).message };
     }
   });
@@ -25,7 +26,7 @@ export function registerDatabaseIpc() {
     try {
       return await databaseService.getWorkspaces(projectId);
     } catch (error) {
-      console.error('Failed to get workspaces:', error);
+      log.error('Failed to get workspaces:', error);
       return [];
     }
   });
@@ -35,7 +36,7 @@ export function registerDatabaseIpc() {
       await databaseService.saveWorkspace(workspace);
       return { success: true };
     } catch (error) {
-      console.error('Failed to save workspace:', error);
+      log.error('Failed to save workspace:', error);
       return { success: false, error: (error as Error).message };
     }
   });
@@ -45,7 +46,7 @@ export function registerDatabaseIpc() {
       await databaseService.deleteProject(projectId);
       return { success: true };
     } catch (error) {
-      console.error('Failed to delete project:', error);
+      log.error('Failed to delete project:', error);
       return { success: false, error: (error as Error).message };
     }
   });
@@ -56,7 +57,7 @@ export function registerDatabaseIpc() {
       await databaseService.saveConversation(conversation);
       return { success: true };
     } catch (error) {
-      console.error('Failed to save conversation:', error);
+      log.error('Failed to save conversation:', error);
       return { success: false, error: (error as Error).message };
     }
   });
@@ -66,7 +67,7 @@ export function registerDatabaseIpc() {
       const conversations = await databaseService.getConversations(workspaceId);
       return { success: true, conversations };
     } catch (error) {
-      console.error('Failed to get conversations:', error);
+      log.error('Failed to get conversations:', error);
       return { success: false, error: (error as Error).message };
     }
   });
@@ -76,7 +77,7 @@ export function registerDatabaseIpc() {
       const conversation = await databaseService.getOrCreateDefaultConversation(workspaceId);
       return { success: true, conversation };
     } catch (error) {
-      console.error('Failed to get or create default conversation:', error);
+      log.error('Failed to get or create default conversation:', error);
       return { success: false, error: (error as Error).message };
     }
   });
@@ -86,7 +87,7 @@ export function registerDatabaseIpc() {
       await databaseService.saveMessage(message);
       return { success: true };
     } catch (error) {
-      console.error('Failed to save message:', error);
+      log.error('Failed to save message:', error);
       return { success: false, error: (error as Error).message };
     }
   });
@@ -96,7 +97,7 @@ export function registerDatabaseIpc() {
       const messages = await databaseService.getMessages(conversationId);
       return { success: true, messages };
     } catch (error) {
-      console.error('Failed to get messages:', error);
+      log.error('Failed to get messages:', error);
       return { success: false, error: (error as Error).message };
     }
   });
@@ -106,7 +107,7 @@ export function registerDatabaseIpc() {
       await databaseService.deleteConversation(conversationId);
       return { success: true };
     } catch (error) {
-      console.error('Failed to delete conversation:', error);
+      log.error('Failed to delete conversation:', error);
       return { success: false, error: (error as Error).message };
     }
   });
@@ -116,7 +117,7 @@ export function registerDatabaseIpc() {
       await databaseService.deleteWorkspace(workspaceId);
       return { success: true };
     } catch (error) {
-      console.error('Failed to delete workspace:', error);
+      log.error('Failed to delete workspace:', error);
       return { success: false, error: (error as Error).message };
     }
   });

@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { GitBranch, Bot } from 'lucide-react';
 import { useWorkspaceChanges } from '../hooks/useWorkspaceChanges';
 import { ChangesBadge } from './WorkspaceChanges';
 import { Spinner } from './ui/spinner';
 import { usePrStatus } from '../hooks/usePrStatus';
+import { useWorkspaceBusy } from '../hooks/useWorkspaceBusy';
 
 interface Workspace {
   id: string;
@@ -23,36 +24,8 @@ export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({ workspace }) => {
     workspace.path,
     workspace.id
   );
-  const [isRunning, setIsRunning] = useState(false);
   const { pr } = usePrStatus(workspace.path);
-
-  // Initialize from current agent status
-  useEffect(() => {
-    (async () => {
-      try {
-        const status = await (window as any).electronAPI.codexGetAgentStatus(workspace.id);
-        if (status?.success && status.agent) {
-          setIsRunning(status.agent.status === 'running');
-        }
-      } catch {}
-    })();
-
-    // Subscribe to streaming events to reflect activity live
-    const offOut = (window as any).electronAPI.onCodexStreamOutput((data: any) => {
-      if (data.workspaceId === workspace.id) setIsRunning(true);
-    });
-    const offComplete = (window as any).electronAPI.onCodexStreamComplete((data: any) => {
-      if (data.workspaceId === workspace.id) setIsRunning(false);
-    });
-    const offErr = (window as any).electronAPI.onCodexStreamError((data: any) => {
-      if (data.workspaceId === workspace.id) setIsRunning(false);
-    });
-    return () => {
-      offOut?.();
-      offComplete?.();
-      offErr?.();
-    };
-  }, [workspace.id]);
+  const isRunning = useWorkspaceBusy(workspace.id);
 
   return (
     <div className="flex items-center justify-between min-w-0">

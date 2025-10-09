@@ -1,13 +1,14 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useToast } from '../hooks/use-toast';
-import ChatInput from './ChatInput';
 import { TerminalPane } from './TerminalPane';
 import { TerminalModeBanner } from './TerminalModeBanner';
 import { WorkspaceNotice } from './WorkspaceNotice';
 import { providerMeta } from '../providers/meta';
 import MessageList from './MessageList';
+import ProviderBar from './ProviderBar';
 import useCodexStream from '../hooks/useCodexStream';
 import useClaudeStream from '../hooks/useClaudeStream';
+import { useInitialPromptInjection } from '../hooks/useInitialPromptInjection';
 import { type Provider } from '../types';
 import { buildAttachmentsSection } from '../lib/attachments';
 import { Workspace, Message } from '../types/chat';
@@ -47,20 +48,29 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
   const [hasGeminiActivity, setHasGeminiActivity] = useState(false);
   const [hasCursorActivity, setHasCursorActivity] = useState(false);
   const [hasCopilotActivity, setHasCopilotActivity] = useState(false);
+  const [cliStartFailed, setCliStartFailed] = useState(false);
   const initializedConversationRef = useRef<string | null>(null);
 
-  const codexStream = useCodexStream({
-    workspaceId: workspace.id,
-    workspacePath: workspace.path,
-  });
+  const codexStream = useCodexStream(
+    // Disable Codex chat stream when Codex is terminal-only
+    providerMeta.codex.terminalOnly
+      ? null
+      : {
+          workspaceId: workspace.id,
+          workspacePath: workspace.path,
+        }
+  );
 
   const claudeStream = useClaudeStream(
-    provider === 'claude' ? { workspaceId: workspace.id, workspacePath: workspace.path } : null
+    provider === 'claude' && !providerMeta.claude.terminalOnly
+      ? { workspaceId: workspace.id, workspacePath: workspace.path }
+      : null
   );
   const activeStream = provider === 'codex' ? codexStream : claudeStream;
 
   useEffect(() => {
     initializedConversationRef.current = null;
+    setCliStartFailed(false);
   }, [workspace.id]);
 
   // On workspace change, restore last-selected provider (including Droid).
@@ -271,7 +281,8 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
             );
             if (agentResult.success) {
               setAgentCreated(true);
-              console.log('Codex agent created for workspace:', workspace.name);
+              const { log } = await import('../lib/logger');
+              log.info('Codex agent created for workspace:', workspace.name);
             } else {
               console.error('Failed to create Codex agent:', agentResult.error);
               toast({
@@ -310,6 +321,8 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
       provider === 'codex' ? codexStream.conversationId : claudeStream.conversationId;
     if (!activeConversationId) return;
 
+    const messageWithContext = inputValue;
+
     const attachmentsSection = await buildAttachmentsSection(workspace.path, inputValue, {
       maxFiles: 6,
       maxBytesPerFile: 200 * 1024,
@@ -317,8 +330,8 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
 
     const result =
       provider === 'codex'
-        ? await codexStream.send(inputValue, attachmentsSection)
-        : await claudeStream.send(inputValue, attachmentsSection);
+        ? await codexStream.send(messageWithContext, attachmentsSection)
+        : await claudeStream.send(messageWithContext, attachmentsSection);
     if (!result.success) {
       if (result.error && result.error !== 'stream-in-progress') {
         toast({
@@ -350,19 +363,85 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
   // Allow switching providers freely while in Droid mode
   const providerLocked = lockedProvider !== null;
 
+  const isTerminal = providerMeta[provider]?.terminalOnly === true;
+
+  const initialInjection = useMemo(() => {
+    if (!isTerminal) return null;
+    const md = workspace.metadata || null;
+    const p = (md?.initialPrompt || '').trim();
+    if (p) return p;
+    const issue = md?.linearIssue;
+    if (issue) {
+      const parts: string[] = [];
+      const line1 = `Linked Linear issue: ${issue.identifier}${issue.title ? ` — ${issue.title}` : ''}`;
+      parts.push(line1);
+      const details: string[] = [];
+      if (issue.state?.name) details.push(`State: ${issue.state.name}`);
+      if (issue.assignee?.displayName || issue.assignee?.name)
+        details.push(`Assignee: ${issue.assignee?.displayName || issue.assignee?.name}`);
+      if (issue.team?.key) details.push(`Team: ${issue.team.key}`);
+      if (issue.project?.name) details.push(`Project: ${issue.project.name}`);
+      if (details.length) parts.push(`Details: ${details.join(' • ')}`);
+      if (issue.url) parts.push(`URL: ${issue.url}`);
+      const desc = (issue as any)?.description;
+      if (typeof desc === 'string' && desc.trim()) {
+        const trimmed = desc.trim();
+        const max = 1500;
+        const body = trimmed.length > max ? trimmed.slice(0, max) + '\n…' : trimmed;
+        parts.push('', 'Issue Description:', body);
+      }
+      return parts.join('\n');
+    }
+    return null;
+  }, [isTerminal, workspace.metadata]);
+
+  useInitialPromptInjection({
+    workspaceId: workspace.id,
+    providerId: provider,
+    prompt: initialInjection,
+    enabled: isTerminal,
+  });
+
+  // Ensure a provider is stored for this workspace so fallbacks can subscribe immediately
+  useEffect(() => {
+    try {
+      localStorage.setItem(`workspaceProvider:${workspace.id}`, provider);
+    } catch {}
+  }, [provider, workspace.id]);
+
   return (
     <div className={`flex flex-col h-full bg-white dark:bg-gray-800 ${className}`}>
-      {provider === 'droid' ||
-      provider === 'gemini' ||
-      provider === 'cursor' ||
-      provider === 'copilot' ? (
+      {isTerminal ? (
         <div className="flex-1 flex flex-col min-h-0">
           <div className="px-6 pt-4">
-            <div className="max-w-4xl mx-auto">
-              <TerminalModeBanner
-                provider={provider as any}
-                onOpenExternal={(url) => window.electronAPI.openExternal(url)}
-              />
+            <div className="max-w-4xl mx-auto space-y-2">
+              {(() => {
+                if (provider === 'codex' && isCodexInstalled === false) {
+                  return (
+                    <TerminalModeBanner
+                      provider={provider as any}
+                      onOpenExternal={(url) => window.electronAPI.openExternal(url)}
+                    />
+                  );
+                }
+                if (provider === 'claude' && isClaudeInstalled === false) {
+                  return (
+                    <TerminalModeBanner
+                      provider={provider as any}
+                      onOpenExternal={(url) => window.electronAPI.openExternal(url)}
+                    />
+                  );
+                }
+                if (provider !== 'codex' && provider !== 'claude' && cliStartFailed) {
+                  return (
+                    <TerminalModeBanner
+                      provider={provider as any}
+                      onOpenExternal={(url) => window.electronAPI.openExternal(url)}
+                    />
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
           <div className="px-6 mt-2">
@@ -372,71 +451,25 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
           </div>
           <div className="flex-1 min-h-0 px-6 mt-4">
             <div className="max-w-4xl mx-auto h-full rounded-md overflow-hidden">
-              {provider === 'droid' ? (
-                <TerminalPane
-                  id={`droid-main-${workspace.id}`}
-                  cwd={workspace.path}
-                  shell={providerMeta.droid.cli}
-                  keepAlive={true}
-                  onActivity={() => {
-                    try {
-                      setHasDroidActivity(true);
-                      window.localStorage.setItem(`provider:locked:${workspace.id}`, 'droid');
-                      setLockedProvider('droid');
-                    } catch {}
-                  }}
-                  variant="light"
-                  className="h-full w-full"
-                />
-              ) : provider === 'gemini' ? (
-                <TerminalPane
-                  id={`gemini-main-${workspace.id}`}
-                  cwd={workspace.path}
-                  shell={providerMeta.gemini.cli}
-                  keepAlive={true}
-                  onActivity={() => {
-                    try {
-                      setHasGeminiActivity(true);
-                      window.localStorage.setItem(`provider:locked:${workspace.id}`, 'gemini');
-                      setLockedProvider('gemini');
-                    } catch {}
-                  }}
-                  variant="light"
-                  className="h-full w-full"
-                />
-              ) : provider === 'cursor' ? (
-                <TerminalPane
-                  id={`cursor-main-${workspace.id}`}
-                  cwd={workspace.path}
-                  shell={providerMeta.cursor.cli}
-                  keepAlive={true}
-                  onActivity={() => {
-                    try {
-                      setHasCursorActivity(true);
-                      window.localStorage.setItem(`provider:locked:${workspace.id}`, 'cursor');
-                      setLockedProvider('cursor');
-                    } catch {}
-                  }}
-                  variant="light"
-                  className="h-full w-full"
-                />
-              ) : (
-                <TerminalPane
-                  id={`copilot-main-${workspace.id}`}
-                  cwd={workspace.path}
-                  shell={providerMeta.copilot.cli}
-                  keepAlive={true}
-                  onActivity={() => {
-                    try {
-                      setHasCopilotActivity(true);
-                      window.localStorage.setItem(`provider:locked:${workspace.id}`, 'copilot');
-                      setLockedProvider('copilot');
-                    } catch {}
-                  }}
-                  variant="light"
-                  className="h-full w-full"
-                />
-              )}
+              <TerminalPane
+                id={`${provider}-main-${workspace.id}`}
+                cwd={workspace.path}
+                shell={providerMeta[provider].cli}
+                keepAlive={true}
+                onActivity={() => {
+                  try {
+                    window.localStorage.setItem(`provider:locked:${workspace.id}`, provider);
+                    setLockedProvider(provider);
+                  } catch {}
+                }}
+                onStartError={() => {
+                  // Mark CLI missing or failed to launch
+                  setCliStartFailed(true);
+                }}
+                onStartSuccess={() => setCliStartFailed(false)}
+                variant="light"
+                className="h-full w-full"
+              />
             </div>
           </div>
         </div>
@@ -480,41 +513,9 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
         </>
       )}
 
-      <ChatInput
-        value={inputValue}
-        onChange={setInputValue}
-        onSend={handleSendMessage}
-        onCancel={handleCancelStream}
-        isLoading={
-          provider === 'droid' ||
-          provider === 'gemini' ||
-          provider === 'cursor' ||
-          provider === 'copilot'
-            ? false
-            : activeStream.isStreaming
-        }
-        loadingSeconds={
-          provider === 'droid' ||
-          provider === 'gemini' ||
-          provider === 'cursor' ||
-          provider === 'copilot'
-            ? 0
-            : activeStream.seconds
-        }
-        isCodexInstalled={isCodexInstalled}
-        agentCreated={agentCreated}
-        workspacePath={workspace.path}
-        provider={provider}
-        onProviderChange={(p) => setProvider(p)}
-        selectDisabled={providerLocked}
-        disabled={
-          provider === 'droid' ||
-          provider === 'gemini' ||
-          provider === 'cursor' ||
-          provider === 'copilot' ||
-          (provider === 'claude' && isClaudeInstalled === false)
-        }
-      />
+      {isTerminal ? (
+        <ProviderBar provider={provider} linearIssue={workspace.metadata?.linearIssue || null} />
+      ) : null}
     </div>
   );
 };

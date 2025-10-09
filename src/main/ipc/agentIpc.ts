@@ -95,5 +95,5 @@ export function registerAgentIpc() {
     windows.forEach((w) => w.webContents.send('agent:stream-complete', data));
   });
 
-  console.log('✅ Agent IPC handlers registered');
+  // console.log('✅ Agent IPC handlers registered');
 }

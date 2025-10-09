@@ -12,12 +12,16 @@ export const providerMeta: Record<UiProvider, ProviderMeta> = {
   codex: {
     label: 'Codex',
     icon: '../../assets/images/openai.png',
-    terminalOnly: false,
+    terminalOnly: true,
+    cli: 'codex',
+    helpUrl: 'https://developers.openai.com/codex/quickstart',
   },
   claude: {
     label: 'Claude Code',
     icon: '../../assets/images/claude.png',
-    terminalOnly: false,
+    terminalOnly: true,
+    cli: 'claude',
+    helpUrl: 'https://docs.claude.com/en/docs/claude-code/quickstart',
   },
   droid: {
     label: 'Droid',
