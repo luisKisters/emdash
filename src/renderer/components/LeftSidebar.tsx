@@ -76,6 +76,7 @@ interface LeftSidebarProps {
   }) => void;
   onCreateWorkspaceForProject?: (project: Project) => void;
   isCreatingWorkspace?: boolean;
+  onDeleteWorkspace?: (project: Project, workspace: Workspace) => void | Promise<void>;
 }
 
 const LeftSidebar: React.FC<LeftSidebarProps> = ({
@@ -93,6 +94,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
   onSidebarContextChange,
   onCreateWorkspaceForProject,
   isCreatingWorkspace,
+  onDeleteWorkspace,
 }) => {
   const { open, isMobile, setOpen } = useSidebar();
 
@@ -232,7 +234,14 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                                       }`}
                                       title={workspace.name}
                                     >
-                                      <WorkspaceItem workspace={workspace} />
+                                      <WorkspaceItem
+                                        workspace={workspace}
+                                        onDelete={
+                                          onDeleteWorkspace
+                                            ? () => onDeleteWorkspace(typedProject, workspace)
+                                            : undefined
+                                        }
+                                      />
                                     </div>
                                   );
                                 })}

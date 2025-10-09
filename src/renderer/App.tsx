@@ -1000,6 +1000,7 @@ const App: React.FC = () => {
                   onSidebarContextChange={handleSidebarContextChange}
                   onCreateWorkspaceForProject={handleStartCreateWorkspaceFromSidebar}
                   isCreatingWorkspace={isCreatingWorkspace}
+                  onDeleteWorkspace={handleDeleteWorkspace}
                 />
               </ResizablePanel>
               <ResizableHandle
