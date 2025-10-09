@@ -348,6 +348,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                               </p>
                             </div>
                           </div>
+
                           <div className="flex items-center gap-4">
                             <label
                               htmlFor="linear-issue"
@@ -415,9 +416,6 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                               </span>
                                               {issue.title ? (
                                                 <>
-                                                  <span className="shrink-0 text-muted-foreground">
-                                                    -
-                                                  </span>
                                                   <span className="truncate text-muted-foreground">
                                                     {issue.title}
                                                   </span>
@@ -462,6 +460,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                               )}
                             </div>
                           </div>
+                          
                         </div>
                       </AccordionContent>
                     </AccordionItem>

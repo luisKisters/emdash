@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { initialPromptSentKey } from '../lib/keys';
+import { classifyActivity } from '../lib/activityClassifier';
 
 /**
  * Injects an initial prompt into the provider's terminal once the PTY is ready.
@@ -22,6 +23,8 @@ export function useInitialPromptInjection(opts: {
 
     const ptyId = `${providerId}-main-${workspaceId}`;
     let sent = false;
+    let idleSeen = false;
+    let silenceTimer: any = null;
     const send = () => {
       try {
         if (sent) return;
@@ -31,17 +34,40 @@ export function useInitialPromptInjection(opts: {
       } catch {}
     };
 
-    const offData = (window as any).electronAPI?.onPtyData?.(ptyId, (_chunk: string) => {
-      setTimeout(send, 150);
-      offData?.();
-      offStarted?.();
+    const offData = (window as any).electronAPI?.onPtyData?.(ptyId, (chunk: string) => {
+      // Debounce-based idle: send after a short period of silence
+      if (silenceTimer) clearTimeout(silenceTimer);
+      silenceTimer = setTimeout(() => {
+        if (!sent) send();
+      }, 1200);
+
+      // Heuristic: if classifier says idle, trigger a quicker send
+      try {
+        const signal = classifyActivity(providerId, chunk);
+        if (signal === 'idle' && !sent) {
+          idleSeen = true;
+          setTimeout(send, 250);
+        }
+      } catch {
+        // ignore classifier errors; rely on silence debounce
+      }
     });
     const offStarted = (window as any).electronAPI?.onPtyStarted?.((info: { id: string }) => {
-      if (info?.id === ptyId) setTimeout(send, 250);
+      if (info?.id === ptyId) {
+        // Start a silence timer in case no output arrives (rare but possible)
+        if (silenceTimer) clearTimeout(silenceTimer);
+        silenceTimer = setTimeout(() => {
+          if (!sent) send();
+        }, 2000);
+      }
     });
-    const t = setTimeout(send, 2000);
+    // Global last-resort fallback if neither event fires
+    const t = setTimeout(() => {
+      if (!sent) send();
+    }, 10000);
     return () => {
       clearTimeout(t);
+      if (silenceTimer) clearTimeout(silenceTimer);
       offStarted?.();
       offData?.();
     };

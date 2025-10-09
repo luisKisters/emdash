@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useToast } from '../hooks/use-toast';
 import { TerminalPane } from './TerminalPane';
 import { TerminalModeBanner } from './TerminalModeBanner';
@@ -365,10 +365,40 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
 
   const isTerminal = providerMeta[provider]?.terminalOnly === true;
 
+  const initialInjection = useMemo(() => {
+    if (!isTerminal) return null;
+    const md = workspace.metadata || null;
+    const p = (md?.initialPrompt || '').trim();
+    if (p) return p;
+    const issue = md?.linearIssue;
+    if (issue) {
+      const parts: string[] = [];
+      const line1 = `Linked Linear issue: ${issue.identifier}${issue.title ? ` — ${issue.title}` : ''}`;
+      parts.push(line1);
+      const details: string[] = [];
+      if (issue.state?.name) details.push(`State: ${issue.state.name}`);
+      if (issue.assignee?.displayName || issue.assignee?.name)
+        details.push(`Assignee: ${issue.assignee?.displayName || issue.assignee?.name}`);
+      if (issue.team?.key) details.push(`Team: ${issue.team.key}`);
+      if (issue.project?.name) details.push(`Project: ${issue.project.name}`);
+      if (details.length) parts.push(`Details: ${details.join(' • ')}`);
+      if (issue.url) parts.push(`URL: ${issue.url}`);
+      const desc = (issue as any)?.description;
+      if (typeof desc === 'string' && desc.trim()) {
+        const trimmed = desc.trim();
+        const max = 1500;
+        const body = trimmed.length > max ? trimmed.slice(0, max) + '\n…' : trimmed;
+        parts.push('', 'Issue Description:', body);
+      }
+      return parts.join('\n');
+    }
+    return null;
+  }, [isTerminal, workspace.metadata]);
+
   useInitialPromptInjection({
     workspaceId: workspace.id,
     providerId: provider,
-    prompt: workspace.metadata?.initialPrompt || null,
+    prompt: initialInjection,
     enabled: isTerminal,
   });
 
