@@ -15,6 +15,7 @@ import factoryLogo from '../../assets/images/factorydroid.png';
 import geminiLogo from '../../assets/images/gemini.png';
 import cursorLogo from '../../assets/images/cursorlogo.png';
 import copilotLogo from '../../assets/images/ghcopilot.png';
+import ampLogo from '../../assets/images/ampcode.png';
 
 interface ProviderSelectorProps {
   value: Provider;
@@ -53,6 +54,11 @@ const providerConfig = {
     name: 'Copilot',
     logo: copilotLogo,
     alt: 'GitHub Copilot CLI',
+  },
+  amp: {
+    name: 'Amp',
+    logo: ampLogo,
+    alt: 'Amp CLI',
   },
 } as const;
 

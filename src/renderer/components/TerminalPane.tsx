@@ -141,6 +141,15 @@ const TerminalPaneComponent: React.FC<Props> = ({
     const offData = window.electronAPI.onPtyData(id, (data) => {
       term.write(sanitizeEchoArtifacts(data));
     });
+    const offExit = window.electronAPI.onPtyExit(id, (info) => {
+      try {
+        // If the process exits very quickly after start, it's likely the CLI wasn't found
+        const elapsed = Date.now() - startTsRef.current;
+        if (elapsed < 1500 && onStartError) {
+          onStartError(`PTY exited early (code ${info?.exitCode ?? 'n/a'})`);
+        }
+      } catch {}
+    });
     const handleResize = () => {
       if (termRef.current && el) {
         const { width, height } = el.getBoundingClientRect();
@@ -160,10 +169,12 @@ const TerminalPaneComponent: React.FC<Props> = ({
     disposeFns.current.push(() => keyDisp.dispose());
     if (offHistory) disposeFns.current.push(offHistory);
     disposeFns.current.push(offData);
+    disposeFns.current.push(offExit);
     disposeFns.current.push(() => keyDisp2.dispose());
     disposeFns.current.push(() => resizeObserver.disconnect());
 
     // Start PTY session after listeners are attached so we don't miss initial output/history
+    const startTsRef = { current: Date.now() } as { current: number };
     (async () => {
       try {
         const res = await window.electronAPI.ptyStart({

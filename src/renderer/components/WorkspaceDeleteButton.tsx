@@ -66,4 +66,3 @@ export const WorkspaceDeleteButton: React.FC<Props> = ({
 };
 
 export default WorkspaceDeleteButton;
-
