@@ -10,6 +10,7 @@ import { X, GitBranch } from 'lucide-react';
 import { ProviderSelector } from './ProviderSelector';
 import { type Provider } from '../types';
 import { Separator } from './ui/separator';
+import linearLogo from '../../assets/images/linear.png';
 import { type LinearIssueSummary } from '../types/linear';
 import {
   Select,
@@ -341,8 +342,11 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                         <span className="flex min-w-0 flex-1 items-center gap-2 text-left text-foreground">
                                           {selectedIssue ? (
                                             <>
-                                              <span className="shrink-0 text-foreground">
-                                                {selectedIssue.identifier}
+                                              <span className="inline-flex items-center gap-1.5 shrink-0 px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                                                <img src={linearLogo} alt="Linear" className="w-3.5 h-3.5" />
+                                                <span className="text-[11px] font-medium text-foreground">
+                                                  {selectedIssue.identifier}
+                                                </span>
                                               </span>
                                               {selectedIssue.title ? (
                                                 <>
@@ -369,8 +373,11 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                         >
                                           <SelectItemText>
                                             <span className="flex min-w-0 items-center gap-2">
-                                              <span className="shrink-0 text-foreground">
-                                                {issue.identifier}
+                                              <span className="inline-flex items-center gap-1.5 shrink-0 px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                                                <img src={linearLogo} alt="Linear" className="w-3.5 h-3.5" />
+                                                <span className="text-[11px] font-medium text-foreground">
+                                                  {issue.identifier}
+                                                </span>
                                               </span>
                                               {issue.title ? (
                                                 <>
