@@ -41,9 +41,9 @@ app.whenReady().then(async () => {
   // Initialize database
   try {
     await databaseService.initialize();
-    console.log('Database initialized successfully');
+    // console.log('Database initialized successfully');
   } catch (error) {
-    console.error('Failed to initialize database:', error);
+    // console.error('Failed to initialize database:', error);
   }
 
   // Register IPC handlers

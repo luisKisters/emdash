@@ -31,5 +31,5 @@ export function registerAllIpc() {
   registerAgentIpc();
   registerLinearIpc();
 
-  console.log('✅ All IPC handlers registered');
+  // console.log('✅ All IPC handlers registered');
 }

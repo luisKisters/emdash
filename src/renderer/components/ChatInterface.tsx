@@ -1,6 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useToast } from '../hooks/use-toast';
-import ChatInput from './ChatInput';
 import { TerminalPane } from './TerminalPane';
 import { TerminalModeBanner } from './TerminalModeBanner';
 import { WorkspaceNotice } from './WorkspaceNotice';
@@ -370,6 +369,13 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
     enabled: isTerminal,
   });
 
+  // Ensure a provider is stored for this workspace so fallbacks can subscribe immediately
+  useEffect(() => {
+    try {
+      localStorage.setItem(`workspaceProvider:${workspace.id}`, provider);
+    } catch {}
+  }, [provider, workspace.id]);
+
   return (
     <div className={`flex flex-col h-full bg-white dark:bg-gray-800 ${className}`}>
       {isTerminal ? (
@@ -463,21 +469,6 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
       {isTerminal ? (
         <ProviderBar provider={provider} linearIssue={workspace.metadata?.linearIssue || null} />
       ) : null}
-      {/* <ChatInput
-        value={inputValue}
-        onChange={setInputValue}
-        onSend={handleSendMessage}
-        onCancel={handleCancelStream}
-        isLoading={isTerminal ? false : activeStream.isStreaming}
-        loadingSeconds={isTerminal ? 0 : activeStream.seconds}
-        isCodexInstalled={isCodexInstalled}
-        agentCreated={agentCreated}
-        workspacePath={workspace.path}
-        provider={provider}
-        onProviderChange={(p) => setProvider(p)}
-        selectDisabled={providerLocked}
-        disabled={isTerminal || (provider === 'claude' && isClaudeInstalled === false)}
-      /> */}
     </div>
   );
 };
