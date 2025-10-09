@@ -6,6 +6,7 @@ import { TerminalModeBanner } from './TerminalModeBanner';
 import { WorkspaceNotice } from './WorkspaceNotice';
 import { providerMeta } from '../providers/meta';
 import MessageList from './MessageList';
+import ProviderBar from './ProviderBar';
 import useCodexStream from '../hooks/useCodexStream';
 import useClaudeStream from '../hooks/useClaudeStream';
 import { type Provider } from '../types';
@@ -49,13 +50,20 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
   const [hasCopilotActivity, setHasCopilotActivity] = useState(false);
   const initializedConversationRef = useRef<string | null>(null);
 
-  const codexStream = useCodexStream({
-    workspaceId: workspace.id,
-    workspacePath: workspace.path,
-  });
+  const codexStream = useCodexStream(
+    // Disable Codex chat stream when Codex is terminal-only
+    providerMeta.codex.terminalOnly
+      ? null
+      : {
+          workspaceId: workspace.id,
+          workspacePath: workspace.path,
+        }
+  );
 
   const claudeStream = useClaudeStream(
-    provider === 'claude' ? { workspaceId: workspace.id, workspacePath: workspace.path } : null
+    provider === 'claude' && !providerMeta.claude.terminalOnly
+      ? { workspaceId: workspace.id, workspacePath: workspace.path }
+      : null
   );
   const activeStream = provider === 'codex' ? codexStream : claudeStream;
 
@@ -352,19 +360,32 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
   // Allow switching providers freely while in Droid mode
   const providerLocked = lockedProvider !== null;
 
+  const isTerminal = providerMeta[provider]?.terminalOnly === true;
+
   return (
     <div className={`flex flex-col h-full bg-white dark:bg-gray-800 ${className}`}>
-      {provider === 'droid' ||
-      provider === 'gemini' ||
-      provider === 'cursor' ||
-      provider === 'copilot' ? (
+      {isTerminal ? (
         <div className="flex-1 flex flex-col min-h-0">
           <div className="px-6 pt-4">
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto space-y-2">
+              {/* Generic banner with docs link */}
               <TerminalModeBanner
                 provider={provider as any}
                 onOpenExternal={(url) => window.electronAPI.openExternal(url)}
               />
+              {/* Install warning for Codex when not installed */}
+              {provider === 'codex' && isCodexInstalled === false ? (
+                <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 text-sm whitespace-pre-wrap">
+                  Codex CLI is not installed. Install with: npm install -g @openai/codex
+                </div>
+              ) : null}
+              {/* Install warning for Claude when not installed */}
+              {provider === 'claude' && isClaudeInstalled === false ? (
+                <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 text-sm whitespace-pre-wrap">
+                  {claudeInstructions ||
+                    'Install Claude Code: npm install -g @anthropic-ai/claude-code\nThen run: claude and use /login'}
+                </div>
+              ) : null}
             </div>
           </div>
           <div className="px-6 mt-2">
@@ -374,71 +395,20 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
           </div>
           <div className="flex-1 min-h-0 px-6 mt-4">
             <div className="max-w-4xl mx-auto h-full rounded-md overflow-hidden">
-              {provider === 'droid' ? (
-                <TerminalPane
-                  id={`droid-main-${workspace.id}`}
-                  cwd={workspace.path}
-                  shell={providerMeta.droid.cli}
-                  keepAlive={true}
-                  onActivity={() => {
-                    try {
-                      setHasDroidActivity(true);
-                      window.localStorage.setItem(`provider:locked:${workspace.id}`, 'droid');
-                      setLockedProvider('droid');
-                    } catch {}
-                  }}
-                  variant="light"
-                  className="h-full w-full"
-                />
-              ) : provider === 'gemini' ? (
-                <TerminalPane
-                  id={`gemini-main-${workspace.id}`}
-                  cwd={workspace.path}
-                  shell={providerMeta.gemini.cli}
-                  keepAlive={true}
-                  onActivity={() => {
-                    try {
-                      setHasGeminiActivity(true);
-                      window.localStorage.setItem(`provider:locked:${workspace.id}`, 'gemini');
-                      setLockedProvider('gemini');
-                    } catch {}
-                  }}
-                  variant="light"
-                  className="h-full w-full"
-                />
-              ) : provider === 'cursor' ? (
-                <TerminalPane
-                  id={`cursor-main-${workspace.id}`}
-                  cwd={workspace.path}
-                  shell={providerMeta.cursor.cli}
-                  keepAlive={true}
-                  onActivity={() => {
-                    try {
-                      setHasCursorActivity(true);
-                      window.localStorage.setItem(`provider:locked:${workspace.id}`, 'cursor');
-                      setLockedProvider('cursor');
-                    } catch {}
-                  }}
-                  variant="light"
-                  className="h-full w-full"
-                />
-              ) : (
-                <TerminalPane
-                  id={`copilot-main-${workspace.id}`}
-                  cwd={workspace.path}
-                  shell={providerMeta.copilot.cli}
-                  keepAlive={true}
-                  onActivity={() => {
-                    try {
-                      setHasCopilotActivity(true);
-                      window.localStorage.setItem(`provider:locked:${workspace.id}`, 'copilot');
-                      setLockedProvider('copilot');
-                    } catch {}
-                  }}
-                  variant="light"
-                  className="h-full w-full"
-                />
-              )}
+              <TerminalPane
+                id={`${provider}-main-${workspace.id}`}
+                cwd={workspace.path}
+                shell={providerMeta[provider].cli}
+                keepAlive={true}
+                onActivity={() => {
+                  try {
+                    window.localStorage.setItem(`provider:locked:${workspace.id}`, provider);
+                    setLockedProvider(provider);
+                  } catch {}
+                }}
+                variant="light"
+                className="h-full w-full"
+              />
             </div>
           </div>
         </div>
@@ -482,41 +452,22 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
         </>
       )}
 
-      <ChatInput
+      {isTerminal ? <ProviderBar provider={provider} /> : null}
+      {/* <ChatInput
         value={inputValue}
         onChange={setInputValue}
         onSend={handleSendMessage}
         onCancel={handleCancelStream}
-        isLoading={
-          provider === 'droid' ||
-          provider === 'gemini' ||
-          provider === 'cursor' ||
-          provider === 'copilot'
-            ? false
-            : activeStream.isStreaming
-        }
-        loadingSeconds={
-          provider === 'droid' ||
-          provider === 'gemini' ||
-          provider === 'cursor' ||
-          provider === 'copilot'
-            ? 0
-            : activeStream.seconds
-        }
+        isLoading={isTerminal ? false : activeStream.isStreaming}
+        loadingSeconds={isTerminal ? 0 : activeStream.seconds}
         isCodexInstalled={isCodexInstalled}
         agentCreated={agentCreated}
         workspacePath={workspace.path}
         provider={provider}
         onProviderChange={(p) => setProvider(p)}
         selectDisabled={providerLocked}
-        disabled={
-          provider === 'droid' ||
-          provider === 'gemini' ||
-          provider === 'cursor' ||
-          provider === 'copilot' ||
-          (provider === 'claude' && isClaudeInstalled === false)
-        }
-      />
+        disabled={isTerminal || (provider === 'claude' && isClaudeInstalled === false)}
+      /> */}
     </div>
   );
 };
