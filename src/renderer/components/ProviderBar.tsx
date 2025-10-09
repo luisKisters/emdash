@@ -9,6 +9,7 @@ import factoryLogo from '../../assets/images/factorydroid.png';
 import geminiLogo from '../../assets/images/gemini.png';
 import cursorLogo from '../../assets/images/cursorlogo.png';
 import copilotLogo from '../../assets/images/ghcopilot.png';
+import ampLogo from '../../assets/images/ampcode.png';
 
 type Props = { provider: Provider; linearIssue?: LinearIssueSummary | null };
 
@@ -20,6 +21,7 @@ export const ProviderBar: React.FC<Props> = ({ provider, linearIssue }) => {
     gemini: { name: 'Gemini', logo: geminiLogo },
     cursor: { name: 'Cursor', logo: cursorLogo },
     copilot: { name: 'Copilot', logo: copilotLogo },
+    amp: { name: 'Amp', logo: ampLogo },
   } as const;
   const cfg = map[provider] ?? { name: provider, logo: '' };
   return (
