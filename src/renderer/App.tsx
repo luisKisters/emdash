@@ -512,7 +512,6 @@ const App: React.FC = () => {
 
   const handleCreateWorkspace = async (
     workspaceName: string,
-    _initialPrompt?: string,
     selectedProvider?: Provider,
     linkedLinearIssue: LinearIssueSummary | null = null
   ) => {
@@ -554,14 +553,6 @@ const App: React.FC = () => {
       });
 
       if (saveResult.success) {
-        /**
-         * Initial prompt flow temporarily disabled while providers run in terminal mode.
-         * Original behavior saved below for future restoration.
-         *
-         * // If there's an initial prompt, create conversation and save it as first message, then trigger agent response
-         * if (_initialPrompt) { ... }
-         */
-
         if (workspaceMetadata?.linearIssue) {
           try {
             const convoResult = await window.electronAPI.getOrCreateDefaultConversation(

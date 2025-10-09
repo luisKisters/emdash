@@ -25,7 +25,6 @@ interface WorkspaceModalProps {
   onClose: () => void;
   onCreateWorkspace: (
     name: string,
-    initialPrompt?: string,
     selectedProvider?: Provider,
     linkedIssue?: LinearIssueSummary | null
   ) => void;
@@ -43,7 +42,6 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   existingNames = [],
 }) => {
   const [workspaceName, setWorkspaceName] = useState('');
-  const [initialPrompt, setInitialPrompt] = useState('');
   const [selectedProvider, setSelectedProvider] = useState<Provider>('codex');
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
@@ -104,12 +102,10 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
     try {
       await onCreateWorkspace(
         convertToWorkspaceName(workspaceName),
-        showAdvanced ? initialPrompt.trim() || undefined : undefined,
         showAdvanced ? selectedProvider : undefined,
         showAdvanced ? selectedIssue ?? null : null
       );
       setWorkspaceName('');
-      setInitialPrompt('');
       setSelectedProvider('codex');
       setSelectedIssueIdentifier('');
       setShowAdvanced(false);
@@ -309,20 +305,6 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                         className="px-0 pt-2 space-y-4"
                         id="workspace-advanced"
                       >
-                        <div>
-                          <label htmlFor="initial-prompt" className="block text-sm font-medium text-foreground">
-                            Initial prompt
-                          </label>
-                          <textarea
-                            id="initial-prompt"
-                            value={initialPrompt}
-                            onChange={(e) => setInitialPrompt(e.target.value)}
-                            placeholder="Describe what you'd like the agent to do first."
-                            className="mt-2 w-full min-h-[80px] px-3 py-2 text-sm border border-input bg-background rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
-                            rows={3}
-                          />
-                        </div>
-
                         <div className="flex flex-col gap-4">
                           <div className="flex items-center gap-4">
                             <label
