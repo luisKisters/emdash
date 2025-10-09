@@ -12,6 +12,8 @@ type Props = {
   variant?: 'dark' | 'light';
   keepAlive?: boolean;
   onActivity?: () => void;
+  onStartError?: (message: string) => void;
+  onStartSuccess?: () => void;
 };
 
 const TerminalPaneComponent: React.FC<Props> = ({
@@ -24,6 +26,8 @@ const TerminalPaneComponent: React.FC<Props> = ({
   variant = 'dark',
   keepAlive = false,
   onActivity,
+  onStartError,
+  onStartSuccess,
 }) => {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const termRef = useRef<Terminal | null>(null);
@@ -171,9 +175,20 @@ const TerminalPaneComponent: React.FC<Props> = ({
         });
         if (!res?.ok) {
           term.writeln('\x1b[31mFailed to start PTY:\x1b[0m ' + (res as any)?.error);
+          try {
+            onStartError && onStartError((res as any)?.error || 'Failed to start PTY');
+          } catch {}
+        }
+        if (res?.ok) {
+          try {
+            onStartSuccess && onStartSuccess();
+          } catch {}
         }
       } catch (e: any) {
         term.writeln('\x1b[31mError starting PTY:\x1b[0m ' + (e?.message || String(e)));
+        try {
+          onStartError && onStartError(e?.message || String(e));
+        } catch {}
       }
     })();
 

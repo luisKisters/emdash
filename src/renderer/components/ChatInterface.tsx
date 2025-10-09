@@ -48,6 +48,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
   const [hasGeminiActivity, setHasGeminiActivity] = useState(false);
   const [hasCursorActivity, setHasCursorActivity] = useState(false);
   const [hasCopilotActivity, setHasCopilotActivity] = useState(false);
+  const [cliStartFailed, setCliStartFailed] = useState(false);
   const initializedConversationRef = useRef<string | null>(null);
 
   const codexStream = useCodexStream(
@@ -69,6 +70,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
 
   useEffect(() => {
     initializedConversationRef.current = null;
+    setCliStartFailed(false);
   }, [workspace.id]);
 
   // On workspace change, restore last-selected provider (including Droid).
@@ -383,24 +385,33 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
         <div className="flex-1 flex flex-col min-h-0">
           <div className="px-6 pt-4">
             <div className="max-w-4xl mx-auto space-y-2">
-              {/* Generic banner with docs link */}
-              <TerminalModeBanner
-                provider={provider as any}
-                onOpenExternal={(url) => window.electronAPI.openExternal(url)}
-              />
-              {/* Install warning for Codex when not installed */}
-              {provider === 'codex' && isCodexInstalled === false ? (
-                <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 text-sm whitespace-pre-wrap">
-                  Codex CLI is not installed. Install with: npm install -g @openai/codex
-                </div>
-              ) : null}
-              {/* Install warning for Claude when not installed */}
-              {provider === 'claude' && isClaudeInstalled === false ? (
-                <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 text-sm whitespace-pre-wrap">
-                  {claudeInstructions ||
-                    'Install Claude Code: npm install -g @anthropic-ai/claude-code\nThen run: claude and use /login'}
-                </div>
-              ) : null}
+              {(() => {
+                if (provider === 'codex' && isCodexInstalled === false) {
+                  return (
+                    <TerminalModeBanner
+                      provider={provider as any}
+                      onOpenExternal={(url) => window.electronAPI.openExternal(url)}
+                    />
+                  );
+                }
+                if (provider === 'claude' && isClaudeInstalled === false) {
+                  return (
+                    <TerminalModeBanner
+                      provider={provider as any}
+                      onOpenExternal={(url) => window.electronAPI.openExternal(url)}
+                    />
+                  );
+                }
+                if (provider !== 'codex' && provider !== 'claude' && cliStartFailed) {
+                  return (
+                    <TerminalModeBanner
+                      provider={provider as any}
+                      onOpenExternal={(url) => window.electronAPI.openExternal(url)}
+                    />
+                  );
+                }
+                return null;
+              })()}
             </div>
           </div>
           <div className="px-6 mt-2">
@@ -421,6 +432,11 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
                     setLockedProvider(provider);
                   } catch {}
                 }}
+                onStartError={() => {
+                  // Mark CLI missing or failed to launch
+                  setCliStartFailed(true);
+                }}
+                onStartSuccess={() => setCliStartFailed(false)}
                 variant="light"
                 className="h-full w-full"
               />
