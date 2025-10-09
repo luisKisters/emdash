@@ -45,7 +45,10 @@ export const providerMeta: Record<UiProvider, ProviderMeta> = {
     cli: 'claude',
     helpUrl: 'https://docs.claude.com/en/docs/claude-code/quickstart',
     idlePatterns: [/Ready|Awaiting|Next command|Use \/login/i],
-    busyPatterns: [/esc\s*to\s*interrupt/i, /wrangling|crafting|thinking|reasoning|analyzing|planning|reading|scanning|applying/i],
+    busyPatterns: [
+      /esc\s*to\s*interrupt/i,
+      /wrangling|crafting|thinking|reasoning|analyzing|planning|reading|scanning|applying/i,
+    ],
   },
   droid: {
     label: 'Droid',
@@ -54,7 +57,11 @@ export const providerMeta: Record<UiProvider, ProviderMeta> = {
     cli: 'droid',
     helpUrl: 'https://docs.factory.ai/cli/getting-started/quickstart',
     idlePatterns: [/Ready|Awaiting|Press Enter/i],
-    busyPatterns: [/esc\s*to\s*cancel/i, /Thinking\.{0,3}/i, /Running|Working|Executing|Generating|Applying|Planning|Analyzing/i],
+    busyPatterns: [
+      /esc\s*to\s*cancel/i,
+      /Thinking\.{0,3}/i,
+      /Running|Working|Executing|Generating|Applying|Planning|Analyzing/i,
+    ],
   },
   gemini: {
     label: 'Gemini',
@@ -63,7 +70,12 @@ export const providerMeta: Record<UiProvider, ProviderMeta> = {
     cli: 'gemini',
     helpUrl: 'https://github.com/google-gemini/gemini-cli',
     idlePatterns: [/Ready|Awaiting|Press Enter/i],
-    busyPatterns: [/esc\s*to\s*cancel/i, /Thinking\.{0,3}/i, /[\u2800-\u28FF].*Thinking/i, /Running|Working|Executing|Generating|Applying|Planning|Analyzing/i],
+    busyPatterns: [
+      /esc\s*to\s*cancel/i,
+      /Thinking\.{0,3}/i,
+      /[\u2800-\u28FF].*Thinking/i,
+      /Running|Working|Executing|Generating|Applying|Planning|Analyzing/i,
+    ],
   },
   cursor: {
     label: 'Cursor',
@@ -80,7 +92,13 @@ export const providerMeta: Record<UiProvider, ProviderMeta> = {
     terminalOnly: true,
     cli: 'copilot',
     helpUrl: 'https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli',
-    idlePatterns: [/Ready|Press Enter|Next step/i, /Do you want to/i, /Confirm with number keys/i, /approve all file operations/i, /Yes, and approve/i],
+    idlePatterns: [
+      /Ready|Press Enter|Next step/i,
+      /Do you want to/i,
+      /Confirm with number keys/i,
+      /approve all file operations/i,
+      /Yes, and approve/i,
+    ],
     busyPatterns: [/Thinking|Working|Generating/i],
   },
 };

@@ -370,7 +370,11 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                         {selectedIssue ? (
                                           <>
                                             <span className="inline-flex items-center gap-1.5 shrink-0 px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-                                              <img src={linearLogo} alt="Linear" className="w-3.5 h-3.5" />
+                                              <img
+                                                src={linearLogo}
+                                                alt="Linear"
+                                                className="w-3.5 h-3.5"
+                                              />
                                               <span className="text-[11px] font-medium text-foreground">
                                                 {selectedIssue.identifier}
                                               </span>
@@ -378,18 +382,23 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                             {selectedIssue.title ? (
                                               <>
                                                 <span className="shrink-0 text-foreground">-</span>
-                                                <span className="truncate">{selectedIssue.title}</span>
+                                                <span className="truncate">
+                                                  {selectedIssue.title}
+                                                </span>
                                               </>
                                             ) : null}
                                           </>
                                         ) : (
                                           <>
-                                            <img src={linearLogo} alt="Linear" className="w-3.5 h-3.5 shrink-0" />
+                                            <img
+                                              src={linearLogo}
+                                              alt="Linear"
+                                              className="w-3.5 h-3.5 shrink-0"
+                                            />
                                             <span className="truncate">{issuePlaceholder}</span>
                                           </>
                                         )}
                                       </div>
-                                      
                                     </SelectTrigger>
                                     <SelectContent side="top">
                                       {availableIssues.map((issue) => (
@@ -455,7 +464,6 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                               )}
                             </div>
                           </div>
-                          
                         </div>
                       </AccordionContent>
                     </AccordionItem>
