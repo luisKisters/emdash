@@ -178,7 +178,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   })();
 
   const issuePlaceholder = isLoadingIssues
-    ? 'Loading issues…'
+    ? 'Loading…'
     : issueListError
       ? 'Unable to load issues'
       : 'Select a Linear issue';
@@ -295,6 +295,22 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                     </div>
                   )}
 
+                  <div className="flex items-center gap-4">
+                    <label
+                      htmlFor="provider-selector"
+                      className="w-32 shrink-0 text-sm font-medium text-foreground"
+                    >
+                      AI provider
+                    </label>
+                    <div className="flex-1 min-w-0">
+                      <ProviderSelector
+                        value={selectedProvider}
+                        onChange={setSelectedProvider}
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+
                   <Accordion
                     type="single"
                     collapsible
@@ -308,21 +324,6 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                       </AccordionTrigger>
                       <AccordionContent className="px-0 pt-2 space-y-4" id="workspace-advanced">
                         <div className="flex flex-col gap-4">
-                          <div className="flex items-center gap-4">
-                            <label
-                              htmlFor="provider-selector"
-                              className="w-32 shrink-0 text-sm font-medium text-foreground"
-                            >
-                              AI provider
-                            </label>
-                            <div className="flex-1 min-w-0">
-                              <ProviderSelector
-                                value={selectedProvider}
-                                onChange={setSelectedProvider}
-                                className="w-full"
-                              />
-                            </div>
-                          </div>
                           <div className="flex items-start gap-4">
                             <label
                               htmlFor="initial-prompt"
@@ -365,36 +366,30 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                     disabled={isLoadingIssues || !!issueListError || !issuesLoaded}
                                   >
                                     <SelectTrigger className="h-9 w-full bg-gray-100 dark:bg-gray-700 border-none">
-                                      <SelectValue asChild placeholder={issuePlaceholder}>
-                                        <span className="flex min-w-0 flex-1 items-center gap-2 text-left text-foreground">
-                                          {selectedIssue ? (
-                                            <>
-                                              <span className="inline-flex items-center gap-1.5 shrink-0 px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-                                                <img
-                                                  src={linearLogo}
-                                                  alt="Linear"
-                                                  className="w-3.5 h-3.5"
-                                                />
-                                                <span className="text-[11px] font-medium text-foreground">
-                                                  {selectedIssue.identifier}
-                                                </span>
+                                      <div className="flex min-w-0 flex-1 items-center gap-2 text-left text-foreground overflow-hidden">
+                                        {selectedIssue ? (
+                                          <>
+                                            <span className="inline-flex items-center gap-1.5 shrink-0 px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                                              <img src={linearLogo} alt="Linear" className="w-3.5 h-3.5" />
+                                              <span className="text-[11px] font-medium text-foreground">
+                                                {selectedIssue.identifier}
                                               </span>
-                                              {selectedIssue.title ? (
-                                                <>
-                                                  <span className="shrink-0 text-foreground">
-                                                    -
-                                                  </span>
-                                                  <span className="truncate">
-                                                    {selectedIssue.title}
-                                                  </span>
-                                                </>
-                                              ) : null}
-                                            </>
-                                          ) : (
+                                            </span>
+                                            {selectedIssue.title ? (
+                                              <>
+                                                <span className="shrink-0 text-foreground">-</span>
+                                                <span className="truncate">{selectedIssue.title}</span>
+                                              </>
+                                            ) : null}
+                                          </>
+                                        ) : (
+                                          <>
+                                            <img src={linearLogo} alt="Linear" className="w-3.5 h-3.5 shrink-0" />
                                             <span className="truncate">{issuePlaceholder}</span>
-                                          )}
-                                        </span>
-                                      </SelectValue>
+                                          </>
+                                        )}
+                                      </div>
+                                      
                                     </SelectTrigger>
                                     <SelectContent side="top">
                                       {availableIssues.map((issue) => (
