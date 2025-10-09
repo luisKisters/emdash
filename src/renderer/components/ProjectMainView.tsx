@@ -9,17 +9,7 @@ import { usePrStatus } from '../hooks/usePrStatus';
 import { useWorkspaceChanges } from '../hooks/useWorkspaceChanges';
 import { ChangesBadge } from './WorkspaceChanges';
 import { Spinner } from './ui/spinner';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from './ui/alert-dialog';
+import WorkspaceDeleteButton from './WorkspaceDeleteButton';
 
 interface Project {
   id: string;
@@ -142,40 +132,12 @@ function WorkspaceRow({
         ) : null}
         {ws.agentId && <Badge variant="outline">agent</Badge>}
 
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              className="text-muted-foreground hover:text-destructive hover:bg-transparent focus-visible:ring-0"
-              onClick={(e) => e.stopPropagation()}
-              aria-label={`Delete workspace ${ws.name}`}
-            >
-              <Trash className="size-4" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent onClick={(e) => e.stopPropagation()} className="space-y-4">
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete workspace?</AlertDialogTitle>
-              <AlertDialogDescription>
-                {`This will remove the worktree for "${ws.name}" and delete its branch.`}
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90 px-4 py-2"
-                onClick={async (e) => {
-                  e.stopPropagation();
-                  await Promise.resolve(onDelete());
-                }}
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        <WorkspaceDeleteButton
+          workspaceName={ws.name}
+          onConfirm={onDelete}
+          aria-label={`Delete workspace ${ws.name}`}
+          className="inline-flex items-center justify-center rounded p-2 text-muted-foreground hover:text-destructive hover:bg-transparent focus-visible:ring-0"
+        />
       </div>
     </div>
   );
