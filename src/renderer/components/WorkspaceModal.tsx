@@ -26,6 +26,7 @@ interface WorkspaceModalProps {
   onClose: () => void;
   onCreateWorkspace: (
     name: string,
+    initialPrompt?: string,
     selectedProvider?: Provider,
     linkedIssue?: LinearIssueSummary | null
   ) => void;
@@ -48,6 +49,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   const [isCreating, setIsCreating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
+  const [initialPrompt, setInitialPrompt] = useState('');
   const [availableIssues, setAvailableIssues] = useState<LinearIssueSummary[]>([]);
   const [isLoadingIssues, setIsLoadingIssues] = useState(false);
   const [issueListError, setIssueListError] = useState<string | null>(null);
@@ -88,35 +90,6 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
       return 'Name is too long (max 64 characters).';
     }
     return null;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setTouched(true);
-    const err = validate(workspaceName);
-    if (err) {
-      setError(err);
-      return;
-    }
-
-    setIsCreating(true);
-    try {
-      await onCreateWorkspace(
-        convertToWorkspaceName(workspaceName),
-        showAdvanced ? selectedProvider : undefined,
-        showAdvanced ? selectedIssue ?? null : null
-      );
-      setWorkspaceName('');
-      setSelectedProvider('codex');
-      setSelectedIssueIdentifier('');
-      setShowAdvanced(false);
-      setError(null);
-      onClose();
-    } catch (error) {
-      console.error('Failed to create workspace:', error);
-    } finally {
-      setIsCreating(false);
-    }
   };
 
   const onChange = (val: string) => {
@@ -259,7 +232,39 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
 
               <CardContent>
                 <Separator className="mb-2" />
-                <form onSubmit={handleSubmit} className="space-y-4">
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    setTouched(true);
+                    const err = validate(workspaceName);
+                    if (err) {
+                      setError(err);
+                      return;
+                    }
+                    setIsCreating(true);
+                    (async () => {
+                      try {
+                        await onCreateWorkspace(
+                          convertToWorkspaceName(workspaceName),
+                          showAdvanced ? initialPrompt.trim() || undefined : undefined,
+                          selectedProvider,
+                          selectedIssue
+                        );
+                        setWorkspaceName('');
+                        setInitialPrompt('');
+                        setSelectedProvider('codex');
+                        setShowAdvanced(false);
+                        setError(null);
+                        onClose();
+                      } catch (error) {
+                        console.error('Failed to create workspace:', error);
+                      } finally {
+                        setIsCreating(false);
+                      }
+                    })();
+                  }}
+                  className="space-y-4"
+                >
                   <div>
                     <label htmlFor="workspace-name" className="block text-sm font-medium text-foreground">
                       Task name
@@ -320,6 +325,31 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                 onChange={setSelectedProvider}
                                 className="w-full"
                               />
+                            </div>
+                          </div>
+                          <div className="flex items-start gap-4">
+                            <label
+                              htmlFor="initial-prompt"
+                              className="w-32 shrink-0 text-sm font-medium text-foreground"
+                            >
+                              Initial prompt
+                            </label>
+                            <div className="flex-1 min-w-0">
+                              <textarea
+                                id="initial-prompt"
+                                value={initialPrompt}
+                                onChange={(e) => setInitialPrompt(e.target.value)}
+                                placeholder={
+                                  selectedIssue
+                                    ? `e.g. Fix the attached Linear ticket ${selectedIssue.identifier} — describe any constraints.`
+                                    : `e.g. Summarize the key problems and propose a plan.`
+                                }
+                                className="w-full min-h-[80px] px-3 py-2 text-sm border border-input bg-background rounded-md resize-none focus:outline-none "
+                                rows={3}
+                              />
+                              <p className="mt-1 text-xs text-muted-foreground">
+                                The prompt will be added to the workspace when it opens.
+                              </p>
                             </div>
                           </div>
                           <div className="flex items-center gap-4">

@@ -67,6 +67,13 @@ export function registerPtyIpc(): void {
           } catch {}
         }
 
+        // Signal that PTY is ready so renderer may inject initial prompt safely
+        try {
+          const { BrowserWindow } = require('electron');
+          const windows = BrowserWindow.getAllWindows();
+          windows.forEach((w: any) => w.webContents.send('pty:started', { id }));
+        } catch {}
+
         return { ok: true };
       } catch (err: any) {
         console.error('pty:start FAIL', {

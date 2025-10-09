@@ -88,6 +88,7 @@ interface Project {
 
 interface WorkspaceMetadata {
   linearIssue?: LinearIssueSummary | null;
+  initialPrompt?: string | null;
 }
 
 interface Workspace {
@@ -512,6 +513,7 @@ const App: React.FC = () => {
 
   const handleCreateWorkspace = async (
     workspaceName: string,
+    initialPrompt?: string,
     selectedProvider?: Provider,
     linkedLinearIssue: LinearIssueSummary | null = null
   ) => {
@@ -519,8 +521,62 @@ const App: React.FC = () => {
 
     setIsCreatingWorkspace(true);
     try {
-      const workspaceMetadata: WorkspaceMetadata | null = linkedLinearIssue
-        ? { linearIssue: linkedLinearIssue }
+      let preparedPrompt: string | undefined = undefined;
+      if (initialPrompt && initialPrompt.trim()) {
+        const parts: string[] = [];
+        if (linkedLinearIssue) {
+          // Enrich linked issue with description from Linear, if available
+          let issue = linkedLinearIssue;
+          try {
+            const api: any = (window as any).electronAPI;
+            let description: string | undefined;
+            // Try bulk first
+            try {
+              const res = await api?.linearGetIssues?.([linkedLinearIssue.identifier]);
+              const arr = res?.issues || res || [];
+              const node = Array.isArray(arr)
+                ? arr.find((n: any) => String(n?.identifier) === String(linkedLinearIssue.identifier))
+                : null;
+              if (node?.description) description = String(node.description);
+            } catch {}
+            // Fallback to single issue endpoint
+            if (!description) {
+              const single = await api?.linearGetIssue?.(linkedLinearIssue.identifier);
+              if (single?.success && single.issue?.description) {
+                description = String(single.issue.description);
+              } else if (single?.description) {
+                description = String(single.description);
+              }
+            }
+            if (description) {
+              issue = { ...linkedLinearIssue, description } as any;
+            }
+          } catch {}
+          const detailParts: string[] = [];
+          const stateName = issue.state?.name?.trim();
+          const assigneeName = issue.assignee?.displayName?.trim() || issue.assignee?.name?.trim();
+          const teamKey = issue.team?.key?.trim();
+          const projectName = issue.project?.name?.trim();
+          if (stateName) detailParts.push(`State: ${stateName}`);
+          if (assigneeName) detailParts.push(`Assignee: ${assigneeName}`);
+          if (teamKey) detailParts.push(`Team: ${teamKey}`);
+          if (projectName) detailParts.push(`Project: ${projectName}`);
+          parts.push(`Linear: ${issue.identifier} — ${issue.title}`);
+          if (detailParts.length) parts.push(`Details: ${detailParts.join(' • ')}`);
+          if (issue.url) parts.push(`URL: ${issue.url}`);
+          if ((issue as any).description) {
+            parts.push('');
+            parts.push('Issue Description:');
+            parts.push(String((issue as any).description).trim());
+          }
+          parts.push('');
+        }
+        parts.push(initialPrompt.trim());
+        preparedPrompt = parts.join('\n');
+      }
+
+      const workspaceMetadata: WorkspaceMetadata | null = linkedLinearIssue || preparedPrompt
+        ? { linearIssue: linkedLinearIssue ?? null, initialPrompt: preparedPrompt ?? null }
         : null;
 
       // Create Git worktree

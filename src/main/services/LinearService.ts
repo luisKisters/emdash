@@ -94,6 +94,7 @@ export class LinearService {
             identifier
             title
             url
+            description
             state { name type }
             priority
             assignee { name displayName avatarUrl }
@@ -110,6 +111,36 @@ export class LinearService {
     });
 
     return response?.issues?.nodes ?? [];
+  }
+
+  async fetchIssueByIdentifier(identifier: string): Promise<any | null> {
+    const token = await this.getStoredToken();
+    if (!token) {
+      throw new Error('Linear token not set. Connect Linear in settings first.');
+    }
+
+    const id = (identifier || '').trim();
+    if (!id) return null;
+
+    const query = `
+      query IssueByIdentifier($id: String!) {
+        issue(id: $id) {
+          id
+          identifier
+          title
+          description
+          url
+          state { name type }
+          assignee { name displayName avatarUrl }
+          project { name }
+          team { name key }
+          updatedAt
+        }
+      }
+    `;
+
+    const response = await this.graphql<{ issue: any | null }>(token, query, { id });
+    return response?.issue ?? null;
   }
 
   async searchIssues(term: string, limit = 10): Promise<any[]> {

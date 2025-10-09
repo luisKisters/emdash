@@ -40,6 +40,12 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on(channel, wrapped);
     return () => ipcRenderer.removeListener(channel, wrapped);
   },
+  onPtyStarted: (listener: (data: { id: string }) => void) => {
+    const channel = 'pty:started';
+    const wrapped = (_: Electron.IpcRendererEvent, data: { id: string }) => listener(data);
+    ipcRenderer.on(channel, wrapped);
+    return () => ipcRenderer.removeListener(channel, wrapped);
+  },
 
   // Worktree management
   worktreeCreate: (args: { projectPath: string; workspaceName: string; projectId: string }) =>
@@ -110,6 +116,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   linearClearToken: () => ipcRenderer.invoke('linear:clearToken'),
   linearGetIssues: (identifiers: string[]) =>
     ipcRenderer.invoke('linear:getIssues', identifiers),
+  linearGetIssue: (identifier: string) => ipcRenderer.invoke('linear:getIssue', identifier),
   linearSearchIssues: (term: string, limit?: number) =>
     ipcRenderer.invoke('linear:searchIssues', term, limit),
   linearListIssues: (limit?: number) => ipcRenderer.invoke('linear:listIssues', limit),

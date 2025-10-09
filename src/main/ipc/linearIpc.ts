@@ -75,6 +75,20 @@ export function registerLinearIpc() {
       return { success: false, error: message };
     }
   });
+
+  ipcMain.handle('linear:getIssue', async (_event, identifier: string) => {
+    if (!identifier || typeof identifier !== 'string') {
+      return { success: false, error: 'Issue identifier is required.' };
+    }
+    try {
+      const issue = await linearService.fetchIssueByIdentifier(identifier);
+      return { success: true, issue };
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : 'Unable to fetch Linear issue at this time.';
+      return { success: false, error: message };
+    }
+  });
 }
 
 export default registerLinearIpc;

@@ -2,6 +2,7 @@ import { type LinearIssueSummary } from './linear';
 
 export interface WorkspaceMetadata {
   linearIssue?: LinearIssueSummary | null;
+  initialPrompt?: string | null;
 }
 
 export interface Workspace {
