@@ -1,4 +1,5 @@
 import { ipcMain } from 'electron';
+import { log } from '../lib/logger';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 import { getStatus as gitGetStatus, getFileDiff as gitGetFileDiff } from '../services/GitService';
@@ -78,7 +79,7 @@ export function registerGitIpc() {
             }
           }
         } catch (stageErr) {
-          console.warn('Failed to stage/commit changes before PR:', stageErr);
+          log.warn('Failed to stage/commit changes before PR:', stageErr as any);
           // Continue; PR may still be created for existing commits
         }
 
@@ -97,7 +98,7 @@ export function registerGitIpc() {
             });
             outputs.push(`git push --set-upstream origin ${branch}: success`);
           } catch (pushErr2) {
-            console.error('Failed to push branch before PR:', pushErr2);
+            log.error('Failed to push branch before PR:', pushErr2 as any);
             return {
               success: false,
               error:
@@ -129,7 +130,7 @@ export function registerGitIpc() {
 
         return { success: true, url, output: out };
       } catch (error: any) {
-        console.error('Failed to create PR:', error);
+        log.error('Failed to create PR:', error);
         return { success: false, error: error?.message || String(error) };
       }
     }
@@ -250,7 +251,7 @@ export function registerGitIpc() {
             }
           }
         } catch (e) {
-          console.warn('Stage/commit step issue:', e);
+          log.warn('Stage/commit step issue:', e as any);
         }
 
         // Push current branch (set upstream if needed)
@@ -265,7 +266,7 @@ export function registerGitIpc() {
         const { stdout: out } = await execAsync('git status -sb', { cwd: workspacePath });
         return { success: true, branch: activeBranch, output: (out || '').trim() };
       } catch (error: any) {
-        console.error('Failed to commit and push:', error);
+        log.error('Failed to commit and push:', error);
         return { success: false, error: error?.message || String(error) };
       }
     }

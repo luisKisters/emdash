@@ -392,7 +392,8 @@ const App: React.FC = () => {
           setIsClaudeInstalled(false);
         }
       } catch (error) {
-        console.error('Failed to load app data:', error);
+        const { log } = await import('./lib/logger');
+        log.error('Failed to load app data:', error as any);
       }
     };
 
@@ -434,7 +435,8 @@ const App: React.FC = () => {
                   setProjects((prev) => [...prev, newProject]);
                   setSelectedProject(newProject);
                 } else {
-                  console.error('Failed to save project:', saveResult.error);
+                  const { log } = await import('./lib/logger');
+                  log.error('Failed to save project:', saveResult.error);
                 }
                 // alert(`✅ Project connected to GitHub!\n\nRepository: ${githubInfo.repository}\nBranch: ${githubInfo.branch}\nPath: ${result.path}`);
               } else {
@@ -475,7 +477,8 @@ const App: React.FC = () => {
                 setProjects((prev) => [...prev, newProject]);
                 setSelectedProject(newProject);
               } else {
-                console.error('Failed to save project:', saveResult.error);
+                const { log } = await import('./lib/logger');
+                log.error('Failed to save project:', saveResult.error);
               }
             }
           } else {
@@ -487,7 +490,8 @@ const App: React.FC = () => {
             });
           }
         } catch (error) {
-          console.error('Git detection error:', error);
+          const { log } = await import('./lib/logger');
+          log.error('Git detection error:', error as any);
           toast({
             title: 'Project Opened',
             description: `Could not detect Git information. Path: ${result.path}`,
@@ -502,7 +506,8 @@ const App: React.FC = () => {
         });
       }
     } catch (error) {
-      console.error('Open project error:', error);
+      const { log } = await import('./lib/logger');
+      log.error('Open project error:', error as any);
       toast({
         title: 'Failed to Open Project',
         description: 'Please check the console for details.',
@@ -535,7 +540,9 @@ const App: React.FC = () => {
               const res = await api?.linearGetIssues?.([linkedLinearIssue.identifier]);
               const arr = res?.issues || res || [];
               const node = Array.isArray(arr)
-                ? arr.find((n: any) => String(n?.identifier) === String(linkedLinearIssue.identifier))
+                ? arr.find(
+                    (n: any) => String(n?.identifier) === String(linkedLinearIssue.identifier)
+                  )
                 : null;
               if (node?.description) description = String(node.description);
             } catch {}
@@ -575,9 +582,10 @@ const App: React.FC = () => {
         preparedPrompt = parts.join('\n');
       }
 
-      const workspaceMetadata: WorkspaceMetadata | null = linkedLinearIssue || preparedPrompt
-        ? { linearIssue: linkedLinearIssue ?? null, initialPrompt: preparedPrompt ?? null }
-        : null;
+      const workspaceMetadata: WorkspaceMetadata | null =
+        linkedLinearIssue || preparedPrompt
+          ? { linearIssue: linkedLinearIssue ?? null, initialPrompt: preparedPrompt ?? null }
+          : null;
 
       // Create Git worktree
       const worktreeResult = await window.electronAPI.worktreeCreate({
@@ -619,7 +627,8 @@ const App: React.FC = () => {
               const issue = workspaceMetadata.linearIssue;
               const detailParts: string[] = [];
               const stateName = issue.state?.name?.trim();
-              const assigneeName = issue.assignee?.displayName?.trim() || issue.assignee?.name?.trim();
+              const assigneeName =
+                issue.assignee?.displayName?.trim() || issue.assignee?.name?.trim();
               const teamKey = issue.team?.key?.trim();
               const projectName = issue.project?.name?.trim();
 
@@ -628,9 +637,7 @@ const App: React.FC = () => {
               if (teamKey) detailParts.push(`Team: ${teamKey}`);
               if (projectName) detailParts.push(`Project: ${projectName}`);
 
-              const lines = [
-                `Linked Linear issue: ${issue.identifier} — ${issue.title}`,
-              ];
+              const lines = [`Linked Linear issue: ${issue.identifier} — ${issue.title}`];
 
               if (detailParts.length) {
                 lines.push(`Details: ${detailParts.join(' • ')}`);
@@ -652,7 +659,8 @@ const App: React.FC = () => {
               });
             }
           } catch (seedError) {
-            console.error('Failed to seed workspace with Linear issue context:', seedError);
+            const { log } = await import('./lib/logger');
+            log.error('Failed to seed workspace with Linear issue context:', seedError as any);
           }
         }
 
@@ -685,14 +693,16 @@ const App: React.FC = () => {
           description: `"${workspaceName}" workspace created successfully!`,
         });
       } else {
-        console.error('Failed to save workspace:', saveResult.error);
+        const { log } = await import('./lib/logger');
+        log.error('Failed to save workspace:', saveResult.error);
         toast({
           title: 'Error',
           description: 'Failed to create workspace. Please check the console for details.',
         });
       }
     } catch (error) {
-      console.error('Failed to create workspace:', error);
+      const { log } = await import('./lib/logger');
+      log.error('Failed to create workspace:', error as any);
       toast({
         title: 'Error',
         description:
@@ -744,11 +754,13 @@ const App: React.FC = () => {
         if (workspace.agentId) {
           const agentRemoval = await window.electronAPI.codexRemoveAgent(workspace.id);
           if (!agentRemoval.success) {
-            console.warn('codexRemoveAgent reported failure:', agentRemoval.error);
+            const { log } = await import('./lib/logger');
+            log.warn('codexRemoveAgent reported failure:', agentRemoval.error);
           }
         }
       } catch (agentError) {
-        console.warn('Failed to remove agent before deleting workspace:', agentError);
+        const { log } = await import('./lib/logger');
+        log.warn('Failed to remove agent before deleting workspace:', agentError as any);
       }
 
       const removeResult = await window.electronAPI.worktreeRemove({
@@ -795,7 +807,8 @@ const App: React.FC = () => {
         description: `"${workspace.name}" was removed.`,
       });
     } catch (error) {
-      console.error('Failed to delete workspace:', error);
+      const { log } = await import('./lib/logger');
+      log.error('Failed to delete workspace:', error as any);
       toast({
         title: 'Error',
         description:

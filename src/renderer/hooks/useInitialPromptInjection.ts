@@ -47,4 +47,3 @@ export function useInitialPromptInjection(opts: {
     };
   }, [enabled, workspaceId, providerId, prompt]);
 }
-

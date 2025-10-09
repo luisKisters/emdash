@@ -189,9 +189,7 @@ declare global {
         workspaceName?: string;
         error?: string;
       }>;
-      linearSaveToken?: (
-        token: string
-      ) => Promise<{
+      linearSaveToken?: (token: string) => Promise<{
         success: boolean;
         workspaceName?: string;
         error?: string;
@@ -200,9 +198,7 @@ declare global {
         success: boolean;
         error?: string;
       }>;
-      linearGetIssues?: (
-        identifiers: string[]
-      ) => Promise<{
+      linearGetIssues?: (identifiers: string[]) => Promise<{
         success: boolean;
         issues?: any[];
         error?: string;
@@ -215,9 +211,7 @@ declare global {
         issues?: any[];
         error?: string;
       }>;
-      linearListIssues?: (
-        limit?: number
-      ) => Promise<{
+      linearListIssues?: (limit?: number) => Promise<{
         success: boolean;
         issues?: any[];
         error?: string;
@@ -457,9 +451,7 @@ export interface ElectronAPI {
     workspaceName?: string;
     error?: string;
   }>;
-  linearSaveToken?: (
-    token: string
-  ) => Promise<{
+  linearSaveToken?: (token: string) => Promise<{
     success: boolean;
     workspaceName?: string;
     error?: string;
@@ -468,9 +460,7 @@ export interface ElectronAPI {
     success: boolean;
     error?: string;
   }>;
-  linearGetIssues?: (
-    identifiers: string[]
-  ) => Promise<{
+  linearGetIssues?: (identifiers: string[]) => Promise<{
     success: boolean;
     issues?: any[];
     error?: string;

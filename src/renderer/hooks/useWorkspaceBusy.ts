@@ -6,4 +6,3 @@ export function useWorkspaceBusy(workspaceId: string) {
   useEffect(() => activityStore.subscribe(workspaceId, setBusy), [workspaceId]);
   return busy;
 }
-

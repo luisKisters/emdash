@@ -192,7 +192,14 @@ const useClaudeStream = (options?: Options | null): Result => {
       if (data.providerId !== 'claude') return;
       if (data.workspaceId !== wid) return;
       // Keep streaming but note error in console
-      console.error('Claude stream error:', data.error);
+      try {
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { log } = require('../lib/logger');
+        log.error('Claude stream error:', data.error);
+      } catch {
+        // eslint-disable-next-line no-console
+        console.error('Claude stream error:', data.error);
+      }
     });
     const offDone = window.electronAPI.onAgentStreamComplete(async (data: any) => {
       if (data.providerId !== 'claude') return;

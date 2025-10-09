@@ -58,8 +58,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   const shouldReduceMotion = useReducedMotion();
   const issuesLoaded = availableIssues.length > 0;
   const selectedIssue = useMemo(
-    () =>
-      availableIssues.find((issue) => issue.identifier === selectedIssueIdentifier) ?? null,
+    () => availableIssues.find((issue) => issue.identifier === selectedIssueIdentifier) ?? null,
     [availableIssues, selectedIssueIdentifier]
   );
 
@@ -98,8 +97,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
     setError(validate(val));
   };
 
-  const canListLinear =
-    typeof window !== 'undefined' && !!window.electronAPI?.linearListIssues;
+  const canListLinear = typeof window !== 'undefined' && !!window.electronAPI?.linearListIssues;
 
   const isMountedRef = useRef(true);
 
@@ -144,9 +142,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
     } catch (error) {
       if (!isMountedRef.current) return;
       setAvailableIssues([]);
-      setIssueListError(
-        error instanceof Error ? error.message : 'Failed to load Linear issues.'
-      );
+      setIssueListError(error instanceof Error ? error.message : 'Failed to load Linear issues.');
     } finally {
       if (!isMountedRef.current) return;
       setIsLoadingIssues(false);
@@ -266,7 +262,10 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                   className="space-y-4"
                 >
                   <div>
-                    <label htmlFor="workspace-name" className="block text-sm font-medium text-foreground">
+                    <label
+                      htmlFor="workspace-name"
+                      className="block text-sm font-medium text-foreground"
+                    >
                       Task name
                     </label>
                     <Input
@@ -305,12 +304,9 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                   >
                     <AccordionItem value="advanced" className="border-none">
                       <AccordionTrigger className="px-0 py-1 text-sm font-medium text-muted-foreground hover:no-underline">
-                          Advanced options
+                        Advanced options
                       </AccordionTrigger>
-                      <AccordionContent
-                        className="px-0 pt-2 space-y-4"
-                        id="workspace-advanced"
-                      >
+                      <AccordionContent className="px-0 pt-2 space-y-4" id="workspace-advanced">
                         <div className="flex flex-col gap-4">
                           <div className="flex items-center gap-4">
                             <label
@@ -373,14 +369,20 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                           {selectedIssue ? (
                                             <>
                                               <span className="inline-flex items-center gap-1.5 shrink-0 px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-                                                <img src={linearLogo} alt="Linear" className="w-3.5 h-3.5" />
+                                                <img
+                                                  src={linearLogo}
+                                                  alt="Linear"
+                                                  className="w-3.5 h-3.5"
+                                                />
                                                 <span className="text-[11px] font-medium text-foreground">
                                                   {selectedIssue.identifier}
                                                 </span>
                                               </span>
                                               {selectedIssue.title ? (
                                                 <>
-                                                  <span className="shrink-0 text-foreground">-</span>
+                                                  <span className="shrink-0 text-foreground">
+                                                    -
+                                                  </span>
                                                   <span className="truncate">
                                                     {selectedIssue.title}
                                                   </span>
@@ -388,9 +390,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                               ) : null}
                                             </>
                                           ) : (
-                                            <span className="truncate">
-                                              {issuePlaceholder}
-                                            </span>
+                                            <span className="truncate">{issuePlaceholder}</span>
                                           )}
                                         </span>
                                       </SelectValue>
@@ -404,14 +404,20 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                           <SelectItemText>
                                             <span className="flex min-w-0 items-center gap-2">
                                               <span className="inline-flex items-center gap-1.5 shrink-0 px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
-                                                <img src={linearLogo} alt="Linear" className="w-3.5 h-3.5" />
+                                                <img
+                                                  src={linearLogo}
+                                                  alt="Linear"
+                                                  className="w-3.5 h-3.5"
+                                                />
                                                 <span className="text-[11px] font-medium text-foreground">
                                                   {issue.identifier}
                                                 </span>
                                               </span>
                                               {issue.title ? (
                                                 <>
-                                                  <span className="shrink-0 text-muted-foreground">-</span>
+                                                  <span className="shrink-0 text-muted-foreground">
+                                                    -
+                                                  </span>
                                                   <span className="truncate text-muted-foreground">
                                                     {issue.title}
                                                   </span>
@@ -462,10 +468,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                   </Accordion>
 
                   <div className="flex justify-end">
-                    <Button
-                      type="submit"
-                      disabled={!!validate(workspaceName) || isCreating}
-                    >
+                    <Button type="submit" disabled={!!validate(workspaceName) || isCreating}>
                       {isCreating ? (
                         <>
                           <Spinner size="sm" className="mr-2" />
@@ -477,7 +480,6 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                     </Button>
                   </div>
                 </form>
-
               </CardContent>
             </Card>
           </motion.div>

@@ -160,13 +160,16 @@ const LinearIntegrationCard: React.FC = () => {
   );
 };
 
-const TAB_DETAILS: Record<SettingsTab, {
-  icon: LucideIcon;
-  label: string;
-  title: string;
-  description: string;
-  sections: SettingsSection[];
-}> = {
+const TAB_DETAILS: Record<
+  SettingsTab,
+  {
+    icon: LucideIcon;
+    label: string;
+    title: string;
+    description: string;
+    sections: SettingsSection[];
+  }
+> = {
   general: {
     icon: Settings2,
     label: 'General',
@@ -231,7 +234,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     return (
       <div className="space-y-6">
         {sections.map((section) => (
-          <div key={section.title} className="space-y-4 rounded-lg border border-border/60 bg-muted/40 p-4">
+          <div
+            key={section.title}
+            className="space-y-4 rounded-lg border border-border/60 bg-muted/40 p-4"
+          >
             <div>
               <h3 className="text-sm font-semibold text-foreground">{section.title}</h3>
               {section.description ? (
@@ -299,7 +305,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 </nav>
               </aside>
 
-                <div className="flex flex-1 flex-col">
+              <div className="flex flex-1 flex-col">
                 <header className="flex items-center justify-between border-b border-border/60 px-6 py-4">
                   <div>
                     <h2 className="text-lg font-semibold">{activeTabDetails.title}</h2>
@@ -321,9 +327,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                   </Button>
                 </header>
 
-                <div className="flex-1 overflow-y-auto px-6 py-6">
-                  {renderContent()}
-                </div>
+                <div className="flex-1 overflow-y-auto px-6 py-6">{renderContent()}</div>
 
                 <Separator />
                 <footer className="flex items-center justify-end gap-2 px-6 py-4">
@@ -339,8 +343,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
-  , document.body);
+    </AnimatePresence>,
+    document.body
+  );
 };
 
 export default SettingsModal;

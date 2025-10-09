@@ -27,7 +27,9 @@ export class LinearService {
   private readonly SERVICE_NAME = 'emdash-linear';
   private readonly ACCOUNT_NAME = 'api-token';
 
-  async saveToken(token: string): Promise<{ success: boolean; workspaceName?: string; error?: string }> {
+  async saveToken(
+    token: string
+  ): Promise<{ success: boolean; workspaceName?: string; error?: string }> {
     try {
       const viewer = await this.fetchViewer(token);
       await this.storeToken(token);
@@ -37,7 +39,9 @@ export class LinearService {
       };
     } catch (error) {
       const message =
-        error instanceof Error ? error.message : 'Failed to validate Linear token. Please try again.';
+        error instanceof Error
+          ? error.message
+          : 'Failed to validate Linear token. Please try again.';
       return { success: false, error: message };
     }
   }
@@ -70,7 +74,8 @@ export class LinearService {
         viewer,
       };
     } catch (error) {
-      const message = error instanceof Error ? error.message : 'Failed to verify Linear connection.';
+      const message =
+        error instanceof Error ? error.message : 'Failed to verify Linear connection.';
       return { connected: false, error: message };
     }
   }
@@ -228,7 +233,11 @@ export class LinearService {
     return data.viewer;
   }
 
-  private async graphql<T>(token: string, query: string, variables?: Record<string, unknown>): Promise<T> {
+  private async graphql<T>(
+    token: string,
+    query: string,
+    variables?: Record<string, unknown>
+  ): Promise<T> {
     const body = JSON.stringify({ query, variables });
 
     const requestPromise = new Promise<GraphQLResponse<T>>((resolve, reject) => {

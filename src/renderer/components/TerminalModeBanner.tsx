@@ -24,7 +24,10 @@ export const TerminalModeBanner: React.FC<Props> = ({ provider, onOpenExternal }
           Docs
         </button>
       ) : null}
-      <div className="mt-2 text-xs opacity-90">The terminal session persists while the app is open. Closing the app will terminate the session.</div>
+      <div className="mt-2 text-xs opacity-90">
+        The terminal session persists while the app is open. Closing the app will terminate the
+        session.
+      </div>
     </div>
   );
 };

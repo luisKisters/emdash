@@ -21,7 +21,7 @@ class ActivityStore {
         // Match any subscribed workspace id by suffix
         for (const wsId of this.subscribedIds) {
           if (!id.endsWith(wsId)) continue;
-          const prov = id.includes('-main-') ? (id.split('-main-')[0] || '') : '';
+          const prov = id.includes('-main-') ? id.split('-main-')[0] || '' : '';
           const signal = classifyActivity(prov, info?.chunk || '');
           if (signal === 'busy') {
             this.setBusy(wsId, true, true);

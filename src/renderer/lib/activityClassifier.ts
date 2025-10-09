@@ -8,7 +8,10 @@ function stripAnsi(s: string): string {
     .replace(/\x1b\][^\x07]*\x07/g, '');
 }
 
-export function classifyActivity(provider: string | null | undefined, chunk: string): ActivitySignal {
+export function classifyActivity(
+  provider: string | null | undefined,
+  chunk: string
+): ActivitySignal {
   let text = (chunk || '').toString();
   text = stripAnsi(text);
   if (!text) return 'neutral';
@@ -26,7 +29,12 @@ export function classifyActivity(provider: string | null | undefined, chunk: str
     // Busy cues seen in Claude Code CLI
     // Example: "✻ Wrangling… (2s · ↑ 0 tokens · esc to interrupt)"
     if (/esc\s*to\s*interrupt/i.test(text)) return 'busy';
-    if (/wrangling|crafting|thinking|reasoning|analyzing|planning|reading|scanning|applying/i.test(text)) return 'busy';
+    if (
+      /wrangling|crafting|thinking|reasoning|analyzing|planning|reading|scanning|applying/i.test(
+        text
+      )
+    )
+      return 'busy';
     // Idle cues
     if (/Ready|Awaiting|Next command|Use \/login/i.test(text)) return 'idle';
   }
@@ -35,9 +43,14 @@ export function classifyActivity(provider: string | null | undefined, chunk: str
     // Busy cues: generic explicit signal while generating
     if (/Esc to interrupt/i.test(text)) return 'busy';
     // Busy cues: active response lines often include a timer (e.g., 43s or 1m12s)
-    if(/\(\s*(?:\d+\s*m\s*)?\d+\s*s\s*•\s*Esc to interrupt\s*\)/i.test(text)) return 'busy';
+    if (/\(\s*(?:\d+\s*m\s*)?\d+\s*s\s*•\s*Esc to interrupt\s*\)/i.test(text)) return 'busy';
     if (/Responding to\b/i.test(text)) return 'busy';
-    if (/Executing|Running|Thinking|Working|Analyzing|Identifying|Inspecting|Summarizing|Refactoring|Applying|Updating|Generating|Scanning|Parsing|Checking/i.test(text)) return 'busy';
+    if (
+      /Executing|Running|Thinking|Working|Analyzing|Identifying|Inspecting|Summarizing|Refactoring|Applying|Updating|Generating|Scanning|Parsing|Checking/i.test(
+        text
+      )
+    )
+      return 'busy';
     // Idle footers/prompts
     if (/Ready|Awaiting input|Press Enter/i.test(text)) return 'idle';
     if (/\b\/(status|approvals|model)\b/i.test(text)) return 'idle';
@@ -46,7 +59,14 @@ export function classifyActivity(provider: string | null | undefined, chunk: str
 
   if (p === 'copilot') {
     if (/Thinking|Working|Generating/i.test(text)) return 'busy';
-    if (/Ready|Press Enter|Next step/i.test(text) || /Do you want to/i.test(text) || /Confirm with number keys/i.test(text) || /approve all file operations/i.test(text) || /Yes, and approve/i.test(text)) return 'idle';
+    if (
+      /Ready|Press Enter|Next step/i.test(text) ||
+      /Do you want to/i.test(text) ||
+      /Confirm with number keys/i.test(text) ||
+      /approve all file operations/i.test(text) ||
+      /Yes, and approve/i.test(text)
+    )
+      return 'idle';
   }
 
   if (p === 'gemini' || p === 'droid') {
@@ -55,7 +75,8 @@ export function classifyActivity(provider: string | null | undefined, chunk: str
     // Common progress words
     if (/Thinking\.{0,3}/i.test(text)) return 'busy';
     if (/[\u2800-\u28FF]/.test(text) && /Thinking/i.test(text)) return 'busy';
-    if (/Running|Working|Executing|Generating|Applying|Planning|Analyzing/i.test(text)) return 'busy';
+    if (/Running|Working|Executing|Generating|Applying|Planning|Analyzing/i.test(text))
+      return 'busy';
     if (/Ready|Awaiting|Press Enter/i.test(text)) return 'idle';
   }
 

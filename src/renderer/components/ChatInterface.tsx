@@ -279,7 +279,8 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
             );
             if (agentResult.success) {
               setAgentCreated(true);
-              console.log('Codex agent created for workspace:', workspace.name);
+              const { log } = await import('../lib/logger');
+              log.info('Codex agent created for workspace:', workspace.name);
             } else {
               console.error('Failed to create Codex agent:', agentResult.error);
               toast({

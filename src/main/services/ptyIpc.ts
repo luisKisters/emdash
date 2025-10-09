@@ -1,5 +1,6 @@
 import { ipcMain, WebContents } from 'electron';
 import { startPty, writePty, resizePty, killPty, getPty } from './ptyManager';
+import { log } from '../lib/logger';
 
 const owners = new Map<string, WebContents>();
 const listeners = new Set<string>();
@@ -39,7 +40,7 @@ export function registerPtyIpc(): void {
         // Reuse existing PTY if present; otherwise create new
         const existing = getPty(id);
         const proc = existing ?? startPty({ id, cwd, shell, env, cols, rows });
-        console.log('pty:start OK', { id, cwd, shell, cols, rows, reused: !!existing });
+        log.debug('pty:start OK', { id, cwd, shell, cols, rows, reused: !!existing });
         const wc = event.sender;
         owners.set(id, wc);
 
@@ -76,7 +77,7 @@ export function registerPtyIpc(): void {
 
         return { ok: true };
       } catch (err: any) {
-        console.error('pty:start FAIL', {
+        log.error('pty:start FAIL', {
           id: args.id,
           cwd: args.cwd,
           shell: args.shell,
@@ -91,7 +92,7 @@ export function registerPtyIpc(): void {
     try {
       writePty(args.id, args.data);
     } catch (e) {
-      console.error('pty:input error', e);
+      log.error('pty:input error', e);
     }
   });
 
@@ -99,7 +100,7 @@ export function registerPtyIpc(): void {
     try {
       resizePty(args.id, args.cols, args.rows);
     } catch (e) {
-      console.error('pty:resize error', e);
+      log.error('pty:resize error', e);
     }
   });
 
@@ -110,7 +111,7 @@ export function registerPtyIpc(): void {
       listeners.delete(args.id);
       buffers.delete(args.id);
     } catch (e) {
-      console.error('pty:kill error', e);
+      log.error('pty:kill error', e);
     }
   });
 }

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useMemo } from 'react';
 import { Terminal } from '@xterm/xterm';
+import { log } from '../lib/logger';
 
 type Props = {
   id: string;
@@ -31,11 +32,11 @@ const TerminalPaneComponent: React.FC<Props> = ({
   useEffect(() => {
     const el = containerRef.current;
     if (!el) {
-      console.error('TerminalPane: No container element found');
+      log.error('TerminalPane: No container element found');
       return;
     }
 
-    console.log('TerminalPane: Creating terminal, container dimensions:', {
+    log.debug('TerminalPane: Creating terminal, container dimensions:', {
       width: el.offsetWidth,
       height: el.offsetHeight,
       clientWidth: el.clientWidth,
@@ -105,20 +106,14 @@ const TerminalPaneComponent: React.FC<Props> = ({
     setTimeout(() => term.focus(), 0);
 
     const keyDisp = term.onData((data) => {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.log('xterm onData', JSON.stringify(data));
-      }
+      log.debug('xterm onData', JSON.stringify(data));
       try {
         onActivity && onActivity();
       } catch {}
       window.electronAPI.ptyInput({ id, data });
     });
     const keyDisp2 = term.onKey((ev) => {
-      if (process.env.NODE_ENV === 'development') {
-        // eslint-disable-next-line no-console
-        console.log('xterm onKey', ev.key);
-      }
+      log.debug('xterm onKey', ev.key);
     });
 
     // Listen for history first, then live data, then start/attach to PTY
