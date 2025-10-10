@@ -148,11 +148,7 @@ This automatically:
 2. Creates a git commit with the version number (e.g., `"0.2.10"`)
 3. Creates a git tag (e.g., `v0.2.10`)
 
-Then push to trigger the CI/CD pipeline:
-
-```bash
-git push && git push --tags
-```
+Then push to trigger the CI/CD pipeline.
 
 ### What happens next
 
