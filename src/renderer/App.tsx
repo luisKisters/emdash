@@ -745,10 +745,21 @@ const App: React.FC = () => {
   const handleDeleteWorkspace = async (targetProject: Project, workspace: Workspace) => {
     try {
       try {
-        // Clear initial prompt sent flag if present
+        // Clear initial prompt sent flags (legacy and per-provider) if present
         const { initialPromptSentKey } = await import('./lib/keys');
-        const key = initialPromptSentKey(workspace.id);
-        localStorage.removeItem(key);
+        try {
+          // Legacy key (no provider)
+          const legacy = initialPromptSentKey(workspace.id);
+          localStorage.removeItem(legacy);
+        } catch {}
+        try {
+          // Provider-scoped keys
+          const providers = ['codex', 'claude', 'droid', 'gemini', 'cursor', 'copilot', 'amp'];
+          for (const p of providers) {
+            const k = initialPromptSentKey(workspace.id, p);
+            localStorage.removeItem(k);
+          }
+        } catch {}
       } catch {}
       try {
         if (workspace.agentId) {

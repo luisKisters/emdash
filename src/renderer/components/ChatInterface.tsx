@@ -88,32 +88,26 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
       setHasGeminiActivity(locked === 'gemini');
       setHasCursorActivity(locked === 'cursor');
       setHasCopilotActivity(locked === 'copilot');
-
       // Priority: initialProvider > locked > last > default
       if (initialProvider) {
         setProvider(initialProvider);
-      } else if (locked === 'droid') {
-        setProvider('droid');
-      } else if (last === 'droid') {
-        setProvider('droid');
-      } else if (locked === 'gemini') {
-        setProvider('gemini');
-      } else if (last === 'gemini') {
-        setProvider('gemini');
-      } else if (locked === 'cursor') {
-        setProvider('cursor');
-      } else if (last === 'cursor') {
-        setProvider('cursor');
-      } else if (locked === 'copilot') {
-        setProvider('copilot');
-      } else if (last === 'copilot') {
-        setProvider('copilot');
-      } else if (locked === 'codex' || locked === 'claude') {
-        setProvider(locked);
-      } else if (last === 'codex' || last === 'claude') {
-        setProvider(last);
       } else {
-        setProvider('codex');
+        const validProviders: Provider[] = [
+          'codex',
+          'claude',
+          'droid',
+          'gemini',
+          'cursor',
+          'copilot',
+          'amp',
+        ];
+        if (locked && (validProviders as string[]).includes(locked)) {
+          setProvider(locked as Provider);
+        } else if (last && (validProviders as string[]).includes(last)) {
+          setProvider(last as Provider);
+        } else {
+          setProvider('codex');
+        }
       }
     } catch {
       setProvider(initialProvider || 'codex');

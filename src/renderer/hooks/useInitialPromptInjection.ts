@@ -18,7 +18,7 @@ export function useInitialPromptInjection(opts: {
     if (!enabled) return;
     const trimmed = (prompt || '').trim();
     if (!trimmed) return;
-    const sentKey = initialPromptSentKey(workspaceId);
+    const sentKey = initialPromptSentKey(workspaceId, providerId);
     if (localStorage.getItem(sentKey) === '1') return;
 
     const ptyId = `${providerId}-main-${workspaceId}`;
