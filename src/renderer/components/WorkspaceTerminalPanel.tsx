@@ -43,13 +43,25 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
         </div>
       </div>
 
-      <div className="flex-1 bg-black overflow-hidden">
-        <TerminalPane
-          id={`workspace-${workspace.id}`}
-          cwd={workspace.path}
-          className="h-full w-full"
-        />
-      </div>
+      {(() => {
+        let isCharm = false;
+        try {
+          const p = localStorage.getItem(`provider:last:${workspace.id}`) ||
+            localStorage.getItem(`provider:locked:${workspace.id}`) ||
+            localStorage.getItem(`workspaceProvider:${workspace.id}`);
+          isCharm = p === 'charm';
+        } catch {}
+        return (
+          <div className={`flex-1 ${isCharm ? 'bg-white' : 'bg-black'} overflow-hidden`}>
+            <TerminalPane
+              id={`workspace-${workspace.id}`}
+              cwd={workspace.path}
+              variant={isCharm ? 'light' : 'dark'}
+              className="h-full w-full"
+            />
+          </div>
+        );
+      })()}
     </div>
   );
 };

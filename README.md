@@ -20,7 +20,7 @@
   alt="Emdash" width="900">
   </p>
 
-emdash is a UI layer for running multiple coding agents in parallel — currently supporting OpenAI Codex CLI, Claude Code CLI, Droid (Factory CLI), Gemini CLI, Cursor CLI, Amp Code CLI, and GitHub Copilot CLI. Each agent runs in its own Git worktree so you can fan out tasks, keep changes compartmentalized, and manage everything from a single UI.
+emdash is a UI layer for running multiple coding agents in parallel — currently supporting OpenAI Codex CLI, Claude Code CLI, Droid (Factory CLI), Gemini CLI, Cursor CLI, Amp Code CLI, GitHub Copilot CLI, and Charm CLI. Each agent runs in its own Git worktree so you can fan out tasks, keep changes compartmentalized, and manage everything from a single UI.
 
 <p align="center">
     <img src="./docs/media/emdash-screenshot.png" alt="Emdash app screenshot" width="100%">
@@ -247,10 +247,11 @@ find "$HOME" -type f -name 'emdash.db*' -print
 
 ## What's Next
 
-- [ ] Additional providers (e.g., Opencode, aider, Warp)
+- [ ] Additional providers
 - [ ] Workspace lifecycle hooks to run custom scripts on create, run, and archive (e.g., install deps, copy env files, clean up resources)
 - [ ] Planning chat with controlled execution (draft actions in a separate chat, then run them one by one)
-- [ ] Linear integration to track and close out issues
+- [x] Linear integration to track and close out issues
+- [ ] Assign the same prompt to different providers at the same time 
 
 ## Privacy
 
