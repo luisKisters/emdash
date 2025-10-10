@@ -6,7 +6,8 @@ export type UiProvider =
   | 'cursor'
   | 'copilot'
   | 'amp'
-  | 'opencode';
+  | 'opencode'
+  | 'charm';
 
 export type ProviderMeta = {
   label: string;
@@ -19,6 +20,15 @@ export type ProviderMeta = {
 };
 
 export const providerMeta: Record<UiProvider, ProviderMeta> = {
+  charm: {
+    label: 'Charm',
+    icon: '../../assets/images/charm.png',
+    terminalOnly: true,
+    cli: 'crush',
+    helpUrl: 'https://github.com/charmbracelet/crush',
+    idlePatterns: [/Ready|Awaiting|Press Enter|Select model/i],
+    busyPatterns: [/Thinking|Working|Executing|Running|Applying|Analyzing/i],
+  },
   opencode: {
     label: 'OpenCode',
     icon: '../../assets/images/opencode.png',

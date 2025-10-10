@@ -10,6 +10,8 @@ type Props = {
   shell?: string;
   className?: string;
   variant?: 'dark' | 'light';
+  themeOverride?: any; // optional xterm theme overrides
+  contentFilter?: string; // CSS filter applied to terminal content container
   keepAlive?: boolean;
   onActivity?: () => void;
   onStartError?: (message: string) => void;
@@ -24,6 +26,8 @@ const TerminalPaneComponent: React.FC<Props> = ({
   shell,
   className,
   variant = 'dark',
+  themeOverride,
+  contentFilter,
   keepAlive = false,
   onActivity,
   onStartError,
@@ -48,59 +52,62 @@ const TerminalPaneComponent: React.FC<Props> = ({
     });
 
     const isLight = variant === 'light';
+    const baseTheme = isLight
+      ? {
+          // Light theme defaults
+          background: '#ffffff',
+          foreground: '#000000',
+          cursor: '#000000',
+          selectionBackground: '#00000022',
+          black: '#000000',
+          red: '#cc0000',
+          green: '#008000',
+          yellow: '#a16207',
+          blue: '#1d4ed8',
+          magenta: '#7c3aed',
+          cyan: '#0ea5e9',
+          white: '#111827',
+          brightBlack: '#4b5563',
+          brightRed: '#ef4444',
+          brightGreen: '#22c55e',
+          brightYellow: '#f59e0b',
+          brightBlue: '#3b82f6',
+          brightMagenta: '#8b5cf6',
+          brightCyan: '#22d3ee',
+          brightWhite: '#111827',
+        }
+      : {
+          // Dark theme defaults
+          background: '#000000',
+          foreground: '#ffffff',
+          cursor: '#ffffff',
+          selectionBackground: '#ffffff33',
+          black: '#000000',
+          red: '#ff6b6b',
+          green: '#2ecc71',
+          yellow: '#f1c40f',
+          blue: '#3498db',
+          magenta: '#9b59b6',
+          cyan: '#1abc9c',
+          white: '#ecf0f1',
+          brightBlack: '#bfbfbf',
+          brightRed: '#ff6b6b',
+          brightGreen: '#2ecc71',
+          brightYellow: '#f1c40f',
+          brightBlue: '#3498db',
+          brightMagenta: '#9b59b6',
+          brightCyan: '#1abc9c',
+          brightWhite: '#ffffff',
+        };
+    const theme = { ...(baseTheme as any), ...(themeOverride || {}) } as any;
+
     const term = new Terminal({
       convertEol: true,
       cursorBlink: true,
       disableStdin: false,
       cols: cols,
       rows: rows,
-      theme: isLight
-        ? {
-            // Light theme: black text on white bg; keep orange accents
-            background: '#ffffff',
-            foreground: '#000000',
-            cursor: '#000000',
-            selectionBackground: '#00000022',
-            black: '#000000',
-            red: '#000000',
-            green: '#000000',
-            yellow: '#f59e0b', // keep orange
-            blue: '#000000',
-            magenta: '#000000',
-            cyan: '#000000',
-            white: '#000000',
-            brightBlack: '#4b5563',
-            brightRed: '#000000',
-            brightGreen: '#000000',
-            brightYellow: '#f59e0b', // keep orange
-            brightBlue: '#000000',
-            brightMagenta: '#000000',
-            brightCyan: '#000000',
-            brightWhite: '#000000',
-          }
-        : {
-            // Dark theme (existing strict monochrome)
-            background: '#000000',
-            foreground: '#ffffff',
-            cursor: '#ffffff',
-            selectionBackground: '#ffffff33',
-            black: '#000000',
-            red: '#ffffff',
-            green: '#ffffff',
-            yellow: '#ffffff',
-            blue: '#ffffff',
-            magenta: '#ffffff',
-            cyan: '#ffffff',
-            white: '#ffffff',
-            brightBlack: '#bfbfbf',
-            brightRed: '#ffffff',
-            brightGreen: '#ffffff',
-            brightYellow: '#ffffff',
-            brightBlue: '#ffffff',
-            brightMagenta: '#ffffff',
-            brightCyan: '#ffffff',
-            brightWhite: '#ffffff',
-          },
+      theme,
       allowTransparency: false,
       scrollback: 1000,
     });
@@ -234,6 +241,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
           height: '100%',
           minHeight: '0',
           overflow: 'hidden',
+          filter: contentFilter || undefined,
         }}
       />
     </div>

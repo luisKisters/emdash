@@ -17,6 +17,7 @@ import cursorLogo from '../../assets/images/cursorlogo.png';
 import copilotLogo from '../../assets/images/ghcopilot.png';
 import ampLogo from '../../assets/images/ampcode.png';
 import opencodeLogo from '../../assets/images/opencode.png';
+import charmLogo from '../../assets/images/charm.png';
 
 interface ProviderSelectorProps {
   value: Provider;
@@ -66,6 +67,11 @@ const providerConfig = {
     logo: opencodeLogo,
     alt: 'OpenCode CLI',
   },
+  charm: {
+    name: 'Charm',
+    logo: charmLogo,
+    alt: 'Charm CLI',
+  },
 } as const;
 
 export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
@@ -101,7 +107,7 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
                     <img
                       src={currentProvider.logo}
                       alt={currentProvider.alt}
-                      className="w-4 h-4 shrink-0"
+                      className="w-4 h-4 shrink-0 rounded-sm"
                     />
                     <SelectValue placeholder="Select provider" />
                   </div>
@@ -118,7 +124,7 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
               <img
                 src={currentProvider.logo}
                 alt={currentProvider.alt}
-                className="w-4 h-4 shrink-0"
+                className="w-4 h-4 shrink-0 rounded-sm"
               />
               <SelectValue placeholder="Select provider" />
             </div>
@@ -128,7 +134,7 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
           {Object.entries(providerConfig).map(([key, config]) => (
             <SelectItem key={key} value={key}>
               <div className="flex items-center gap-2">
-                <img src={config.logo} alt={config.alt} className="w-4 h-4" />
+                <img src={config.logo} alt={config.alt} className="w-4 h-4 rounded-sm" />
                 <SelectItemText>{config.name}</SelectItemText>
               </div>
             </SelectItem>

@@ -11,6 +11,7 @@ import cursorLogo from '../../assets/images/cursorlogo.png';
 import copilotLogo from '../../assets/images/ghcopilot.png';
 import ampLogo from '../../assets/images/ampcode.png';
 import opencodeLogo from '../../assets/images/opencode.png';
+import charmLogo from '../../assets/images/charm.png';
 
 type Props = { provider: Provider; linearIssue?: LinearIssueSummary | null };
 
@@ -24,6 +25,7 @@ export const ProviderBar: React.FC<Props> = ({ provider, linearIssue }) => {
     copilot: { name: 'Copilot', logo: copilotLogo },
     amp: { name: 'Amp', logo: ampLogo },
     opencode: { name: 'OpenCode', logo: opencodeLogo },
+    charm: { name: 'Charm', logo: charmLogo },
   } as const;
   const cfg = map[provider] ?? { name: provider, logo: '' };
   return (
@@ -46,7 +48,7 @@ export const ProviderBar: React.FC<Props> = ({ provider, linearIssue }) => {
                           src={cfg.logo}
                           alt={cfg.name}
                           title={cfg.name}
-                          className="w-3.5 h-3.5 object-contain align-middle flex-shrink-0"
+                          className="w-3.5 h-3.5 object-contain align-middle flex-shrink-0 rounded-sm"
                         />
                       ) : (
                         <div

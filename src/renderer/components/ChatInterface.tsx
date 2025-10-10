@@ -101,6 +101,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
           'copilot',
           'amp',
           'opencode',
+          'charm',
         ];
         if (locked && (validProviders as string[]).includes(locked)) {
           setProvider(locked as Provider);
@@ -445,7 +446,11 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
             </div>
           </div>
           <div className="flex-1 min-h-0 px-6 mt-4">
-            <div className="max-w-4xl mx-auto h-full rounded-md overflow-hidden">
+            <div
+              className={`max-w-4xl mx-auto h-full rounded-md overflow-hidden ${
+                provider === 'charm' ? 'bg-white' : ''
+              }`}
+            >
               <TerminalPane
                 id={`${provider}-main-${workspace.id}`}
                 cwd={workspace.path}
@@ -463,6 +468,12 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
                 }}
                 onStartSuccess={() => setCliStartFailed(false)}
                 variant="light"
+                themeOverride={provider === 'charm' ? { background: '#ffffff' } : undefined}
+                contentFilter={
+                  provider === 'charm'
+                    ? 'invert(1) hue-rotate(180deg) brightness(1.1) contrast(1.05)'
+                    : undefined
+                }
                 className="h-full w-full"
               />
             </div>
