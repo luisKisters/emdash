@@ -355,7 +355,7 @@ const App: React.FC = () => {
     const loadAppData = async () => {
       try {
         const [appVersion, appPlatform, projects] = await Promise.all([
-          window.electronAPI.getVersion(),
+          window.electronAPI.getAppVersion(),
           window.electronAPI.getPlatform(),
           window.electronAPI.getProjects(),
         ]);
@@ -444,8 +444,8 @@ const App: React.FC = () => {
                   platform === 'darwin'
                     ? 'Tip: Update GitHub CLI with: brew upgrade gh — then restart emdash.'
                     : platform === 'win32'
-                      ? 'Tip: Update GitHub CLI with: winget upgrade GitHub.cli — then restart emdash.'
-                      : 'Tip: Update GitHub CLI via your package manager (e.g., apt/dnf) and restart emdash.';
+                    ? 'Tip: Update GitHub CLI with: winget upgrade GitHub.cli — then restart emdash.'
+                    : 'Tip: Update GitHub CLI via your package manager (e.g., apt/dnf) and restart emdash.';
                 toast({
                   title: 'GitHub Connection Failed',
                   description: `Git repository detected but couldn't connect to GitHub: ${githubInfo.error}\n\n${updateHint}`,

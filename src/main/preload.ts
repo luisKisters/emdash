@@ -4,7 +4,8 @@ import { contextBridge, ipcRenderer } from 'electron';
 // the ipcRenderer without exposing the entire object
 contextBridge.exposeInMainWorld('electronAPI', {
   // App info
-  getVersion: () => ipcRenderer.invoke('app:getVersion'),
+  getAppVersion: () => ipcRenderer.invoke('app:getAppVersion'),
+  getElectronVersion: () => ipcRenderer.invoke('app:getElectronVersion'),
   getPlatform: () => ipcRenderer.invoke('app:getPlatform'),
 
   // PTY management

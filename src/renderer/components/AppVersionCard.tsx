@@ -10,17 +10,20 @@ const AppVersionCard: React.FC = () => {
 
     const loadVersionInfo = async () => {
       try {
-        const [appVersion, appPlatform] = await Promise.all([
-          window.electronAPI.getVersion(),
+        const [appVersion, electronVer, appPlatform] = await Promise.all([
+          window.electronAPI.getAppVersion(),
+          window.electronAPI.getElectronVersion(),
           window.electronAPI.getPlatform(),
         ]);
         if (!cancelled) {
-          setElectronVersion(appVersion);
+          setEmdashVersion(appVersion);
+          setElectronVersion(electronVer);
           setPlatform(appPlatform);
         }
       } catch (error) {
         console.error('Failed to load version info:', error);
         if (!cancelled) {
+          setEmdashVersion('Unknown');
           setElectronVersion('Unknown');
         }
       }
