@@ -89,6 +89,14 @@ export function classifyActivity(
     if (/Ready|Awaiting|Press Enter|Next command|Type your message/i.test(text)) return 'idle';
   }
 
+  if (p === 'opencode') {
+    // OpenCode CLI default TUI when run without args; similar cues to AMP
+    if (/Thinking\.{0,3}/i.test(text)) return 'busy';
+    if (/waiting\s+for\s+response/i.test(text)) return 'busy';
+    if (/esc\s*to\s*cancel/i.test(text)) return 'busy';
+    if (/Ready|Awaiting|Press Enter|Next command|Type your message/i.test(text)) return 'idle';
+  }
+
   // Generic signals
   if (/esc\s*to\s*(cancel|interrupt)/i.test(text)) return 'busy';
   if (/(^|\b)(Generating|Working|Executing|Running|Applying|Thinking)(\b|\.)/i.test(text))

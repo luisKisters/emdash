@@ -114,7 +114,16 @@ class ActivityStore {
     const offDirect: Array<() => void> = [];
     try {
       const api: any = (window as any).electronAPI;
-      const providers = ['codex', 'claude', 'droid', 'gemini', 'cursor', 'copilot', 'amp'];
+      const providers = [
+        'codex',
+        'claude',
+        'droid',
+        'gemini',
+        'cursor',
+        'copilot',
+        'amp',
+        'opencode',
+      ];
       for (const prov of providers) {
         const ptyId = `${prov}-main-${wsId}`;
         const off = api?.onPtyData?.(ptyId, (chunk: string) => {

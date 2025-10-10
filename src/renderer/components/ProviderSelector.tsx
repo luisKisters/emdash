@@ -16,6 +16,7 @@ import geminiLogo from '../../assets/images/gemini.png';
 import cursorLogo from '../../assets/images/cursorlogo.png';
 import copilotLogo from '../../assets/images/ghcopilot.png';
 import ampLogo from '../../assets/images/ampcode.png';
+import opencodeLogo from '../../assets/images/opencode.png';
 
 interface ProviderSelectorProps {
   value: Provider;
@@ -59,6 +60,11 @@ const providerConfig = {
     name: 'Amp',
     logo: ampLogo,
     alt: 'Amp CLI',
+  },
+  opencode: {
+    name: 'OpenCode',
+    logo: opencodeLogo,
+    alt: 'OpenCode CLI',
   },
 } as const;
 

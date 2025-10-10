@@ -193,6 +193,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     if (provider === 'gemini') return 'Gemini CLI uses the terminal above.';
     if (provider === 'cursor') return 'Cursor CLI runs in the terminal above.';
     if (provider === 'copilot') return 'Copilot CLI runs in the terminal above.';
+    if (provider === 'amp') return 'Amp CLI runs in the terminal above.';
+    if (provider === 'opencode') return 'OpenCode CLI runs in the terminal above.';
     return 'Tell Codex what to do...';
   };
 
@@ -207,7 +209,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
   const textareaDisabled = baseDisabled || isLoading;
   const sendDisabled =
-    provider === 'droid' || provider === 'gemini' || provider === 'cursor' || provider === 'copilot'
+    provider === 'droid' ||
+    provider === 'gemini' ||
+    provider === 'cursor' ||
+    provider === 'copilot' ||
+    provider === 'amp' ||
+    provider === 'opencode'
       ? true
       : isLoading
         ? baseDisabled
@@ -299,7 +306,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                   provider === 'droid' ||
                   provider === 'gemini' ||
                   provider === 'cursor' ||
-                  provider === 'copilot'
+                  provider === 'copilot' ||
+                  provider === 'amp' ||
+                  provider === 'opencode'
                     ? 'Terminal-only provider'
                     : isLoading
                       ? 'Stop Codex'
@@ -309,7 +318,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 {provider === 'droid' ||
                 provider === 'gemini' ||
                 provider === 'cursor' ||
-                provider === 'copilot' ? (
+                provider === 'copilot' ||
+                provider === 'amp' ||
+                provider === 'opencode' ? (
                   <div className="flex items-center justify-center w-full h-full">
                     <div className="w-3.5 h-3.5 rounded-[3px] bg-gray-500 dark:bg-gray-300" />
                   </div>

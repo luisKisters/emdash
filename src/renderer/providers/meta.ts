@@ -1,4 +1,12 @@
-export type UiProvider = 'codex' | 'claude' | 'droid' | 'gemini' | 'cursor' | 'copilot' | 'amp';
+export type UiProvider =
+  | 'codex'
+  | 'claude'
+  | 'droid'
+  | 'gemini'
+  | 'cursor'
+  | 'copilot'
+  | 'amp'
+  | 'opencode';
 
 export type ProviderMeta = {
   label: string;
@@ -11,6 +19,15 @@ export type ProviderMeta = {
 };
 
 export const providerMeta: Record<UiProvider, ProviderMeta> = {
+  opencode: {
+    label: 'OpenCode',
+    icon: '../../assets/images/opencode.png',
+    terminalOnly: true,
+    cli: 'opencode',
+    helpUrl: 'https://opencode.ai/docs/cli/',
+    idlePatterns: [/Ready|Awaiting|Press Enter|Next command/i],
+    busyPatterns: [/Thinking\.{0,3}/i, /waiting\s+for\s+response/i, /esc\s*to\s*cancel/i],
+  },
   amp: {
     label: 'Amp',
     icon: '../../assets/images/ampcode.png',
