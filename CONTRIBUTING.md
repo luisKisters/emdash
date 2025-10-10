@@ -145,3 +145,22 @@ npm version major
 This automatically:
 
 1. Updates `package.json` and `package-lock.json`
+2. Creates a git commit with the version number (e.g., `"0.2.10"`)
+3. Creates a git tag (e.g., `v0.2.10`)
+
+Then push to trigger the CI/CD pipeline:
+
+```bash
+git push && git push --tags
+```
+
+### What happens next
+
+The GitHub Actions workflow (`.github/workflows/release.yml`) automatically:
+
+1. **Triggers** when it detects the `v*` tag
+2. **Builds** the TypeScript and Vite bundles
+3. **Signs** the app with Apple Developer ID
+4. **Notarizes** via Apple's notary service
+5. **Creates** a GitHub Release with the DMG artifacts
+6. **Uploads** signed DMGs for both arm64 and x64 architectures
