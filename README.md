@@ -6,7 +6,7 @@
   <br />
   <br />
 
-  <a href="https://discord.gg/XqWnhvMU" style="margin-left:8px; vertical-align:middle;">
+  <a href="https://discord.gg/meqK3A5b" style="margin-left:8px; vertical-align:middle;">
     <img src="https://dcbadge.limes.pink/api/server/https://discord.gg/XqWnhvMU" alt="Join the emdash Discord" height="28" />
   </a>
 
