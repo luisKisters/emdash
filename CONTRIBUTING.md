@@ -129,6 +129,34 @@ Local DB (SQLite)
 
 ## Release Process (maintainers)
 
-- Bump version in `package.json`.
-- Tag and publish a GitHub Release.
-- Keep the CHANGELOG concise and user‑facing.
+Use npm's built-in versioning to ensure consistency:
+
+```bash
+# For bug fixes (0.2.9 → 0.2.10)
+npm version patch
+
+# For new features (0.2.9 → 0.3.0)
+npm version minor
+
+# For breaking changes (0.2.9 → 1.0.0)
+npm version major
+```
+
+This automatically:
+
+1. Updates `package.json` and `package-lock.json`
+2. Creates a git commit with the version number (e.g., `"0.2.10"`)
+3. Creates a git tag (e.g., `v0.2.10`)
+
+Then push to trigger the CI/CD pipeline.
+
+### What happens next
+
+The GitHub Actions workflow (`.github/workflows/release.yml`) automatically:
+
+1. **Triggers** when it detects the `v*` tag
+2. **Builds** the TypeScript and Vite bundles
+3. **Signs** the app with Apple Developer ID
+4. **Notarizes** via Apple's notary service
+5. **Creates** a GitHub Release with the DMG artifacts
+6. **Uploads** signed DMGs for both arm64 and x64 architectures

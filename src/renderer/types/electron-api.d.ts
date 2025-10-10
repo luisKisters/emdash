@@ -5,7 +5,8 @@ declare global {
   interface Window {
     electronAPI: {
       // App info
-      getVersion: () => Promise<string>;
+      getAppVersion: () => Promise<string>;
+      getElectronVersion: () => Promise<string>;
       getPlatform: () => Promise<string>;
 
       // PTY
