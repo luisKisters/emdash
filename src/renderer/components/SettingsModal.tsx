@@ -4,15 +4,16 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import { Input } from './ui/input';
-import { X, Settings2, User } from 'lucide-react';
+import { X, Settings2, User, History } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import AppVersionCard from './AppVersionCard';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type SettingsTab = 'general' | 'account';
+type SettingsTab = 'general' | 'account' | 'versions';
 
 interface SettingsSection {
   title: string;
@@ -194,9 +195,21 @@ const TAB_DETAILS: Record<
       },
     ],
   },
+  versions: {
+    icon: History,
+    label: 'Versions',
+    title: 'Versions',
+    description: '',
+    sections: [
+      {
+        title: 'Versions',
+        Component: AppVersionCard,
+      },
+    ],
+  },
 };
 
-const ORDERED_TABS: SettingsTab[] = ['general', 'account'];
+const ORDERED_TABS: SettingsTab[] = ['general', 'account', 'versions'];
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
@@ -293,7 +306,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                         key={tab}
                         type="button"
                         onClick={() => setActiveTab(tab)}
-                        className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${activeTab === tab ? 'bg-primary/10 text-foreground' : 'text-muted-foreground hover:bg-muted/60'}`}
+                        className={`flex w-full items-center justify-between rounded-lg px-3 py-2 text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background ${
+                          activeTab === tab
+                            ? 'bg-primary/10 text-foreground'
+                            : 'text-muted-foreground hover:bg-muted/60'
+                        }`}
                       >
                         <span className="flex items-center gap-2">
                           <Icon className="h-4 w-4" aria-hidden="true" />
