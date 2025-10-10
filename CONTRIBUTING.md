@@ -129,6 +129,19 @@ Local DB (SQLite)
 
 ## Release Process (maintainers)
 
-- Bump version in `package.json`.
-- Tag and publish a GitHub Release.
-- Keep the CHANGELOG concise and user‑facing.
+Use npm's built-in versioning to ensure consistency:
+
+```bash
+# For bug fixes (0.2.9 → 0.2.10)
+npm version patch
+
+# For new features (0.2.9 → 0.3.0)
+npm version minor
+
+# For breaking changes (0.2.9 → 1.0.0)
+npm version major
+```
+
+This automatically:
+
+1. Updates `package.json` and `package-lock.json`
