@@ -254,10 +254,10 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-4">
+                          <div className="flex items-start gap-4">
                             <label
                               htmlFor="linear-issue"
-                              className="w-32 shrink-0 text-sm font-medium text-foreground"
+                              className="w-32 shrink-0 pt-2 text-sm font-medium text-foreground"
                             >
                               Linear issue
                             </label>
