@@ -1,8 +1,10 @@
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Input } from './ui/input';
 import { Select, SelectContent, SelectItem, SelectItemText, SelectTrigger } from './ui/select';
+import { Search } from 'lucide-react';
 import linearLogo from '../../assets/images/linear.png';
 import { type LinearIssueSummary } from '../types/linear';
+import { Separator } from './ui/separator';
 
 interface LinearIssueSelectorProps {
   selectedIssue: LinearIssueSummary | null;
@@ -21,6 +23,7 @@ export const LinearIssueSelector: React.FC<LinearIssueSelectorProps> = ({
   const [isLoadingIssues, setIsLoadingIssues] = useState(false);
   const [issueListError, setIssueListError] = useState<string | null>(null);
   const [hasRequestedIssues, setHasRequestedIssues] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const isMountedRef = useRef(true);
 
   const canListLinear = typeof window !== 'undefined' && !!window.electronAPI?.linearInitialFetch;
@@ -38,6 +41,7 @@ export const LinearIssueSelector: React.FC<LinearIssueSelectorProps> = ({
       setHasRequestedIssues(false);
       setIssueListError(null);
       setIsLoadingIssues(false);
+      setSearchTerm('');
       onIssueChange(null);
     }
   }, [isOpen, onIssueChange]);
@@ -150,6 +154,16 @@ export const LinearIssueSelector: React.FC<LinearIssueSelectorProps> = ({
           </div>
         </SelectTrigger>
         <SelectContent side="top">
+          <div className="relative px-3 py-2">
+            <Search className="absolute left-3 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              placeholder="Search by name, ID, or assignee..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-7 w-full border-none bg-transparent pl-9 pr-3 focus:outline-none focus:ring-0 focus:ring-offset-0 focus-visible:ring-0 focus-visible:ring-offset-0"
+            />
+          </div>
+          <Separator />
           {availableIssues.map((issue) => (
             <SelectItem key={issue.id || issue.identifier} value={issue.identifier}>
               <SelectItemText>
