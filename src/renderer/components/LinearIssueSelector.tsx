@@ -85,13 +85,6 @@ export const LinearIssueSelector: React.FC<LinearIssueSelectorProps> = ({
     loadLinearIssues();
   }, [isOpen, canListLinear, isLoadingIssues, hasRequestedIssues, loadLinearIssues]);
 
-  const retryLoadIssues = () => {
-    if (isLoadingIssues) return;
-    setIssueListError(null);
-    setAvailableIssues([]);
-    setHasRequestedIssues(false);
-  };
-
   const handleIssueSelect = (identifier: string) => {
     const issue = availableIssues.find((issue) => issue.identifier === identifier) ?? null;
     onIssueChange(issue);
@@ -179,15 +172,8 @@ export const LinearIssueSelector: React.FC<LinearIssueSelectorProps> = ({
         </SelectContent>
       </Select>
       {issueListError ? (
-        <div className="mt-2 flex items-center gap-2 text-xs text-destructive">
-          <span className="truncate">{issueListError}</span>
-          <button
-            type="button"
-            onClick={retryLoadIssues}
-            className="font-medium underline-offset-2 hover:underline"
-          >
-            Retry
-          </button>
+        <div className="mt-2 text-xs text-destructive">
+          <span>Linear token not set. Connect Linear in Settings to browse issues.</span>
         </div>
       ) : null}
       {issueHelperText ? (
