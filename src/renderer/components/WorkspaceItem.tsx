@@ -30,20 +30,20 @@ export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({ workspace, onDelet
   const isRunning = useWorkspaceBusy(workspace.id);
 
   return (
-    <div className="flex items-center justify-between min-w-0">
-      <div className="flex items-center gap-2 py-1 flex-1 min-w-0">
+    <div className="flex min-w-0 items-center justify-between">
+      <div className="flex min-w-0 flex-1 items-center gap-2 py-1">
         {isRunning || workspace.status === 'running' || workspace.agentId ? (
-          <Spinner size="sm" className="w-3 h-3 text-gray-400 flex-shrink-0" />
+          <Spinner size="sm" className="h-3 w-3 flex-shrink-0 text-gray-400" />
         ) : (
-          <GitBranch className="w-3 h-3 text-gray-400 flex-shrink-0" />
+          <GitBranch className="h-3 w-3 flex-shrink-0 text-gray-400" />
         )}
-        <span className="text-xs font-medium text-gray-700 dark:text-gray-300 truncate block">
+        <span className="block truncate text-xs font-medium text-gray-700 dark:text-gray-300">
           {workspace.name}
         </span>
-        {workspace.agentId && <Bot className="w-3 h-3 text-purple-500 flex-shrink-0" />}
+        {workspace.agentId && <Bot className="h-3 w-3 flex-shrink-0 text-purple-500" />}
         {/* No left-side delete icon; only show next to status badge on the right */}
       </div>
-      <div className="flex items-center space-x-2 flex-shrink-0">
+      <div className="flex flex-shrink-0 items-center space-x-2">
         {!isLoading && (totalAdditions > 0 || totalDeletions > 0) ? (
           <ChangesBadge additions={totalAdditions} deletions={totalDeletions} />
         ) : pr ? (
@@ -53,16 +53,11 @@ export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({ workspace, onDelet
                 workspaceName={workspace.name}
                 onConfirm={onDelete}
                 aria-label={`Delete workspace ${workspace.name}`}
-                className="inline-flex items-center justify-center rounded p-1 text-gray-500 hover:text-red-600 hover:bg-gray-100 dark:hover:bg-gray-800"
+                className="inline-flex items-center justify-center rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-800"
               />
             ) : null}
             <span
-              className={`text-[10px] px-1.5 py-0.5 rounded border 
-                ${pr.state === 'MERGED' ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
-                ${pr.state === 'OPEN' && pr.isDraft ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
-                ${pr.state === 'OPEN' && !pr.isDraft ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
-                ${pr.state === 'CLOSED' ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
-              `}
+              className={`rounded border px-1.5 py-0.5 text-[10px] ${pr.state === 'MERGED' ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${pr.state === 'OPEN' && pr.isDraft ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${pr.state === 'OPEN' && !pr.isDraft ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${pr.state === 'CLOSED' ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} `}
               title={`${pr.title || 'Pull Request'} (#${pr.number})`}
             >
               {pr.isDraft ? 'draft' : pr.state.toLowerCase()}

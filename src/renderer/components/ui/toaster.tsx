@@ -21,7 +21,7 @@ export function Toaster() {
           <Toast key={id} variant={variant} {...props}>
             <div className="flex items-start gap-3">
               {variant === 'destructive' && (
-                <AlertCircle className="h-5 w-5 mt-0.5 text-amber-600 dark:text-amber-400 flex-none" />
+                <AlertCircle className="mt-0.5 h-5 w-5 flex-none text-amber-600 dark:text-amber-400" />
               )}
               <div className="grid gap-1">
                 {title && <ToastTitle>{title}</ToastTitle>}

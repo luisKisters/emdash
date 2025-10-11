@@ -14,7 +14,7 @@ const RequirementsNotice: React.FC<Props> = ({
   showAgentRequirement,
 }) => {
   return (
-    <div className="text-sm text-gray-500 max-w-2xl mx-auto space-y-4">
+    <div className="mx-auto max-w-2xl space-y-4 text-sm text-gray-500">
       {showGithubRequirement && (
         <div>
           <p className="mb-2">
@@ -22,12 +22,12 @@ const RequirementsNotice: React.FC<Props> = ({
           </p>
           {needsGhInstall ? (
             <p className="text-xs">
-              Install: <code className="bg-gray-100 px-1 rounded">brew install gh</code>
+              Install: <code className="rounded bg-gray-100 px-1">brew install gh</code>
             </p>
           ) : (
             needsGhAuth && (
               <p className="text-xs">
-                Authenticate: <code className="bg-gray-100 px-1 rounded">gh auth login</code>
+                Authenticate: <code className="rounded bg-gray-100 px-1">gh auth login</code>
               </p>
             )
           )}
@@ -39,28 +39,28 @@ const RequirementsNotice: React.FC<Props> = ({
           <p className="mb-1">
             <strong>Requirements:</strong> Install at least one of the following CLIs
           </p>
-          <div className="text-xs space-y-2">
+          <div className="space-y-2 text-xs">
             <div>
               <span className="font-medium">Codex CLI</span>
               <div>
                 Install:{' '}
-                <code className="bg-gray-100 px-1 rounded">npm install -g @openai/codex</code>
+                <code className="rounded bg-gray-100 px-1">npm install -g @openai/codex</code>
               </div>
               <div>
-                Authenticate: <code className="bg-gray-100 px-1 rounded">codex auth login</code>
+                Authenticate: <code className="rounded bg-gray-100 px-1">codex auth login</code>
               </div>
             </div>
             <div>
               <span className="font-medium">Claude Code CLI</span>
               <div>
                 Install:{' '}
-                <code className="bg-gray-100 px-1 rounded">
+                <code className="rounded bg-gray-100 px-1">
                   npm install -g @anthropic-ai/claude-code
                 </code>
               </div>
               <div>
-                Login: <code className="bg-gray-100 px-1 rounded">claude</code> then{' '}
-                <code className="bg-gray-100 px-1 rounded">/login</code>
+                Login: <code className="rounded bg-gray-100 px-1">claude</code> then{' '}
+                <code className="rounded bg-gray-100 px-1">/login</code>
               </div>
             </div>
             <div>

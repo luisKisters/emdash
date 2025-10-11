@@ -36,10 +36,10 @@ const RunLauncher: React.FC<RunLauncherProps> = ({ repo, onCreateRun, onCancel }
   };
 
   return (
-    <div className="bg-gray-800 rounded-lg border border-gray-700 p-6 w-full max-w-2xl">
-      <div className="flex items-center justify-between mb-6">
+    <div className="w-full max-w-2xl rounded-lg border border-gray-700 bg-gray-800 p-6">
+      <div className="mb-6 flex items-center justify-between">
         <h3 className="text-xl font-semibold text-white">Start New Run</h3>
-        <button className="text-gray-400 hover:text-white text-xl" onClick={onCancel}>
+        <button className="text-xl text-gray-400 hover:text-white" onClick={onCancel}>
           ×
         </button>
       </div>
@@ -47,7 +47,7 @@ const RunLauncher: React.FC<RunLauncherProps> = ({ repo, onCreateRun, onCancel }
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Provider Selection */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">AI Provider</label>
+          <label className="mb-2 block text-sm font-medium text-gray-300">AI Provider</label>
           <div className="flex gap-4">
             <label className="flex items-center">
               <input
@@ -74,23 +74,23 @@ const RunLauncher: React.FC<RunLauncherProps> = ({ repo, onCreateRun, onCancel }
 
         {/* Prompt */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Prompt</label>
+          <label className="mb-2 block text-sm font-medium text-gray-300">Prompt</label>
           <textarea
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
             placeholder="Describe what you want the coding agents to do..."
-            className="w-full h-32 p-3 bg-gray-700 border border-gray-600 rounded text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+            className="h-32 w-full rounded border border-gray-600 bg-gray-700 p-3 text-white placeholder-gray-400 focus:border-blue-500 focus:outline-none"
             required
           />
         </div>
 
         {/* Number of Agents */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Number of Agents</label>
+          <label className="mb-2 block text-sm font-medium text-gray-300">Number of Agents</label>
           <select
             value={numAgents}
             onChange={(e) => setNumAgents(parseInt(e.target.value))}
-            className="w-full p-3 bg-gray-700 border border-gray-600 rounded text-white focus:outline-none focus:border-blue-500"
+            className="w-full rounded border border-gray-600 bg-gray-700 p-3 text-white focus:border-blue-500 focus:outline-none"
           >
             <option value={1}>1 Agent</option>
             <option value={2}>2 Agents</option>
@@ -102,18 +102,18 @@ const RunLauncher: React.FC<RunLauncherProps> = ({ repo, onCreateRun, onCancel }
 
         {/* Base Branch */}
         <div>
-          <label className="block text-sm font-medium text-gray-300 mb-2">Base Branch</label>
+          <label className="mb-2 block text-sm font-medium text-gray-300">Base Branch</label>
           <input
             type="text"
             value={baseBranch}
             onChange={(e) => setBaseBranch(e.target.value)}
-            className="w-full p-3 bg-gray-700 border border-gray-600 rounded text-white focus:outline-none focus:border-blue-500"
+            className="w-full rounded border border-gray-600 bg-gray-700 p-3 text-white focus:border-blue-500 focus:outline-none"
             placeholder="main"
           />
         </div>
 
         {/* Repository Info */}
-        <div className="bg-gray-700 p-3 rounded">
+        <div className="rounded bg-gray-700 p-3">
           <div className="text-sm text-gray-300">
             <strong>Repository:</strong> {repo.path.split('/').pop()}
           </div>
@@ -126,14 +126,14 @@ const RunLauncher: React.FC<RunLauncherProps> = ({ repo, onCreateRun, onCancel }
         <div className="flex gap-3 pt-4">
           <button
             type="submit"
-            className="flex-1 px-4 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors font-medium"
+            className="flex-1 rounded bg-blue-600 px-4 py-3 font-medium text-white transition-colors hover:bg-blue-700"
           >
             Start Run
           </button>
           <button
             type="button"
             onClick={onCancel}
-            className="px-4 py-3 bg-gray-600 text-white rounded hover:bg-gray-500 transition-colors"
+            className="rounded bg-gray-600 px-4 py-3 text-white transition-colors hover:bg-gray-500"
           >
             Cancel
           </button>

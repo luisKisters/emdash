@@ -16,7 +16,7 @@ const SidebarLeftToggleButton: React.FC = () => {
             variant="ghost"
             size="icon"
             onClick={toggle}
-            className="h-8 w-8 text-muted-foreground hover:bg-background/80 [-webkit-app-region:no-drag]"
+            className="h-8 w-8 text-muted-foreground [-webkit-app-region:no-drag] hover:bg-background/80"
             aria-label="Toggle left sidebar"
           >
             <PanelLeft className="h-4 w-4" />

@@ -208,14 +208,14 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
             transition={
               shouldReduceMotion ? { duration: 0 } : { duration: 0.2, ease: [0.22, 1, 0.36, 1] }
             }
-            className="w-full max-w-md mx-4 will-change-transform transform-gpu"
+            className="mx-4 w-full max-w-md transform-gpu will-change-transform"
           >
-            <Card className="w-full relative">
+            <Card className="relative w-full">
               <Button
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="absolute top-2 right-2 h-8 w-8 p-0 z-10"
+                className="absolute right-2 top-2 z-10 h-8 w-8 p-0"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -287,9 +287,9 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                   </div>
 
                   {workspaceName && (
-                    <div className="flex items-center space-x-2 p-3 bg-gray-100 dark:bg-gray-700 rounded-lg">
-                      <GitBranch className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                      <span className="text-sm text-gray-600 dark:text-gray-400 break-all overflow-hidden">
+                    <div className="flex items-center space-x-2 rounded-lg bg-gray-100 p-3 dark:bg-gray-700">
+                      <GitBranch className="h-4 w-4 flex-shrink-0 text-gray-500" />
+                      <span className="overflow-hidden break-all text-sm text-gray-600 dark:text-gray-400">
                         {convertToWorkspaceName(workspaceName)}
                       </span>
                     </div>
@@ -302,7 +302,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                     >
                       AI provider
                     </label>
-                    <div className="flex-1 min-w-0">
+                    <div className="min-w-0 flex-1">
                       <ProviderSelector
                         value={selectedProvider}
                         onChange={setSelectedProvider}
@@ -322,7 +322,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                       <AccordionTrigger className="px-0 py-1 text-sm font-medium text-muted-foreground hover:no-underline">
                         Advanced options
                       </AccordionTrigger>
-                      <AccordionContent className="px-0 pt-2 space-y-4" id="workspace-advanced">
+                      <AccordionContent className="space-y-4 px-0 pt-2" id="workspace-advanced">
                         <div className="flex flex-col gap-4">
                           <div className="flex items-start gap-4">
                             <label
@@ -331,7 +331,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                             >
                               Initial prompt
                             </label>
-                            <div className="flex-1 min-w-0">
+                            <div className="min-w-0 flex-1">
                               <textarea
                                 id="initial-prompt"
                                 value={initialPrompt}
@@ -341,7 +341,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                     ? `e.g. Fix the attached Linear ticket ${selectedIssue.identifier} — describe any constraints.`
                                     : `e.g. Summarize the key problems and propose a plan.`
                                 }
-                                className="w-full min-h-[80px] px-3 py-2 text-sm border border-input bg-background rounded-md resize-none focus:outline-none "
+                                className="min-h-[80px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none"
                                 rows={3}
                               />
                               <p className="mt-1 text-xs text-muted-foreground">
@@ -357,7 +357,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                             >
                               Linear issue
                             </label>
-                            <div className="flex-1 min-w-0">
+                            <div className="min-w-0 flex-1">
                               {canListLinear ? (
                                 <>
                                   <Select
@@ -365,15 +365,15 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                     onValueChange={setSelectedIssueIdentifier}
                                     disabled={isLoadingIssues || !!issueListError || !issuesLoaded}
                                   >
-                                    <SelectTrigger className="h-9 w-full bg-gray-100 dark:bg-gray-700 border-none">
-                                      <div className="flex min-w-0 flex-1 items-center gap-2 text-left text-foreground overflow-hidden">
+                                    <SelectTrigger className="h-9 w-full border-none bg-gray-100 dark:bg-gray-700">
+                                      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-left text-foreground">
                                         {selectedIssue ? (
                                           <>
-                                            <span className="inline-flex items-center gap-1.5 shrink-0 px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                                            <span className="inline-flex shrink-0 items-center gap-1.5 rounded border border-gray-200 bg-gray-100 px-1.5 py-0.5 dark:border-gray-700 dark:bg-gray-800">
                                               <img
                                                 src={linearLogo}
                                                 alt="Linear"
-                                                className="w-3.5 h-3.5"
+                                                className="h-3.5 w-3.5"
                                               />
                                               <span className="text-[11px] font-medium text-foreground">
                                                 {selectedIssue.identifier}
@@ -393,7 +393,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                             <img
                                               src={linearLogo}
                                               alt="Linear"
-                                              className="w-3.5 h-3.5 shrink-0"
+                                              className="h-3.5 w-3.5 shrink-0"
                                             />
                                             <span className="truncate">{issuePlaceholder}</span>
                                           </>
@@ -408,11 +408,11 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                                         >
                                           <SelectItemText>
                                             <span className="flex min-w-0 items-center gap-2">
-                                              <span className="inline-flex items-center gap-1.5 shrink-0 px-1.5 py-0.5 rounded bg-gray-100 border border-gray-200 dark:bg-gray-800 dark:border-gray-700">
+                                              <span className="inline-flex shrink-0 items-center gap-1.5 rounded border border-gray-200 bg-gray-100 px-1.5 py-0.5 dark:border-gray-700 dark:bg-gray-800">
                                                 <img
                                                   src={linearLogo}
                                                   alt="Linear"
-                                                  className="w-3.5 h-3.5"
+                                                  className="h-3.5 w-3.5"
                                                 />
                                                 <span className="text-[11px] font-medium text-foreground">
                                                   {issue.identifier}

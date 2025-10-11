@@ -19,11 +19,11 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
   if (!workspace) {
     return (
       <div
-        className={`flex flex-col items-center justify-center h-full bg-gray-50 dark:bg-gray-900 ${className}`}
+        className={`flex h-full flex-col items-center justify-center bg-gray-50 dark:bg-gray-900 ${className}`}
       >
-        <Bot className="w-8 h-8 text-gray-400 mb-2" />
-        <h3 className="text-sm text-gray-600 dark:text-gray-400 mb-1">No Workspace Selected</h3>
-        <p className="text-xs text-gray-500 dark:text-gray-500 text-center">
+        <Bot className="mb-2 h-8 w-8 text-gray-400" />
+        <h3 className="mb-1 text-sm text-gray-600 dark:text-gray-400">No Workspace Selected</h3>
+        <p className="text-center text-xs text-gray-500 dark:text-gray-500">
           Select a workspace to view its terminal
         </p>
       </div>
@@ -31,11 +31,11 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
   }
 
   return (
-    <div className={`flex flex-col h-full bg-white dark:bg-gray-800 ${className}`}>
-      <div className="flex items-center px-3 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
-        <div className="flex items-center space-x-2 min-w-0">
+    <div className={`flex h-full flex-col bg-white dark:bg-gray-800 ${className}`}>
+      <div className="flex items-center border-b border-gray-200 bg-gray-50 px-3 py-2 dark:border-gray-700 dark:bg-gray-900">
+        <div className="flex min-w-0 items-center space-x-2">
           <h3
-            className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate max-w-[220px]"
+            className="max-w-[220px] truncate text-sm font-medium text-gray-900 dark:text-gray-100"
             title={workspace.name}
           >
             Terminal
@@ -46,7 +46,8 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
       {(() => {
         let isCharm = false;
         try {
-          const p = localStorage.getItem(`provider:last:${workspace.id}`) ||
+          const p =
+            localStorage.getItem(`provider:last:${workspace.id}`) ||
             localStorage.getItem(`provider:locked:${workspace.id}`) ||
             localStorage.getItem(`workspaceProvider:${workspace.id}`);
           isCharm = p === 'charm';

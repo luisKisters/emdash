@@ -61,7 +61,7 @@ export function useCreatePR() {
         toast({
           title: (
             <span className="inline-flex items-center gap-2">
-              <img src={githubLogo} alt="GitHub" className="w-5 h-5 rounded-sm object-contain" />
+              <img src={githubLogo} alt="GitHub" className="h-5 w-5 rounded-sm object-contain" />
               Pull Request Created
             </span>
           ),
@@ -76,7 +76,7 @@ export function useCreatePR() {
         toast({
           title: (
             <span className="inline-flex items-center gap-2">
-              <img src={githubLogo} alt="GitHub" className="w-5 h-5 rounded-sm object-contain" />
+              <img src={githubLogo} alt="GitHub" className="h-5 w-5 rounded-sm object-contain" />
               Failed to Create PR
             </span>
           ),

@@ -54,10 +54,10 @@ const RunList: React.FC<RunListProps> = ({ runs, selectedRun, onRunSelect }) => 
   return (
     <div className="h-full overflow-y-auto">
       <div className="p-4">
-        <h3 className="text-lg font-semibold text-white mb-4">Active Runs</h3>
+        <h3 className="mb-4 text-lg font-semibold text-white">Active Runs</h3>
 
         {runs.length === 0 ? (
-          <div className="text-center py-8">
+          <div className="py-8 text-center">
             <div className="text-gray-500">No runs found</div>
           </div>
         ) : (
@@ -65,14 +65,14 @@ const RunList: React.FC<RunListProps> = ({ runs, selectedRun, onRunSelect }) => 
             {runs.map((run) => (
               <div
                 key={run.id}
-                className={`p-4 rounded-lg border cursor-pointer transition-colors ${
+                className={`cursor-pointer rounded-lg border p-4 transition-colors ${
                   selectedRun?.id === run.id
-                    ? 'bg-blue-600 border-blue-500'
-                    : 'bg-gray-800 border-gray-700 hover:bg-gray-700'
+                    ? 'border-blue-500 bg-blue-600'
+                    : 'border-gray-700 bg-gray-800 hover:bg-gray-700'
                 }`}
                 onClick={() => onRunSelect(run)}
               >
-                <div className="flex items-center justify-between mb-2">
+                <div className="mb-2 flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="text-lg">{getStatusIcon(run.status)}</span>
                     <span className={`font-medium ${getStatusColor(run.status)}`}>
@@ -87,14 +87,14 @@ const RunList: React.FC<RunListProps> = ({ runs, selectedRun, onRunSelect }) => 
                   </div>
                 </div>
 
-                <div className="text-sm text-gray-300 mb-2">
+                <div className="mb-2 text-sm text-gray-300">
                   <strong>Branch:</strong> {run.branch}
                 </div>
 
-                <div className="text-sm text-gray-400 line-clamp-2">{run.prompt}</div>
+                <div className="line-clamp-2 text-sm text-gray-400">{run.prompt}</div>
 
                 {run.tokenUsage > 0 && (
-                  <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
+                  <div className="mt-2 flex items-center gap-4 text-xs text-gray-500">
                     <span>Tokens: {run.tokenUsage.toLocaleString()}</span>
                     {run.cost > 0 && <span>Cost: ${run.cost.toFixed(4)}</span>}
                   </div>

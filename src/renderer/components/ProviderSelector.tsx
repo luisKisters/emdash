@@ -83,7 +83,7 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
   const currentProvider = providerConfig[value];
 
   return (
-    <div className={`relative block min-w-0 w-[12rem] ${className}`}>
+    <div className={`relative block w-[12rem] min-w-0 ${className}`}>
       <Select
         value={value}
         onValueChange={(v) => {
@@ -99,15 +99,15 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
               <TooltipTrigger asChild>
                 <SelectTrigger
                   aria-disabled
-                  className={`h-9 w-full bg-gray-100 dark:bg-gray-700 border-none ${
-                    disabled ? 'opacity-60 cursor-not-allowed' : ''
+                  className={`h-9 w-full border-none bg-gray-100 dark:bg-gray-700 ${
+                    disabled ? 'cursor-not-allowed opacity-60' : ''
                   }`}
                 >
-                  <div className="flex w-full items-center gap-2 min-w-0 overflow-hidden">
+                  <div className="flex w-full min-w-0 items-center gap-2 overflow-hidden">
                     <img
                       src={currentProvider.logo}
                       alt={currentProvider.alt}
-                      className="w-4 h-4 shrink-0 rounded-sm"
+                      className="h-4 w-4 shrink-0 rounded-sm"
                     />
                     <SelectValue placeholder="Select provider" />
                   </div>
@@ -119,12 +119,12 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
             </Tooltip>
           </TooltipProvider>
         ) : (
-          <SelectTrigger className="h-9 w-full bg-gray-100 dark:bg-gray-700 border-none">
-            <div className="flex w-full items-center gap-2 min-w-0 overflow-hidden">
+          <SelectTrigger className="h-9 w-full border-none bg-gray-100 dark:bg-gray-700">
+            <div className="flex w-full min-w-0 items-center gap-2 overflow-hidden">
               <img
                 src={currentProvider.logo}
                 alt={currentProvider.alt}
-                className="w-4 h-4 shrink-0 rounded-sm"
+                className="h-4 w-4 shrink-0 rounded-sm"
               />
               <SelectValue placeholder="Select provider" />
             </div>
@@ -134,7 +134,7 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
           {Object.entries(providerConfig).map(([key, config]) => (
             <SelectItem key={key} value={key}>
               <div className="flex items-center gap-2">
-                <img src={config.logo} alt={config.alt} className="w-4 h-4 rounded-sm" />
+                <img src={config.logo} alt={config.alt} className="h-4 w-4 rounded-sm" />
                 <SelectItemText>{config.name}</SelectItemText>
               </div>
             </SelectItem>
