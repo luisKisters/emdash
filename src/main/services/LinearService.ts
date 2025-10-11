@@ -80,107 +80,7 @@ export class LinearService {
     }
   }
 
-  async fetchIssues(keys: string[]): Promise<any> {
-    const token = await this.getStoredToken();
-    if (!token) {
-      throw new Error('Linear token not set. Connect Linear in settings first.');
-    }
-
-    const trimmed = [...new Set(keys.map((k) => k.trim()).filter(Boolean))];
-    if (trimmed.length === 0) {
-      return [];
-    }
-
-    const query = `
-      query IssuesByKey($keys: [String!]!) {
-        issues(filter: { identifier: { in: $keys } }) {
-          nodes {
-            id
-            identifier
-            title
-            url
-            description
-            state { name type }
-            priority
-            assignee { name displayName avatarUrl }
-            project { name }
-            team { name key }
-            updatedAt
-          }
-        }
-      }
-    `;
-
-    const response = await this.graphql<{ issues: { nodes: any[] } }>(token, query, {
-      keys: trimmed,
-    });
-
-    return response?.issues?.nodes ?? [];
-  }
-
-  async fetchIssueByIdentifier(identifier: string): Promise<any | null> {
-    const token = await this.getStoredToken();
-    if (!token) {
-      throw new Error('Linear token not set. Connect Linear in settings first.');
-    }
-
-    const id = (identifier || '').trim();
-    if (!id) return null;
-
-    const query = `
-      query IssueByIdentifier($id: String!) {
-        issue(id: $id) {
-          id
-          identifier
-          title
-          description
-          url
-          state { name type }
-          assignee { name displayName avatarUrl }
-          project { name }
-          team { name key }
-          updatedAt
-        }
-      }
-    `;
-
-    const response = await this.graphql<{ issue: any | null }>(token, query, { id });
-    return response?.issue ?? null;
-  }
-
-  async searchIssues(term: string, limit = 10): Promise<any[]> {
-    const token = await this.getStoredToken();
-    if (!token) {
-      throw new Error('Linear token not set. Connect Linear in settings first.');
-    }
-
-    const query = `
-      query SearchIssues($term: String!, $limit: Int!) {
-        searchIssues(term: $term, first: $limit) {
-          nodes {
-            id
-            identifier
-            title
-            url
-            state { name type }
-            team { name key }
-            project { name }
-            assignee { displayName name }
-            updatedAt
-          }
-        }
-      }
-    `;
-
-    const response = await this.graphql<{ searchIssues: { nodes: any[] } }>(token, query, {
-      term,
-      limit,
-    });
-
-    return response?.searchIssues?.nodes ?? [];
-  }
-
-  async listIssues(limit = 50): Promise<any[]> {
+  async initialFetch(limit = 5): Promise<any[]> {
     const token = await this.getStoredToken();
     if (!token) {
       throw new Error('Linear token not set. Connect Linear in settings first.');
@@ -211,6 +111,78 @@ export class LinearService {
     });
 
     return response?.issues?.nodes ?? [];
+  }
+
+  async searchIssues(searchTerm: string, limit = 20): Promise<any[]> {
+    const token = await this.getStoredToken();
+    if (!token) {
+      throw new Error('Linear token not set. Connect Linear in settings first.');
+    }
+
+    if (!searchTerm.trim()) {
+      return [];
+    }
+
+    const sanitizedLimit = Math.min(Math.max(limit, 1), 200);
+
+    // Get all recent issues and filter them locally
+    // This ensures we can search through the issues we know exist
+    const allIssuesQuery = `
+      query ListAllIssues($limit: Int!) {
+        issues(first: $limit, orderBy: updatedAt) {
+          nodes {
+            id
+            identifier
+            title
+            url
+            state { name type }
+            team { name key }
+            project { name }
+            assignee { displayName name }
+            updatedAt
+          }
+        }
+      }
+    `;
+
+    try {
+      const allIssuesResponse = await this.graphql<{ issues: { nodes: any[] } }>(
+        token,
+        allIssuesQuery,
+        {
+          limit: 100, // Get more issues to search through
+        }
+      );
+
+      const allIssues = allIssuesResponse?.issues?.nodes ?? [];
+
+      // Filter locally
+      const searchTermLower = searchTerm.trim().toLowerCase();
+      const filteredIssues = allIssues.filter((issue) => {
+        // Search in identifier
+        if (issue.identifier?.toLowerCase().includes(searchTermLower)) {
+          return true;
+        }
+        // Search in title
+        if (issue.title?.toLowerCase().includes(searchTermLower)) {
+          return true;
+        }
+        // Search in assignee name
+        if (issue.assignee?.name?.toLowerCase().includes(searchTermLower)) {
+          return true;
+        }
+        // Search in assignee displayName
+        if (issue.assignee?.displayName?.toLowerCase().includes(searchTermLower)) {
+          return true;
+        }
+        return false;
+      });
+
+      // Return up to the requested limit
+      return filteredIssues.slice(0, sanitizedLimit);
+    } catch (error) {
+      return [];
+    }
   }
 
   private async fetchViewer(token: string): Promise<LinearViewer> {

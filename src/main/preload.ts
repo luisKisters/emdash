@@ -115,11 +115,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
   linearSaveToken: (token: string) => ipcRenderer.invoke('linear:saveToken', token),
   linearCheckConnection: () => ipcRenderer.invoke('linear:checkConnection'),
   linearClearToken: () => ipcRenderer.invoke('linear:clearToken'),
-  linearGetIssues: (identifiers: string[]) => ipcRenderer.invoke('linear:getIssues', identifiers),
-  linearGetIssue: (identifier: string) => ipcRenderer.invoke('linear:getIssue', identifier),
-  linearSearchIssues: (term: string, limit?: number) =>
-    ipcRenderer.invoke('linear:searchIssues', term, limit),
-  linearListIssues: (limit?: number) => ipcRenderer.invoke('linear:listIssues', limit),
+  linearInitialFetch: (limit?: number) => ipcRenderer.invoke('linear:initialFetch', limit),
+  linearSearchIssues: (searchTerm: string, limit?: number) =>
+    ipcRenderer.invoke('linear:searchIssues', searchTerm, limit),
   // Database methods
   getProjects: () => ipcRenderer.invoke('db:getProjects'),
   saveProject: (project: any) => ipcRenderer.invoke('db:saveProject', project),

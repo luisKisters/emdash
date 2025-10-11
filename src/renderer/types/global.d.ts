@@ -121,20 +121,15 @@ declare global {
         success: boolean;
         error?: string;
       }>;
-      linearGetIssues?: (identifiers: string[]) => Promise<{
+      linearInitialFetch?: (limit?: number) => Promise<{
         success: boolean;
         issues?: any[];
         error?: string;
       }>;
       linearSearchIssues?: (
-        term: string,
+        searchTerm: string,
         limit?: number
       ) => Promise<{
-        success: boolean;
-        issues?: any[];
-        error?: string;
-      }>;
-      linearListIssues?: (limit?: number) => Promise<{
         success: boolean;
         issues?: any[];
         error?: string;

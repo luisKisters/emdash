@@ -1,12 +1,12 @@
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
-import { Input } from './ui/input';
 import { X, Settings2, User, History } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import AppVersionCard from './AppVersionCard';
+import LinearIntegrationCard from './LinearIntegrationCard';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -20,146 +20,6 @@ interface SettingsSection {
   description?: string;
   Component?: React.ComponentType;
 }
-
-const LinearIntegrationCard: React.FC = () => {
-  const [apiKey, setApiKey] = useState('');
-  const [status, setStatus] = useState<'unknown' | 'connected' | 'disconnected' | 'error'>(
-    'unknown'
-  );
-  const [workspaceName, setWorkspaceName] = useState<string | null>(null);
-  const [message, setMessage] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const markConnected = useCallback((name?: string | null) => {
-    setStatus('connected');
-    setWorkspaceName(name ?? null);
-    setMessage(`Connected${name ? ` to ${name}` : ''}.`);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem('linear:connected', 'true');
-    }
-  }, []);
-
-  const markDisconnected = useCallback(() => {
-    setStatus('disconnected');
-    setWorkspaceName(null);
-    setMessage('Not connected.');
-    if (typeof window !== 'undefined') {
-      window.localStorage.removeItem('linear:connected');
-    }
-  }, []);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const checkConnection = async () => {
-      const api = window.electronAPI;
-      if (!api?.linearCheckConnection) {
-        setStatus('error');
-        setMessage('Linear integration is unavailable in this build.');
-        return;
-      }
-
-      try {
-        const result = await api.linearCheckConnection();
-        if (cancelled) return;
-
-        if (result?.connected) {
-          markConnected(result.workspaceName ?? null);
-        } else {
-          markDisconnected();
-          if (result?.error) {
-            setStatus('error');
-            setMessage(result.error);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to check Linear connection:', error);
-        if (!cancelled) {
-          setStatus('error');
-          setMessage('Unable to verify Linear connection.');
-        }
-      }
-    };
-
-    checkConnection();
-    return () => {
-      cancelled = true;
-    };
-  }, [markConnected, markDisconnected]);
-
-  const trimmedKey = apiKey.trim();
-  const hasKeyInput = trimmedKey.length > 0;
-
-  const handleConnect = async () => {
-    if (!hasKeyInput) return;
-    setIsSubmitting(true);
-    setMessage(null);
-
-    try {
-      const api = window.electronAPI;
-      if (!api?.linearSaveToken) {
-        throw new Error('Linear integration is unavailable in this build.');
-      }
-
-      const result = await api.linearSaveToken(trimmedKey);
-      if (!result?.success) {
-        throw new Error(result?.error || 'Failed to connect to Linear.');
-      }
-
-      markConnected(result.workspaceName ?? null);
-      setApiKey('');
-    } catch (error) {
-      console.error('Linear connection failed:', error);
-      setStatus('error');
-      setMessage(error instanceof Error ? error.message : 'Failed to connect to Linear.');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const isConnected = status === 'connected';
-  const isIdleConnected = isConnected && !hasKeyInput && !isSubmitting;
-  const buttonLabel = isSubmitting ? 'Connecting…' : isIdleConnected ? 'Connected' : 'Connect';
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <Input
-          id="linear-api-key"
-          type="password"
-          placeholder="lin_api_..."
-          autoComplete="off"
-          value={apiKey}
-          onChange={(event) => setApiKey(event.target.value)}
-          disabled={isSubmitting}
-        />
-        <Button
-          type="button"
-          onClick={handleConnect}
-          disabled={isSubmitting || (!hasKeyInput && !isIdleConnected)}
-          className={
-            isIdleConnected
-              ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20'
-              : undefined
-          }
-        >
-          {buttonLabel}
-        </Button>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        Paste a Linear personal API key with read access to issues. Keys are stored securely in your
-        system keychain.
-      </p>
-
-      {message && status === 'error' ? (
-        <div className="text-sm text-red-600 dark:text-red-400">
-          {message}
-          {workspaceName ? ` Workspace: ${workspaceName}` : ''}
-        </div>
-      ) : null}
-    </div>
-  );
-};
 
 const TAB_DETAILS: Record<
   SettingsTab,
