@@ -4,7 +4,7 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
 import { Input } from './ui/input';
-import { X, Settings2, User, History } from 'lucide-react';
+import { X, Settings2, User, History, Trash } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import AppVersionCard from './AppVersionCard';
 
@@ -117,45 +117,91 @@ const LinearIntegrationCard: React.FC = () => {
     }
   };
 
+  const handleDisconnect = async () => {
+    setIsSubmitting(true);
+    setMessage(null);
+
+    try {
+      const api = window.electronAPI;
+      if (!api?.linearClearToken) {
+        throw new Error('Linear integration is unavailable in this build.');
+      }
+
+      const result = await api.linearClearToken();
+      if (!result?.success) {
+        throw new Error(result?.error || 'Failed to disconnect from Linear.');
+      }
+
+      markDisconnected();
+      setApiKey('');
+    } catch (error) {
+      console.error('Linear disconnection failed:', error);
+      setStatus('error');
+      setMessage(error instanceof Error ? error.message : 'Failed to disconnect from Linear.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const isConnected = status === 'connected';
   const isIdleConnected = isConnected && !hasKeyInput && !isSubmitting;
   const buttonLabel = isSubmitting ? 'Connecting…' : isIdleConnected ? 'Connected' : 'Connect';
 
   return (
     <div className="space-y-3">
-      <div className="flex items-center gap-3">
-        <Input
-          id="linear-api-key"
-          type="password"
-          placeholder="lin_api_..."
-          autoComplete="off"
-          value={apiKey}
-          onChange={(event) => setApiKey(event.target.value)}
-          disabled={isSubmitting}
-        />
-        <Button
-          type="button"
-          onClick={handleConnect}
-          disabled={isSubmitting || (!hasKeyInput && !isIdleConnected)}
-          className={
-            isIdleConnected
-              ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-500/10 dark:text-emerald-300 dark:hover:bg-emerald-500/20'
-              : undefined
-          }
-        >
-          {buttonLabel}
-        </Button>
-      </div>
-      <p className="text-xs text-muted-foreground">
-        Paste a Linear personal API key with read access to issues. Keys are stored securely in your
-        system keychain.
-      </p>
+      {isConnected ? (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
+            <div className="flex items-center gap-2">
+              <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
+              <span className="text-sm font-medium text-foreground">
+                Connected{workspaceName ? ` to ${workspaceName}` : ''}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={handleDisconnect}
+              disabled={isSubmitting}
+              className="inline-flex items-center justify-center rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-gray-800"
+              title="Disconnect Linear"
+              aria-label="Disconnect Linear"
+            >
+              {isSubmitting ? (
+                <div className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-gray-300 border-t-gray-600"></div>
+              ) : (
+                <Trash className="h-3.5 w-3.5" />
+              )}
+            </button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Linear integration is active. You can now select Linear issues when creating workspaces.
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          <div className="flex items-center gap-3">
+            <Input
+              id="linear-api-key"
+              type="password"
+              placeholder="lin_api_..."
+              autoComplete="off"
+              value={apiKey}
+              onChange={(event) => setApiKey(event.target.value)}
+              disabled={isSubmitting}
+            />
+            <Button type="button" onClick={handleConnect} disabled={isSubmitting || !hasKeyInput}>
+              {buttonLabel}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Paste a Linear personal API key with read access to issues. Keys are stored securely in
+            your system keychain.
+          </p>
+        </div>
+      )}
 
       {message && status === 'error' ? (
-        <div className="text-sm text-red-600 dark:text-red-400">
-          {message}
-          {workspaceName ? ` Workspace: ${workspaceName}` : ''}
-        </div>
+        <div className="text-sm text-red-600 dark:text-red-400">{message}</div>
       ) : null}
     </div>
   );
