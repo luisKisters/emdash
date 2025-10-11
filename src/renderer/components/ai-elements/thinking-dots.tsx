@@ -21,7 +21,7 @@ export const ThinkingDots: React.FC<ThinkingDotsProps> = ({
   }, [intervalMs]);
 
   return (
-    <div className={cn('text-muted-foreground text-sm font-sans', className)} {...divProps}>
+    <div className={cn('font-sans text-sm text-muted-foreground', className)} {...divProps}>
       {prefix}
       <span
         className="inline-block w-3 text-center transition-opacity"

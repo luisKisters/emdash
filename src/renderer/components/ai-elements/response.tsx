@@ -53,7 +53,7 @@ export const Response: React.FC<ResponseProps> = ({
         );
       }
       return (
-        <code className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm" {...props}>
+        <code className="rounded bg-gray-100 px-1 py-0.5 text-sm dark:bg-gray-800" {...props}>
           {children}
         </code>
       );
@@ -71,9 +71,9 @@ export const Response: React.FC<ResponseProps> = ({
       if (!safe) return null;
       return <img src={src} alt={alt} {...props} />;
     },
-    ul: ({ children }: any) => <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>,
+    ul: ({ children }: any) => <ul className="my-2 list-inside list-disc space-y-1">{children}</ul>,
     ol: ({ children }: any) => (
-      <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>
+      <ol className="my-2 list-inside list-decimal space-y-1">{children}</ol>
     ),
     li: ({ children }: any) => <li className="ml-2">{children}</li>,
     p: ({ children }: any) => <p className="mb-2 last:mb-0">{children}</p>,
@@ -84,7 +84,7 @@ export const Response: React.FC<ResponseProps> = ({
 
   return (
     <div
-      className={cn('[&>p]:leading-normal [&>p]:my-0 prose prose-sm max-w-none', className)}
+      className={cn('prose prose-sm max-w-none [&>p]:my-0 [&>p]:leading-normal', className)}
       {...divProps}
     >
       {typeof children === 'string' ? (

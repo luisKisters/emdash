@@ -22,7 +22,7 @@ const Line: React.FC<{ text?: string; type: DiffLine['type'] }> = ({ text = '', 
         : 'bg-transparent text-gray-700 dark:text-gray-300';
   return (
     <div
-      className={`px-3 py-0.5 whitespace-pre-wrap break-words font-mono text-[12px] leading-5 ${cls}`}
+      className={`whitespace-pre-wrap break-words px-3 py-0.5 font-mono text-[12px] leading-5 ${cls}`}
     >
       {text}
     </div>
@@ -92,18 +92,18 @@ export const ChangesDiffModal: React.FC<ChangesDiffModalProps> = ({
             transition={
               shouldReduceMotion ? { duration: 0 } : { duration: 0.2, ease: [0.22, 1, 0.36, 1] }
             }
-            className="w-[92vw] h-[82vh] bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-2xl overflow-hidden flex will-change-transform transform-gpu"
+            className="flex h-[82vh] w-[92vw] transform-gpu overflow-hidden rounded-xl border border-gray-200 bg-white shadow-2xl will-change-transform dark:border-gray-700 dark:bg-gray-800"
           >
-            <div className="w-72 border-r border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900/40 overflow-y-auto">
+            <div className="w-72 overflow-y-auto border-r border-gray-200 bg-gray-50 dark:border-gray-700 dark:bg-gray-900/40">
               <div className="px-3 py-2 text-xs uppercase tracking-wide text-gray-500 dark:text-gray-400">
                 Changed Files
               </div>
               {files.map((f) => (
                 <button
                   key={f.path}
-                  className={`w-full text-left px-3 py-2 text-sm border-b border-gray-200 dark:border-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                  className={`w-full border-b border-gray-200 px-3 py-2 text-left text-sm hover:bg-gray-100 dark:border-gray-800 dark:hover:bg-gray-700 ${
                     selected === f.path
-                      ? 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-gray-100'
+                      ? 'bg-gray-100 text-gray-900 dark:bg-gray-700 dark:text-gray-100'
                       : 'text-gray-700 dark:text-gray-300'
                   }`}
                   onClick={() => setSelected(f.path)}
@@ -116,20 +116,20 @@ export const ChangesDiffModal: React.FC<ChangesDiffModalProps> = ({
               ))}
             </div>
 
-            <div className="flex-1 flex flex-col min-w-0">
-              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-700 bg-white/80 dark:bg-gray-900/50">
-                <div className="text-sm text-gray-700 dark:text-gray-200 truncate">{selected}</div>
+            <div className="flex min-w-0 flex-1 flex-col">
+              <div className="flex items-center justify-between border-b border-gray-200 bg-white/80 px-4 py-3 dark:border-gray-700 dark:bg-gray-900/50">
+                <div className="truncate text-sm text-gray-700 dark:text-gray-200">{selected}</div>
                 <button
                   onClick={onClose}
-                  className="p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-300"
+                  className="rounded-md p-1 text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800"
                 >
-                  <X className="w-4 h-4" />
+                  <X className="h-4 w-4" />
                 </button>
               </div>
 
               <div className="flex-1 overflow-auto">
                 {loading ? (
-                  <div className="h-full flex items-center justify-center text-gray-500 dark:text-gray-400">
+                  <div className="flex h-full items-center justify-center text-gray-500 dark:text-gray-400">
                     Loading diff…
                   </div>
                 ) : (

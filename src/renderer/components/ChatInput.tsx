@@ -221,17 +221,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         : baseDisabled || !trimmedValue;
 
   return (
-    <div className="px-6 pt-4 pb-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="px-6 pb-6 pt-4">
+      <div className="mx-auto max-w-4xl">
         <div
-          className={`relative bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md transition-shadow duration-200 ${
+          className={`relative rounded-md border border-gray-200 bg-white transition-shadow duration-200 dark:border-gray-700 dark:bg-gray-800 ${
             isFocused ? 'shadow-2xl' : 'shadow-lg'
           }`}
         >
           <div className="p-4">
             <textarea
               ref={textareaRef}
-              className="w-full resize-none border-none outline-none bg-transparent text-gray-900 dark:text-gray-100 text-sm placeholder-gray-500 dark:placeholder-gray-400"
+              className="w-full resize-none border-none bg-transparent text-sm text-gray-900 placeholder-gray-500 outline-none dark:text-gray-100 dark:placeholder-gray-400"
               value={value}
               onChange={(e) => {
                 const next = e.target.value;
@@ -248,7 +248,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               style={{ minHeight: '56px' }}
             />
             {mentionOpen && mentionResults.length > 0 && (
-              <div className="absolute left-4 bottom-40 z-20 w-[520px] max-w-[calc(100%-2rem)] rounded-md border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shadow-xl overflow-hidden">
+              <div className="absolute bottom-40 left-4 z-20 w-[520px] max-w-[calc(100%-2rem)] overflow-hidden rounded-md border border-gray-200 bg-white shadow-xl dark:border-gray-700 dark:bg-gray-800">
                 <div className="max-h-64 overflow-y-auto">
                   {mentionResults.map((item, idx) => (
                     <button
@@ -258,25 +258,25 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                         e.preventDefault();
                         applyMention(item.path);
                       }}
-                      className={`w-full text-left px-3 py-2 text-xs flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-700 ${
+                      className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs hover:bg-gray-100 dark:hover:bg-gray-700 ${
                         idx === mentionIndex ? 'bg-gray-100 dark:bg-gray-700' : ''
                       }`}
                     >
-                      <span className="inline-flex items-center justify-center w-4 h-4 text-gray-500">
+                      <span className="inline-flex h-4 w-4 items-center justify-center text-gray-500">
                         <FileTypeIcon path={item.path} type={item.type} size={14} />
                       </span>
                       <span className="truncate text-gray-800 dark:text-gray-200">{item.path}</span>
                     </button>
                   ))}
                 </div>
-                <div className="px-3 py-1 text-[10px] text-gray-500 border-t border-gray-200 dark:border-gray-700">
+                <div className="border-t border-gray-200 px-3 py-1 text-[10px] text-gray-500 dark:border-gray-700">
                   Type to filter files and folders • ↑/↓ to navigate • Enter to insert
                 </div>
               </div>
             )}
           </div>
 
-          <div className="flex items-center justify-between px-4 py-3 rounded-b-xl relative">
+          <div className="relative flex items-center justify-between rounded-b-xl px-4 py-3">
             <div className="flex items-center gap-2">
               <ProviderSelector
                 value={provider as Provider}
@@ -289,7 +289,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
 
             <div className="flex items-center gap-2">
               {isLoading && (
-                <span className="text-xs text-gray-500 dark:text-gray-400 font-medium w-16 text-right tabular-nums">
+                <span className="w-16 text-right text-xs font-medium tabular-nums text-gray-500 dark:text-gray-400">
                   {formatLoadingTime(loadingSeconds)}
                 </span>
               )}
@@ -297,10 +297,10 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 type="button"
                 onClick={isLoading ? onCancel : onSend}
                 disabled={sendDisabled}
-                className={`group relative h-9 w-9 p-0 rounded-md text-gray-600 dark:text-gray-300 transition-colors disabled:opacity-50 disabled:pointer-events-none ${
+                className={`group relative h-9 w-9 rounded-md p-0 text-gray-600 transition-colors disabled:pointer-events-none disabled:opacity-50 dark:text-gray-300 ${
                   isLoading
-                    ? 'bg-gray-200 dark:bg-gray-700 hover:bg-red-300 hover:text-white dark:hover:text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    ? 'bg-gray-200 hover:bg-red-300 hover:text-white dark:bg-gray-700 dark:hover:text-white'
+                    : 'bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600'
                 }`}
                 aria-label={
                   provider === 'droid' ||
@@ -321,15 +321,15 @@ export const ChatInput: React.FC<ChatInputProps> = ({
                 provider === 'copilot' ||
                 provider === 'amp' ||
                 provider === 'opencode' ? (
-                  <div className="flex items-center justify-center w-full h-full">
-                    <div className="w-3.5 h-3.5 rounded-[3px] bg-gray-500 dark:bg-gray-300" />
+                  <div className="flex h-full w-full items-center justify-center">
+                    <div className="h-3.5 w-3.5 rounded-[3px] bg-gray-500 dark:bg-gray-300" />
                   </div>
                 ) : isLoading ? (
-                  <div className="flex items-center justify-center w-full h-full">
-                    <div className="w-3.5 h-3.5 rounded-[3px] bg-gray-500 dark:bg-gray-300 transition-colors duration-150 group-hover:bg-red-500" />
+                  <div className="flex h-full w-full items-center justify-center">
+                    <div className="h-3.5 w-3.5 rounded-[3px] bg-gray-500 transition-colors duration-150 group-hover:bg-red-500 dark:bg-gray-300" />
                   </div>
                 ) : (
-                  <ArrowRight className="w-4 h-4" />
+                  <ArrowRight className="h-4 w-4" />
                 )}
               </Button>
             </div>

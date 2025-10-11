@@ -406,11 +406,11 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
   }, [provider, workspace.id]);
 
   return (
-    <div className={`flex flex-col h-full bg-white dark:bg-gray-800 ${className}`}>
+    <div className={`flex h-full flex-col bg-white dark:bg-gray-800 ${className}`}>
       {isTerminal ? (
-        <div className="flex-1 flex flex-col min-h-0">
+        <div className="flex min-h-0 flex-1 flex-col">
           <div className="px-6 pt-4">
-            <div className="max-w-4xl mx-auto space-y-2">
+            <div className="mx-auto max-w-4xl space-y-2">
               {(() => {
                 if (provider === 'codex' && isCodexInstalled === false) {
                   return (
@@ -440,14 +440,14 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
               })()}
             </div>
           </div>
-          <div className="px-6 mt-2">
-            <div className="max-w-4xl mx-auto">
+          <div className="mt-2 px-6">
+            <div className="mx-auto max-w-4xl">
               <WorkspaceNotice workspaceName={workspace.name} />
             </div>
           </div>
-          <div className="flex-1 min-h-0 px-6 mt-4">
+          <div className="mt-4 min-h-0 flex-1 px-6">
             <div
-              className={`max-w-4xl mx-auto h-full rounded-md overflow-hidden ${
+              className={`mx-auto h-full max-w-4xl overflow-hidden rounded-md ${
                 provider === 'charm' ? 'bg-white' : ''
               }`}
             >
@@ -481,15 +481,15 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
         </div>
       ) : codexStream.isLoading ? (
         <div
-          className="flex-1 overflow-y-auto px-6 pt-6 pb-2"
+          className="flex-1 overflow-y-auto px-6 pb-2 pt-6"
           style={{
             maskImage: 'linear-gradient(to bottom, black 0%, black 93%, transparent 100%)',
             WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 93%, transparent 100%)',
           }}
         >
-          <div className="max-w-4xl mx-auto space-y-6">
+          <div className="mx-auto max-w-4xl space-y-6">
             <div className="flex items-center justify-center py-8">
-              <div className="text-gray-500 dark:text-gray-400 text-sm font-sans">
+              <div className="font-sans text-sm text-gray-500 dark:text-gray-400">
                 Loading conversation...
               </div>
             </div>
@@ -499,8 +499,8 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
         <>
           {provider === 'claude' && isClaudeInstalled === false ? (
             <div className="px-6 pt-4">
-              <div className="max-w-4xl mx-auto">
-                <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 p-3 text-sm whitespace-pre-wrap">
+              <div className="mx-auto max-w-4xl">
+                <div className="whitespace-pre-wrap rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
                   {claudeInstructions ||
                     'Install Claude Code: npm install -g @anthropic-ai/claude-code\nThen run: claude and use /login'}
                 </div>

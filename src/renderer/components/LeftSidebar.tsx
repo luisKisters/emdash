@@ -51,7 +51,7 @@ const SidebarToggleButton: React.FC = () => {
       variant="ghost"
       size="icon"
       onClick={toggle}
-      className="absolute -right-3 top-4 z-20 hidden h-9 w-9 items-center justify-center text-muted-foreground hover:bg-background/80 rounded-md lg:inline-flex"
+      className="absolute -right-3 top-4 z-20 hidden h-9 w-9 items-center justify-center rounded-md text-muted-foreground hover:bg-background/80 lg:inline-flex"
       aria-label="Toggle sidebar"
     ></Button>
   );
@@ -141,8 +141,8 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                       aria-label="Home"
                       className="justify-start"
                     >
-                      <Home className="w-5 h-5 sm:w-4 sm:h-4 text-gray-600 dark:text-gray-400" />
-                      <span className="hidden sm:inline text-sm font-medium">Home</span>
+                      <Home className="h-5 w-5 text-gray-600 dark:text-gray-400 sm:h-4 sm:w-4" />
+                      <span className="hidden text-sm font-medium sm:inline">Home</span>
                     </Button>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -176,7 +176,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                       }
                     }
                   }}
-                  className="space-y-1 list-none p-0 m-0 min-w-0"
+                  className="m-0 min-w-0 list-none space-y-1 p-0"
                   itemClassName="relative group cursor-pointer rounded-md list-none min-w-0"
                   getKey={(p) => (p as Project).id}
                 >
@@ -185,17 +185,17 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                     return (
                       <SidebarMenuItem>
                         <Collapsible defaultOpen className="group/collapsible">
-                          <div className="flex w-full items-center rounded-md px-2 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground min-w-0">
+                          <div className="flex w-full min-w-0 items-center rounded-md px-2 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground">
                             <button
                               type="button"
-                              className="flex flex-1 min-w-0 flex-col text-left bg-transparent outline-none focus-visible:outline-none"
+                              className="flex min-w-0 flex-1 flex-col bg-transparent text-left outline-none focus-visible:outline-none"
                               onClick={(e) => {
                                 e.stopPropagation();
                                 onSelectProject(typedProject);
                               }}
                             >
-                              <span className="truncate block">{typedProject.name}</span>
-                              <span className="hidden sm:block truncate text-xs text-muted-foreground">
+                              <span className="block truncate">{typedProject.name}</span>
+                              <span className="hidden truncate text-xs text-muted-foreground sm:block">
                                 {typedProject.githubInfo?.repository || typedProject.path}
                               </span>
                             </button>
@@ -204,7 +204,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                                 type="button"
                                 aria-label={`Toggle workspaces for ${typedProject.name}`}
                                 onClick={(e) => e.stopPropagation()}
-                                className="ml-2 -mr-1 rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                                className="-mr-1 ml-2 rounded-md p-2 text-muted-foreground transition-colors hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                               >
                                 <ChevronDown className="h-4 w-4 transition-transform group-data-[state=open]/collapsible:rotate-180" />
                               </button>
@@ -212,8 +212,8 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                           </div>
 
                           <CollapsibleContent asChild>
-                            <div className="mt-2 ml-7 space-y-1 min-w-0">
-                              <div className="hidden sm:block space-y-1 min-w-0">
+                            <div className="ml-7 mt-2 min-w-0 space-y-1">
+                              <div className="hidden min-w-0 space-y-1 sm:block">
                                 {typedProject.workspaces?.map((workspace) => {
                                   const isActive = activeWorkspace?.id === workspace.id;
                                   return (
@@ -229,7 +229,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                                         }
                                         onSelectWorkspace && onSelectWorkspace(workspace);
                                       }}
-                                      className={`px-2 py-1.5 rounded-md hover:bg-black/5 dark:hover:bg-white/5 min-w-0 ${
+                                      className={`min-w-0 rounded-md px-2 py-1.5 hover:bg-black/5 dark:hover:bg-white/5 ${
                                         isActive ? 'bg-black/5 dark:bg-white/5' : ''
                                       }`}
                                       title={workspace.name}
@@ -248,7 +248,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                               </div>
                               <button
                                 type="button"
-                                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground dark:hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-black/5 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-white/5"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (onSelectProject && selectedProject?.id !== typedProject.id) {
@@ -261,7 +261,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                                 disabled={isCreatingWorkspace}
                                 aria-label={`Add workspace to ${typedProject.name}`}
                               >
-                                <Plus className="h-3 w-3 text-gray-400 flex-shrink-0" aria-hidden />
+                                <Plus className="h-3 w-3 flex-shrink-0 text-gray-400" aria-hidden />
                                 <span className="truncate">Add workspace</span>
                               </button>
                             </div>
@@ -275,7 +275,7 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
             </SidebarGroupContent>
           </SidebarGroup>
         </SidebarContent>
-        <SidebarFooter className="border-t border-gray-200 dark:border-gray-800 px-2 py-2 sm:px-4 sm:py-4">
+        <SidebarFooter className="border-t border-gray-200 px-2 py-2 dark:border-gray-800 sm:px-4 sm:py-4">
           <SidebarMenu className="w-full">
             <SidebarMenuItem>
               <SidebarMenuButton
@@ -294,8 +294,8 @@ const LeftSidebar: React.FC<LeftSidebarProps> = ({
                 }`}
                 aria-label={githubProfileUrl ? 'Open GitHub profile' : undefined}
               >
-                <div className="flex flex-1 flex-col min-w-0 text-left gap-1">
-                  <div className="hidden sm:block truncate">{renderGithubStatus()}</div>
+                <div className="flex min-w-0 flex-1 flex-col gap-1 text-left">
+                  <div className="hidden truncate sm:block">{renderGithubStatus()}</div>
                 </div>
               </SidebarMenuButton>
             </SidebarMenuItem>

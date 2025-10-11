@@ -444,8 +444,8 @@ const App: React.FC = () => {
                   platform === 'darwin'
                     ? 'Tip: Update GitHub CLI with: brew upgrade gh — then restart emdash.'
                     : platform === 'win32'
-                    ? 'Tip: Update GitHub CLI with: winget upgrade GitHub.cli — then restart emdash.'
-                    : 'Tip: Update GitHub CLI via your package manager (e.g., apt/dnf) and restart emdash.';
+                      ? 'Tip: Update GitHub CLI with: winget upgrade GitHub.cli — then restart emdash.'
+                      : 'Tip: Update GitHub CLI via your package manager (e.g., apt/dnf) and restart emdash.';
                 toast({
                   title: 'GitHub Connection Failed',
                   description: `Git repository detected but couldn't connect to GitHub: ${githubInfo.error}\n\n${updateHint}`,
@@ -858,10 +858,10 @@ const App: React.FC = () => {
   const renderMainContent = () => {
     if (showHomeView) {
       return (
-        <div className="flex h-full flex-col bg-background text-foreground overflow-y-auto">
-          <div className="container mx-auto px-4 py-8 flex flex-1 flex-col justify-center min-h-full">
-            <div className="text-center mb-6">
-              <div className="flex items-center justify-center mb-2">
+        <div className="flex h-full flex-col overflow-y-auto bg-background text-foreground">
+          <div className="container mx-auto flex min-h-full flex-1 flex-col justify-center px-4 py-8">
+            <div className="mb-6 text-center">
+              <div className="mb-2 flex items-center justify-center">
                 <div className="logo-shimmer-container">
                   <img src={emdashLogo} alt="emdash" className="logo-shimmer-image" />
                   <span
@@ -880,7 +880,7 @@ const App: React.FC = () => {
                   />
                 </div>
               </div>
-              <p className="text-sm sm:text-base text-gray-700 text-muted-foreground">
+              <p className="text-sm text-gray-700 text-muted-foreground sm:text-base">
                 Run multiple Coding Agents in parallel
               </p>
               <RequirementsNotice
@@ -891,11 +891,11 @@ const App: React.FC = () => {
               />
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <div className="flex flex-col justify-center gap-4 sm:flex-row">
               <Button
                 onClick={handleOpenProject}
                 size="lg"
-                className="min-w-[200px] bg-black text-white hover:bg-gray-800 hover:text-white border-black"
+                className="min-w-[200px] border-black bg-black text-white hover:bg-gray-800 hover:text-white"
               >
                 <FolderOpen className="mr-2 h-5 w-5" />
                 Open Project
@@ -910,12 +910,12 @@ const App: React.FC = () => {
 
     if (selectedProject) {
       return (
-        <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+        <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
           {activeWorkspace ? (
             <ChatInterface
               workspace={activeWorkspace}
               projectName={selectedProject.name}
-              className="flex-1 min-h-0"
+              className="min-h-0 flex-1"
               initialProvider={activeWorkspaceProvider || undefined}
             />
           ) : (
@@ -933,13 +933,13 @@ const App: React.FC = () => {
     }
 
     return (
-      <div className="flex h-full flex-col bg-background text-foreground overflow-y-auto">
-        <div className="container mx-auto px-4 py-8 flex flex-1 flex-col justify-center min-h-full">
-          <div className="text-center mb-12">
-            <div className="flex items-center justify-center mb-4">
+      <div className="flex h-full flex-col overflow-y-auto bg-background text-foreground">
+        <div className="container mx-auto flex min-h-full flex-1 flex-col justify-center px-4 py-8">
+          <div className="mb-12 text-center">
+            <div className="mb-4 flex items-center justify-center">
               <img src={emdashLogo} alt="emdash" className="h-16" />
             </div>
-            <p className="text-sm sm:text-base text-gray-700 text-muted-foreground mb-6">
+            <p className="mb-6 text-sm text-gray-700 text-muted-foreground sm:text-base">
               Run multiple Coding Agents in parallel
             </p>
             <RequirementsNotice
@@ -950,11 +950,11 @@ const App: React.FC = () => {
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center mb-8">
+          <div className="mb-8 flex flex-col justify-center gap-4 sm:flex-row">
             <Button
               onClick={handleOpenProject}
               size="lg"
-              className="min-w-[200px] bg-black text-white hover:bg-gray-800 hover:text-white border-black"
+              className="min-w-[200px] border-black bg-black text-white hover:bg-gray-800 hover:text-white"
             >
               <FolderOpen className="mr-2 h-5 w-5" />
               Open Project
@@ -1024,7 +1024,7 @@ const App: React.FC = () => {
                 minSize={MAIN_PANEL_MIN_SIZE}
                 order={2}
               >
-                <div className="flex h-full overflow-hidden flex-col bg-background text-foreground">
+                <div className="flex h-full flex-col overflow-hidden bg-background text-foreground">
                   {renderMainContent()}
                 </div>
               </ResizablePanel>

@@ -83,13 +83,13 @@ const MessageList: React.FC<MessageListProps> = ({
   return (
     <div
       ref={scrollContainerRef}
-      className="flex-1 overflow-y-auto px-6 pt-6 pb-2"
+      className="flex-1 overflow-y-auto px-6 pb-2 pt-6"
       style={{
         maskImage: 'linear-gradient(to bottom, black 0%, black 93%, transparent 100%)',
         WebkitMaskImage: 'linear-gradient(to bottom, black 0%, black 93%, transparent 100%)',
       }}
     >
-      <div className="max-w-4xl mx-auto space-y-6">
+      <div className="mx-auto max-w-4xl space-y-6">
         {messages.map((message) => {
           const isUserMessage = message.sender === 'user';
           const content = message.content ?? '';
@@ -105,7 +105,7 @@ const MessageList: React.FC<MessageListProps> = ({
               className={`flex ${isUserMessage ? 'justify-end' : 'justify-start'}`}
             >
               <div
-                className={`max-w-[80%] px-4 py-3 text-sm leading-relaxed font-sans text-gray-900 dark:text-gray-100 ${
+                className={`max-w-[80%] px-4 py-3 font-sans text-sm leading-relaxed text-gray-900 dark:text-gray-100 ${
                   isUserMessage ? 'rounded-md bg-gray-100 dark:bg-gray-700' : ''
                 }`}
               >
@@ -116,14 +116,14 @@ const MessageList: React.FC<MessageListProps> = ({
                         code: ({ inline, className, children, ...props }: any) => {
                           const match = /language-(\w+)/.exec(className || '');
                           return !inline && match ? (
-                            <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded-md overflow-x-auto">
+                            <pre className="overflow-x-auto rounded-md bg-gray-100 p-3 dark:bg-gray-800">
                               <code className={className} {...props}>
                                 {children}
                               </code>
                             </pre>
                           ) : (
                             <code
-                              className="bg-gray-100 dark:bg-gray-800 px-1 py-0.5 rounded text-sm"
+                              className="rounded bg-gray-100 px-1 py-0.5 text-sm dark:bg-gray-800"
                               {...props}
                             >
                               {children}
@@ -131,10 +131,10 @@ const MessageList: React.FC<MessageListProps> = ({
                           );
                         },
                         ul: ({ children }) => (
-                          <ul className="list-disc list-inside space-y-1 my-2">{children}</ul>
+                          <ul className="my-2 list-inside list-disc space-y-1">{children}</ul>
                         ),
                         ol: ({ children }) => (
-                          <ol className="list-decimal list-inside space-y-1 my-2">{children}</ol>
+                          <ol className="my-2 list-inside list-decimal space-y-1">{children}</ol>
                         ),
                         li: ({ children }) => <li className="ml-2">{children}</li>,
                         p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
@@ -147,10 +147,10 @@ const MessageList: React.FC<MessageListProps> = ({
                       {content}
                     </ReactMarkdown>
                     {Array.isArray(message.attachments) && message.attachments.length > 0 ? (
-                      <div className="mt-2 flex flex-wrap gap-1 items-center">
+                      <div className="mt-2 flex flex-wrap items-center gap-1">
                         {message.attachments.map((p) => (
                           <Badge key={p} className="flex items-center gap-1">
-                            <FileTypeIcon path={p} type="file" className="w-3.5 h-3.5" />
+                            <FileTypeIcon path={p} type="file" className="h-3.5 w-3.5" />
                             <span>{basename(p)}</span>
                           </Badge>
                         ))}
@@ -175,7 +175,7 @@ const MessageList: React.FC<MessageListProps> = ({
 
         {streamingOutput !== null && (
           <div className="flex justify-start">
-            <div className="max-w-[80%] px-4 py-3 text-sm leading-relaxed font-sans text-gray-900 dark:text-gray-100">
+            <div className="max-w-[80%] px-4 py-3 font-sans text-sm leading-relaxed text-gray-900 dark:text-gray-100">
               {providerId === 'codex' ? (
                 (() => {
                   const parsed = parseCodexStream(streamingOutput || '');

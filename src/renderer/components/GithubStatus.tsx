@@ -24,7 +24,7 @@ export function GithubStatus({
             <div
               className={`flex items-start space-x-2 text-xs text-gray-600 dark:text-gray-400 ${className}`}
             >
-              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
               <div>
                 <p className="font-medium">Install GitHub CLI</p>
                 <p className="text-[11px] text-gray-700/80 dark:text-gray-300/80">
@@ -49,11 +49,11 @@ export function GithubStatus({
             <div
               className={`flex items-start space-x-2 text-xs text-gray-600 dark:text-gray-300 ${className}`}
             >
-              <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+              <AlertCircle className="mt-0.5 h-4 w-4 flex-shrink-0" />
               <div>
                 <p className="font-medium">GitHub not authenticated</p>
                 <p className="text-[11px] text-gray-700/80 dark:text-gray-200/80">
-                  Run <code className="bg-gray-100 px-1 rounded">gh auth login</code>
+                  Run <code className="rounded bg-gray-100 px-1">gh auth login</code>
                 </p>
               </div>
             </div>
@@ -71,9 +71,9 @@ export function GithubStatus({
     <TooltipProvider delayDuration={250}>
       <Tooltip>
         <TooltipTrigger asChild>
-          <div className={`flex items-center text-sm text-muted-foreground space-x-2 ${className}`}>
-            <img src={githubLogo} alt="GitHub" className="w-4 h-4 rounded-sm object-contain" />
-            <span className="truncate block">{displayName}</span>
+          <div className={`flex items-center space-x-2 text-sm text-muted-foreground ${className}`}>
+            <img src={githubLogo} alt="GitHub" className="h-4 w-4 rounded-sm object-contain" />
+            <span className="block truncate">{displayName}</span>
           </div>
         </TooltipTrigger>
         <TooltipContent>

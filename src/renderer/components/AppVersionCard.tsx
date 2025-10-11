@@ -40,14 +40,14 @@ const AppVersionCard: React.FC = () => {
       <div className="flex-1 space-y-1">
         <div className="flex items-baseline gap-2">
           <span className="text-sm font-medium text-foreground">emdash</span>
-          <code className="text-sm font-mono text-muted-foreground">{emdashVersion}</code>
+          <code className="font-mono text-sm text-muted-foreground">{emdashVersion}</code>
         </div>
       </div>
 
       <div className="flex-1 space-y-1">
         <div className="flex items-baseline gap-2">
           <span className="text-sm font-medium text-foreground">Electron</span>
-          <code className="text-sm font-mono text-muted-foreground">{electronVersion}</code>
+          <code className="font-mono text-sm text-muted-foreground">{electronVersion}</code>
         </div>
         {platform && <p className="text-xs text-muted-foreground">Platform: {platform}</p>}
       </div>

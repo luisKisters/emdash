@@ -99,10 +99,10 @@ function WorkspaceRow({
     >
       <div className="min-w-0">
         <div className="text-base font-medium leading-tight tracking-tight">{ws.name}</div>
-        <div className="mt-1 flex items-center gap-2 min-w-0 text-xs text-muted-foreground">
+        <div className="mt-1 flex min-w-0 items-center gap-2 text-xs text-muted-foreground">
           {isRunning || ws.status === 'running' ? <Spinner size="sm" className="size-3" /> : null}
           <GitBranch className="size-3" />
-          <span className="font-mono truncate max-w-[24rem]" title={`origin/${ws.branch}`}>
+          <span className="max-w-[24rem] truncate font-mono" title={`origin/${ws.branch}`}>
             origin/{ws.branch}
           </span>
         </div>
@@ -113,18 +113,11 @@ function WorkspaceRow({
           <ChangesBadge additions={totalAdditions} deletions={totalDeletions} />
         ) : pr ? (
           <span
-            className={`text-[10px] px-1.5 py-0.5 rounded border 
-              ${pr.state === 'MERGED' ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
-              ${
-                pr.state === 'OPEN' && pr.isDraft ? 'bg-gray-100 text-gray-700 border-gray-200' : ''
-              }
-              ${
-                pr.state === 'OPEN' && !pr.isDraft
-                  ? 'bg-gray-100 text-gray-700 border-gray-200'
-                  : ''
-              }
-              ${pr.state === 'CLOSED' ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
-            `}
+            className={`rounded border px-1.5 py-0.5 text-[10px] ${pr.state === 'MERGED' ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${
+              pr.state === 'OPEN' && pr.isDraft ? 'border-gray-200 bg-gray-100 text-gray-700' : ''
+            } ${
+              pr.state === 'OPEN' && !pr.isDraft ? 'border-gray-200 bg-gray-100 text-gray-700' : ''
+            } ${pr.state === 'CLOSED' ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} `}
             title={`${pr.title || 'Pull Request'} (#${pr.number})`}
           >
             {pr.isDraft ? 'draft' : pr.state.toLowerCase()}
@@ -136,7 +129,7 @@ function WorkspaceRow({
           workspaceName={ws.name}
           onConfirm={onDelete}
           aria-label={`Delete workspace ${ws.name}`}
-          className="inline-flex items-center justify-center rounded p-2 text-muted-foreground hover:text-destructive hover:bg-transparent focus-visible:ring-0"
+          className="inline-flex items-center justify-center rounded p-2 text-muted-foreground hover:bg-transparent hover:text-destructive focus-visible:ring-0"
         />
       </div>
     </div>
@@ -161,9 +154,9 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
   isCreatingWorkspace = false,
 }) => {
   return (
-    <div className="flex-1 min-h-0 bg-background flex flex-col">
+    <div className="flex min-h-0 flex-1 flex-col bg-background">
       <div className="flex-1 overflow-y-auto">
-        <div className="container mx-auto max-w-6xl p-6 space-y-8">
+        <div className="container mx-auto max-w-6xl space-y-8 p-6">
           <div className="mb-8 space-y-2">
             <header className="flex items-start justify-between">
               <div className="space-y-2">

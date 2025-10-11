@@ -30,7 +30,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
     return (
       <span className="truncate">
         {dir && <span className="text-gray-500 dark:text-gray-400">{dir}</span>}
-        <span className="text-gray-900 dark:text-gray-100 font-medium">{base}</span>
+        <span className="font-medium text-gray-900 dark:text-gray-100">{base}</span>
       </span>
     );
   };
@@ -44,21 +44,21 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
   );
 
   return (
-    <div className={`bg-white dark:bg-gray-800 shadow-sm flex flex-col h-full ${className}`}>
-      <div className="px-3 py-2 bg-gray-50 dark:bg-gray-900 flex items-center">
+    <div className={`flex h-full flex-col bg-white shadow-sm dark:bg-gray-800 ${className}`}>
+      <div className="flex items-center bg-gray-50 px-3 py-2 dark:bg-gray-900">
         {hasChanges ? (
-          <div className="flex items-center justify-between w-full">
+          <div className="flex w-full items-center justify-between">
             <div className="flex items-center space-x-2">
               <div className="flex items-center space-x-2">
-                <span className="text-sm font-medium p-2 text-gray-900 dark:text-gray-100 whitespace-nowrap overflow-hidden text-ellipsis">
+                <span className="overflow-hidden text-ellipsis whitespace-nowrap p-2 text-sm font-medium text-gray-900 dark:text-gray-100">
                   {fileChanges.length} files changed
                 </span>
                 <div className="flex items-center space-x-1 text-xs">
-                  <span className="text-green-600 dark:text-green-400 font-medium">
+                  <span className="font-medium text-green-600 dark:text-green-400">
                     +{totalChanges.additions}
                   </span>
                   <span className="text-gray-400">•</span>
-                  <span className="text-red-600 dark:text-red-400 font-medium">
+                  <span className="font-medium text-red-600 dark:text-red-400">
                     -{totalChanges.deletions}
                   </span>
                 </div>
@@ -68,7 +68,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 px-2 text-xs border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200"
+                className="h-8 border-gray-200 px-2 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-200"
                 disabled={isCreatingPR}
                 onClick={async () => {
                   await createPR({
@@ -87,7 +87,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
             </div>
           </div>
         ) : (
-          <div className="flex items-center justify-between w-full">
+          <div className="flex w-full items-center justify-between">
             <div className="flex items-center gap-2 p-2">
               <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Changes</span>
             </div>
@@ -101,12 +101,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
                     const api: any = (window as any).electronAPI;
                     api?.openExternal?.(pr.url);
                   }}
-                  className={`cursor-pointer text-[11px] px-2 py-0.5 rounded border 
-                    ${pr.state === 'MERGED' ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
-                    ${pr.state === 'OPEN' && pr.isDraft ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
-                    ${pr.state === 'OPEN' && !pr.isDraft ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
-                    ${pr.state === 'CLOSED' ? 'bg-gray-100 text-gray-700 border-gray-200' : ''}
-                  `}
+                  className={`cursor-pointer rounded border px-2 py-0.5 text-[11px] ${pr.state === 'MERGED' ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${pr.state === 'OPEN' && pr.isDraft ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${pr.state === 'OPEN' && !pr.isDraft ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${pr.state === 'CLOSED' ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} `}
                   title={pr.title || 'Pull Request'}
                 >
                   PR {pr.isDraft ? 'draft' : pr.state.toLowerCase()}
@@ -119,36 +114,36 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
         )}
       </div>
 
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto">
         {fileChanges.map((change, index) => (
           <div
             key={index}
-            className="flex items-center justify-between px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-900/40 border-b border-gray-100 dark:border-gray-700 last:border-b-0 cursor-pointer"
+            className="flex cursor-pointer items-center justify-between border-b border-gray-100 px-4 py-2.5 last:border-b-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-900/40"
             onClick={() => {
               setSelectedPath(change.path);
               setShowDiffModal(true);
             }}
           >
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <span className="inline-flex items-center justify-center w-4 h-4 text-gray-500">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <span className="inline-flex h-4 w-4 items-center justify-center text-gray-500">
                 <FileTypeIcon
                   path={change.path}
                   type={change.status === 'deleted' ? 'file' : 'file'}
                   size={14}
                 />
               </span>
-              <div className="flex-1 min-w-0">
-                <div className="text-sm truncate">{renderPath(change.path)}</div>
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm">{renderPath(change.path)}</div>
               </div>
             </div>
-            <div className="flex items-center gap-2 ml-3">
+            <div className="ml-3 flex items-center gap-2">
               {change.additions > 0 && (
-                <span className="px-1.5 py-0.5 rounded bg-green-50 dark:bg-green-900/30 text-emerald-700 dark:text-emerald-300 text-[11px] font-medium">
+                <span className="rounded bg-green-50 px-1.5 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-green-900/30 dark:text-emerald-300">
                   +{change.additions}
                 </span>
               )}
               {change.deletions > 0 && (
-                <span className="px-1.5 py-0.5 rounded bg-rose-50 dark:bg-rose-900/30 text-rose-700 dark:text-rose-300 text-[11px] font-medium">
+                <span className="rounded bg-rose-50 px-1.5 py-0.5 text-[11px] font-medium text-rose-700 dark:bg-rose-900/30 dark:text-rose-300">
                   -{change.deletions}
                 </span>
               )}

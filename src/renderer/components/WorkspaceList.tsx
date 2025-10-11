@@ -30,17 +30,17 @@ export const WorkspaceList: React.FC<Props> = ({
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'running':
-        return <Play className="w-4 h-4 text-green-500" />;
+        return <Play className="h-4 w-4 text-green-500" />;
       case 'idle':
-        return <Pause className="w-4 h-4 text-yellow-500" />;
+        return <Pause className="h-4 w-4 text-yellow-500" />;
       default:
-        return <Bot className="w-4 h-4 text-blue-500" />;
+        return <Bot className="h-4 w-4 text-blue-500" />;
     }
   };
 
   return (
-    <div className="flex flex-col h-full p-4">
-      <div className="flex justify-between items-center mb-4">
+    <div className="flex h-full flex-col p-4">
+      <div className="mb-4 flex items-center justify-between">
         <h2 className="text-xl font-semibold">Workspaces</h2>
         <Button
           variant="outline"
@@ -56,19 +56,19 @@ export const WorkspaceList: React.FC<Props> = ({
             </>
           ) : (
             <>
-              <Plus className="w-4 h-4 mr-2" /> New
+              <Plus className="mr-2 h-4 w-4" /> New
             </>
           )}
         </Button>
       </div>
 
       {workspaces.length === 0 ? (
-        <div className="flex flex-col items-center justify-center h-full text-gray-500">
-          <Bot className="w-12 h-12 mb-4" />
+        <div className="flex h-full flex-col items-center justify-center text-gray-500">
+          <Bot className="mb-4 h-12 w-12" />
           <p className="text-center">No workspaces yet. Create one to get started!</p>
         </div>
       ) : (
-        <div className="flex-1 overflow-y-auto space-y-3">
+        <div className="flex-1 space-y-3 overflow-y-auto">
           {workspaces.map((workspace) => (
             <Card
               key={workspace.id}
@@ -84,8 +84,8 @@ export const WorkspaceList: React.FC<Props> = ({
                   {getStatusIcon(workspace.status)}
                   <span className="ml-2">{workspace.name}</span>
                 </CardTitle>
-                <CardDescription className="flex items-center text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  <GitBranch className="w-3 h-3 mr-1" />
+                <CardDescription className="mt-1 flex items-center text-sm text-gray-500 dark:text-gray-400">
+                  <GitBranch className="mr-1 h-3 w-3" />
                   <code className="font-mono text-xs">{workspace.branch}</code>
                 </CardDescription>
               </CardHeader>
