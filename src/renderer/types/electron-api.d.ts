@@ -199,20 +199,7 @@ declare global {
         success: boolean;
         error?: string;
       }>;
-      linearGetIssues?: (identifiers: string[]) => Promise<{
-        success: boolean;
-        issues?: any[];
-        error?: string;
-      }>;
-      linearSearchIssues?: (
-        term: string,
-        limit?: number
-      ) => Promise<{
-        success: boolean;
-        issues?: any[];
-        error?: string;
-      }>;
-      linearListIssues?: (limit?: number) => Promise<{
+      linearInitialFetch?: (limit?: number) => Promise<{
         success: boolean;
         issues?: any[];
         error?: string;
@@ -461,15 +448,7 @@ export interface ElectronAPI {
     success: boolean;
     error?: string;
   }>;
-  linearGetIssues?: (identifiers: string[]) => Promise<{
-    success: boolean;
-    issues?: any[];
-    error?: string;
-  }>;
-  linearSearchIssues?: (
-    term: string,
-    limit?: number
-  ) => Promise<{
+  linearInitialFetch?: (limit?: number) => Promise<{
     success: boolean;
     issues?: any[];
     error?: string;

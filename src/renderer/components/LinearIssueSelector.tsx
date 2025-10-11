@@ -23,7 +23,7 @@ export const LinearIssueSelector: React.FC<LinearIssueSelectorProps> = ({
   const [hasRequestedIssues, setHasRequestedIssues] = useState(false);
   const isMountedRef = useRef(true);
 
-  const canListLinear = typeof window !== 'undefined' && !!window.electronAPI?.linearListIssues;
+  const canListLinear = typeof window !== 'undefined' && !!window.electronAPI?.linearInitialFetch;
   const issuesLoaded = availableIssues.length > 0;
 
   useEffect(() => {
@@ -48,7 +48,7 @@ export const LinearIssueSelector: React.FC<LinearIssueSelectorProps> = ({
     }
 
     const api = window.electronAPI;
-    if (!api?.linearListIssues) {
+    if (!api?.linearInitialFetch) {
       setAvailableIssues([]);
       setIssueListError('Linear issue list unavailable in this build.');
       setHasRequestedIssues(true);
@@ -57,7 +57,7 @@ export const LinearIssueSelector: React.FC<LinearIssueSelectorProps> = ({
 
     setIsLoadingIssues(true);
     try {
-      const result = await api.linearListIssues();
+      const result = await api.linearInitialFetch();
       if (!isMountedRef.current) return;
       if (!result?.success) {
         throw new Error(result?.error || 'Failed to load Linear issues.');
