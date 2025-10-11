@@ -204,6 +204,14 @@ declare global {
         issues?: any[];
         error?: string;
       }>;
+      linearSearchIssues?: (
+        searchTerm: string,
+        limit?: number
+      ) => Promise<{
+        success: boolean;
+        issues?: any[];
+        error?: string;
+      }>;
 
       // Database operations
       getProjects: () => Promise<any[]>;
@@ -449,6 +457,14 @@ export interface ElectronAPI {
     error?: string;
   }>;
   linearInitialFetch?: (limit?: number) => Promise<{
+    success: boolean;
+    issues?: any[];
+    error?: string;
+  }>;
+  linearSearchIssues?: (
+    searchTerm: string,
+    limit?: number
+  ) => Promise<{
     success: boolean;
     issues?: any[];
     error?: string;
