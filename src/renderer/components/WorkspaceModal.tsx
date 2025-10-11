@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
@@ -10,16 +10,8 @@ import { X, GitBranch } from 'lucide-react';
 import { ProviderSelector } from './ProviderSelector';
 import { type Provider } from '../types';
 import { Separator } from './ui/separator';
-import linearLogo from '../../assets/images/linear.png';
 import { type LinearIssueSummary } from '../types/linear';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectItemText,
-  SelectTrigger,
-  SelectValue,
-} from './ui/select';
+import { LinearIssueSelector } from './LinearIssueSelector';
 
 interface WorkspaceModalProps {
   isOpen: boolean;
@@ -50,17 +42,8 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
   const [error, setError] = useState<string | null>(null);
   const [touched, setTouched] = useState(false);
   const [initialPrompt, setInitialPrompt] = useState('');
-  const [availableIssues, setAvailableIssues] = useState<LinearIssueSummary[]>([]);
-  const [isLoadingIssues, setIsLoadingIssues] = useState(false);
-  const [issueListError, setIssueListError] = useState<string | null>(null);
-  const [selectedIssueIdentifier, setSelectedIssueIdentifier] = useState<string>('');
-  const [hasRequestedIssues, setHasRequestedIssues] = useState(false);
+  const [selectedIssue, setSelectedIssue] = useState<LinearIssueSummary | null>(null);
   const shouldReduceMotion = useReducedMotion();
-  const issuesLoaded = availableIssues.length > 0;
-  const selectedIssue = useMemo(
-    () => availableIssues.find((issue) => issue.identifier === selectedIssueIdentifier) ?? null,
-    [availableIssues, selectedIssueIdentifier]
-  );
 
   const normalizedExisting = existingNames.map((n) => n.toLowerCase());
 
@@ -97,91 +80,11 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
     setError(validate(val));
   };
 
-  const canListLinear = typeof window !== 'undefined' && !!window.electronAPI?.linearListIssues;
-
-  const isMountedRef = useRef(true);
-
-  useEffect(() => {
-    return () => {
-      isMountedRef.current = false;
-    };
-  }, []);
-
   useEffect(() => {
     if (!isOpen) {
-      setAvailableIssues([]);
-      setSelectedIssueIdentifier('');
-      setHasRequestedIssues(false);
-      setIssueListError(null);
-      setIsLoadingIssues(false);
+      setSelectedIssue(null);
     }
   }, [isOpen]);
-
-  const loadLinearIssues = useCallback(async () => {
-    if (!canListLinear) {
-      return;
-    }
-
-    const api = window.electronAPI;
-    if (!api?.linearListIssues) {
-      setAvailableIssues([]);
-      setIssueListError('Linear issue list unavailable in this build.');
-      setHasRequestedIssues(true);
-      return;
-    }
-
-    setIsLoadingIssues(true);
-    try {
-      const result = await api.linearListIssues();
-      if (!isMountedRef.current) return;
-      if (!result?.success) {
-        throw new Error(result?.error || 'Failed to load Linear issues.');
-      }
-      setAvailableIssues(result.issues ?? []);
-      setIssueListError(null);
-    } catch (error) {
-      if (!isMountedRef.current) return;
-      setAvailableIssues([]);
-      setIssueListError(error instanceof Error ? error.message : 'Failed to load Linear issues.');
-    } finally {
-      if (!isMountedRef.current) return;
-      setIsLoadingIssues(false);
-      setHasRequestedIssues(true);
-    }
-  }, [canListLinear]);
-
-  useEffect(() => {
-    if (!isOpen || !showAdvanced || !canListLinear) {
-      return;
-    }
-    if (isLoadingIssues || hasRequestedIssues) {
-      return;
-    }
-    loadLinearIssues();
-  }, [isOpen, showAdvanced, canListLinear, isLoadingIssues, hasRequestedIssues, loadLinearIssues]);
-
-  const retryLoadIssues = () => {
-    if (isLoadingIssues) return;
-    setIssueListError(null);
-    setAvailableIssues([]);
-    setHasRequestedIssues(false);
-  };
-
-  const issueHelperText = (() => {
-    if (!canListLinear) {
-      return 'Connect Linear in Settings to browse issues.';
-    }
-    if (hasRequestedIssues && !isLoadingIssues && !issuesLoaded && !issueListError) {
-      return 'No Linear issues available.';
-    }
-    return null;
-  })();
-
-  const issuePlaceholder = isLoadingIssues
-    ? 'Loading…'
-    : issueListError
-      ? 'Unable to load issues'
-      : 'Select a Linear issue';
 
   return createPortal(
     <AnimatePresence>
@@ -249,6 +152,7 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                         setWorkspaceName('');
                         setInitialPrompt('');
                         setSelectedProvider('codex');
+                        setSelectedIssue(null);
                         setShowAdvanced(false);
                         setError(null);
                         onClose();
@@ -358,110 +262,12 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                               Linear issue
                             </label>
                             <div className="min-w-0 flex-1">
-                              {canListLinear ? (
-                                <>
-                                  <Select
-                                    value={selectedIssueIdentifier || undefined}
-                                    onValueChange={setSelectedIssueIdentifier}
-                                    disabled={isLoadingIssues || !!issueListError || !issuesLoaded}
-                                  >
-                                    <SelectTrigger className="h-9 w-full border-none bg-gray-100 dark:bg-gray-700">
-                                      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-hidden text-left text-foreground">
-                                        {selectedIssue ? (
-                                          <>
-                                            <span className="inline-flex shrink-0 items-center gap-1.5 rounded border border-gray-200 bg-gray-100 px-1.5 py-0.5 dark:border-gray-700 dark:bg-gray-800">
-                                              <img
-                                                src={linearLogo}
-                                                alt="Linear"
-                                                className="h-3.5 w-3.5"
-                                              />
-                                              <span className="text-[11px] font-medium text-foreground">
-                                                {selectedIssue.identifier}
-                                              </span>
-                                            </span>
-                                            {selectedIssue.title ? (
-                                              <>
-                                                <span className="shrink-0 text-foreground">-</span>
-                                                <span className="truncate">
-                                                  {selectedIssue.title}
-                                                </span>
-                                              </>
-                                            ) : null}
-                                          </>
-                                        ) : (
-                                          <>
-                                            <img
-                                              src={linearLogo}
-                                              alt="Linear"
-                                              className="h-3.5 w-3.5 shrink-0"
-                                            />
-                                            <span className="truncate">{issuePlaceholder}</span>
-                                          </>
-                                        )}
-                                      </div>
-                                    </SelectTrigger>
-                                    <SelectContent side="top">
-                                      {availableIssues.map((issue) => (
-                                        <SelectItem
-                                          key={issue.id || issue.identifier}
-                                          value={issue.identifier}
-                                        >
-                                          <SelectItemText>
-                                            <span className="flex min-w-0 items-center gap-2">
-                                              <span className="inline-flex shrink-0 items-center gap-1.5 rounded border border-gray-200 bg-gray-100 px-1.5 py-0.5 dark:border-gray-700 dark:bg-gray-800">
-                                                <img
-                                                  src={linearLogo}
-                                                  alt="Linear"
-                                                  className="h-3.5 w-3.5"
-                                                />
-                                                <span className="text-[11px] font-medium text-foreground">
-                                                  {issue.identifier}
-                                                </span>
-                                              </span>
-                                              {issue.title ? (
-                                                <>
-                                                  <span className="truncate text-muted-foreground">
-                                                    {issue.title}
-                                                  </span>
-                                                </>
-                                              ) : null}
-                                            </span>
-                                          </SelectItemText>
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                  {issueListError ? (
-                                    <div className="mt-2 flex items-center gap-2 text-xs text-destructive">
-                                      <span className="truncate">{issueListError}</span>
-                                      <button
-                                        type="button"
-                                        onClick={retryLoadIssues}
-                                        className="font-medium underline-offset-2 hover:underline"
-                                      >
-                                        Retry
-                                      </button>
-                                    </div>
-                                  ) : null}
-                                  {issueHelperText ? (
-                                    <p className="mt-2 text-xs text-muted-foreground">
-                                      {issueHelperText}
-                                    </p>
-                                  ) : null}
-                                </>
-                              ) : (
-                                <>
-                                  <Input
-                                    id="linear-issue"
-                                    value=""
-                                    placeholder="Linear integration unavailable"
-                                    disabled
-                                  />
-                                  <p className="mt-2 text-xs text-muted-foreground">
-                                    Connect Linear in Settings to browse issues.
-                                  </p>
-                                </>
-                              )}
+                              <LinearIssueSelector
+                                selectedIssue={selectedIssue}
+                                onIssueChange={setSelectedIssue}
+                                isOpen={isOpen && showAdvanced}
+                                className="w-full"
+                              />
                             </div>
                           </div>
                         </div>
