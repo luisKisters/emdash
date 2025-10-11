@@ -1,9 +1,7 @@
-name: Code consistency checks
+name: Code Consistency Check
 
 on:
   pull_request:
-    branches: [main]
-  push:
     branches: [main]
 
 jobs:
