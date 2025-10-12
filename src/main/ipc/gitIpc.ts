@@ -2,7 +2,12 @@ import { ipcMain } from 'electron';
 import { log } from '../lib/logger';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { getStatus as gitGetStatus, getFileDiff as gitGetFileDiff } from '../services/GitService';
+import {
+  getStatus as gitGetStatus,
+  getFileDiff as gitGetFileDiff,
+  stageFile as gitStageFile,
+  revertFile as gitRevertFile,
+} from '../services/GitService';
 
 const execAsync = promisify(exec);
 
@@ -12,8 +17,8 @@ export function registerGitIpc() {
     try {
       const changes = await gitGetStatus(workspacePath);
       return { success: true, changes };
-    } catch (error: any) {
-      return { success: false, error: error?.message || String(error) };
+    } catch (error) {
+      return { success: false, error: error as string };
     }
   });
 
@@ -24,8 +29,37 @@ export function registerGitIpc() {
       try {
         const diff = await gitGetFileDiff(args.workspacePath, args.filePath);
         return { success: true, diff };
-      } catch (error: any) {
-        return { success: false, error: error?.message || String(error) };
+      } catch (error) {
+        return { success: false, error: error as string };
+      }
+    }
+  );
+
+  // Git: Stage file
+  ipcMain.handle('git:stage-file', async (_, args: { workspacePath: string; filePath: string }) => {
+    try {
+      log.info('Staging file:', { workspacePath: args.workspacePath, filePath: args.filePath });
+      await gitStageFile(args.workspacePath, args.filePath);
+      log.info('File staged successfully:', args.filePath);
+      return { success: true };
+    } catch (error) {
+      log.error('Failed to stage file:', { filePath: args.filePath, error });
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  // Git: Revert file
+  ipcMain.handle(
+    'git:revert-file',
+    async (_, args: { workspacePath: string; filePath: string }) => {
+      try {
+        log.info('Reverting file:', { workspacePath: args.workspacePath, filePath: args.filePath });
+        const result = await gitRevertFile(args.workspacePath, args.filePath);
+        log.info('File operation completed:', { filePath: args.filePath, action: result.action });
+        return { success: true, action: result.action };
+      } catch (error) {
+        log.error('Failed to revert file:', { filePath: args.filePath, error });
+        return { success: false, error: error instanceof Error ? error.message : String(error) };
       }
     }
   );
@@ -45,7 +79,18 @@ export function registerGitIpc() {
         fill?: boolean;
       }
     ) => {
-      const { workspacePath, title, body, base, head, draft, web, fill } = args || ({} as any);
+      const { workspacePath, title, body, base, head, draft, web, fill } =
+        args ||
+        ({} as {
+          workspacePath: string;
+          title?: string;
+          body?: string;
+          base?: string;
+          head?: string;
+          draft?: boolean;
+          web?: boolean;
+          fill?: boolean;
+        });
       try {
         const outputs: string[] = [];
 
@@ -69,8 +114,8 @@ export function registerGitIpc() {
               );
               if (commitOut?.trim()) outputs.push(commitOut.trim());
               if (commitErr?.trim()) outputs.push(commitErr.trim());
-            } catch (commitErr: any) {
-              const msg = commitErr?.stderr || commitErr?.message || String(commitErr);
+            } catch (commitErr) {
+              const msg = commitErr as string;
               if (msg && /nothing to commit/i.test(msg)) {
                 outputs.push('git commit: nothing to commit');
               } else {
@@ -79,7 +124,7 @@ export function registerGitIpc() {
             }
           }
         } catch (stageErr) {
-          log.warn('Failed to stage/commit changes before PR:', stageErr as any);
+          log.warn('Failed to stage/commit changes before PR:', stageErr as string);
           // Continue; PR may still be created for existing commits
         }
 
@@ -87,7 +132,7 @@ export function registerGitIpc() {
         try {
           await execAsync('git push', { cwd: workspacePath });
           outputs.push('git push: success');
-        } catch (pushErr: any) {
+        } catch (pushErr) {
           try {
             const { stdout: branchOut } = await execAsync('git rev-parse --abbrev-ref HEAD', {
               cwd: workspacePath,
@@ -98,7 +143,7 @@ export function registerGitIpc() {
             });
             outputs.push(`git push --set-upstream origin ${branch}: success`);
           } catch (pushErr2) {
-            log.error('Failed to push branch before PR:', pushErr2 as any);
+            log.error('Failed to push branch before PR:', pushErr2 as string);
             return {
               success: false,
               error:
@@ -129,16 +174,16 @@ export function registerGitIpc() {
         const url = urlMatch ? urlMatch[0] : null;
 
         return { success: true, url, output: out };
-      } catch (error: any) {
+      } catch (error) {
         log.error('Failed to create PR:', error);
-        return { success: false, error: error?.message || String(error) };
+        return { success: false, error: error as string };
       }
     }
   );
 
   // Git: Get PR status for current branch via GitHub CLI
   ipcMain.handle('git:get-pr-status', async (_, args: { workspacePath: string }) => {
-    const { workspacePath } = args || ({} as any);
+    const { workspacePath } = args || ({} as { workspacePath: string });
     try {
       // Ensure we're in a git repo
       await execAsync('git rev-parse --is-inside-work-tree', { cwd: workspacePath });
@@ -161,15 +206,15 @@ export function registerGitIpc() {
         const data = json ? JSON.parse(json) : null;
         if (!data) return { success: false, error: 'No PR data returned' };
         return { success: true, pr: data };
-      } catch (err: any) {
-        const msg = String(err?.stderr || err?.message || '');
+      } catch (err) {
+        const msg = String(err as string);
         if (/no pull requests? found/i.test(msg) || /not found/i.test(msg)) {
           return { success: true, pr: null };
         }
         return { success: false, error: msg || 'Failed to query PR status' };
       }
-    } catch (error: any) {
-      return { success: false, error: error?.message || String(error) };
+    } catch (error) {
+      return { success: false, error: error as string };
     }
   });
 
@@ -190,7 +235,13 @@ export function registerGitIpc() {
         commitMessage = 'chore: apply workspace changes',
         createBranchIfOnDefault = true,
         branchPrefix = 'orch',
-      } = (args || ({} as any)) as {
+      } = (args ||
+        ({} as {
+          workspacePath: string;
+          commitMessage?: string;
+          createBranchIfOnDefault?: boolean;
+          branchPrefix?: string;
+        })) as {
         workspacePath: string;
         commitMessage?: string;
         createBranchIfOnDefault?: boolean;
@@ -245,13 +296,13 @@ export function registerGitIpc() {
               await execAsync(`git commit -m ${JSON.stringify(commitMessage)}`, {
                 cwd: workspacePath,
               });
-            } catch (commitErr: any) {
-              const msg = commitErr?.stderr || commitErr?.message || '';
+            } catch (commitErr) {
+              const msg = commitErr as string;
               if (!/nothing to commit/i.test(msg)) throw commitErr;
             }
           }
         } catch (e) {
-          log.warn('Stage/commit step issue:', e as any);
+          log.warn('Stage/commit step issue:', e as string);
         }
 
         // Push current branch (set upstream if needed)
@@ -265,10 +316,75 @@ export function registerGitIpc() {
 
         const { stdout: out } = await execAsync('git status -sb', { cwd: workspacePath });
         return { success: true, branch: activeBranch, output: (out || '').trim() };
-      } catch (error: any) {
+      } catch (error) {
         log.error('Failed to commit and push:', error);
-        return { success: false, error: error?.message || String(error) };
+        return { success: false, error: error as string };
       }
     }
   );
+
+  // Git: Get branch status (current branch, default branch, ahead/behind counts)
+  ipcMain.handle('git:get-branch-status', async (_, args: { workspacePath: string }) => {
+    const { workspacePath } = args || ({} as { workspacePath: string });
+    try {
+      // Ensure repo
+      await execAsync('git rev-parse --is-inside-work-tree', { cwd: workspacePath });
+
+      // Current branch
+      const { stdout: currentBranchOut } = await execAsync('git branch --show-current', {
+        cwd: workspacePath,
+      });
+      const branch = (currentBranchOut || '').trim();
+
+      // Determine default branch
+      let defaultBranch = 'main';
+      try {
+        const { stdout } = await execAsync(
+          'gh repo view --json defaultBranchRef -q .defaultBranchRef.name',
+          { cwd: workspacePath }
+        );
+        const db = (stdout || '').trim();
+        if (db) defaultBranch = db;
+      } catch {
+        try {
+          const { stdout } = await execAsync(
+            'git remote show origin | sed -n "/HEAD branch/s/.*: //p"',
+            { cwd: workspacePath }
+          );
+          const db2 = (stdout || '').trim();
+          if (db2) defaultBranch = db2;
+        } catch {}
+      }
+
+      // Ahead/behind relative to upstream or origin/<default>
+      let ahead = 0;
+      let behind = 0;
+      try {
+        // Try explicit compare with origin/default...HEAD
+        const { stdout } = await execAsync(
+          `git rev-list --left-right --count origin/${defaultBranch}...HEAD`,
+          { cwd: workspacePath }
+        );
+        const parts = (stdout || '').trim().split(/\s+/);
+        if (parts.length >= 2) {
+          behind = parseInt(parts[0] || '0', 10) || 0; // commits on left (origin/default)
+          ahead = parseInt(parts[1] || '0', 10) || 0; // commits on right (HEAD)
+        }
+      } catch {
+        try {
+          const { stdout } = await execAsync('git status -sb', { cwd: workspacePath });
+          const line = (stdout || '').split(/\n/)[0] || '';
+          const m = line.match(/ahead\s+(\d+)/i);
+          const n = line.match(/behind\s+(\d+)/i);
+          if (m) ahead = parseInt(m[1] || '0', 10) || 0;
+          if (n) behind = parseInt(n[1] || '0', 10) || 0;
+        } catch {}
+      }
+
+      return { success: true, branch, defaultBranch, ahead, behind };
+    } catch (error) {
+      log.error('Failed to get branch status:', error);
+      return { success: false, error: error as string };
+    }
+  });
 }

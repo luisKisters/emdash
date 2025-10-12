@@ -78,6 +78,7 @@ declare global {
           status: string;
           additions: number;
           deletions: number;
+          isStaged: boolean;
           diff?: string;
         }>;
         error?: string;
@@ -91,6 +92,15 @@ declare global {
             type: 'context' | 'add' | 'del';
           }>;
         };
+        error?: string;
+      }>;
+      stageFile: (args: { workspacePath: string; filePath: string }) => Promise<{
+        success: boolean;
+        error?: string;
+      }>;
+      revertFile: (args: { workspacePath: string; filePath: string }) => Promise<{
+        success: boolean;
+        action?: 'unstaged' | 'reverted';
         error?: string;
       }>;
       gitCommitAndPush: (args: {
@@ -132,6 +142,14 @@ declare global {
           title?: string;
           author?: any;
         } | null;
+        error?: string;
+      }>;
+      getBranchStatus: (args: { workspacePath: string }) => Promise<{
+        success: boolean;
+        branch?: string;
+        defaultBranch?: string;
+        ahead?: number;
+        behind?: number;
         error?: string;
       }>;
       openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;

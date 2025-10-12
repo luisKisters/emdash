@@ -76,6 +76,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getGitStatus: (workspacePath: string) => ipcRenderer.invoke('git:get-status', workspacePath),
   getFileDiff: (args: { workspacePath: string; filePath: string }) =>
     ipcRenderer.invoke('git:get-file-diff', args),
+  stageFile: (args: { workspacePath: string; filePath: string }) =>
+    ipcRenderer.invoke('git:stage-file', args),
+  revertFile: (args: { workspacePath: string; filePath: string }) =>
+    ipcRenderer.invoke('git:revert-file', args),
   gitCommitAndPush: (args: {
     workspacePath: string;
     commitMessage?: string;
@@ -93,6 +97,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     fill?: boolean;
   }) => ipcRenderer.invoke('git:create-pr', args),
   getPrStatus: (args: { workspacePath: string }) => ipcRenderer.invoke('git:get-pr-status', args),
+  getBranchStatus: (args: { workspacePath: string }) =>
+    ipcRenderer.invoke('git:get-branch-status', args),
   openExternal: (url: string) => ipcRenderer.invoke('app:openExternal', url),
   connectToGitHub: (projectPath: string) => ipcRenderer.invoke('github:connect', projectPath),
   onRunEvent: (callback: (event: any) => void) => {
