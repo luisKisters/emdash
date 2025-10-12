@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Button } from './ui/button';
+import { Input } from './ui/input';
 import { Spinner } from './ui/spinner';
 import { useToast } from '../hooks/use-toast';
 import { useCreatePR } from '../hooks/useCreatePR';
@@ -20,10 +21,13 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
   const [selectedPath, setSelectedPath] = useState<string | undefined>(undefined);
   const [stagingFiles, setStagingFiles] = useState<Set<string>>(new Set());
   const [revertingFiles, setRevertingFiles] = useState<Set<string>>(new Set());
+  const [commitMessage, setCommitMessage] = useState('');
+  const [isCommitting, setIsCommitting] = useState(false);
   const { isCreating: isCreatingPR, createPR } = useCreatePR();
   const { fileChanges, refreshChanges } = useFileChanges(workspaceId);
   const { toast } = useToast();
   const hasChanges = fileChanges.length > 0;
+  const hasStagedChanges = fileChanges.some((change) => change.isStaged);
   const { pr, loading: prLoading, refresh: refreshPr } = usePrStatus(workspaceId);
 
   const handleStageFile = async (filePath: string, event: React.MouseEvent) => {
@@ -110,6 +114,62 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
     }
   };
 
+  const handleCommitAndPush = async () => {
+    if (!commitMessage.trim()) {
+      toast({
+        title: 'Commit Message Required',
+        description: 'Please enter a commit message.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!hasStagedChanges) {
+      toast({
+        title: 'No Staged Changes',
+        description: 'Please stage some files before committing.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsCommitting(true);
+    try {
+      const result = await window.electronAPI.gitCommitAndPush({
+        workspacePath: workspaceId,
+        commitMessage: commitMessage.trim(),
+        createBranchIfOnDefault: true,
+        branchPrefix: 'feature',
+      });
+
+      if (result.success) {
+        toast({
+          title: 'Committed and Pushed',
+          description: `Changes committed with message: "${commitMessage.trim()}"`,
+        });
+        setCommitMessage(''); // Clear the input
+        await refreshChanges();
+        try {
+          await refreshPr();
+        } catch {}
+      } else {
+        toast({
+          title: 'Commit Failed',
+          description: result.error || 'Failed to commit and push changes.',
+          variant: 'destructive',
+        });
+      }
+    } catch (_error) {
+      toast({
+        title: 'Commit Failed',
+        description: 'An unexpected error occurred.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsCommitting(false);
+    }
+  };
+
   const renderPath = (p: string) => {
     const last = p.lastIndexOf('/');
     const dir = last >= 0 ? p.slice(0, last + 1) : '';
@@ -132,12 +192,13 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
 
   return (
     <div className={`flex h-full flex-col bg-white shadow-sm dark:bg-gray-800 ${className}`}>
-      <div className="flex items-center bg-gray-50 px-3 py-2 dark:bg-gray-900">
+      <div className="bg-gray-50 px-3 py-2 dark:bg-gray-900">
         {hasChanges ? (
-          <div className="flex w-full items-center justify-between">
-            <div className="flex items-center space-x-2">
+          <div className="space-y-3">
+            {/* File count and stats */}
+            <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                <span className="overflow-hidden text-ellipsis whitespace-nowrap p-2 text-sm font-medium text-gray-900 dark:text-gray-100">
+                <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
                   {fileChanges.length} files changed
                 </span>
                 <div className="flex items-center space-x-1 text-xs">
@@ -149,9 +210,12 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
                     -{totalChanges.deletions}
                   </span>
                 </div>
+                {hasStagedChanges && (
+                  <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                    {fileChanges.filter((f) => f.isStaged).length} staged
+                  </span>
+                )}
               </div>
-            </div>
-            <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
                 size="sm"
@@ -172,6 +236,32 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
                 {isCreatingPR ? <Spinner size="sm" /> : 'Create PR'}
               </Button>
             </div>
+
+            {/* Commit section */}
+            {hasStagedChanges && (
+              <div className="flex items-center space-x-2">
+                <Input
+                  placeholder="Enter commit message..."
+                  value={commitMessage}
+                  onChange={(e) => setCommitMessage(e.target.value)}
+                  className="h-8 flex-1 text-sm"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                      e.preventDefault();
+                      handleCommitAndPush();
+                    }
+                  }}
+                />
+                <Button
+                  size="sm"
+                  className="h-8 px-3 text-xs"
+                  onClick={handleCommitAndPush}
+                  disabled={isCommitting || !commitMessage.trim()}
+                >
+                  {isCommitting ? <Spinner size="sm" /> : 'Commit & Push'}
+                </Button>
+              </div>
+            )}
           </div>
         ) : (
           <div className="flex w-full items-center justify-between">
