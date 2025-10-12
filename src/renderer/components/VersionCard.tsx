@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 
-const AppVersionCard: React.FC = () => {
+const VersionCard: React.FC = () => {
   const [electronVersion, setElectronVersion] = useState<string>('...');
   const [emdashVersion, setEmdashVersion] = useState<string>('...');
   const [platform, setPlatform] = useState<string>('');
@@ -55,4 +55,4 @@ const AppVersionCard: React.FC = () => {
   );
 };
 
-export default AppVersionCard;
+export default VersionCard;

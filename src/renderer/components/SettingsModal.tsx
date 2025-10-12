@@ -3,9 +3,9 @@ import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
-import { X, Settings2, User, History } from 'lucide-react';
+import { X, Settings2, User } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import AppVersionCard from './AppVersionCard';
+import VersionCard from './VersionCard';
 import LinearIntegrationCard from './LinearIntegrationCard';
 
 interface SettingsModalProps {
@@ -13,7 +13,7 @@ interface SettingsModalProps {
   onClose: () => void;
 }
 
-type SettingsTab = 'general' | 'account' | 'versions';
+type SettingsTab = 'general' | 'account';
 
 interface SettingsSection {
   title: string;
@@ -41,6 +41,10 @@ const TAB_DETAILS: Record<
         title: 'Workspace defaults',
         description: 'General configuration options will appear here soon.',
       },
+      {
+        title: 'Version',
+        Component: VersionCard,
+      },
     ],
   },
   account: {
@@ -55,21 +59,9 @@ const TAB_DETAILS: Record<
       },
     ],
   },
-  versions: {
-    icon: History,
-    label: 'Versions',
-    title: 'Versions',
-    description: '',
-    sections: [
-      {
-        title: 'Versions',
-        Component: AppVersionCard,
-      },
-    ],
-  },
 };
 
-const ORDERED_TABS: SettingsTab[] = ['general', 'account', 'versions'];
+const ORDERED_TABS: SettingsTab[] = ['general', 'account'];
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
