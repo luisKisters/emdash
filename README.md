@@ -11,17 +11,19 @@ emdash is a UI layer for running multiple coding agents in parallel — currentl
 <hr style="border:0; height:1px; background:#d0d7de; margin:24px 0;">
 
 <p align="left" style="margin-bottom:16px;">
-  <a href="https://github.com/generalaction/emdash/releases" style="display:inline-block; vertical-align:middle; margin-right:12px;">
+  <a href="https://github.com/generalaction/emdash/releases"
+     style="display:inline-block; vertical-align:middle; margin-right:12px; text-decoration:none;">
     <img src="./docs/media/downloadformacos.png" alt="Download app for macOS" height="40">
   </a>
 
-  <a href="https://discord.gg/meqK3A5b" style="display:inline-block; vertical-align:middle;">
+  <a href="https://discord.gg/meqK3A5b"
+     style="display:inline-block; vertical-align:middle; margin-right:12px; text-decoration:none;">
     <img src="https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white" alt="Join the Emdash Discord" height="28">
   </a>
 
-
-  <a href="https://x.com/emdashsh" style="display:inline-block; vertical-align:middle;">
-      <img src="https://img.shields.io/badge/Follow%20on%20X-%23000000.svg?logo=x&logoColor=white" alt="Follow on X" height="28">
+  <a href="https://x.com/emdashsh"
+     style="display:inline-block; vertical-align:middle; text-decoration:none;">
+    <img src="https://img.shields.io/badge/Follow%20on%20X-%23000000.svg?logo=x&logoColor=white" alt="Follow on X" height="28">
   </a>
 </p>
 
