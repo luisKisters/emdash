@@ -647,6 +647,12 @@ const App: React.FC = () => {
                 lines.push(`URL: ${issue.url}`);
               }
 
+              if ((issue as any)?.description) {
+                lines.push('');
+                lines.push('Issue Description:');
+                lines.push(String((issue as any).description).trim());
+              }
+
               await window.electronAPI.saveMessage({
                 id: `linear-context-${newWorkspace.id}`,
                 conversationId: convoResult.conversation.id,

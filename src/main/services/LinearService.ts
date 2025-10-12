@@ -95,6 +95,7 @@ export class LinearService {
             id
             identifier
             title
+            description
             url
             state { name type }
             team { name key }
@@ -144,6 +145,7 @@ export class LinearService {
             id
             identifier
             title
+            description
             url
             state { name type }
             team { name key }

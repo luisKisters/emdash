@@ -22,6 +22,7 @@ export interface LinearIssueSummary {
   id: string;
   identifier: string;
   title: string;
+  description?: string | null;
   url?: string | null;
   state?: LinearStateRef | null;
   team?: LinearTeamRef | null;
