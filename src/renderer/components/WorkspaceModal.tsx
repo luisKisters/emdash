@@ -245,31 +245,31 @@ const WorkspaceModal: React.FC<WorkspaceModalProps> = ({
                             </div>
                           </div>
                         </div>
+                        <div className="flex items-start gap-4">
+                          <label
+                            htmlFor="initial-prompt"
+                            className="w-32 shrink-0 text-sm font-medium text-foreground"
+                          >
+                            Initial prompt
+                          </label>
+                          <div className="min-w-0 flex-1">
+                            <textarea
+                              id="initial-prompt"
+                              value={initialPrompt}
+                              onChange={(e) => setInitialPrompt(e.target.value)}
+                              placeholder={
+                                selectedIssue
+                                  ? `e.g. Fix the attached Linear ticket ${selectedIssue.identifier} — describe any constraints.`
+                                  : `e.g. Summarize the key problems and propose a plan.`
+                              }
+                              className="min-h-[80px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none"
+                              rows={3}
+                            />
+                          </div>
+                        </div>
                       </AccordionContent>
                     </AccordionItem>
                   </Accordion>
-                  <div className="flex items-start gap-4">
-                    <label
-                      htmlFor="initial-prompt"
-                      className="w-32 shrink-0 text-sm font-medium text-foreground"
-                    >
-                      Initial prompt
-                    </label>
-                    <div className="min-w-0 flex-1">
-                      <textarea
-                        id="initial-prompt"
-                        value={initialPrompt}
-                        onChange={(e) => setInitialPrompt(e.target.value)}
-                        placeholder={
-                          selectedIssue
-                            ? `e.g. Fix the attached Linear ticket ${selectedIssue.identifier} — describe any constraints.`
-                            : `e.g. Summarize the key problems and propose a plan.`
-                        }
-                        className="min-h-[80px] w-full resize-none rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none"
-                        rows={3}
-                      />
-                    </div>
-                  </div>
 
                   <div className="flex justify-end">
                     <Button type="submit" disabled={!!validate(workspaceName) || isCreating}>
