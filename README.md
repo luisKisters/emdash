@@ -1,10 +1,27 @@
+
+<p align="center">
+    <img src="./src/assets/images/emdash/emdash_logo.svg#gh-light-mode-only"
+  alt="Emdash" width="900">
+    <img src="./src/assets/images/emdash/emdash_logo_white.svg#gh-dark-mode-only"
+  alt="Emdash" width="900">
+  </p>
+
+emdash is a UI layer for running multiple coding agents in parallel — currently supporting OpenAI Codex CLI, Claude Code CLI, Droid (Factory CLI), Gemini CLI, Cursor CLI, Amp Code CLI, GitHub Copilot CLI, and Charm CLI. Each agent runs in its own Git worktree so you can fan out tasks, keep changes compartmentalized, and manage everything from a single UI.
+
+<hr style="border:0; height:1px; background:#d0d7de; margin:24px 0;">
+
 <p align="left" style="margin-bottom:16px;">
   <a href="https://github.com/generalaction/emdash/releases" style="display:inline-block; vertical-align:middle; margin-right:12px;">
-    <img src="./docs/media/downloadformacos.png" alt="Download app for macOS" height="40">
+    <img src="./docs/media/downloadformacos.png" alt="Download app for macOS" height="28">
   </a>
 
   <a href="https://discord.gg/meqK3A5b" style="display:inline-block; vertical-align:middle;">
     <img src="https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white" alt="Join the Emdash Discord" height="28">
+  </a>
+
+
+  <a href="https://x.com/emdashsh" style="display:inline-block; vertical-align:middle;">
+      <img src="https://img.shields.io/badge/X-%23000000.svg?logo=x&logoColor=white" alt="Follow on X" height="28">
   </a>
 </p>
 
@@ -18,17 +35,6 @@
   <br />
 </p>
 
-</p>
-<hr style="border:0; height:1px; background:#d0d7de; margin:24px 0;">
-
-<p align="center">
-    <img src="./src/assets/images/emdash/emdash_logo.svg#gh-light-mode-only"
-  alt="Emdash" width="900">
-    <img src="./src/assets/images/emdash/emdash_logo_white.svg#gh-dark-mode-only"
-  alt="Emdash" width="900">
-  </p>
-
-emdash is a UI layer for running multiple coding agents in parallel — currently supporting OpenAI Codex CLI, Claude Code CLI, Droid (Factory CLI), Gemini CLI, Cursor CLI, Amp Code CLI, GitHub Copilot CLI, and Charm CLI. Each agent runs in its own Git worktree so you can fan out tasks, keep changes compartmentalized, and manage everything from a single UI.
 
 <p align="center">
     <img src="./docs/media/emdash-screenshot.png" alt="Emdash app screenshot" width="100%">
