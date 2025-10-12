@@ -110,7 +110,17 @@ export class LinearService {
       limit: sanitizedLimit,
     });
 
-    return response?.issues?.nodes ?? [];
+    const nodes = response?.issues?.nodes ?? [];
+    // Filter out completed/done/canceled issues locally to avoid showing "Done" tickets
+    const open = nodes.filter((issue) => {
+      const type = String(issue?.state?.type || '').toLowerCase();
+      const name = String(issue?.state?.name || '').toLowerCase();
+      if (type === 'completed' || type === 'canceled') return false;
+      if (name === 'done' || name === 'completed' || name === 'canceled' || name === 'cancelled')
+        return false;
+      return true;
+    });
+    return open;
   }
 
   async searchIssues(searchTerm: string, limit = 20): Promise<any[]> {
@@ -156,9 +166,19 @@ export class LinearService {
 
       const allIssues = allIssuesResponse?.issues?.nodes ?? [];
 
+      // Exclude completed/done/canceled issues
+      const candidateIssues = allIssues.filter((issue) => {
+        const type = String(issue?.state?.type || '').toLowerCase();
+        const name = String(issue?.state?.name || '').toLowerCase();
+        if (type === 'completed' || type === 'canceled') return false;
+        if (name === 'done' || name === 'completed' || name === 'canceled' || name === 'cancelled')
+          return false;
+        return true;
+      });
+
       // Filter locally
       const searchTermLower = searchTerm.trim().toLowerCase();
-      const filteredIssues = allIssues.filter((issue) => {
+      const filteredIssues = candidateIssues.filter((issue) => {
         // Search in identifier
         if (issue.identifier?.toLowerCase().includes(searchTermLower)) {
           return true;
