@@ -54,9 +54,9 @@ export function registerGitIpc() {
     async (_, args: { workspacePath: string; filePath: string }) => {
       try {
         log.info('Reverting file:', { workspacePath: args.workspacePath, filePath: args.filePath });
-        await gitRevertFile(args.workspacePath, args.filePath);
-        log.info('File reverted successfully:', args.filePath);
-        return { success: true };
+        const result = await gitRevertFile(args.workspacePath, args.filePath);
+        log.info('File operation completed:', { filePath: args.filePath, action: result.action });
+        return { success: true, action: result.action };
       } catch (error) {
         log.error('Failed to revert file:', { filePath: args.filePath, error });
         return { success: false, error: error instanceof Error ? error.message : String(error) };

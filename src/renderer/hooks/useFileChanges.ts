@@ -5,6 +5,7 @@ export interface FileChange {
   status: 'added' | 'modified' | 'deleted' | 'renamed';
   additions: number;
   deletions: number;
+  isStaged: boolean;
   diff?: string;
 }
 
@@ -27,13 +28,23 @@ export function useFileChanges(workspacePath: string) {
         const result = await window.electronAPI.getGitStatus(workspacePath);
 
         if (result?.success && result.changes && result.changes.length > 0) {
-          const changes: FileChange[] = result.changes.map((change: any) => ({
-            path: change.path,
-            status: change.status,
-            additions: change.additions || 0,
-            deletions: change.deletions || 0,
-            diff: change.diff,
-          }));
+          const changes: FileChange[] = result.changes.map(
+            (change: {
+              path: string;
+              status: string;
+              additions: number;
+              deletions: number;
+              isStaged: boolean;
+              diff?: string;
+            }) => ({
+              path: change.path,
+              status: change.status as 'added' | 'modified' | 'deleted' | 'renamed',
+              additions: change.additions || 0,
+              deletions: change.deletions || 0,
+              isStaged: change.isStaged || false,
+              diff: change.diff,
+            })
+          );
           setFileChanges(changes);
         } else {
           setFileChanges([]);
@@ -65,13 +76,23 @@ export function useFileChanges(workspacePath: string) {
     try {
       const result = await window.electronAPI.getGitStatus(workspacePath);
       if (result?.success && result.changes && result.changes.length > 0) {
-        const changes: FileChange[] = result.changes.map((change: any) => ({
-          path: change.path,
-          status: change.status,
-          additions: change.additions || 0,
-          deletions: change.deletions || 0,
-          diff: change.diff,
-        }));
+        const changes: FileChange[] = result.changes.map(
+          (change: {
+            path: string;
+            status: string;
+            additions: number;
+            deletions: number;
+            isStaged: boolean;
+            diff?: string;
+          }) => ({
+            path: change.path,
+            status: change.status as 'added' | 'modified' | 'deleted' | 'renamed',
+            additions: change.additions || 0,
+            deletions: change.deletions || 0,
+            isStaged: change.isStaged || false,
+            diff: change.diff,
+          })
+        );
         setFileChanges(changes);
       } else {
         setFileChanges([]);

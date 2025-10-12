@@ -78,6 +78,7 @@ declare global {
           status: string;
           additions: number;
           deletions: number;
+          isStaged: boolean;
           diff?: string;
         }>;
         error?: string;
@@ -99,6 +100,7 @@ declare global {
       }>;
       revertFile: (args: { workspacePath: string; filePath: string }) => Promise<{
         success: boolean;
+        action?: 'unstaged' | 'reverted';
         error?: string;
       }>;
       gitCommitAndPush: (args: {

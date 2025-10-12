@@ -75,10 +75,18 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
       });
 
       if (result.success) {
-        toast({
-          title: 'File Reverted',
-          description: `${filePath} has been reverted successfully.`,
-        });
+        const action = result.action;
+        if (action === 'unstaged') {
+          toast({
+            title: 'File Unstaged',
+            description: `${filePath} has been unstaged. Click again to revert changes.`,
+          });
+        } else {
+          toast({
+            title: 'File Reverted',
+            description: `${filePath} changes have been reverted.`,
+          });
+        }
         await refreshChanges();
       } else {
         toast({
@@ -196,7 +204,9 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
         {fileChanges.map((change, index) => (
           <div
             key={index}
-            className="flex cursor-pointer items-center justify-between border-b border-gray-100 px-4 py-2.5 last:border-b-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-900/40"
+            className={`flex cursor-pointer items-center justify-between border-b border-gray-100 px-4 py-2.5 last:border-b-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-900/40 ${
+              change.isStaged ? 'bg-green-50' : ''
+            }`}
             onClick={() => {
               setSelectedPath(change.path);
               setShowDiffModal(true);
@@ -226,27 +236,33 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
                 </span>
               )}
               <div className="flex items-center gap-1">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6 text-gray-500 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400"
-                  onClick={(e) => handleStageFile(change.path, e)}
-                  disabled={stagingFiles.has(change.path)}
-                  title="Stage file"
-                >
-                  {stagingFiles.has(change.path) ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    <Plus className="h-3 w-3" />
-                  )}
-                </Button>
+                {!change.isStaged && (
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-6 w-6 text-gray-500 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400"
+                    onClick={(e) => handleStageFile(change.path, e)}
+                    disabled={stagingFiles.has(change.path)}
+                    title="Stage file for commit"
+                  >
+                    {stagingFiles.has(change.path) ? (
+                      <Spinner size="sm" />
+                    ) : (
+                      <Plus className="h-3 w-3" />
+                    )}
+                  </Button>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"
                   className="h-6 w-6 text-gray-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                   onClick={(e) => handleRevertFile(change.path, e)}
                   disabled={revertingFiles.has(change.path)}
-                  title="Revert file"
+                  title={
+                    change.isStaged
+                      ? 'Unstage file (click again to revert)'
+                      : 'Revert changes to file'
+                  }
                 >
                   {revertingFiles.has(change.path) ? (
                     <Spinner size="sm" />
