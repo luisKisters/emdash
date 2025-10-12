@@ -43,7 +43,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
       try {
         const res = await window.electronAPI.getBranchStatus({ workspacePath: workspaceId });
         if (!cancelled) {
-          setBranchAhead(res?.success ? res?.ahead ?? 0 : 0);
+          setBranchAhead(res?.success ? (res?.ahead ?? 0) : 0);
         }
       } catch {
         if (!cancelled) setBranchAhead(0);
@@ -184,7 +184,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
         try {
           setBranchStatusLoading(true);
           const bs = await window.electronAPI.getBranchStatus({ workspacePath: workspaceId });
-          setBranchAhead(bs?.success ? bs?.ahead ?? 0 : 0);
+          setBranchAhead(bs?.success ? (bs?.ahead ?? 0) : 0);
         } catch {
           setBranchAhead(0);
         } finally {
