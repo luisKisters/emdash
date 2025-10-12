@@ -7,7 +7,7 @@
   <br />
 
   <a href="https://discord.gg/meqK3A5b" style="margin-left:8px; vertical-align:middle;">
-  <img src="https://img.shields.io/badge/My%20Discord-%235865F2.svg?logo=discord&logoColor=white" alt="Join the emdash Discord" height="28">
+  <img src="https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white" alt="Join the emdash Discord" height="28">
   </a>
 
   <p align="center">
