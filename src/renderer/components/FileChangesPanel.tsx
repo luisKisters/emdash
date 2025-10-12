@@ -221,6 +221,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
                 size="sm"
                 className="h-8 border-gray-200 px-2 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-200"
                 disabled={isCreatingPR}
+                title="Commit all changes and create a pull request"
                 onClick={async () => {
                   await createPR({
                     workspacePath: workspaceId,
