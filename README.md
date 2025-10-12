@@ -1,5 +1,4 @@
-<p align="left">
-  <p align="center">
+<p align="left" style="margin-bottom:16px;">
   <a href="https://github.com/generalaction/emdash/releases" style="display:inline-block; vertical-align:middle; margin-right:12px;">
     <img src="./docs/media/downloadformacos.png" alt="Download app for macOS" height="40">
   </a>
@@ -8,6 +7,9 @@
     <img src="https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white" alt="Join the Emdash Discord" height="28">
   </a>
 </p>
+
+<br />
+<br />
 
   <p align="center">
   <img src="./docs/media/modelselector.png" alt="Provider selector showing supported CLIs" width="360">
