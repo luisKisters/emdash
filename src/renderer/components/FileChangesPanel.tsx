@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Spinner } from './ui/spinner';
@@ -29,6 +29,34 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
   const hasChanges = fileChanges.length > 0;
   const hasStagedChanges = fileChanges.some((change) => change.isStaged);
   const { pr, loading: prLoading, refresh: refreshPr } = usePrStatus(workspaceId);
+  const [branchAhead, setBranchAhead] = useState<number | null>(null);
+  const [branchStatusLoading, setBranchStatusLoading] = useState<boolean>(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      if (!workspaceId || hasChanges) {
+        setBranchAhead(null);
+        return;
+      }
+      setBranchStatusLoading(true);
+      try {
+        const res = await window.electronAPI.getBranchStatus({ workspacePath: workspaceId });
+        if (!cancelled) {
+          setBranchAhead(res?.success ? res?.ahead ?? 0 : 0);
+        }
+      } catch {
+        if (!cancelled) setBranchAhead(0);
+      } finally {
+        if (!cancelled) setBranchStatusLoading(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [workspaceId, hasChanges]);
 
   const handleStageFile = async (filePath: string, event: React.MouseEvent) => {
     event.stopPropagation(); // Prevent opening diff modal
@@ -152,6 +180,16 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
         try {
           await refreshPr();
         } catch {}
+        // Proactively load branch status so the Create PR button appears immediately
+        try {
+          setBranchStatusLoading(true);
+          const bs = await window.electronAPI.getBranchStatus({ workspacePath: workspaceId });
+          setBranchAhead(bs?.success ? bs?.ahead ?? 0 : 0);
+        } catch {
+          setBranchAhead(0);
+        } finally {
+          setBranchStatusLoading(false);
+        }
       } else {
         toast({
           title: 'Commit Failed',
@@ -211,7 +249,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
                   </span>
                 </div>
                 {hasStagedChanges && (
-                  <span className="rounded bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800 dark:bg-green-900/30 dark:text-green-300">
+                  <span className="rounded bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-800 dark:bg-gray-900/30 dark:text-gray-300">
                     {fileChanges.filter((f) => f.isStaged).length} staged
                   </span>
                 )}
@@ -238,7 +276,6 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
               </Button>
             </div>
 
-            {/* Commit section */}
             {hasStagedChanges && (
               <div className="flex items-center space-x-2">
                 <Input
@@ -254,8 +291,10 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
                   }}
                 />
                 <Button
+                  variant="outline"
                   size="sm"
-                  className="h-8 px-3 text-xs"
+                  className="h-8 border-gray-200 px-2 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-200"
+                  title="Commit all staged changes and push the branch"
                   onClick={handleCommitAndPush}
                   disabled={isCommitting || !commitMessage.trim()}
                 >
@@ -283,6 +322,27 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
                 >
                   PR {pr.isDraft ? 'draft' : pr.state.toLowerCase()}
                 </button>
+              ) : branchStatusLoading || (branchAhead !== null && branchAhead > 0) ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 border-gray-200 px-2 text-xs text-gray-700 dark:border-gray-700 dark:text-gray-200"
+                  disabled={isCreatingPR || branchStatusLoading}
+                  title="Create a pull request for the current branch"
+                  onClick={async () => {
+                    await createPR({
+                      workspacePath: workspaceId,
+                      onSuccess: async () => {
+                        await refreshChanges();
+                        try {
+                          await refreshPr();
+                        } catch {}
+                      },
+                    });
+                  }}
+                >
+                  {isCreatingPR || branchStatusLoading ? <Spinner size="sm" /> : 'Create PR'}
+                </Button>
               ) : (
                 <span className="text-xs text-gray-500">No PR for this branch</span>
               )}
@@ -296,7 +356,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
           <div
             key={index}
             className={`flex cursor-pointer items-center justify-between border-b border-gray-100 px-4 py-2.5 last:border-b-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-900/40 ${
-              change.isStaged ? 'bg-green-50' : ''
+              change.isStaged ? 'bg-gray-50' : ''
             }`}
             onClick={() => {
               setSelectedPath(change.path);
@@ -331,7 +391,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 text-gray-500 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400"
+                    className="h-6 w-6 text-gray-500 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-gray-900/20 dark:hover:text-gray-400"
                     onClick={(e) => handleStageFile(change.path, e)}
                     disabled={stagingFiles.has(change.path)}
                     title="Stage file for commit"
@@ -346,7 +406,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 text-gray-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                  className="h-6 w-6 text-gray-500 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
                   onClick={(e) => handleRevertFile(change.path, e)}
                   disabled={revertingFiles.has(change.path)}
                   title={

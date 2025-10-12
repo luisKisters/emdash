@@ -97,6 +97,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
     fill?: boolean;
   }) => ipcRenderer.invoke('git:create-pr', args),
   getPrStatus: (args: { workspacePath: string }) => ipcRenderer.invoke('git:get-pr-status', args),
+  getBranchStatus: (args: { workspacePath: string }) =>
+    ipcRenderer.invoke('git:get-branch-status', args),
   openExternal: (url: string) => ipcRenderer.invoke('app:openExternal', url),
   connectToGitHub: (projectPath: string) => ipcRenderer.invoke('github:connect', projectPath),
   onRunEvent: (callback: (event: any) => void) => {

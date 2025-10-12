@@ -144,6 +144,14 @@ declare global {
         } | null;
         error?: string;
       }>;
+      getBranchStatus: (args: { workspacePath: string }) => Promise<{
+        success: boolean;
+        branch?: string;
+        defaultBranch?: string;
+        ahead?: number;
+        behind?: number;
+        error?: string;
+      }>;
       openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
       connectToGitHub: (projectPath: string) => Promise<{
         success: boolean;

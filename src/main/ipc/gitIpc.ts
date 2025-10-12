@@ -322,4 +322,72 @@ export function registerGitIpc() {
       }
     }
   );
+
+  // Git: Get branch status (current branch, default branch, ahead/behind counts)
+  ipcMain.handle(
+    'git:get-branch-status',
+    async (_, args: { workspacePath: string }) => {
+      const { workspacePath } = args || ({} as { workspacePath: string });
+      try {
+        // Ensure repo
+        await execAsync('git rev-parse --is-inside-work-tree', { cwd: workspacePath });
+
+        // Current branch
+        const { stdout: currentBranchOut } = await execAsync('git branch --show-current', {
+          cwd: workspacePath,
+        });
+        const branch = (currentBranchOut || '').trim();
+
+        // Determine default branch
+        let defaultBranch = 'main';
+        try {
+          const { stdout } = await execAsync(
+            'gh repo view --json defaultBranchRef -q .defaultBranchRef.name',
+            { cwd: workspacePath }
+          );
+          const db = (stdout || '').trim();
+          if (db) defaultBranch = db;
+        } catch {
+          try {
+            const { stdout } = await execAsync(
+              'git remote show origin | sed -n "/HEAD branch/s/.*: //p"',
+              { cwd: workspacePath }
+            );
+            const db2 = (stdout || '').trim();
+            if (db2) defaultBranch = db2;
+          } catch {}
+        }
+
+        // Ahead/behind relative to upstream or origin/<default>
+        let ahead = 0;
+        let behind = 0;
+        try {
+          // Try explicit compare with origin/default...HEAD
+          const { stdout } = await execAsync(
+            `git rev-list --left-right --count origin/${defaultBranch}...HEAD`,
+            { cwd: workspacePath }
+          );
+          const parts = (stdout || '').trim().split(/\s+/);
+          if (parts.length >= 2) {
+            behind = parseInt(parts[0] || '0', 10) || 0; // commits on left (origin/default)
+            ahead = parseInt(parts[1] || '0', 10) || 0; // commits on right (HEAD)
+          }
+        } catch {
+          try {
+            const { stdout } = await execAsync('git status -sb', { cwd: workspacePath });
+            const line = (stdout || '').split(/\n/)[0] || '';
+            const m = line.match(/ahead\s+(\d+)/i);
+            const n = line.match(/behind\s+(\d+)/i);
+            if (m) ahead = parseInt(m[1] || '0', 10) || 0;
+            if (n) behind = parseInt(n[1] || '0', 10) || 0;
+          } catch {}
+        }
+
+        return { success: true, branch, defaultBranch, ahead, behind };
+      } catch (error) {
+        log.error('Failed to get branch status:', error);
+        return { success: false, error: error as string };
+      }
+    }
+  );
 }

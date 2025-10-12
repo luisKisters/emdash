@@ -53,11 +53,34 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
           isCharm = p === 'charm';
         } catch {}
         return (
-          <div className={`flex-1 ${isCharm ? 'bg-white' : 'bg-black'} overflow-hidden`}>
+          <div className={`flex-1 bg-black overflow-hidden bw-terminal`}>
             <TerminalPane
               id={`workspace-${workspace.id}`}
               cwd={workspace.path}
-              variant={isCharm ? 'light' : 'dark'}
+              variant="dark"
+              themeOverride={{
+                background: '#000000',
+                foreground: '#ffffff',
+                cursor: '#ffffff',
+                selectionBackground: '#ffffff33',
+                // Keep ANSI backgrounds black; force all other colors to white
+                black: '#000000',
+                red: '#ffffff',
+                green: '#ffffff',
+                yellow: '#ffffff',
+                blue: '#ffffff',
+                magenta: '#ffffff',
+                cyan: '#ffffff',
+                white: '#ffffff',
+                brightBlack: '#ffffff',
+                brightRed: '#ffffff',
+                brightGreen: '#ffffff',
+                brightYellow: '#ffffff',
+                brightBlue: '#ffffff',
+                brightMagenta: '#ffffff',
+                brightCyan: '#ffffff',
+                brightWhite: '#ffffff',
+              }}
               className="h-full w-full"
             />
           </div>
