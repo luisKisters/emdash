@@ -104,6 +104,33 @@ export async function getStatus(workspacePath: string): Promise<GitChange[]> {
   return changes;
 }
 
+export async function stageFile(workspacePath: string, filePath: string): Promise<void> {
+  await execFileAsync('git', ['add', '--', filePath], { cwd: workspacePath });
+}
+
+export async function revertFile(workspacePath: string, filePath: string): Promise<void> {
+  // Check if file is staged
+  try {
+    const { stdout: stagedStatus } = await execFileAsync(
+      'git',
+      ['diff', '--cached', '--name-only', '--', filePath],
+      {
+        cwd: workspacePath,
+      }
+    );
+
+    if (stagedStatus.trim()) {
+      // File is staged, unstage it
+      await execFileAsync('git', ['reset', 'HEAD', '--', filePath], { cwd: workspacePath });
+    }
+  } catch {
+    // Ignore errors, continue with checkout
+  }
+
+  // Revert working directory changes
+  await execFileAsync('git', ['checkout', 'HEAD', '--', filePath], { cwd: workspacePath });
+}
+
 export async function getFileDiff(
   workspacePath: string,
   filePath: string

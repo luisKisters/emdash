@@ -76,6 +76,10 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getGitStatus: (workspacePath: string) => ipcRenderer.invoke('git:get-status', workspacePath),
   getFileDiff: (args: { workspacePath: string; filePath: string }) =>
     ipcRenderer.invoke('git:get-file-diff', args),
+  stageFile: (args: { workspacePath: string; filePath: string }) =>
+    ipcRenderer.invoke('git:stage-file', args),
+  revertFile: (args: { workspacePath: string; filePath: string }) =>
+    ipcRenderer.invoke('git:revert-file', args),
   gitCommitAndPush: (args: {
     workspacePath: string;
     commitMessage?: string;

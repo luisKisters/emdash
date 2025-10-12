@@ -4,10 +4,11 @@ import { Spinner } from './ui/spinner';
 import { useToast } from '../hooks/use-toast';
 import { useCreatePR } from '../hooks/useCreatePR';
 import ChangesDiffModal from './ChangesDiffModal';
-import { useFileChanges, type FileChange } from '../hooks/useFileChanges';
+import { useFileChanges } from '../hooks/useFileChanges';
 import { usePrStatus } from '../hooks/usePrStatus';
 import PrStatusSkeleton from './ui/pr-status-skeleton';
 import FileTypeIcon from './ui/file-type-icon';
+import { Plus, Undo2 } from 'lucide-react';
 
 interface FileChangesPanelProps {
   workspaceId: string;
@@ -17,11 +18,89 @@ interface FileChangesPanelProps {
 const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceId, className }) => {
   const [showDiffModal, setShowDiffModal] = useState(false);
   const [selectedPath, setSelectedPath] = useState<string | undefined>(undefined);
+  const [stagingFiles, setStagingFiles] = useState<Set<string>>(new Set());
+  const [revertingFiles, setRevertingFiles] = useState<Set<string>>(new Set());
   const { isCreating: isCreatingPR, createPR } = useCreatePR();
-  const { fileChanges, isLoading, error, refreshChanges } = useFileChanges(workspaceId);
+  const { fileChanges, refreshChanges } = useFileChanges(workspaceId);
   const { toast } = useToast();
   const hasChanges = fileChanges.length > 0;
   const { pr, loading: prLoading, refresh: refreshPr } = usePrStatus(workspaceId);
+
+  const handleStageFile = async (filePath: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent opening diff modal
+    setStagingFiles((prev) => new Set(prev).add(filePath));
+
+    try {
+      const result = await window.electronAPI.stageFile({
+        workspacePath: workspaceId,
+        filePath,
+      });
+
+      if (result.success) {
+        toast({
+          title: 'File Staged',
+          description: `${filePath} has been staged successfully.`,
+        });
+        await refreshChanges();
+      } else {
+        toast({
+          title: 'Stage Failed',
+          description: result.error || 'Failed to stage file.',
+          variant: 'destructive',
+        });
+      }
+    } catch (_error) {
+      toast({
+        title: 'Stage Failed',
+        description: 'An unexpected error occurred.',
+        variant: 'destructive',
+      });
+    } finally {
+      setStagingFiles((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(filePath);
+        return newSet;
+      });
+    }
+  };
+
+  const handleRevertFile = async (filePath: string, event: React.MouseEvent) => {
+    event.stopPropagation(); // Prevent opening diff modal
+    setRevertingFiles((prev) => new Set(prev).add(filePath));
+
+    try {
+      const result = await window.electronAPI.revertFile({
+        workspacePath: workspaceId,
+        filePath,
+      });
+
+      if (result.success) {
+        toast({
+          title: 'File Reverted',
+          description: `${filePath} has been reverted successfully.`,
+        });
+        await refreshChanges();
+      } else {
+        toast({
+          title: 'Revert Failed',
+          description: result.error || 'Failed to revert file.',
+          variant: 'destructive',
+        });
+      }
+    } catch (_error) {
+      toast({
+        title: 'Revert Failed',
+        description: 'An unexpected error occurred.',
+        variant: 'destructive',
+      });
+    } finally {
+      setRevertingFiles((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(filePath);
+        return newSet;
+      });
+    }
+  };
 
   const renderPath = (p: string) => {
     const last = p.lastIndexOf('/');
@@ -98,8 +177,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
                 <button
                   type="button"
                   onClick={() => {
-                    const api: any = (window as any).electronAPI;
-                    api?.openExternal?.(pr.url);
+                    window.electronAPI?.openExternal?.(pr.url);
                   }}
                   className={`cursor-pointer rounded border px-2 py-0.5 text-[11px] ${pr.state === 'MERGED' ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${pr.state === 'OPEN' && pr.isDraft ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${pr.state === 'OPEN' && !pr.isDraft ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${pr.state === 'CLOSED' ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} `}
                   title={pr.title || 'Pull Request'}
@@ -147,6 +225,36 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
                   -{change.deletions}
                 </span>
               )}
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-gray-500 hover:bg-green-50 hover:text-green-600 dark:hover:bg-green-900/20 dark:hover:text-green-400"
+                  onClick={(e) => handleStageFile(change.path, e)}
+                  disabled={stagingFiles.has(change.path)}
+                  title="Stage file"
+                >
+                  {stagingFiles.has(change.path) ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <Plus className="h-3 w-3" />
+                  )}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-6 w-6 text-gray-500 hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                  onClick={(e) => handleRevertFile(change.path, e)}
+                  disabled={revertingFiles.has(change.path)}
+                  title="Revert file"
+                >
+                  {revertingFiles.has(change.path) ? (
+                    <Spinner size="sm" />
+                  ) : (
+                    <Undo2 className="h-3 w-3" />
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
         ))}

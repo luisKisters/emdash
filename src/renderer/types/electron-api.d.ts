@@ -93,6 +93,14 @@ declare global {
         };
         error?: string;
       }>;
+      stageFile: (args: { workspacePath: string; filePath: string }) => Promise<{
+        success: boolean;
+        error?: string;
+      }>;
+      revertFile: (args: { workspacePath: string; filePath: string }) => Promise<{
+        success: boolean;
+        error?: string;
+      }>;
       gitCommitAndPush: (args: {
         workspacePath: string;
         commitMessage?: string;
