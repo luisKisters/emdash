@@ -12,7 +12,7 @@ emdash is a UI layer for running multiple coding agents in parallel — currentl
 
 <p align="left" style="margin-bottom:16px;">
   <a href="https://github.com/generalaction/emdash/releases" style="display:inline-block; vertical-align:middle; margin-right:12px;">
-    <img src="./docs/media/downloadformacos.png" alt="Download app for macOS" height="28">
+    <img src="./docs/media/downloadformacos.png" alt="Download app for macOS" height="40">
   </a>
 
   <a href="https://discord.gg/meqK3A5b" style="display:inline-block; vertical-align:middle;">
@@ -21,7 +21,7 @@ emdash is a UI layer for running multiple coding agents in parallel — currentl
 
 
   <a href="https://x.com/emdashsh" style="display:inline-block; vertical-align:middle;">
-      <img src="https://img.shields.io/badge/X-%23000000.svg?logo=x&logoColor=white" alt="Follow on X" height="28">
+      <img src="https://img.shields.io/badge/Follow%20on%20X-%23000000.svg?logo=x&logoColor=white" alt="Follow on X" height="28">
   </a>
 </p>
 
