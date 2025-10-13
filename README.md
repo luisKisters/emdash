@@ -266,10 +266,40 @@ find "$HOME" -type f -name 'emdash.db*' -print
 - [ ] Workspace lifecycle hooks to run custom scripts on create, run, and archive (e.g., install deps, copy env files, clean up resources)
 - [ ] Planning chat with controlled execution (draft actions in a separate chat, then run them one by one)
 - [x] Linear integration to track and close out issues
-- [ ] Assign the same prompt to different providers at the same time 
+- [ ] Assign the same prompt to different providers at the same time and compare results
 
-## Privacy
+## Security & Privacy
 
-- Privacy
-  - All data is local. The app does not send your code or chats to us.
-  - Using Codex CLI or GitHub CLI transmits data to those providers per their policies.
+- We take data security and privacy seriously. See docs/telemetry.md for exact details.
+- Your code, chats, and repository contents stay local. Emdash does not send your code or chats to us.
+- Using third-party CLIs (e.g., Codex, Claude, GitHub CLI) may transmit data to those providers per their policies.
+
+### Telemetry
+
+- By default, Emdash collects basic, anonymous usage statistics via PostHog to understand which features are used and improve stability. This helps us prioritize development and track aggregate adoption.
+- What we collect:
+  - Lifecycle events (e.g., app start/close), feature usage events (feature name only), and non-identifying context (app version, platform, architecture, Electron version, install source).
+  - We do not collect code, prompts, repository names, file paths, environment variables, or personally identifiable information.
+- How we protect your privacy:
+  - Telemetry is anonymous; a random instance ID is stored locally on your device.
+  - Autocapture and session replay are disabled; only explicit, allowlisted events are sent.
+- Opt-out:
+  - Toggle it off in Settings → General → Privacy & Telemetry, or set `TELEMETRY_ENABLED=false` before launching the app.
+- Self-hosting:
+  - To send events to your own PostHog, set `POSTHOG_HOST` to your PostHog domain and `POSTHOG_PROJECT_API_KEY` to your project key.
+- Full details, including the exact list of events and properties: see docs/telemetry.md.
+
+<p align="center">
+  <img src="./docs/media/telemetry-settings.png" alt="Privacy & Telemetry settings toggle" width="720">
+</p>
+
+Setup (maintainers)
+- In PostHog, create a project and copy the Project API Key. Choose the cloud region closest to your users or your self-hosted domain.
+- Recommended PostHog settings: disable IP capture, autocapture, session replay, and geo-IP enrichment by default.
+- Local dev: set env vars and run dev
+  - `export POSTHOG_PROJECT_API_KEY=phc_...`
+  - `export POSTHOG_HOST=https://us.i.posthog.com` (or EU/self-host)
+  - `npm run dev`
+- Packaged app (DMG): set defaults in `src/main/appConfig.json` before packaging
+  - Set `posthogHost` and `posthogKey`, then build: `npm run package`
+  - Users can still opt out at runtime via `TELEMETRY_ENABLED=false`

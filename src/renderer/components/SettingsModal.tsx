@@ -7,6 +7,7 @@ import { X, Settings2, User, History } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import AppVersionCard from './AppVersionCard';
 import LinearIntegrationCard from './LinearIntegrationCard';
+import TelemetryCard from './TelemetryCard';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -37,6 +38,10 @@ const TAB_DETAILS: Record<
     title: 'General',
     description: '',
     sections: [
+      {
+        title: 'Privacy & Telemetry',
+        Component: TelemetryCard,
+      },
       {
         title: 'Workspace defaults',
         description: 'General configuration options will appear here soon.',

@@ -100,6 +100,11 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getBranchStatus: (args: { workspacePath: string }) =>
     ipcRenderer.invoke('git:get-branch-status', args),
   openExternal: (url: string) => ipcRenderer.invoke('app:openExternal', url),
+  // Telemetry (minimal, anonymous)
+  captureTelemetry: (event: 'feature_used' | 'error', properties?: Record<string, any>) =>
+    ipcRenderer.invoke('telemetry:capture', { event, properties }),
+  getTelemetryStatus: () => ipcRenderer.invoke('telemetry:get-status'),
+  setTelemetryEnabled: (enabled: boolean) => ipcRenderer.invoke('telemetry:set-enabled', enabled),
   connectToGitHub: (projectPath: string) => ipcRenderer.invoke('github:connect', projectPath),
   onRunEvent: (callback: (event: any) => void) => {
     ipcRenderer.on('run:event', (_, event) => callback(event));
