@@ -93,6 +93,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
         setProvider(initialProvider);
       } else {
         const validProviders: Provider[] = [
+          'qwen',
           'codex',
           'claude',
           'droid',

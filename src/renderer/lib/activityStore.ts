@@ -115,6 +115,7 @@ class ActivityStore {
     try {
       const api: any = (window as any).electronAPI;
       const providers = [
+        'qwen',
         'codex',
         'claude',
         'droid',

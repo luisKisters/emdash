@@ -1,6 +1,7 @@
 export type UiProvider =
   | 'codex'
   | 'claude'
+  | 'qwen'
   | 'droid'
   | 'gemini'
   | 'cursor'
@@ -20,6 +21,15 @@ export type ProviderMeta = {
 };
 
 export const providerMeta: Record<UiProvider, ProviderMeta> = {
+  qwen: {
+    label: 'Qwen Code',
+    icon: '../../assets/images/qwen.png',
+    terminalOnly: true,
+    cli: 'qwen',
+    helpUrl: 'https://huggingface.co/Qwen',
+    idlePatterns: [/Ready|Awaiting|Press Enter|Next command/i],
+    busyPatterns: [/Thinking|Working|Executing|Running|Applying|Analyzing|Planning/i],
+  },
   charm: {
     label: 'Charm',
     icon: '../../assets/images/charm.png',
