@@ -2,7 +2,6 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
-import { Separator } from './ui/separator';
 import { X, Settings2, Plug } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import VersionCard from './VersionCard';
@@ -152,25 +151,27 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     }
 
     return (
-      <div className="space-y-6">
-        {sections.map((section) => (
-          <div
-            key={section.title}
-            className="space-y-4 rounded-lg border border-border/60 bg-muted/40 p-4"
-          >
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">{section.title}</h3>
-              {section.description ? (
-                <p className="mt-1 text-sm text-muted-foreground">{section.description}</p>
-              ) : null}
-            </div>
-            {'render' in section && typeof section.render === 'function' ? (
-              section.render()
-            ) : !section.description ? (
-              <p className="text-sm text-muted-foreground">Coming soon.</p>
-            ) : null}
-          </div>
-        ))}
+      <div className="space-y-5">
+        {sections.map((section) => {
+          let renderedContent: React.ReactNode = null;
+          if ('render' in section && typeof section.render === 'function') {
+            renderedContent = section.render();
+          } else if (!section.description) {
+            renderedContent = <p className="text-sm text-muted-foreground">Coming soon.</p>;
+          }
+
+          return (
+            <section key={section.title} className="space-y-3">
+              <div className="space-y-1">
+                <h3 className="text-sm font-medium">{section.title}</h3>
+                {section.description ? (
+                  <p className="text-sm text-muted-foreground">{section.description}</p>
+                ) : null}
+              </div>
+              {renderedContent ? <div className="flex flex-col gap-3">{renderedContent}</div> : null}
+            </section>
+          );
+        })}
       </div>
     );
   };
@@ -252,16 +253,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 </header>
 
                 <div className="flex-1 overflow-y-auto px-6 py-6">{renderContent()}</div>
-
-                <Separator />
-                <footer className="flex items-center justify-end gap-2 px-6 py-4">
-                  <Button type="button" variant="ghost" onClick={onClose}>
-                    Close
-                  </Button>
-                  <Button type="button" disabled>
-                    Save changes
-                  </Button>
-                </footer>
               </div>
             </div>
           </motion.div>
