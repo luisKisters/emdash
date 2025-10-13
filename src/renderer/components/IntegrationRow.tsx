@@ -24,6 +24,7 @@ interface IntegrationRowProps {
   onDisconnect?: () => void;
   onOpen?: () => void;
   rightExtra?: React.ReactNode;
+  showStatusPill?: boolean;
 }
 
 const STATUS_CLASSES: Record<IntegrationStatus, string> = {
@@ -68,6 +69,7 @@ const IntegrationRow: React.FC<IntegrationRowProps> = ({
   onDisconnect,
   onOpen,
   rightExtra,
+  showStatusPill = true,
 }) => {
   const resolvedStatus = STATUS_CLASSES[status] ? status : 'disconnected';
   const showConnect = resolvedStatus !== 'connected' && status !== 'loading' && !!onConnect;
@@ -89,32 +91,34 @@ const IntegrationRow: React.FC<IntegrationRowProps> = ({
   ) : null;
 
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-muted/40">
+    <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-muted/40">
       <div className="flex items-center gap-3">
         {avatar}
         {onNameClick ? (
           <button
             type="button"
             onClick={onNameClick}
-            className="text-sm font-medium text-foreground underline-offset-4 transition hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            className="group flex items-center gap-1 text-sm font-medium text-foreground transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
           >
-            {name}
+            <span>{name}</span>
+            <span className="text-xs text-muted-foreground transition group-hover:text-foreground/80">
+              ↗
+            </span>
           </button>
         ) : (
           <span className="text-sm font-medium text-foreground">{name}</span>
         )}
       </div>
 
-      <div className="min-w-0 truncate text-sm text-muted-foreground">
-        {middle ?? defaultMiddle}
-      </div>
-
-      <div className="flex items-center gap-2">
-        <span
-          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_CLASSES[resolvedStatus] ?? STATUS_CLASSES.disconnected}`}
-        >
-          {resolvedStatusLabel}
-        </span>
+      <div className="flex items-center justify-end gap-2 text-sm text-muted-foreground">
+        <div className="min-w-0">{middle ?? defaultMiddle}</div>
+        {showStatusPill ? (
+          <span
+            className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${STATUS_CLASSES[resolvedStatus] ?? STATUS_CLASSES.disconnected}`}
+          >
+            {resolvedStatusLabel}
+          </span>
+        ) : null}
 
         {rightExtra}
 

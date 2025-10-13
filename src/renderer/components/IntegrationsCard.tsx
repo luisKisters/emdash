@@ -198,6 +198,19 @@ const IntegrationsCard: React.FC = () => {
     }
   }, []);
 
+  const renderStatusIndicator = useCallback(
+    (label: string, tone: 'connected' | 'inactive' = 'inactive') => {
+      const dotClass = tone === 'connected' ? 'bg-emerald-500' : 'bg-muted-foreground/50';
+      return (
+        <span className="flex items-center gap-2 text-sm text-muted-foreground" aria-live="polite">
+          <span className={`h-1.5 w-1.5 rounded-full ${dotClass}`} />
+          {label}
+        </span>
+      );
+    },
+    []
+  );
+
   const linearStatus = useMemo(() => {
     if (linearState.checking || linearState.loading) return 'loading' as const;
     if (linearState.connected) return 'connected' as const;
@@ -207,10 +220,8 @@ const IntegrationsCard: React.FC = () => {
 
   const linearMiddle = useMemo(() => {
     if (linearState.connected) {
-      if (linearState.detail) {
-        return <span aria-live="polite">{linearState.detail}</span>;
-      }
-      return <span aria-live="polite">Connected via API key.</span>;
+      const label = linearState.detail ?? 'Connected via API key.';
+      return renderStatusIndicator(label, 'connected');
     }
 
     return (
@@ -230,7 +241,7 @@ const IntegrationsCard: React.FC = () => {
         ) : null}
       </div>
     );
-  }, [handleLinearInputChange, handleLinearKeyDown, linearState]);
+  }, [handleLinearInputChange, handleLinearKeyDown, linearState, renderStatusIndicator]);
 
   const canConnectLinear =
     !!linearState.input.trim() && !linearState.loading && !linearState.checking;
@@ -244,28 +255,29 @@ const IntegrationsCard: React.FC = () => {
 
   const githubMiddle = useMemo(() => {
     if (!installed) {
-      return 'Install GitHub CLI (gh) to connect.';
+      return renderStatusIndicator('Install GitHub CLI (gh) to connect.', 'inactive');
     }
 
     if (!authenticated) {
-      return 'Sign in with GitHub CLI.';
+      return renderStatusIndicator('Sign in with GitHub CLI.', 'inactive');
     }
 
     if (!githubDetail) {
-      return 'Connected via GitHub CLI.';
+      return renderStatusIndicator('Connected via GitHub CLI.', 'connected');
     }
 
-    return undefined;
-  }, [authenticated, githubDetail, installed]);
+    return renderStatusIndicator(githubDetail, 'connected');
+  }, [authenticated, githubDetail, installed, renderStatusIndicator]);
 
   return (
-    <div className="space-y-2" aria-live="polite">
+    <div className="space-y-3" aria-live="polite">
       <IntegrationRow
         logoSrc={linearLogo}
         name="Linear"
         accountLabel={linearState.detail ?? undefined}
         status={linearStatus}
         middle={linearMiddle}
+        showStatusPill={false}
         onConnect={() => void handleLinearConnect()}
         connectDisabled={!canConnectLinear}
         connectContent={
@@ -291,6 +303,7 @@ const IntegrationsCard: React.FC = () => {
         accountLabel={githubDetail ?? undefined}
         status={githubStatus}
         middle={githubMiddle}
+        showStatusPill={false}
         onConnect={() => (installed ? void handleGithubConnect() : void handleGithubInstall())}
         connectDisabled={installed ? isLoading || githubLogoutLoading : false}
         connectContent={

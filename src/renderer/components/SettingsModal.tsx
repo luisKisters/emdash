@@ -2,13 +2,14 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
-import { X, Settings2, Plug, RefreshCcw } from 'lucide-react';
+import { X, Settings2, Plug } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import VersionCard from './VersionCard';
 import IntegrationsCard from './IntegrationsCard';
 import CliProvidersList from './CliProvidersList';
 import { CliProviderStatus } from '../types/connections';
 import { Spinner } from './ui/spinner';
+import { Separator } from './ui/separator';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -117,34 +118,23 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           },
           {
             title: 'CLI providers',
-            action: (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={fetchCliProviders}
-                disabled={cliLoading}
-                className="gap-2"
-              >
-                {cliLoading ? (
-                  <>
-                    <Spinner size="sm" className="h-3.5 w-3.5" />
-                    Detecting…
-                  </>
-                ) : (
-                  <>
-                    <RefreshCcw className="h-4 w-4" aria-hidden="true" />
-                    Detect CLIs
-                  </>
-                )}
-              </Button>
-            ),
             render: () => (
-              <CliProvidersList
-                providers={cliProviders}
-                isLoading={cliLoading}
-                error={cliError}
-              />
+              <div className="space-y-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchCliProviders}
+                  disabled={cliLoading}
+                >
+                  {cliLoading ? 'Detecting…' : 'Detect CLIs'}
+                </Button>
+                <CliProvidersList
+                  providers={cliProviders}
+                  isLoading={cliLoading}
+                  error={cliError}
+                />
+              </div>
             ),
           },
         ],
@@ -173,8 +163,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     }
 
     return (
-      <div className="space-y-5">
-        {sections.map((section: SettingsSection) => {
+      <div className="space-y-6">
+        {sections.map((section: SettingsSection, index) => {
           let renderedContent: React.ReactNode = null;
           if (typeof section.render === 'function') {
             renderedContent = section.render();
@@ -183,18 +173,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           }
 
           return (
-            <section key={section.title} className="space-y-3">
-              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                <div className="space-y-1">
+            <React.Fragment key={section.title}>
+              {index > 0 ? <Separator className="border-border/60" /> : null}
+              <section className="space-y-3">
+              <div className="space-y-1">
+                <div className="flex items-center justify-between gap-3">
                   <h3 className="text-sm font-medium">{section.title}</h3>
-                  {section.description ? (
-                    <p className="text-sm text-muted-foreground">{section.description}</p>
-                  ) : null}
+                  {section.action ? <div>{section.action}</div> : null}
                 </div>
-                {section.action ? <div className="sm:pt-0.5">{section.action}</div> : null}
+                {section.description ? (
+                  <p className="text-sm text-muted-foreground">{section.description}</p>
+                ) : null}
               </div>
               {renderedContent ? <div className="flex flex-col gap-3">{renderedContent}</div> : null}
             </section>
+            </React.Fragment>
           );
         })}
       </div>
