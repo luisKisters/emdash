@@ -8,6 +8,7 @@ import type { LucideIcon } from 'lucide-react';
 import AppVersionCard from './AppVersionCard';
 import LinearIntegrationCard from './LinearIntegrationCard';
 import TelemetryCard from './TelemetryCard';
+import ThemeCard from './ThemeCard';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -38,6 +39,10 @@ const TAB_DETAILS: Record<
     title: 'General',
     description: '',
     sections: [
+      {
+        title: 'Theme',
+        Component: ThemeCard,
+      },
       {
         title: 'Privacy & Telemetry',
         Component: TelemetryCard,

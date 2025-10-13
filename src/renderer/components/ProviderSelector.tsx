@@ -32,51 +32,61 @@ const providerConfig = {
     name: 'Codex',
     logo: openaiLogo,
     alt: 'Codex',
+    invertInDark: true,
   },
   qwen: {
     name: 'Qwen Code',
     logo: qwenLogo,
     alt: 'Qwen Code CLI',
+    invertInDark: false,
   },
   claude: {
     name: 'Claude Code',
     logo: claudeLogo,
     alt: 'Claude Code',
+    invertInDark: false,
   },
   droid: {
     name: 'Droid',
     logo: factoryLogo,
     alt: 'Factory Droid',
+    invertInDark: true,
   },
   gemini: {
     name: 'Gemini',
     logo: geminiLogo,
     alt: 'Gemini CLI',
+    invertInDark: false,
   },
   cursor: {
     name: 'Cursor',
     logo: cursorLogo,
     alt: 'Cursor CLI',
+    invertInDark: true,
   },
   copilot: {
     name: 'Copilot',
     logo: copilotLogo,
     alt: 'GitHub Copilot CLI',
+    invertInDark: true,
   },
   amp: {
     name: 'Amp',
     logo: ampLogo,
     alt: 'Amp CLI',
+    invertInDark: false,
   },
   opencode: {
     name: 'OpenCode',
     logo: opencodeLogo,
     alt: 'OpenCode CLI',
+    invertInDark: true,
   },
   charm: {
     name: 'Charm',
     logo: charmLogo,
     alt: 'Charm CLI',
+    invertInDark: false,
   },
 } as const;
 
@@ -113,7 +123,7 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
                     <img
                       src={currentProvider.logo}
                       alt={currentProvider.alt}
-                      className="h-4 w-4 shrink-0 rounded-sm"
+                      className={`h-4 w-4 shrink-0 rounded-sm ${currentProvider.invertInDark ? 'dark:invert' : ''}`}
                     />
                     <SelectValue placeholder="Select provider" />
                   </div>
@@ -130,7 +140,7 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
               <img
                 src={currentProvider.logo}
                 alt={currentProvider.alt}
-                className="h-4 w-4 shrink-0 rounded-sm"
+                className={`h-4 w-4 shrink-0 rounded-sm ${currentProvider.invertInDark ? 'dark:invert' : ''}`}
               />
               <SelectValue placeholder="Select provider" />
             </div>
@@ -140,7 +150,7 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
           {Object.entries(providerConfig).map(([key, config]) => (
             <SelectItem key={key} value={key}>
               <div className="flex items-center gap-2">
-                <img src={config.logo} alt={config.alt} className="h-4 w-4 rounded-sm" />
+                <img src={config.logo} alt={config.alt} className={`h-4 w-4 rounded-sm ${config.invertInDark ? 'dark:invert' : ''}`} />
                 <SelectItemText>{config.name}</SelectItemText>
               </div>
             </SelectItem>

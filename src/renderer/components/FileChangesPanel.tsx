@@ -317,7 +317,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
                   onClick={() => {
                     window.electronAPI?.openExternal?.(pr.url);
                   }}
-                  className={`cursor-pointer rounded border px-2 py-0.5 text-[11px] ${pr.state === 'MERGED' ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${pr.state === 'OPEN' && pr.isDraft ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${pr.state === 'OPEN' && !pr.isDraft ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${pr.state === 'CLOSED' ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} `}
+                  className="cursor-pointer rounded border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
                   title={pr.title || 'Pull Request'}
                 >
                   PR {pr.isDraft ? 'draft' : pr.state.toLowerCase()}

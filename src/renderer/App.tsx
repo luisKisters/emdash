@@ -10,7 +10,10 @@ import { Toaster } from './components/ui/toaster';
 import RequirementsNotice from './components/RequirementsNotice';
 import { useToast } from './hooks/use-toast';
 import { useGithubAuth } from './hooks/useGithubAuth';
+import { useTheme } from './hooks/useTheme';
+import { ThemeProvider } from './components/ThemeProvider';
 import emdashLogo from '../assets/images/emdash/emdash_logo.svg';
+import emdashLogoWhite from '../assets/images/emdash/emdash_logo_white.svg';
 import Titlebar from './components/titlebar/Titlebar';
 import { SidebarProvider, useSidebar } from './components/ui/sidebar';
 import { RightSidebarProvider, useRightSidebar } from './components/ui/right-sidebar';
@@ -120,7 +123,10 @@ const clampRightSidebarSize = (value: number) =>
   );
 const MAIN_PANEL_MIN_SIZE = 30;
 
-const App: React.FC = () => {
+const AppContent: React.FC = () => {
+  // Initialize theme on app startup
+  const { effectiveTheme } = useTheme();
+
   const { toast } = useToast();
   const [version, setVersion] = useState<string>('');
   const [platform, setPlatform] = useState<string>('');
@@ -878,13 +884,18 @@ const App: React.FC = () => {
             <div className="mb-6 text-center">
               <div className="mb-2 flex items-center justify-center">
                 <div className="logo-shimmer-container">
-                  <img src={emdashLogo} alt="emdash" className="logo-shimmer-image" />
+                  <img
+                    key={effectiveTheme}
+                    src={effectiveTheme === 'dark' ? emdashLogoWhite : emdashLogo}
+                    alt="emdash"
+                    className="logo-shimmer-image"
+                  />
                   <span
                     className="logo-shimmer-overlay"
                     aria-hidden="true"
                     style={{
-                      WebkitMaskImage: `url(${emdashLogo})`,
-                      maskImage: `url(${emdashLogo})`,
+                      WebkitMaskImage: `url(${effectiveTheme === 'dark' ? emdashLogoWhite : emdashLogo})`,
+                      maskImage: `url(${effectiveTheme === 'dark' ? emdashLogoWhite : emdashLogo})`,
                       WebkitMaskRepeat: 'no-repeat',
                       maskRepeat: 'no-repeat',
                       WebkitMaskSize: 'contain',
@@ -895,7 +906,7 @@ const App: React.FC = () => {
                   />
                 </div>
               </div>
-              <p className="text-sm text-gray-700 text-muted-foreground sm:text-base">
+              <p className="text-sm text-muted-foreground sm:text-base">
                 Run multiple Coding Agents in parallel
               </p>
               <RequirementsNotice
@@ -910,7 +921,7 @@ const App: React.FC = () => {
               <Button
                 onClick={handleOpenProject}
                 size="lg"
-                className="min-w-[200px] border-black bg-black text-white hover:bg-gray-800 hover:text-white"
+                className="min-w-[200px]"
               >
                 <FolderOpen className="mr-2 h-5 w-5" />
                 Open Project
@@ -952,9 +963,14 @@ const App: React.FC = () => {
         <div className="container mx-auto flex min-h-full flex-1 flex-col justify-center px-4 py-8">
           <div className="mb-12 text-center">
             <div className="mb-4 flex items-center justify-center">
-              <img src={emdashLogo} alt="emdash" className="h-16" />
+              <img
+                key={effectiveTheme}
+                src={effectiveTheme === 'dark' ? emdashLogoWhite : emdashLogo}
+                alt="emdash"
+                className="h-16"
+              />
             </div>
-            <p className="mb-6 text-sm text-gray-700 text-muted-foreground sm:text-base">
+            <p className="mb-6 text-sm text-muted-foreground sm:text-base">
               Run multiple Coding Agents in parallel
             </p>
             <RequirementsNotice
@@ -969,7 +985,7 @@ const App: React.FC = () => {
             <Button
               onClick={handleOpenProject}
               size="lg"
-              className="min-w-[200px] border-black bg-black text-white hover:bg-gray-800 hover:text-white"
+              className="min-w-[200px]"
             >
               <FolderOpen className="mr-2 h-5 w-5" />
               Open Project
@@ -1074,6 +1090,14 @@ const App: React.FC = () => {
         </RightSidebarProvider>
       </SidebarProvider>
     </div>
+  );
+};
+
+const App: React.FC = () => {
+  return (
+    <ThemeProvider>
+      <AppContent />
+    </ThemeProvider>
   );
 };
 
