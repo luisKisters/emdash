@@ -52,7 +52,7 @@ const ICON_BUTTON =
   'rounded-md p-1.5 text-muted-foreground transition hover:bg-muted/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background';
 
 const ICON_WRAPPER =
-  'flex h-6 w-6 items-center justify-center rounded-md bg-muted/50 text-muted-foreground';
+  'flex h-6 w-6 items-center justify-center rounded-md bg-muted/40 text-muted-foreground';
 
 const IntegrationRow: React.FC<IntegrationRowProps> = ({
   logoSrc,
@@ -84,11 +84,15 @@ const IntegrationRow: React.FC<IntegrationRowProps> = ({
       <span className="truncate text-sm text-muted-foreground">{accountLabel}</span>
     ) : null;
 
-  const avatar = logoSrc ? (
-    <img src={logoSrc} alt="" className="h-4 w-4 rounded" />
-  ) : icon ? (
-    <span className={ICON_WRAPPER}>{icon}</span>
-  ) : null;
+  const avatar = (
+    <span className={ICON_WRAPPER}>
+      {logoSrc ? (
+        <img src={logoSrc} alt="" className="h-5 w-5 object-contain" />
+      ) : icon ? (
+        icon
+      ) : null}
+    </span>
+  );
 
   return (
     <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg px-3 py-2 transition-colors hover:bg-muted/40">

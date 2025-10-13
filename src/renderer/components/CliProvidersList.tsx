@@ -45,9 +45,9 @@ const renderProviderRow = (provider: CliProviderStatus) => {
         }
       : undefined;
 
-  const isConnected = provider.status === 'connected';
-  const indicatorClass = isConnected ? 'bg-emerald-500' : 'bg-muted-foreground/50';
-  const statusLabel = isConnected ? 'Connected' : 'Not connected';
+  const isDetected = provider.status === 'connected';
+  const indicatorClass = isDetected ? 'bg-emerald-500' : 'bg-muted-foreground/50';
+  const statusLabel = isDetected ? 'Detected' : 'Not detected';
 
   return (
     <IntegrationRow
