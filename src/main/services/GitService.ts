@@ -10,6 +10,7 @@ export type GitChange = {
   status: string;
   additions: number;
   deletions: number;
+  isStaged: boolean;
 };
 
 export async function getStatus(workspacePath: string): Promise<GitChange[]> {
@@ -47,6 +48,9 @@ export async function getStatus(workspacePath: string): Promise<GitChange[]> {
     else if (statusCode.includes('D')) status = 'deleted';
     else if (statusCode.includes('R')) status = 'renamed';
     else if (statusCode.includes('M')) status = 'modified';
+
+    // Check if file is staged (first character of status code indicates staged changes)
+    const isStaged = statusCode[0] !== ' ' && statusCode[0] !== '?';
 
     if (filePath.endsWith('codex-stream.log')) continue;
 
@@ -98,10 +102,42 @@ export async function getStatus(workspacePath: string): Promise<GitChange[]> {
       } catch {}
     }
 
-    changes.push({ path: filePath, status, additions, deletions });
+    changes.push({ path: filePath, status, additions, deletions, isStaged });
   }
 
   return changes;
+}
+
+export async function stageFile(workspacePath: string, filePath: string): Promise<void> {
+  await execFileAsync('git', ['add', '--', filePath], { cwd: workspacePath });
+}
+
+export async function revertFile(
+  workspacePath: string,
+  filePath: string
+): Promise<{ action: 'unstaged' | 'reverted' }> {
+  // Check if file is staged
+  try {
+    const { stdout: stagedStatus } = await execFileAsync(
+      'git',
+      ['diff', '--cached', '--name-only', '--', filePath],
+      {
+        cwd: workspacePath,
+      }
+    );
+
+    if (stagedStatus.trim()) {
+      // File is staged, unstage it (but keep working directory changes)
+      await execFileAsync('git', ['reset', 'HEAD', '--', filePath], { cwd: workspacePath });
+      return { action: 'unstaged' };
+    }
+  } catch {
+    // Ignore errors, continue with checkout
+  }
+
+  // File is not staged, revert working directory changes
+  await execFileAsync('git', ['checkout', 'HEAD', '--', filePath], { cwd: workspacePath });
+  return { action: 'reverted' };
 }
 
 export async function getFileDiff(

@@ -1,17 +1,3 @@
-<p align="left">
-  <a href="https://github.com/generalaction/emdash/releases">
-    <img src="./docs/media/downloadformacos.png" alt="Download app for macOS" height="40" style="vertical-align:middle;">
-  </a>
-
-  <br />
-  <br />
-
-  <a href="https://discord.gg/meqK3A5b" style="margin-left:8px; vertical-align:middle;">
-    <img src="https://dcbadge.limes.pink/api/server/https://discord.gg/XqWnhvMU" alt="Join the emdash Discord" height="28" />
-  </a>
-
-</p>
-<hr style="border:0; height:1px; background:#d0d7de; margin:24px 0;">
 
 <p align="center">
     <img src="./src/assets/images/emdash/emdash_logo.svg#gh-light-mode-only"
@@ -21,6 +7,35 @@
   </p>
 
 emdash is a UI layer for running multiple coding agents in parallel — currently supporting OpenAI Codex CLI, Claude Code CLI, Droid (Factory CLI), Gemini CLI, Cursor CLI, Amp Code CLI, GitHub Copilot CLI, and Charm CLI. Each agent runs in its own Git worktree so you can fan out tasks, keep changes compartmentalized, and manage everything from a single UI.
+
+<hr style="border:0; height:1px; background:#d0d7de; margin:24px 0;">
+
+<div align="center" style="margin:24px 0;">
+  <a href="https://discord.gg/meqK3A5b" style="display:inline-block; margin-right:24px; text-decoration:none; outline:none; border:none;">
+    <img src="https://img.shields.io/badge/Discord-%235865F2.svg?logo=discord&logoColor=white" alt="Join the Emdash Discord" height="40">
+  </a>
+
+  <a href="https://github.com/generalaction/emdash/releases" style="display:inline-block; margin-right:24px; text-decoration:none; outline:none; border:none;">
+    <img src="./docs/media/downloadformacos.png" alt="Download app for macOS" height="40">
+  </a>
+
+  <a href="https://x.com/emdashsh" style="display:inline-block; text-decoration:none; outline:none; border:none;">
+    <img src="https://img.shields.io/badge/Follow%20on%20X-%23000000.svg?logo=x&logoColor=white" alt="Follow on X" height="40">
+  </a>
+</div>
+
+
+
+<br />
+<br />
+
+  <p align="center">
+  <img src="./docs/media/modelselector.png" alt="Provider selector showing supported CLIs" width="360">
+  <br />
+  <em>Emdash supports the widest range of CLI providers</em>
+  <br />
+</p>
+
 
 <p align="center">
     <img src="./docs/media/emdash-screenshot.png" alt="Emdash app screenshot" width="100%">
@@ -251,10 +266,31 @@ find "$HOME" -type f -name 'emdash.db*' -print
 - [ ] Workspace lifecycle hooks to run custom scripts on create, run, and archive (e.g., install deps, copy env files, clean up resources)
 - [ ] Planning chat with controlled execution (draft actions in a separate chat, then run them one by one)
 - [x] Linear integration to track and close out issues
-- [ ] Assign the same prompt to different providers at the same time 
+- [ ] Assign the same prompt to different providers at the same time and compare results
 
-## Privacy
+## Security & Privacy
 
-- Privacy
-  - All data is local. The app does not send your code or chats to us.
-  - Using Codex CLI or GitHub CLI transmits data to those providers per their policies.
+- We take data security and privacy seriously. See docs/telemetry.md for exact details.
+- Your code, chats, and repository contents stay local. Emdash does not send your code or chats to us.
+- Using third-party CLIs (e.g., Codex, Claude, GitHub CLI) may transmit data to those providers per their policies.
+
+### Telemetry
+
+- By default, Emdash collects basic, anonymous usage statistics via PostHog to understand which features are used and improve stability. This helps us prioritize development and track aggregate adoption.
+- What we collect:
+  - Lifecycle events (e.g., app start/close), feature usage events (feature name only), and non-identifying context (app version, platform, architecture, Electron version, install source).
+  - We do not collect code, prompts, repository names, file paths, environment variables, or personally identifiable information.
+- How we protect your privacy:
+  - Telemetry is anonymous; a random instance ID is stored locally on your device.
+  - Autocapture and session replay are disabled; only explicit, allowlisted events are sent.
+- Opt-out:
+  - Toggle it off in Settings → General → Privacy & Telemetry, or set `TELEMETRY_ENABLED=false` before launching the app.
+- Full details, including the exact list of events and properties: see docs/telemetry.md.
+
+<p align="center">
+  <img src="./docs/media/disabletelemetry.png" alt="Privacy & Telemetry settings toggle" width="720">
+</p>
+
+Maintainers
+- Telemetry configuration (PostHog host and project key) is injected via CI for official builds. Local development does not send telemetry unless you explicitly provide credentials.
+- Recommended PostHog settings for the project: disable IP capture, autocapture, session replay, and geo‑IP enrichment by default.

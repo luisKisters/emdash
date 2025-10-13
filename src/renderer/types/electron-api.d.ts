@@ -78,6 +78,7 @@ declare global {
           status: string;
           additions: number;
           deletions: number;
+          isStaged: boolean;
           diff?: string;
         }>;
         error?: string;
@@ -91,6 +92,15 @@ declare global {
             type: 'context' | 'add' | 'del';
           }>;
         };
+        error?: string;
+      }>;
+      stageFile: (args: { workspacePath: string; filePath: string }) => Promise<{
+        success: boolean;
+        error?: string;
+      }>;
+      revertFile: (args: { workspacePath: string; filePath: string }) => Promise<{
+        success: boolean;
+        action?: 'unstaged' | 'reverted';
         error?: string;
       }>;
       gitCommitAndPush: (args: {
@@ -134,11 +144,44 @@ declare global {
         } | null;
         error?: string;
       }>;
+      getBranchStatus: (args: { workspacePath: string }) => Promise<{
+        success: boolean;
+        branch?: string;
+        defaultBranch?: string;
+        ahead?: number;
+        behind?: number;
+        error?: string;
+      }>;
       openExternal: (url: string) => Promise<{ success: boolean; error?: string }>;
       connectToGitHub: (projectPath: string) => Promise<{
         success: boolean;
         repository?: string;
         branch?: string;
+        error?: string;
+      }>;
+      // Telemetry
+      captureTelemetry: (
+        event: 'feature_used' | 'error',
+        properties?: Record<string, any>
+      ) => Promise<{ success: boolean; disabled?: boolean; error?: string }>;
+      getTelemetryStatus: () => Promise<{
+        success: boolean;
+        status?: {
+          enabled: boolean;
+          envDisabled: boolean;
+          userOptOut: boolean;
+          hasKeyAndHost: boolean;
+        };
+        error?: string;
+      }>;
+      setTelemetryEnabled: (enabled: boolean) => Promise<{
+        success: boolean;
+        status?: {
+          enabled: boolean;
+          envDisabled: boolean;
+          userOptOut: boolean;
+          hasKeyAndHost: boolean;
+        };
         error?: string;
       }>;
 
@@ -426,6 +469,31 @@ export interface ElectronAPI {
       docUrl?: string | null;
       command?: string | null;
     }>;
+    error?: string;
+  }>;
+  // Telemetry
+  captureTelemetry: (
+    event: 'feature_used' | 'error',
+    properties?: Record<string, any>
+  ) => Promise<{ success: boolean; disabled?: boolean; error?: string }>;
+  getTelemetryStatus: () => Promise<{
+    success: boolean;
+    status?: {
+      enabled: boolean;
+      envDisabled: boolean;
+      userOptOut: boolean;
+      hasKeyAndHost: boolean;
+    };
+    error?: string;
+  }>;
+  setTelemetryEnabled: (enabled: boolean) => Promise<{
+    success: boolean;
+    status?: {
+      enabled: boolean;
+      envDisabled: boolean;
+      userOptOut: boolean;
+      hasKeyAndHost: boolean;
+    };
     error?: string;
   }>;
 

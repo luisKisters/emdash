@@ -12,11 +12,13 @@ import { registerGitIpc } from './gitIpc';
 import { registerAgentIpc } from './agentIpc';
 import { registerLinearIpc } from './linearIpc';
 import { registerConnectionsIpc } from './connectionsIpc';
+import { registerTelemetryIpc } from './telemetryIpc';
 
 export function registerAllIpc() {
   // Core app/utility IPC
   registerAppIpc();
   registerDebugIpc();
+  registerTelemetryIpc();
 
   // Domain IPC
   registerProjectIpc();
