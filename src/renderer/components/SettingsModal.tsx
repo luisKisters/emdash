@@ -8,7 +8,6 @@ import VersionCard from './VersionCard';
 import IntegrationsCard from './IntegrationsCard';
 import CliProvidersList from './CliProvidersList';
 import { CliProviderStatus } from '../types/connections';
-import { Spinner } from './ui/spinner';
 import { Separator } from './ui/separator';
 
 interface SettingsModalProps {
@@ -126,6 +125,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                   size="sm"
                   onClick={fetchCliProviders}
                   disabled={cliLoading}
+                  aria-busy={cliLoading}
                 >
                   {cliLoading ? 'Detecting…' : 'Detect CLIs'}
                 </Button>

@@ -1,6 +1,5 @@
 import React, { useMemo } from 'react';
 import { Sparkles } from 'lucide-react';
-import { Spinner } from './ui/spinner';
 import IntegrationRow from './IntegrationRow';
 import { CliProviderStatus } from '../types/connections';
 import codexLogo from '../../assets/images/openai.png';
@@ -88,16 +87,12 @@ const CliProvidersList: React.FC<CliProvidersListProps> = ({ providers, isLoadin
         </div>
       ) : null}
 
-      {isLoading ? (
-        <div className="flex items-center justify-center rounded-lg border border-dashed border-border/50 bg-muted/40 py-6">
-          <Spinner />
-        </div>
-      ) : providers.length === 0 ? (
+      {providers.length > 0 ? (
+        <div className="space-y-2">{sortedProviders.map((provider) => renderProviderRow(provider))}</div>
+      ) : (
         <div className="rounded-lg border border-dashed border-border/50 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
           No CLI providers detected yet. Run “Detect CLIs” once you have them installed locally.
         </div>
-      ) : (
-        <div className="space-y-2">{sortedProviders.map((provider) => renderProviderRow(provider))}</div>
       )}
     </div>
   );
