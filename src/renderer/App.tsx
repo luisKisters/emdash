@@ -760,7 +760,16 @@ const App: React.FC = () => {
         } catch {}
         try {
           // Provider-scoped keys
-          const providers = ['qwen', 'codex', 'claude', 'droid', 'gemini', 'cursor', 'copilot', 'amp'];
+          const providers = [
+            'qwen',
+            'codex',
+            'claude',
+            'droid',
+            'gemini',
+            'cursor',
+            'copilot',
+            'amp',
+          ];
           for (const p of providers) {
             const k = initialPromptSentKey(workspace.id, p);
             localStorage.removeItem(k);
