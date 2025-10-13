@@ -159,6 +159,31 @@ declare global {
         branch?: string;
         error?: string;
       }>;
+      // Telemetry
+      captureTelemetry: (
+        event: 'feature_used' | 'error',
+        properties?: Record<string, any>
+      ) => Promise<{ success: boolean; disabled?: boolean; error?: string }>;
+      getTelemetryStatus: () => Promise<{
+        success: boolean;
+        status?: {
+          enabled: boolean;
+          envDisabled: boolean;
+          userOptOut: boolean;
+          hasKeyAndHost: boolean;
+        };
+        error?: string;
+      }>;
+      setTelemetryEnabled: (enabled: boolean) => Promise<{
+        success: boolean;
+        status?: {
+          enabled: boolean;
+          envDisabled: boolean;
+          userOptOut: boolean;
+          hasKeyAndHost: boolean;
+        };
+        error?: string;
+      }>;
 
       // Filesystem helpers
       fsList: (
@@ -418,6 +443,31 @@ export interface ElectronAPI {
     success: boolean;
     repository?: string;
     branch?: string;
+    error?: string;
+  }>;
+  // Telemetry
+  captureTelemetry: (
+    event: 'feature_used' | 'error',
+    properties?: Record<string, any>
+  ) => Promise<{ success: boolean; disabled?: boolean; error?: string }>;
+  getTelemetryStatus: () => Promise<{
+    success: boolean;
+    status?: {
+      enabled: boolean;
+      envDisabled: boolean;
+      userOptOut: boolean;
+      hasKeyAndHost: boolean;
+    };
+    error?: string;
+  }>;
+  setTelemetryEnabled: (enabled: boolean) => Promise<{
+    success: boolean;
+    status?: {
+      enabled: boolean;
+      envDisabled: boolean;
+      userOptOut: boolean;
+      hasKeyAndHost: boolean;
+    };
     error?: string;
   }>;
 

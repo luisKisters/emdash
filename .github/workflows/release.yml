@@ -61,6 +61,27 @@ jobs:
       - name: Build app (ts + vite)
         run: npm run build
 
+      - name: Inject PostHog config (dev build job)
+        env:
+          PH_KEY: ${{ secrets.POSTHOG_PROJECT_API_KEY }}
+          PH_HOST: ${{ secrets.POSTHOG_HOST }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PH_KEY:-}" ] || [ -z "${PH_HOST:-}" ]; then
+            echo "PostHog secrets not set; skipping telemetry injection (DMG will have telemetry disabled)."
+            exit 0
+          fi
+          mkdir -p dist/main
+          cat > dist/main/appConfig.json <<'JSON'
+          {
+            "posthogHost": "__PH_HOST__",
+            "posthogKey": "__PH_KEY__"
+          }
+          JSON
+          sed -i '' "s#__PH_HOST__#${PH_HOST}#g" dist/main/appConfig.json
+          sed -i '' "s#__PH_KEY__#${PH_KEY}#g" dist/main/appConfig.json
+          echo "Wrote dist/main/appConfig.json"
+
       - name: Build DMG(s) (no publish)
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: 'false'
@@ -133,6 +154,27 @@ jobs:
 
       - name: Build app (ts + vite)
         run: npm run build
+
+      - name: Inject PostHog config (release job)
+        env:
+          PH_KEY: ${{ secrets.POSTHOG_PROJECT_API_KEY }}
+          PH_HOST: ${{ secrets.POSTHOG_HOST }}
+        run: |
+          set -euo pipefail
+          if [ -z "${PH_KEY:-}" ] || [ -z "${PH_HOST:-}" ]; then
+            echo "::warning::PostHog secrets not set; telemetry will be disabled in this build."
+            exit 0
+          fi
+          mkdir -p dist/main
+          cat > dist/main/appConfig.json <<'JSON'
+          {
+            "posthogHost": "__PH_HOST__",
+            "posthogKey": "__PH_KEY__"
+          }
+          JSON
+          sed -i '' "s#__PH_HOST__#${PH_HOST}#g" dist/main/appConfig.json
+          sed -i '' "s#__PH_KEY__#${PH_KEY}#g" dist/main/appConfig.json
+          echo "Wrote dist/main/appConfig.json"
 
       - name: Check notarization secrets
         id: flags

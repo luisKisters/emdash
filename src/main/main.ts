@@ -35,6 +35,7 @@ import { createMainWindow } from './app/window';
 import { registerAppLifecycle } from './app/lifecycle';
 import { registerAllIpc } from './ipc';
 import { databaseService } from './services/DatabaseService';
+import * as telemetry from './telemetry';
 
 // App bootstrap
 app.whenReady().then(async () => {
@@ -46,6 +47,9 @@ app.whenReady().then(async () => {
     // console.error('Failed to initialize database:', error);
   }
 
+  // Initialize telemetry (privacy-first, anonymous)
+  telemetry.init({ installSource: app.isPackaged ? 'dmg' : 'dev' });
+
   // Register IPC handlers
   registerAllIpc();
 
@@ -55,3 +59,9 @@ app.whenReady().then(async () => {
 
 // App lifecycle handlers
 registerAppLifecycle();
+
+// Graceful shutdown telemetry event
+app.on('before-quit', () => {
+  telemetry.capture('app_closed');
+  telemetry.shutdown();
+});
