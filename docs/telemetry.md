@@ -5,11 +5,12 @@ Overview
 - Telemetry defaults to enabled and can be disabled via `TELEMETRY_ENABLED=false`.
 - Data is sent to PostHog using explicit, allowlisted events only.
 
-Environment variables
+Environment variables (users)
 - `TELEMETRY_ENABLED` (default: `true`): set to `false` to disable.
-- `POSTHOG_PROJECT_API_KEY`: PostHog project API key (required to send events).
-- `POSTHOG_HOST`: PostHog host (e.g., https://us.i.posthog.com, https://eu.i.posthog.com, or your self-hosted domain).
-- `INSTALL_SOURCE` (optional): override install source label (e.g., `dmg`, `dev`, `self_host`).
+
+Maintainers
+- Official builds inject the PostHog host and project key via CI. Local development does not send telemetry unless credentials are added explicitly for testing.
+- Optional: `INSTALL_SOURCE` can label the distribution channel (e.g., `dmg`, `dev`).
 
 Events
 - `app_started` (sent automatically on app start)
@@ -33,8 +34,7 @@ Opt-out
 - In-app: Settings → General → Privacy & Telemetry (toggle off), or
 - Env var: set `TELEMETRY_ENABLED=false` before launching the app to disable telemetry entirely.
 
-Using from renderer (optional)
-- You can capture a minimal set of events from the renderer via:
-  - `window.electronAPI.captureTelemetry('feature_used', { feature: 'xyz' })`
-  - `window.electronAPI.captureTelemetry('error', { type: 'some_error_type' })`
-- Any non-allowlisted properties are dropped server-side in the main-process sanitizer.
+Renderer events (maintainers)
+- The renderer may request sending `feature_used` or `error` events via a constrained IPC channel handled in the main process.
+- Only allowlisted properties are forwarded; everything else is dropped by the sanitizer in the main process.
+- End-users do not need to take any action; telemetry remains optional and can be disabled as described above.
