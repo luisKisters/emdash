@@ -26,9 +26,8 @@ const defaultLinearState: LinearState = {
 
 const IntegrationsCard: React.FC = () => {
   const [linearState, setLinearState] = useState<LinearState>(defaultLinearState);
-  const { installed, authenticated, user, isLoading, login, logout, checkStatus } = useGithubAuth();
+  const { installed, authenticated, user, isLoading, login, checkStatus } = useGithubAuth();
   const [githubError, setGithubError] = useState<string | null>(null);
-  const [githubLogoutLoading, setGithubLogoutLoading] = useState(false);
 
   const loadLinearStatus = useCallback(async () => {
     if (!window?.electronAPI?.linearCheckConnection) {
@@ -176,20 +175,6 @@ const IntegrationsCard: React.FC = () => {
     }
   }, [checkStatus, login]);
 
-  const handleGithubDisconnect = useCallback(async () => {
-    setGithubError(null);
-    setGithubLogoutLoading(true);
-    try {
-      await logout();
-      await checkStatus();
-    } catch (error) {
-      console.error('GitHub disconnect failed:', error);
-      setGithubError('Failed to disconnect.');
-    } finally {
-      setGithubLogoutLoading(false);
-    }
-  }, [checkStatus, logout]);
-
   const handleGithubInstall = useCallback(async () => {
     try {
       await window.electronAPI.openExternal('https://cli.github.com/manual/installation');
@@ -247,11 +232,11 @@ const IntegrationsCard: React.FC = () => {
     !!linearState.input.trim() && !linearState.loading && !linearState.checking;
 
   const githubStatus = useMemo(() => {
-    if (isLoading || githubLogoutLoading) return 'loading' as const;
+    if (isLoading) return 'loading' as const;
     if (authenticated) return 'connected' as const;
     if (githubError) return 'error' as const;
     return 'disconnected' as const;
-  }, [authenticated, githubError, githubLogoutLoading, isLoading]);
+  }, [authenticated, githubError, isLoading]);
 
   const githubMiddle = useMemo(() => {
     if (!installed) {
@@ -305,7 +290,7 @@ const IntegrationsCard: React.FC = () => {
         middle={githubMiddle}
         showStatusPill={false}
         onConnect={() => (installed ? void handleGithubConnect() : void handleGithubInstall())}
-        connectDisabled={installed ? isLoading || githubLogoutLoading : false}
+        connectDisabled={installed ? isLoading : false}
         connectContent={
           installed ? (
             isLoading ? (
@@ -319,7 +304,6 @@ const IntegrationsCard: React.FC = () => {
             'Install CLI'
           )
         }
-        onDisconnect={authenticated ? () => void handleGithubDisconnect() : undefined}
       />
       {githubError ? (
         <p className="text-xs text-red-600" role="alert">

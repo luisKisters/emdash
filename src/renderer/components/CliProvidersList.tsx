@@ -91,7 +91,9 @@ const CliProvidersList: React.FC<CliProvidersListProps> = ({ providers, isLoadin
         <div className="space-y-2">{sortedProviders.map((provider) => renderProviderRow(provider))}</div>
       ) : (
         <div className="rounded-lg border border-dashed border-border/50 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-          No CLI providers detected yet. Run “Detect CLIs” once you have them installed locally.
+          {isLoading
+            ? 'Detecting CLI status…'
+            : 'No CLI providers detected yet. Run “Detect CLIs” once you have them installed locally.'}
         </div>
       )}
     </div>
