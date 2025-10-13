@@ -290,7 +290,7 @@ find "$HOME" -type f -name 'emdash.db*' -print
 - Full details, including the exact list of events and properties: see docs/telemetry.md.
 
 <p align="center">
-  <img src="./docs/media/telemetry-settings.png" alt="Privacy & Telemetry settings toggle" width="720">
+  <img src="./docs/media/disabletelemetry.png" alt="Privacy & Telemetry settings toggle" width="720">
 </p>
 
 Setup (maintainers)
