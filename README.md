@@ -285,21 +285,12 @@ find "$HOME" -type f -name 'emdash.db*' -print
   - Autocapture and session replay are disabled; only explicit, allowlisted events are sent.
 - Opt-out:
   - Toggle it off in Settings → General → Privacy & Telemetry, or set `TELEMETRY_ENABLED=false` before launching the app.
-- Self-hosting:
-  - To send events to your own PostHog, set `POSTHOG_HOST` to your PostHog domain and `POSTHOG_PROJECT_API_KEY` to your project key.
 - Full details, including the exact list of events and properties: see docs/telemetry.md.
 
 <p align="center">
   <img src="./docs/media/disabletelemetry.png" alt="Privacy & Telemetry settings toggle" width="720">
 </p>
 
-Setup (maintainers)
-- In PostHog, create a project and copy the Project API Key. Choose the cloud region closest to your users or your self-hosted domain.
-- Recommended PostHog settings: disable IP capture, autocapture, session replay, and geo-IP enrichment by default.
-- Local dev: set env vars and run dev
-  - `export POSTHOG_PROJECT_API_KEY=phc_...`
-  - `export POSTHOG_HOST=https://us.i.posthog.com` (or EU/self-host)
-  - `npm run dev`
-- Packaged app (DMG): set defaults in `src/main/appConfig.json` before packaging
-  - Set `posthogHost` and `posthogKey`, then build: `npm run package`
-  - Users can still opt out at runtime via `TELEMETRY_ENABLED=false`
+Maintainers
+- Telemetry configuration (PostHog host and project key) is injected via CI for official builds. Local development does not send telemetry unless you explicitly provide credentials.
+- Recommended PostHog settings for the project: disable IP capture, autocapture, session replay, and geo‑IP enrichment by default.

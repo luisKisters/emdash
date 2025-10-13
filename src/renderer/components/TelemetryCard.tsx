@@ -1,6 +1,7 @@
 import React from 'react';
 import { Switch } from './ui/switch';
 import { Button } from './ui/button';
+import { ExternalLink } from 'lucide-react';
 
 const TelemetryCard: React.FC = () => {
   const [enabled, setEnabled] = React.useState<boolean>(true);
@@ -58,23 +59,27 @@ const TelemetryCard: React.FC = () => {
       <div className="flex gap-2">
         <Button
           type="button"
-          variant="secondary"
+          variant="outline"
           size="sm"
+          className="gap-2"
           onClick={() => window.electronAPI.openExternal('https://posthog.com/product')}
         >
-          About PostHog
+          <span>About PostHog</span>
+          <ExternalLink className="h-3.5 w-3.5 opacity-80" aria-hidden="true" />
         </Button>
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
+          className="gap-2"
           onClick={() =>
             window.electronAPI.openExternal(
               'https://github.com/generalaction/emdash/blob/main/docs/telemetry.md'
             )
           }
         >
-          Telemetry details
+          <span>Telemetry details</span>
+          <ExternalLink className="h-3.5 w-3.5 opacity-80" aria-hidden="true" />
         </Button>
       </div>
     </div>
