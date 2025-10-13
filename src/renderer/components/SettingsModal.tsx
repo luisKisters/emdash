@@ -2,12 +2,13 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
-import { X, Settings2, Plug } from 'lucide-react';
+import { X, Settings2, Plug, RefreshCcw } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import VersionCard from './VersionCard';
 import IntegrationsCard from './IntegrationsCard';
 import CliProvidersList from './CliProvidersList';
 import { CliProviderStatus } from '../types/connections';
+import { Spinner } from './ui/spinner';
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ type SettingsTab = 'general' | 'connections';
 interface SettingsSection {
   title: string;
   description?: string;
+  action?: React.ReactNode;
   render?: () => React.ReactNode;
 }
 const ORDERED_TABS: SettingsTab[] = ['general', 'connections'];
@@ -115,13 +117,33 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           },
           {
             title: 'CLI providers',
-            description: 'Detected local command-line tools available to agents.',
+            action: (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={fetchCliProviders}
+                disabled={cliLoading}
+                className="gap-2"
+              >
+                {cliLoading ? (
+                  <>
+                    <Spinner size="sm" className="h-3.5 w-3.5" />
+                    Detecting…
+                  </>
+                ) : (
+                  <>
+                    <RefreshCcw className="h-4 w-4" aria-hidden="true" />
+                    Detect CLIs
+                  </>
+                )}
+              </Button>
+            ),
             render: () => (
               <CliProvidersList
                 providers={cliProviders}
                 isLoading={cliLoading}
                 error={cliError}
-                onRefresh={fetchCliProviders}
               />
             ),
           },
@@ -152,9 +174,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
     return (
       <div className="space-y-5">
-        {sections.map((section) => {
+        {sections.map((section: SettingsSection) => {
           let renderedContent: React.ReactNode = null;
-          if ('render' in section && typeof section.render === 'function') {
+          if (typeof section.render === 'function') {
             renderedContent = section.render();
           } else if (!section.description) {
             renderedContent = <p className="text-sm text-muted-foreground">Coming soon.</p>;
@@ -162,11 +184,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
           return (
             <section key={section.title} className="space-y-3">
-              <div className="space-y-1">
-                <h3 className="text-sm font-medium">{section.title}</h3>
-                {section.description ? (
-                  <p className="text-sm text-muted-foreground">{section.description}</p>
-                ) : null}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                <div className="space-y-1">
+                  <h3 className="text-sm font-medium">{section.title}</h3>
+                  {section.description ? (
+                    <p className="text-sm text-muted-foreground">{section.description}</p>
+                  ) : null}
+                </div>
+                {section.action ? <div className="sm:pt-0.5">{section.action}</div> : null}
               </div>
               {renderedContent ? <div className="flex flex-col gap-3">{renderedContent}</div> : null}
             </section>

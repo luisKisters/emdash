@@ -1,11 +1,10 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Workflow, Github, Loader2, Trash2, CheckCircle2, ExternalLink, LogOut } from 'lucide-react';
-import ProviderRow from './ProviderRow';
+import { Loader2 } from 'lucide-react';
+import IntegrationRow from './IntegrationRow';
 import { Input } from './ui/input';
-import { Button } from './ui/button';
-import { Badge } from './ui/badge';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from './ui/tooltip';
 import { useGithubAuth } from '../hooks/useGithubAuth';
+import linearLogo from '../../assets/images/linear-icon.png';
+import githubLogo from '../../assets/images/github.png';
 
 type LinearState = {
   checking: boolean;
@@ -158,83 +157,6 @@ const IntegrationsCard: React.FC = () => {
     }
   }, []);
 
-  const linearMiddle = useMemo(() => {
-    if (linearState.connected) {
-      return (
-        <div className="flex items-center gap-2 text-sm" aria-live="polite">
-          <span className="font-medium text-foreground">Connected</span>
-          {linearState.detail ? (
-            <span className="text-xs text-muted-foreground">• {linearState.detail}</span>
-          ) : null}
-        </div>
-      );
-    }
-
-    return (
-      <div className="space-y-2" aria-live="polite">
-        <Input
-          type="password"
-          value={linearState.input}
-          onChange={(event) => handleLinearInputChange(event.target.value)}
-          disabled={linearState.loading || linearState.checking}
-          placeholder="Paste Linear API key..."
-          onKeyDown={handleLinearKeyDown}
-          aria-label="Linear API key"
-        />
-        {linearState.error ? (
-          <p className="text-xs text-red-600" role="alert">
-            {linearState.error}
-          </p>
-        ) : null}
-      </div>
-    );
-  }, [handleLinearInputChange, handleLinearKeyDown, linearState]);
-
-  const linearRight = useMemo(() => {
-    if (linearState.connected) {
-      return (
-        <div className="flex items-center gap-2">
-          <Badge className="flex items-center gap-1 bg-emerald-500/10 text-xs font-medium text-emerald-600 ring-1 ring-inset ring-emerald-500/30 dark:text-emerald-400">
-            <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> Connected
-          </Badge>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => void handleLinearDisconnect()}
-                disabled={linearState.loading}
-                aria-label="Disconnect Linear"
-              >
-                {linearState.loading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">Disconnect</TooltipContent>
-          </Tooltip>
-        </div>
-      );
-    }
-
-    const canConnect = !!linearState.input.trim() && !linearState.loading && !linearState.checking;
-
-    return (
-      <Button
-        type="button"
-        size="sm"
-        onClick={() => void handleLinearConnect()}
-        disabled={!canConnect}
-      >
-        {linearState.loading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-        Connect
-      </Button>
-    );
-  }, [handleLinearConnect, handleLinearDisconnect, linearState]);
-
   const githubDetail = useMemo(() => {
     if (!user) return null;
     return user?.name || user?.login || null;
@@ -276,99 +198,122 @@ const IntegrationsCard: React.FC = () => {
     }
   }, []);
 
+  const linearStatus = useMemo(() => {
+    if (linearState.checking || linearState.loading) return 'loading' as const;
+    if (linearState.connected) return 'connected' as const;
+    if (linearState.error) return 'error' as const;
+    return 'disconnected' as const;
+  }, [linearState.checking, linearState.connected, linearState.error, linearState.loading]);
+
+  const linearMiddle = useMemo(() => {
+    if (linearState.connected) {
+      if (linearState.detail) {
+        return <span aria-live="polite">{linearState.detail}</span>;
+      }
+      return <span aria-live="polite">Connected via API key.</span>;
+    }
+
+    return (
+      <div className="flex items-center gap-2" aria-live="polite">
+        <Input
+          type="password"
+          value={linearState.input}
+          onChange={(event) => handleLinearInputChange(event.target.value)}
+          disabled={linearState.loading || linearState.checking}
+          placeholder="Enter Linear API key"
+          onKeyDown={handleLinearKeyDown}
+          aria-label="Linear API key"
+          className="h-8 w-full max-w-[220px]"
+        />
+        {linearState.loading ? (
+          <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" aria-hidden="true" />
+        ) : null}
+      </div>
+    );
+  }, [handleLinearInputChange, handleLinearKeyDown, linearState]);
+
+  const canConnectLinear =
+    !!linearState.input.trim() && !linearState.loading && !linearState.checking;
+
+  const githubStatus = useMemo(() => {
+    if (isLoading || githubLogoutLoading) return 'loading' as const;
+    if (authenticated) return 'connected' as const;
+    if (githubError) return 'error' as const;
+    return 'disconnected' as const;
+  }, [authenticated, githubError, githubLogoutLoading, isLoading]);
+
   const githubMiddle = useMemo(() => {
     if (!installed) {
-      return (
-        <p className="text-sm text-muted-foreground" aria-live="polite">
-          Install GitHub CLI (gh) to connect.
-        </p>
-      );
+      return 'Install GitHub CLI (gh) to connect.';
     }
 
-    if (authenticated) {
-      return (
-        <div className="flex items-center gap-2 text-sm" aria-live="polite">
-          <span className="font-medium text-foreground">Connected</span>
-          {githubDetail ? <span className="text-xs text-muted-foreground">• {githubDetail}</span> : null}
-        </div>
-      );
+    if (!authenticated) {
+      return 'Sign in with GitHub CLI.';
     }
 
-    return (
-      <p className="text-sm text-muted-foreground" aria-live="polite">
-        Sign in with GitHub CLI.
-      </p>
-    );
+    if (!githubDetail) {
+      return 'Connected via GitHub CLI.';
+    }
+
+    return undefined;
   }, [authenticated, githubDetail, installed]);
 
-  const githubRight = useMemo(() => {
-    if (!installed) {
-      return (
-        <Button type="button" variant="outline" size="sm" onClick={() => void handleGithubInstall()}>
-          <ExternalLink className="mr-2 h-4 w-4" /> Install CLI
-        </Button>
-      );
-    }
-
-    if (authenticated) {
-      return (
-        <div className="flex items-center gap-2">
-          <Badge className="flex items-center gap-1 bg-emerald-500/10 text-xs font-medium text-emerald-600 ring-1 ring-inset ring-emerald-500/30 dark:text-emerald-400">
-            <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> Connected
-          </Badge>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => void handleGithubDisconnect()}
-                disabled={githubLogoutLoading}
-                aria-label="Disconnect GitHub"
-              >
-                {githubLogoutLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <LogOut className="h-4 w-4" />
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top">Disconnect</TooltipContent>
-          </Tooltip>
-        </div>
-      );
-    }
-
-    return (
-      <Button
-        type="button"
-        size="sm"
-        onClick={() => void handleGithubConnect()}
-        disabled={isLoading}
-      >
-        {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-        Sign in
-      </Button>
-    );
-  }, [authenticated, githubLogoutLoading, handleGithubConnect, handleGithubDisconnect, handleGithubInstall, installed, isLoading]);
-
   return (
-    <TooltipProvider delayDuration={150}>
-      <div className="space-y-3">
-      <ProviderRow icon={Workflow} label="Linear" detail={null} middle={linearMiddle} right={linearRight} />
+    <div className="space-y-2" aria-live="polite">
+      <IntegrationRow
+        logoSrc={linearLogo}
+        name="Linear"
+        accountLabel={linearState.detail ?? undefined}
+        status={linearStatus}
+        middle={linearMiddle}
+        onConnect={() => void handleLinearConnect()}
+        connectDisabled={!canConnectLinear}
+        connectContent={
+          linearState.loading ? (
+            <>
+              <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Connecting…
+            </>
+          ) : (
+            'Connect'
+          )
+        }
+        onDisconnect={linearState.connected ? () => void handleLinearDisconnect() : undefined}
+      />
       {linearState.error && !linearState.connected ? (
-        <span className="sr-only" aria-live="assertive">
+        <p className="text-xs text-red-600" role="alert">
           {linearState.error}
-        </span>
+        </p>
       ) : null}
-      <ProviderRow icon={Github} label="GitHub" detail={null} middle={githubMiddle} right={githubRight} />
+
+      <IntegrationRow
+        logoSrc={githubLogo}
+        name="GitHub"
+        accountLabel={githubDetail ?? undefined}
+        status={githubStatus}
+        middle={githubMiddle}
+        onConnect={() => (installed ? void handleGithubConnect() : void handleGithubInstall())}
+        connectDisabled={installed ? isLoading || githubLogoutLoading : false}
+        connectContent={
+          installed ? (
+            isLoading ? (
+              <>
+                <Loader2 className="mr-1 h-3.5 w-3.5 animate-spin" aria-hidden="true" /> Signing in…
+              </>
+            ) : (
+              'Sign in'
+            )
+          ) : (
+            'Install CLI'
+          )
+        }
+        onDisconnect={authenticated ? () => void handleGithubDisconnect() : undefined}
+      />
       {githubError ? (
-        <p className="px-4 text-xs text-red-600" role="alert">
+        <p className="text-xs text-red-600" role="alert">
           {githubError}
         </p>
       ) : null}
-      </div>
-    </TooltipProvider>
+    </div>
   );
 };
 

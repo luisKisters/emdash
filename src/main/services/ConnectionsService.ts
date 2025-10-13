@@ -1,5 +1,4 @@
 import { spawnSync } from 'child_process';
-import os from 'os';
 import { codexService } from './CodexService';
 
 export type CliStatusCode = 'connected' | 'missing' | 'needs_key' | 'error';
@@ -37,73 +36,66 @@ interface CommandResult {
 const CLI_DEFINITIONS: CliDefinition[] = [
   {
     id: 'codex',
-    name: 'Codex CLI',
+    name: 'Codex',
     commands: ['codex'],
     args: ['--version'],
     docUrl: 'https://github.com/openai/codex',
   },
   {
     id: 'claude',
-    name: 'Claude Code CLI',
+    name: 'Claude Code',
     commands: ['claude'],
     args: ['--version'],
     docUrl: 'https://docs.anthropic.com/claude/docs/claude-code',
   },
   {
     id: 'cursor',
-    name: 'Cursor CLI',
-    commands: ['cursor'],
+    name: 'Cursor',
+    commands: ['cursor-agent', 'cursor'],
     args: ['--version'],
     docUrl: 'https://cursor.sh',
   },
   {
     id: 'gemini',
-    name: 'Gemini CLI',
+    name: 'Gemini',
     commands: ['gemini'],
     args: ['--version'],
     docUrl: 'https://github.com/google-gemini/gemini-cli',
   },
   {
-    id: 'openai',
-    name: 'OpenAI CLI',
-    commands: ['openai'],
+    id: 'droid',
+    name: 'Droid',
+    commands: ['droid'],
     args: ['--version'],
-    docUrl: 'https://platform.openai.com/docs/guides/openai-cli',
-    statusResolver: (result) => {
-      if (!result.success) {
-        return 'missing';
-      }
-      const hasKey = !!process.env.OPENAI_API_KEY;
-      return hasKey ? 'connected' : 'needs_key';
-    },
-    messageResolver: (result) => {
-      if (!result.success) {
-        return null;
-      }
-      const hasKey = !!process.env.OPENAI_API_KEY;
-      return hasKey ? null : 'Set OPENAI_API_KEY to unlock OpenAI workflows.';
-    },
+    docUrl: 'https://docs.factory.ai/cli/getting-started/quickstart',
   },
   {
-    id: 'node',
-    name: 'Node.js',
-    commands: ['node'],
+    id: 'amp',
+    name: 'Amp',
+    commands: ['amp'],
     args: ['--version'],
-    docUrl: 'https://nodejs.org/en/download/',
+    docUrl: 'https://ampcode.com/manual#install',
   },
   {
-    id: 'git',
-    name: 'Git',
-    commands: ['git'],
+    id: 'opencode',
+    name: 'OpenCode',
+    commands: ['opencode'],
     args: ['--version'],
-    docUrl: 'https://git-scm.com/downloads',
+    docUrl: 'https://opencode.ai/docs/cli/',
   },
   {
-    id: 'python',
-    name: 'Python',
-    commands: os.platform() === 'win32' ? ['python', 'py', 'python3'] : ['python3', 'python'],
+    id: 'copilot',
+    name: 'GitHub Copilot',
+    commands: ['copilot'],
     args: ['--version'],
-    docUrl: 'https://www.python.org/downloads/',
+    docUrl: 'https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli',
+  },
+  {
+    id: 'charm',
+    name: 'Charm',
+    commands: ['crush'],
+    args: ['--version'],
+    docUrl: 'https://github.com/charmbracelet/crush',
   },
 ];
 
