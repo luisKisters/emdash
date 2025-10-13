@@ -212,6 +212,19 @@ declare global {
         issues?: any[];
         error?: string;
       }>;
+      getCliProviders?: () => Promise<{
+        success: boolean;
+        providers?: Array<{
+          id: string;
+          name: string;
+          status: 'connected' | 'missing' | 'needs_key' | 'error';
+          version?: string | null;
+          message?: string | null;
+          docUrl?: string | null;
+          command?: string | null;
+        }>;
+        error?: string;
+      }>;
 
       // Database operations
       getProjects: () => Promise<any[]>;
@@ -400,6 +413,19 @@ export interface ElectronAPI {
     success: boolean;
     repository?: string;
     branch?: string;
+    error?: string;
+  }>;
+  getCliProviders?: () => Promise<{
+    success: boolean;
+    providers?: Array<{
+      id: string;
+      name: string;
+      status: 'connected' | 'missing' | 'needs_key' | 'error';
+      version?: string | null;
+      message?: string | null;
+      docUrl?: string | null;
+      command?: string | null;
+    }>;
     error?: string;
   }>;
 

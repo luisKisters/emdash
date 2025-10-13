@@ -118,6 +118,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   linearInitialFetch: (limit?: number) => ipcRenderer.invoke('linear:initialFetch', limit),
   linearSearchIssues: (searchTerm: string, limit?: number) =>
     ipcRenderer.invoke('linear:searchIssues', searchTerm, limit),
+  getCliProviders: () => ipcRenderer.invoke('connections:getCliProviders'),
   // Database methods
   getProjects: () => ipcRenderer.invoke('db:getProjects'),
   saveProject: (project: any) => ipcRenderer.invoke('db:saveProject', project),

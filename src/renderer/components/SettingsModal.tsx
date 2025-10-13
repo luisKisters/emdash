@@ -1,70 +1,34 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
 import { Separator } from './ui/separator';
-import { X, Settings2, User } from 'lucide-react';
+import { X, Settings2, Plug } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import VersionCard from './VersionCard';
-import LinearIntegrationCard from './LinearIntegrationCard';
+import IntegrationsCard from './IntegrationsCard';
+import CliProvidersList from './CliProvidersList';
+import { CliProviderStatus } from '../types/connections';
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type SettingsTab = 'general' | 'account';
+type SettingsTab = 'general' | 'connections';
 
 interface SettingsSection {
   title: string;
   description?: string;
-  Component?: React.ComponentType;
+  render?: () => React.ReactNode;
 }
-
-const TAB_DETAILS: Record<
-  SettingsTab,
-  {
-    icon: LucideIcon;
-    label: string;
-    title: string;
-    description: string;
-    sections: SettingsSection[];
-  }
-> = {
-  general: {
-    icon: Settings2,
-    label: 'General',
-    title: 'General',
-    description: '',
-    sections: [
-      {
-        title: 'Workspace defaults',
-        description: 'General configuration options will appear here soon.',
-      },
-      {
-        title: 'Version',
-        Component: VersionCard,
-      },
-    ],
-  },
-  account: {
-    icon: User,
-    label: 'Account',
-    title: 'Account',
-    description: '',
-    sections: [
-      {
-        title: 'Linear integration',
-        Component: LinearIntegrationCard,
-      },
-    ],
-  },
-};
-
-const ORDERED_TABS: SettingsTab[] = ['general', 'account'];
+const ORDERED_TABS: SettingsTab[] = ['general', 'connections'];
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+  const [cliProviders, setCliProviders] = useState<CliProviderStatus[]>([]);
+  const [cliError, setCliError] = useState<string | null>(null);
+  const [cliLoading, setCliLoading] = useState<boolean>(false);
   const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -87,7 +51,98 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     return () => window.removeEventListener('keydown', handler);
   }, [isOpen, onClose]);
 
-  const activeTabDetails = TAB_DETAILS[activeTab];
+  const fetchCliProviders = useCallback(async () => {
+    if (!window?.electronAPI?.getCliProviders) {
+      setCliProviders([]);
+      setCliError('CLI detection is unavailable in this build.');
+      return;
+    }
+
+    setCliLoading(true);
+    setCliError(null);
+
+    try {
+      const result = await window.electronAPI.getCliProviders();
+      if (result?.success && Array.isArray(result.providers)) {
+        setCliProviders(result.providers);
+      } else {
+        setCliProviders([]);
+        setCliError(result?.error || 'Failed to detect CLI providers.');
+      }
+    } catch (error) {
+      console.error('CLI detection failed:', error);
+      setCliProviders([]);
+      setCliError('Unable to detect CLI providers.');
+    } finally {
+      setCliLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    if (activeTab === 'connections') {
+      fetchCliProviders();
+    }
+  }, [isOpen, activeTab, fetchCliProviders]);
+
+  const tabDetails = useMemo(() => {
+    const base = {
+      general: {
+        icon: Settings2,
+        label: 'General',
+        title: 'General',
+        description: '',
+        sections: [
+          {
+            title: 'Workspace defaults',
+            description: 'General configuration options will appear here soon.',
+          },
+          {
+            title: 'Version',
+            render: () => <VersionCard />,
+          },
+        ],
+      },
+      connections: {
+        icon: Plug,
+        label: 'Connections',
+        title: 'Connections',
+        description: '',
+        sections: [
+          {
+            title: 'Integrations',
+            description: '',
+            render: () => <IntegrationsCard />,
+          },
+          {
+            title: 'CLI providers',
+            description: 'Detected local command-line tools available to agents.',
+            render: () => (
+              <CliProvidersList
+                providers={cliProviders}
+                isLoading={cliLoading}
+                error={cliError}
+                onRefresh={fetchCliProviders}
+              />
+            ),
+          },
+        ],
+      },
+    } satisfies Record<
+      SettingsTab,
+      {
+        icon: LucideIcon;
+        label: string;
+        title: string;
+        description: string;
+        sections: SettingsSection[];
+      }
+    >;
+
+    return base;
+  }, [cliProviders, cliLoading, cliError, fetchCliProviders]);
+
+  const activeTabDetails = tabDetails[activeTab];
 
   const renderContent = () => {
     const { sections } = activeTabDetails;
@@ -109,8 +164,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 <p className="mt-1 text-sm text-muted-foreground">{section.description}</p>
               ) : null}
             </div>
-            {section.Component ? (
-              <section.Component />
+            {'render' in section && typeof section.render === 'function' ? (
+              section.render()
             ) : !section.description ? (
               <p className="text-sm text-muted-foreground">Coming soon.</p>
             ) : null}
@@ -151,7 +206,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
               <aside className="w-60 border-r border-border/60 bg-muted/20 p-6">
                 <nav className="space-y-1">
                   {ORDERED_TABS.map((tab) => {
-                    const { icon: Icon, label } = TAB_DETAILS[tab];
+                    const { icon: Icon, label } = tabDetails[tab];
 
                     return (
                       <button
