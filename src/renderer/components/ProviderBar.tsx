@@ -12,11 +12,13 @@ import copilotLogo from '../../assets/images/ghcopilot.png';
 import ampLogo from '../../assets/images/ampcode.png';
 import opencodeLogo from '../../assets/images/opencode.png';
 import charmLogo from '../../assets/images/charm.png';
+import qwenLogo from '../../assets/images/qwen.png';
 
 type Props = { provider: Provider; linearIssue?: LinearIssueSummary | null };
 
 export const ProviderBar: React.FC<Props> = ({ provider, linearIssue }) => {
   const map = {
+    qwen: { name: 'Qwen Code', logo: qwenLogo },
     codex: { name: 'Codex', logo: openaiLogo },
     claude: { name: 'Claude Code', logo: claudeLogo },
     droid: { name: 'Droid', logo: factoryLogo },

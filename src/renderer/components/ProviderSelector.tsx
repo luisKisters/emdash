@@ -18,6 +18,7 @@ import copilotLogo from '../../assets/images/ghcopilot.png';
 import ampLogo from '../../assets/images/ampcode.png';
 import opencodeLogo from '../../assets/images/opencode.png';
 import charmLogo from '../../assets/images/charm.png';
+import qwenLogo from '../../assets/images/qwen.png';
 
 interface ProviderSelectorProps {
   value: Provider;
@@ -31,6 +32,11 @@ const providerConfig = {
     name: 'Codex',
     logo: openaiLogo,
     alt: 'Codex',
+  },
+  qwen: {
+    name: 'Qwen Code',
+    logo: qwenLogo,
+    alt: 'Qwen Code CLI',
   },
   claude: {
     name: 'Claude Code',
