@@ -12,10 +12,8 @@ const UpdateChannels = {
 } as const;
 
 // Centralized dev-mode hints
-const DEV_HINT_CHECK =
-  'Updates are disabled in development.';
-const DEV_HINT_DOWNLOAD =
-  'Cannot download updates in development.';
+const DEV_HINT_CHECK = 'Updates are disabled in development.';
+const DEV_HINT_DOWNLOAD = 'Cannot download updates in development.';
 
 // Basic updater configuration
 // Publish config is provided via electron-builder (package.json -> build.publish)
