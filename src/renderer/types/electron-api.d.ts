@@ -212,6 +212,18 @@ declare global {
         content?: string;
         error?: string;
       }>;
+      // Attachments
+      saveAttachment: (args: {
+        workspacePath: string;
+        srcPath: string;
+        subdir?: string;
+      }) => Promise<{
+        success: boolean;
+        absPath?: string;
+        relPath?: string;
+        fileName?: string;
+        error?: string;
+      }>;
 
       // Run events
       onRunEvent: (callback: (event: any) => void) => void;

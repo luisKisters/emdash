@@ -65,3 +65,17 @@ export async function buildAttachmentsSection(
   if (parts.length === 0) return '';
   return `\n\n---\nAttached files (from workspace):\n\n${parts.join('\n\n')}\n`;
 }
+
+export function buildImageAttachmentsSection(workspacePath: string, relPaths: string[]): string {
+  if (!relPaths || relPaths.length === 0) return '';
+  const lines: string[] = [];
+  for (const rel of relPaths) {
+    const name = rel.split(/[\\/]/).pop() || 'image';
+    const sep = workspacePath.endsWith('/') ? '' : '/';
+    const absPath = (workspacePath + sep + rel).replace(/\\/g, '/');
+    // Markdown image referencing a file URL; many CLIs that support images accept this pattern
+    const url = `file://${absPath}`;
+    lines.push(`![${name}](${url})`);
+  }
+  return `\n\n---\nAttached images (from workspace):\n\n${lines.join('\n')}\n`;
+}
