@@ -52,7 +52,9 @@ function ensureInitialized() {
   autoUpdater.on('checking-for-update', () => emit(UpdateChannels.checking));
   autoUpdater.on('update-available', (info) => emit(UpdateChannels.available, info));
   autoUpdater.on('update-not-available', (info) => emit(UpdateChannels.notAvailable, info));
-  autoUpdater.on('error', (err) => emit(UpdateChannels.error, { message: err?.message || String(err) }));
+  autoUpdater.on('error', (err) =>
+    emit(UpdateChannels.error, { message: err?.message || String(err) })
+  );
   autoUpdater.on('download-progress', (progress) => emit(UpdateChannels.progress, progress));
   autoUpdater.on('update-downloaded', (info) => emit(UpdateChannels.downloaded, info));
 }
@@ -69,12 +71,13 @@ export function registerUpdateIpc() {
   ipcMain.handle('update:check', async () => {
     try {
       const dev = !app.isPackaged || process.env.NODE_ENV === 'development';
-      const forced = (autoUpdater as any)?.forceDevUpdateConfig === true || process.env.EMDASH_DEV_UPDATES === 'true';
+      const forced =
+        (autoUpdater as any)?.forceDevUpdateConfig === true ||
+        process.env.EMDASH_DEV_UPDATES === 'true';
       if (dev && !forced) {
         return {
           success: false,
-          error:
-            'Updates are disabled in development.',
+          error: 'Updates are disabled in development.',
           devDisabled: true,
         } as any;
       }
@@ -90,7 +93,9 @@ export function registerUpdateIpc() {
   ipcMain.handle('update:download', async () => {
     try {
       const dev = !app.isPackaged || process.env.NODE_ENV === 'development';
-      const forced = (autoUpdater as any)?.forceDevUpdateConfig === true || process.env.EMDASH_DEV_UPDATES === 'true';
+      const forced =
+        (autoUpdater as any)?.forceDevUpdateConfig === true ||
+        process.env.EMDASH_DEV_UPDATES === 'true';
       if (dev && !forced) {
         return {
           success: false,

@@ -97,7 +97,9 @@ const AppVersionCard: React.FC = () => {
           <div className="flex items-start gap-3">
             <div className="inline-flex items-start gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-2 shadow-sm">
               <div className="flex flex-col">
-                <span className="text-xs font-medium text-foreground">Updater unavailable — download manually</span>
+                <span className="text-xs font-medium text-foreground">
+                  Updater unavailable — download manually
+                </span>
                 {update.message && (
                   <span className="text-xs text-muted-foreground">{update.message}</span>
                 )}
