@@ -1,0 +1,103 @@
+import { app, ipcMain } from 'electron';
+import { autoUpdater } from 'electron-updater';
+
+// Basic updater configuration
+// Publish config is provided via electron-builder (package.json -> build.publish)
+// We keep autoDownload off; downloads start only when the user clicks.
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = true;
+
+// Enable dev update testing if explicitly opted in
+const isDev = !app.isPackaged || process.env.NODE_ENV === 'development';
+if (isDev && process.env.EMDASH_DEV_UPDATES === 'true') {
+  try {
+    // Allow using dev-app-update.yml when not packaged
+    // See: https://www.electron.build/auto-update#testing-in-development
+    (autoUpdater as any).forceDevUpdateConfig = true;
+    if (process.env.EMDASH_DEV_UPDATE_CONFIG) {
+      // Optionally specify a custom config path
+      (autoUpdater as any).updateConfigPath = process.env.EMDASH_DEV_UPDATE_CONFIG;
+    }
+  } catch {
+    // ignore if not supported by type defs/runtime
+  }
+}
+
+// Helper: emit update events to all renderer windows
+function emit(channel: string, payload?: any) {
+  const { BrowserWindow } = require('electron');
+  for (const win of BrowserWindow.getAllWindows()) {
+    try {
+      win.webContents.send(channel, payload);
+    } catch {}
+  }
+}
+
+let initialized = false;
+function ensureInitialized() {
+  if (initialized) return;
+  initialized = true;
+
+  // Wire autoUpdater events
+  autoUpdater.on('checking-for-update', () => emit('update:checking'));
+  autoUpdater.on('update-available', (info) => emit('update:available', info));
+  autoUpdater.on('update-not-available', (info) => emit('update:not-available', info));
+  autoUpdater.on('error', (err) => emit('update:error', { message: err?.message || String(err) }));
+  autoUpdater.on('download-progress', (progress) => emit('update:download-progress', progress));
+  autoUpdater.on('update-downloaded', (info) => emit('update:downloaded', info));
+}
+
+// Fallback: open latest DMG link in browser for manual install
+function getLatestDownloadUrl(): string {
+  const arch = process.arch === 'arm64' ? 'arm64' : 'x64';
+  return `https://github.com/generalaction/emdash/releases/latest/download/emdash-${arch}.dmg`;
+}
+
+export function registerUpdateIpc() {
+  ensureInitialized();
+
+  ipcMain.handle('update:check', async () => {
+    try {
+      // On dev, autoUpdater may throw. We still attempt to check.
+      const result = await autoUpdater.checkForUpdates();
+      // electron-updater returns UpdateCheckResult or throws
+      return { success: true, result: result ?? null };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  ipcMain.handle('update:download', async () => {
+    try {
+      await autoUpdater.downloadUpdate();
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  ipcMain.handle('update:quit-and-install', async () => {
+    try {
+      // Slight delay to ensure renderer can process the response
+      setTimeout(() => {
+        autoUpdater.quitAndInstall(false, true);
+      }, 250);
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  ipcMain.handle('update:open-latest', async () => {
+    try {
+      const { shell } = require('electron');
+      await shell.openExternal(getLatestDownloadUrl());
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  // Expose app version for simple comparisons on renderer
+  ipcMain.handle('update:get-version', () => app.getVersion());
+}
