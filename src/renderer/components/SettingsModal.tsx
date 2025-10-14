@@ -7,6 +7,7 @@ import type { LucideIcon } from 'lucide-react';
 import VersionCard from './VersionCard';
 import IntegrationsCard from './IntegrationsCard';
 import CliProvidersList from './CliProvidersList';
+import TelemetryCard from './TelemetryCard';
 import { CliProviderStatus } from '../types/connections';
 import { Separator } from './ui/separator';
 
@@ -94,6 +95,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         title: 'General',
         description: '',
         sections: [
+          {
+            title: 'Privacy & telemetry',
+            render: () => <TelemetryCard />,
+          },
           {
             title: 'Workspace defaults',
             description: 'General configuration options will appear here soon.',
