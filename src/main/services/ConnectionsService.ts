@@ -127,10 +127,7 @@ class ConnectionsService {
     };
   }
 
-  private async resolveStatus(
-    def: CliDefinition,
-    result: CommandResult
-  ): Promise<CliStatusCode> {
+  private async resolveStatus(def: CliDefinition, result: CommandResult): Promise<CliStatusCode> {
     if (def.id === 'codex') {
       try {
         const installed = await codexService.getInstallationStatus();

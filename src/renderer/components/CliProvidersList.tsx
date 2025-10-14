@@ -105,7 +105,9 @@ const renderProviderRow = (provider: CliProviderStatus) => {
       key={provider.id}
       logoSrc={logo}
       icon={
-        logo ? undefined : <Sparkles className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+        logo ? undefined : (
+          <Sparkles className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
+        )
       }
       name={provider.name}
       onNameClick={handleNameClick}

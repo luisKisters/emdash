@@ -27,19 +27,18 @@ const defaultLinearState: LinearState = {
 let cachedLinearState: LinearState | null = null;
 
 const IntegrationsCard: React.FC = () => {
-  const [linearState, setLinearState] = useState<LinearState>(() => cachedLinearState ?? defaultLinearState);
+  const [linearState, setLinearState] = useState<LinearState>(
+    () => cachedLinearState ?? defaultLinearState
+  );
   const { installed, authenticated, user, isLoading, login, checkStatus } = useGithubAuth();
   const [githubError, setGithubError] = useState<string | null>(null);
-  const updateLinearState = useCallback(
-    (updater: (prev: LinearState) => LinearState) => {
-      setLinearState((prev) => {
-        const next = updater(prev);
-        cachedLinearState = next;
-        return next;
-      });
-    },
-    []
-  );
+  const updateLinearState = useCallback((updater: (prev: LinearState) => LinearState) => {
+    setLinearState((prev) => {
+      const next = updater(prev);
+      cachedLinearState = next;
+      return next;
+    });
+  }, []);
 
   const loadLinearStatus = useCallback(async () => {
     if (!window?.electronAPI?.linearCheckConnection) {
@@ -79,9 +78,12 @@ const IntegrationsCard: React.FC = () => {
     loadLinearStatus();
   }, [loadLinearStatus]);
 
-  const handleLinearInputChange = useCallback((value: string) => {
-    updateLinearState((prev) => ({ ...prev, input: value, error: null }));
-  }, [updateLinearState]);
+  const handleLinearInputChange = useCallback(
+    (value: string) => {
+      updateLinearState((prev) => ({ ...prev, input: value, error: null }));
+    },
+    [updateLinearState]
+  );
 
   const handleLinearConnect = useCallback(async () => {
     const token = linearState.input.trim();

@@ -73,7 +73,10 @@ const TelemetryCard: React.FC = () => {
           onClick={() => window.electronAPI.openExternal('https://posthog.com/product')}
         >
           <span className="transition-colors group-hover:text-foreground">About PostHog</span>
-          <span aria-hidden="true" className="text-xs text-muted-foreground transition-colors group-hover:text-foreground">
+          <span
+            aria-hidden="true"
+            className="text-xs text-muted-foreground transition-colors group-hover:text-foreground"
+          >
             ↗
           </span>
         </Button>

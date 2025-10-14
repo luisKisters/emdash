@@ -28,7 +28,8 @@ interface IntegrationRowProps {
 }
 
 const STATUS_CLASSES: Record<IntegrationStatus, string> = {
-  connected: 'border border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  connected:
+    'border border-emerald-500/50 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
   loading: 'border border-border/60 bg-transparent text-muted-foreground',
   error: 'border border-border/60 bg-transparent text-muted-foreground',
   disconnected: 'border border-border/60 bg-transparent text-muted-foreground',
@@ -76,8 +77,7 @@ const IntegrationRow: React.FC<IntegrationRowProps> = ({
   const showDisconnect = resolvedStatus === 'connected' && !!onDisconnect;
   const showOpen = resolvedStatus === 'connected' && !!onOpen;
 
-  const resolvedStatusLabel =
-    statusLabel ?? STATUS_LABELS[status] ?? STATUS_LABELS.disconnected;
+  const resolvedStatusLabel = statusLabel ?? STATUS_LABELS[status] ?? STATUS_LABELS.disconnected;
 
   const defaultMiddle =
     status === 'connected' && accountLabel ? (

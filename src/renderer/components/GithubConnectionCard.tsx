@@ -94,7 +94,9 @@ const GithubConnectionCard: React.FC<GithubConnectionCardProps> = ({ onStatusCha
       {status === 'missing' ? (
         <div className="space-y-3">
           <div className="rounded-lg border border-dashed border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
-            <p className="text-sm text-muted-foreground">Install GitHub CLI (gh) to enable repo access.</p>
+            <p className="text-sm text-muted-foreground">
+              Install GitHub CLI (gh) to enable repo access.
+            </p>
           </div>
           <Button type="button" variant="outline" size="sm" onClick={handleInstall}>
             <ExternalLink className="mr-2 h-4 w-4" /> Install GitHub CLI
@@ -131,11 +133,15 @@ const GithubConnectionCard: React.FC<GithubConnectionCardProps> = ({ onStatusCha
               </Button>
             </div>
           </div>
-          <p className="text-xs text-muted-foreground">gh stays signed in to keep PR actions working.</p>
+          <p className="text-xs text-muted-foreground">
+            gh stays signed in to keep PR actions working.
+          </p>
         </div>
       ) : (
         <div className="space-y-3">
-          <p className="text-sm text-muted-foreground">Sign in to gh to enable cloning and PR actions.</p>
+          <p className="text-sm text-muted-foreground">
+            Sign in to gh to enable cloning and PR actions.
+          </p>
           <div className="flex flex-wrap gap-3">
             <Button type="button" onClick={handleConnect} disabled={isLoading}>
               {isLoading ? 'Connecting…' : 'Connect GitHub'}
@@ -148,7 +154,9 @@ const GithubConnectionCard: React.FC<GithubConnectionCardProps> = ({ onStatusCha
       )}
 
       {message ? (
-        <p className={`text-sm ${isError ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}>
+        <p
+          className={`text-sm ${isError ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}
+        >
           {message}
         </p>
       ) : null}

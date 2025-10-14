@@ -187,22 +187,24 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           }
 
           return (
-          <React.Fragment key={section.title}>
-            {index > 0 ? <Separator className="border-border/60" /> : null}
-            <section className="space-y-3">
-              <div className="space-y-1">
-                <div className="flex items-center justify-between gap-3">
-                  <h3 className="text-sm font-medium">{section.title}</h3>
-                  {section.action ? <div>{section.action}</div> : null}
+            <React.Fragment key={section.title}>
+              {index > 0 ? <Separator className="border-border/60" /> : null}
+              <section className="space-y-3">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-medium">{section.title}</h3>
+                    {section.action ? <div>{section.action}</div> : null}
+                  </div>
+                  {section.description ? (
+                    <p className="text-sm text-muted-foreground">{section.description}</p>
+                  ) : null}
                 </div>
-                {section.description ? (
-                  <p className="text-sm text-muted-foreground">{section.description}</p>
+                {renderedContent ? (
+                  <div className="flex flex-col gap-3">{renderedContent}</div>
                 ) : null}
-              </div>
-              {renderedContent ? <div className="flex flex-col gap-3">{renderedContent}</div> : null}
-            </section>
-          </React.Fragment>
-        );
+              </section>
+            </React.Fragment>
+          );
         })}
       </div>
     );

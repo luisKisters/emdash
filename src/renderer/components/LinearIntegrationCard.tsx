@@ -58,7 +58,7 @@ const LinearIntegrationCard: React.FC = () => {
         console.error('Failed to check Linear connection:', error);
         if (!cancelled) {
           setStatus('error');
-      setMessage('Unable to verify Linear connection.');
+          setMessage('Unable to verify Linear connection.');
         }
       }
     };
