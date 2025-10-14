@@ -78,11 +78,11 @@ const TerminalPaneComponent: React.FC<Props> = ({
         }
       : {
           // Dark theme defaults
-          background: '#000000',
+          background: '#1f2937',
           foreground: '#ffffff',
           cursor: '#ffffff',
           selectionBackground: '#ffffff33',
-          black: '#000000',
+          black: '#1f2937',
           red: '#ff6b6b',
           green: '#2ecc71',
           yellow: '#f1c40f',
@@ -227,7 +227,7 @@ const TerminalPaneComponent: React.FC<Props> = ({
         width: '100%',
         height: '100%',
         minHeight: '0',
-        backgroundColor: variant === 'light' ? '#ffffff' : '#000000',
+        backgroundColor: variant === 'light' ? '#ffffff' : '#1f2937',
         overflow: 'hidden',
         boxSizing: 'border-box',
       }}
