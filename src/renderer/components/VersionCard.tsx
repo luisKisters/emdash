@@ -3,7 +3,7 @@ import { Button } from './ui/button';
 import { Spinner } from './ui/spinner';
 import { useUpdater } from '@/hooks/useUpdater';
 
-const AppVersionCard: React.FC = () => {
+const VersionCard: React.FC = () => {
   const [electronVersion, setElectronVersion] = useState<string>('...');
   const [emdashVersion, setEmdashVersion] = useState<string>('...');
   const [platform, setPlatform] = useState<string>('');
@@ -115,4 +115,4 @@ const AppVersionCard: React.FC = () => {
   );
 };
 
-export default AppVersionCard;
+export default VersionCard;

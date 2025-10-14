@@ -1,83 +1,58 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
-import { Separator } from './ui/separator';
-import { X, Settings2, User, History } from 'lucide-react';
+import { X, Settings2, Cable } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import AppVersionCard from './AppVersionCard';
-import LinearIntegrationCard from './LinearIntegrationCard';
+import VersionCard from './VersionCard';
+import IntegrationsCard from './IntegrationsCard';
+import CliProvidersList, { BASE_CLI_PROVIDERS } from './CliProvidersList';
 import TelemetryCard from './TelemetryCard';
+import { CliProviderStatus } from '../types/connections';
+import { Separator } from './ui/separator';
+
+const createDefaultCliProviders = (): CliProviderStatus[] =>
+  BASE_CLI_PROVIDERS.map((provider) => ({ ...provider }));
+
+const mergeCliProviders = (incoming: CliProviderStatus[]): CliProviderStatus[] => {
+  const mergedMap = new Map<string, CliProviderStatus>();
+
+  BASE_CLI_PROVIDERS.forEach((provider) => {
+    mergedMap.set(provider.id, { ...provider });
+  });
+
+  incoming.forEach((provider) => {
+    mergedMap.set(provider.id, {
+      ...(mergedMap.get(provider.id) ?? {}),
+      ...provider,
+    });
+  });
+
+  return Array.from(mergedMap.values());
+};
 
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
 }
 
-type SettingsTab = 'general' | 'account' | 'versions';
+type SettingsTab = 'general' | 'connections';
 
 interface SettingsSection {
   title: string;
   description?: string;
-  Component?: React.ComponentType;
+  action?: React.ReactNode;
+  render?: () => React.ReactNode;
 }
-
-const TAB_DETAILS: Record<
-  SettingsTab,
-  {
-    icon: LucideIcon;
-    label: string;
-    title: string;
-    description: string;
-    sections: SettingsSection[];
-  }
-> = {
-  general: {
-    icon: Settings2,
-    label: 'General',
-    title: 'General',
-    description: '',
-    sections: [
-      {
-        title: 'Privacy & Telemetry',
-        Component: TelemetryCard,
-      },
-      {
-        title: 'Workspace defaults',
-        description: 'General configuration options will appear here soon.',
-      },
-    ],
-  },
-  account: {
-    icon: User,
-    label: 'Account',
-    title: 'Account',
-    description: '',
-    sections: [
-      {
-        title: 'Linear integration',
-        Component: LinearIntegrationCard,
-      },
-    ],
-  },
-  versions: {
-    icon: History,
-    label: 'Versions',
-    title: 'Versions',
-    description: '',
-    sections: [
-      {
-        title: 'Versions',
-        Component: AppVersionCard,
-      },
-    ],
-  },
-};
-
-const ORDERED_TABS: SettingsTab[] = ['general', 'account', 'versions'];
+const ORDERED_TABS: SettingsTab[] = ['general', 'connections'];
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+  const [cliProviders, setCliProviders] = useState<CliProviderStatus[]>(() =>
+    createDefaultCliProviders()
+  );
+  const [cliError, setCliError] = useState<string | null>(null);
+  const [cliLoading, setCliLoading] = useState<boolean>(false);
   const shouldReduceMotion = useReducedMotion();
 
   useEffect(() => {
@@ -100,7 +75,99 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     return () => window.removeEventListener('keydown', handler);
   }, [isOpen, onClose]);
 
-  const activeTabDetails = TAB_DETAILS[activeTab];
+  const fetchCliProviders = useCallback(async () => {
+    if (!window?.electronAPI?.getCliProviders) {
+      setCliProviders(createDefaultCliProviders());
+      setCliError('CLI detection is unavailable in this build.');
+      return;
+    }
+
+    setCliLoading(true);
+    setCliError(null);
+
+    try {
+      const result = await window.electronAPI.getCliProviders();
+      if (result?.success && Array.isArray(result.providers)) {
+        setCliProviders(mergeCliProviders(result.providers));
+      } else {
+        setCliError(result?.error || 'Failed to detect CLI providers.');
+      }
+    } catch (error) {
+      console.error('CLI detection failed:', error);
+      setCliError('Unable to detect CLI providers.');
+    } finally {
+      setCliLoading(false);
+    }
+  }, []);
+
+  const tabDetails = useMemo(() => {
+    const base = {
+      general: {
+        icon: Settings2,
+        label: 'General',
+        title: 'General',
+        description: '',
+        sections: [
+          {
+            title: 'Telemetry',
+            render: () => <TelemetryCard />,
+          },
+          {
+            title: 'Version',
+            render: () => <VersionCard />,
+          },
+        ],
+      },
+      connections: {
+        icon: Cable,
+        label: 'Connections',
+        title: 'Connections',
+        description: '',
+        sections: [
+          {
+            title: 'Integrations',
+            description: '',
+            render: () => <IntegrationsCard />,
+          },
+          {
+            title: 'CLI providers',
+            render: () => (
+              <div className="space-y-3">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={fetchCliProviders}
+                  disabled={cliLoading}
+                  aria-busy={cliLoading}
+                >
+                  {cliLoading ? 'Detecting…' : 'Detect CLIs'}
+                </Button>
+                <CliProvidersList
+                  providers={cliProviders}
+                  isLoading={cliLoading}
+                  error={cliError}
+                />
+              </div>
+            ),
+          },
+        ],
+      },
+    } satisfies Record<
+      SettingsTab,
+      {
+        icon: LucideIcon;
+        label: string;
+        title: string;
+        description: string;
+        sections: SettingsSection[];
+      }
+    >;
+
+    return base;
+  }, [cliProviders, cliLoading, cliError, fetchCliProviders]);
+
+  const activeTabDetails = tabDetails[activeTab];
 
   const renderContent = () => {
     const { sections } = activeTabDetails;
@@ -111,24 +178,34 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
     return (
       <div className="space-y-6">
-        {sections.map((section) => (
-          <div
-            key={section.title}
-            className="space-y-4 rounded-lg border border-border/60 bg-muted/40 p-4"
-          >
-            <div>
-              <h3 className="text-sm font-semibold text-foreground">{section.title}</h3>
-              {section.description ? (
-                <p className="mt-1 text-sm text-muted-foreground">{section.description}</p>
-              ) : null}
-            </div>
-            {section.Component ? (
-              <section.Component />
-            ) : !section.description ? (
-              <p className="text-sm text-muted-foreground">Coming soon.</p>
-            ) : null}
-          </div>
-        ))}
+        {sections.map((section: SettingsSection, index) => {
+          let renderedContent: React.ReactNode = null;
+          if (typeof section.render === 'function') {
+            renderedContent = section.render();
+          } else if (!section.description) {
+            renderedContent = <p className="text-sm text-muted-foreground">Coming soon.</p>;
+          }
+
+          return (
+            <React.Fragment key={section.title}>
+              {index > 0 ? <Separator className="border-border/60" /> : null}
+              <section className="space-y-3">
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-medium">{section.title}</h3>
+                    {section.action ? <div>{section.action}</div> : null}
+                  </div>
+                  {section.description ? (
+                    <p className="text-sm text-muted-foreground">{section.description}</p>
+                  ) : null}
+                </div>
+                {renderedContent ? (
+                  <div className="flex flex-col gap-3">{renderedContent}</div>
+                ) : null}
+              </section>
+            </React.Fragment>
+          );
+        })}
       </div>
     );
   };
@@ -164,7 +241,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
               <aside className="w-60 border-r border-border/60 bg-muted/20 p-6">
                 <nav className="space-y-1">
                   {ORDERED_TABS.map((tab) => {
-                    const { icon: Icon, label } = TAB_DETAILS[tab];
+                    const { icon: Icon, label } = tabDetails[tab];
 
                     return (
                       <button
@@ -210,16 +287,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                 </header>
 
                 <div className="flex-1 overflow-y-auto px-6 py-6">{renderContent()}</div>
-
-                <Separator />
-                <footer className="flex items-center justify-end gap-2 px-6 py-4">
-                  <Button type="button" variant="ghost" onClick={onClose}>
-                    Close
-                  </Button>
-                  <Button type="button" disabled>
-                    Save changes
-                  </Button>
-                </footer>
               </div>
             </div>
           </motion.div>

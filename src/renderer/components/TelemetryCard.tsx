@@ -1,7 +1,6 @@
 import React from 'react';
 import { Switch } from './ui/switch';
 import { Button } from './ui/button';
-import { ExternalLink } from 'lucide-react';
 
 const TelemetryCard: React.FC = () => {
   const [enabled, setEnabled] = React.useState<boolean>(true);
@@ -32,13 +31,31 @@ const TelemetryCard: React.FC = () => {
 
   return (
     <div className="grid gap-3">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-sm font-medium text-foreground">Anonymous Telemetry</div>
-          <div className="text-xs text-muted-foreground">
-            Help improve Emdash by sending anonymous usage data.
-            <span className="ml-1">See docs/telemetry.md for details.</span>
-          </div>
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-1 text-xs text-muted-foreground">
+          <p>Help improve Emdash by sending anonymous usage data.</p>
+          <p>
+            <span>See </span>
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              className="group inline-flex h-auto items-center gap-1 px-0 text-xs font-normal text-muted-foreground hover:text-foreground hover:no-underline focus-visible:outline-none focus-visible:ring-0"
+              onClick={() =>
+                window.electronAPI.openExternal(
+                  'https://github.com/generalaction/emdash/blob/main/docs/telemetry.md'
+                )
+              }
+            >
+              <span className="transition-colors group-hover:text-foreground">
+                docs/telemetry.md
+              </span>
+              <span className="text-xs text-muted-foreground transition-colors group-hover:text-foreground">
+                ↗
+              </span>
+            </Button>
+            <span> for details.</span>
+          </p>
         </div>
         <Switch
           checked={enabled}
@@ -47,39 +64,21 @@ const TelemetryCard: React.FC = () => {
           aria-label="Enable anonymous telemetry"
         />
       </div>
-      {envDisabled ? (
-        <div className="text-xs text-muted-foreground">
-          Telemetry disabled by environment variable (TELEMETRY_ENABLED=false).
-        </div>
-      ) : null}
-      <div className="text-xs text-muted-foreground">
-        You can also disable telemetry via environment variable:{' '}
-        <code>TELEMETRY_ENABLED=false</code>.
-      </div>
       <div className="flex gap-2">
         <Button
           type="button"
           variant="outline"
           size="sm"
-          className="gap-2"
+          className="group gap-2"
           onClick={() => window.electronAPI.openExternal('https://posthog.com/product')}
         >
-          <span>About PostHog</span>
-          <ExternalLink className="h-3.5 w-3.5 opacity-80" aria-hidden="true" />
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="gap-2"
-          onClick={() =>
-            window.electronAPI.openExternal(
-              'https://github.com/generalaction/emdash/blob/main/docs/telemetry.md'
-            )
-          }
-        >
-          <span>Telemetry details</span>
-          <ExternalLink className="h-3.5 w-3.5 opacity-80" aria-hidden="true" />
+          <span className="transition-colors group-hover:text-foreground">About PostHog</span>
+          <span
+            aria-hidden="true"
+            className="text-xs text-muted-foreground transition-colors group-hover:text-foreground"
+          >
+            ↗
+          </span>
         </Button>
       </div>
     </div>
