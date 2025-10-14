@@ -1,21 +1,13 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { Spinner } from './ui/spinner';
-
-type UpdateState =
-  | { status: 'idle' }
-  | { status: 'checking' }
-  | { status: 'available'; info?: any }
-  | { status: 'not-available' }
-  | { status: 'downloading'; progress?: { percent?: number; transferred?: number; total?: number } }
-  | { status: 'downloaded' }
-  | { status: 'error'; message: string };
+import { useUpdater } from '@/hooks/useUpdater';
 
 const AppVersionCard: React.FC = () => {
   const [electronVersion, setElectronVersion] = useState<string>('...');
   const [emdashVersion, setEmdashVersion] = useState<string>('...');
   const [platform, setPlatform] = useState<string>('');
-  const [update, setUpdate] = useState<UpdateState>({ status: 'idle' });
+  const { state: update, check, download, install, openLatest, progressLabel } = useUpdater();
 
   useEffect(() => {
     let cancelled = false;
@@ -47,67 +39,7 @@ const AppVersionCard: React.FC = () => {
     };
   }, []);
 
-  useEffect(() => {
-    const off = window.electronAPI.onUpdateEvent?.((evt) => {
-      switch (evt.type) {
-        case 'checking':
-          setUpdate({ status: 'checking' });
-          break;
-        case 'available':
-          setUpdate({ status: 'available', info: evt.payload });
-          break;
-        case 'not-available':
-          setUpdate({ status: 'not-available' });
-          break;
-        case 'download-progress':
-          setUpdate({ status: 'downloading', progress: evt.payload });
-          break;
-        case 'downloaded':
-          setUpdate({ status: 'downloaded' });
-          break;
-        case 'error':
-          setUpdate({ status: 'error', message: evt.payload?.message || 'Update error' });
-          break;
-        default:
-          break;
-      }
-    });
-    return () => {
-      try {
-        off?.();
-      } catch {}
-    };
-  }, []);
-
-  const onCheck = async () => {
-    setUpdate({ status: 'checking' });
-    const res = await window.electronAPI.checkForUpdates();
-    if (!res.success) {
-      setUpdate({ status: 'error', message: res.error || 'Failed to check for updates' });
-    }
-  };
-
-  const onDownload = async () => {
-    setUpdate({ status: 'downloading' });
-    const res = await window.electronAPI.downloadUpdate();
-    if (!res.success) {
-      setUpdate({ status: 'error', message: res.error || 'Failed to download update' });
-    }
-  };
-
-  const onInstall = async () => {
-    await window.electronAPI.quitAndInstallUpdate();
-  };
-
-  const onOpenLatest = async () => {
-    await window.electronAPI.openLatestDownload();
-  };
-
-  const progressLabel = useMemo(() => {
-    if (update.status !== 'downloading') return '';
-    const p = update.progress?.percent ?? 0;
-    return `${p.toFixed(0)}%`;
-  }, [update]);
+  // no-op local effects
 
   return (
     <div className="flex flex-col gap-4">
@@ -130,7 +62,7 @@ const AppVersionCard: React.FC = () => {
 
       <div className="flex items-center gap-2">
         {update.status === 'idle' || update.status === 'not-available' ? (
-          <Button size="sm" onClick={onCheck}>
+          <Button size="sm" onClick={check}>
             Check for updates
           </Button>
         ) : null}
@@ -143,7 +75,7 @@ const AppVersionCard: React.FC = () => {
         ) : null}
 
         {update.status === 'available' ? (
-          <Button size="sm" onClick={onDownload}>
+          <Button size="sm" onClick={download}>
             Download update
           </Button>
         ) : null}
@@ -156,20 +88,25 @@ const AppVersionCard: React.FC = () => {
         ) : null}
 
         {update.status === 'downloaded' ? (
-          <Button size="sm" onClick={onInstall}>
+          <Button size="sm" onClick={install}>
             Restart and install
           </Button>
         ) : null}
 
         {update.status === 'error' ? (
-          <>
-            <span className="text-xs text-muted-foreground">
-              Updater unavailable — download manually
-            </span>
-            <Button size="sm" variant="outline" onClick={onOpenLatest}>
+          <div className="flex items-start gap-3">
+            <div className="inline-flex items-start gap-2 rounded-lg border border-border/60 bg-muted/40 px-3 py-2 shadow-sm">
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-foreground">Updater unavailable — download manually</span>
+                {update.message && (
+                  <span className="text-xs text-muted-foreground">{update.message}</span>
+                )}
+              </div>
+            </div>
+            <Button size="sm" variant="outline" onClick={openLatest} className="self-start">
               Get latest DMG
             </Button>
-          </>
+          </div>
         ) : null}
       </div>
     </div>

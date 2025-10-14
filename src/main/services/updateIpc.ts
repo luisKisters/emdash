@@ -1,6 +1,16 @@
 import { app, ipcMain } from 'electron';
 import { autoUpdater } from 'electron-updater';
 
+// Channels used to notify renderer about update lifecycle
+const UpdateChannels = {
+  checking: 'update:checking',
+  available: 'update:available',
+  notAvailable: 'update:not-available',
+  error: 'update:error',
+  progress: 'update:download-progress',
+  downloaded: 'update:downloaded',
+} as const;
+
 // Basic updater configuration
 // Publish config is provided via electron-builder (package.json -> build.publish)
 // We keep autoDownload off; downloads start only when the user clicks.
@@ -39,12 +49,12 @@ function ensureInitialized() {
   initialized = true;
 
   // Wire autoUpdater events
-  autoUpdater.on('checking-for-update', () => emit('update:checking'));
-  autoUpdater.on('update-available', (info) => emit('update:available', info));
-  autoUpdater.on('update-not-available', (info) => emit('update:not-available', info));
-  autoUpdater.on('error', (err) => emit('update:error', { message: err?.message || String(err) }));
-  autoUpdater.on('download-progress', (progress) => emit('update:download-progress', progress));
-  autoUpdater.on('update-downloaded', (info) => emit('update:downloaded', info));
+  autoUpdater.on('checking-for-update', () => emit(UpdateChannels.checking));
+  autoUpdater.on('update-available', (info) => emit(UpdateChannels.available, info));
+  autoUpdater.on('update-not-available', (info) => emit(UpdateChannels.notAvailable, info));
+  autoUpdater.on('error', (err) => emit(UpdateChannels.error, { message: err?.message || String(err) }));
+  autoUpdater.on('download-progress', (progress) => emit(UpdateChannels.progress, progress));
+  autoUpdater.on('update-downloaded', (info) => emit(UpdateChannels.downloaded, info));
 }
 
 // Fallback: open latest DMG link in browser for manual install
@@ -58,6 +68,16 @@ export function registerUpdateIpc() {
 
   ipcMain.handle('update:check', async () => {
     try {
+      const dev = !app.isPackaged || process.env.NODE_ENV === 'development';
+      const forced = (autoUpdater as any)?.forceDevUpdateConfig === true || process.env.EMDASH_DEV_UPDATES === 'true';
+      if (dev && !forced) {
+        return {
+          success: false,
+          error:
+            'Updates are disabled in development.',
+          devDisabled: true,
+        } as any;
+      }
       // On dev, autoUpdater may throw. We still attempt to check.
       const result = await autoUpdater.checkForUpdates();
       // electron-updater returns UpdateCheckResult or throws
@@ -69,6 +89,15 @@ export function registerUpdateIpc() {
 
   ipcMain.handle('update:download', async () => {
     try {
+      const dev = !app.isPackaged || process.env.NODE_ENV === 'development';
+      const forced = (autoUpdater as any)?.forceDevUpdateConfig === true || process.env.EMDASH_DEV_UPDATES === 'true';
+      if (dev && !forced) {
+        return {
+          success: false,
+          error: 'Cannot download updates in development unless EMDASH_DEV_UPDATES=true is set.',
+          devDisabled: true,
+        } as any;
+      }
       await autoUpdater.downloadUpdate();
       return { success: true };
     } catch (error) {
