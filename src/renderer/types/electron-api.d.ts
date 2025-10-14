@@ -13,9 +13,7 @@ declare global {
       downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
       quitAndInstallUpdate: () => Promise<{ success: boolean; error?: string }>;
       openLatestDownload: () => Promise<{ success: boolean; error?: string }>;
-      onUpdateEvent: (
-        listener: (data: { type: string; payload?: any }) => void
-      ) => () => void;
+      onUpdateEvent: (listener: (data: { type: string; payload?: any }) => void) => () => void;
 
       // PTY
       ptyStart: (opts: {
