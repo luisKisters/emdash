@@ -35,7 +35,28 @@ const TelemetryCard: React.FC = () => {
       <div className="flex items-center justify-between gap-4">
         <div className="space-y-1 text-xs text-muted-foreground">
           <p>Help improve Emdash by sending anonymous usage data.</p>
-          <p>See docs/telemetry.md for details.</p>
+          <p>
+            <span>See </span>
+            <Button
+              type="button"
+              variant="link"
+              size="sm"
+              className="group inline-flex h-auto items-center gap-1 px-0 text-xs font-normal text-muted-foreground hover:text-foreground hover:no-underline focus-visible:outline-none focus-visible:ring-0"
+              onClick={() =>
+                window.electronAPI.openExternal(
+                  'https://github.com/generalaction/emdash/blob/main/docs/telemetry.md'
+                )
+              }
+            >
+              <span className="transition-colors group-hover:text-foreground">
+                docs/telemetry.md
+              </span>
+              <span className="text-xs text-muted-foreground transition-colors group-hover:text-foreground">
+                ↗
+              </span>
+            </Button>
+            <span> for details.</span>
+          </p>
         </div>
         <Switch
           checked={enabled}
@@ -62,20 +83,6 @@ const TelemetryCard: React.FC = () => {
           onClick={() => window.electronAPI.openExternal('https://posthog.com/product')}
         >
           <span>About PostHog</span>
-          <ExternalLink className="h-3.5 w-3.5 opacity-80" aria-hidden="true" />
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          className="gap-2"
-          onClick={() =>
-            window.electronAPI.openExternal(
-              'https://github.com/generalaction/emdash/blob/main/docs/telemetry.md'
-            )
-          }
-        >
-          <span>Telemetry details</span>
           <ExternalLink className="h-3.5 w-3.5 opacity-80" aria-hidden="true" />
         </Button>
       </div>
