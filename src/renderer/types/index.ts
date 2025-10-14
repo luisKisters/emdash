@@ -48,6 +48,7 @@ export interface Workspace {
 export type Provider =
   | 'codex'
   | 'claude'
+  | 'qwen'
   | 'droid'
   | 'gemini'
   | 'cursor'
