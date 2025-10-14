@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Button } from './ui/button';
+import { Spinner } from './ui/spinner';
 
 type UpdateState =
   | { status: 'idle' }
@@ -135,7 +136,8 @@ const AppVersionCard: React.FC = () => {
         ) : null}
 
         {update.status === 'checking' ? (
-          <Button size="sm" disabled>
+          <Button size="sm" disabled aria-busy>
+            <Spinner size="sm" className="mr-2" />
             Checking...
           </Button>
         ) : null}
@@ -147,7 +149,8 @@ const AppVersionCard: React.FC = () => {
         ) : null}
 
         {update.status === 'downloading' ? (
-          <Button size="sm" disabled>
+          <Button size="sm" disabled aria-busy>
+            <Spinner size="sm" className="mr-2" />
             Downloading {progressLabel}
           </Button>
         ) : null}
