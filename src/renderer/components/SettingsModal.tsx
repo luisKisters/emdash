@@ -80,13 +80,6 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     }
   }, []);
 
-  useEffect(() => {
-    if (!isOpen) return;
-    if (activeTab === 'connections') {
-      fetchCliProviders();
-    }
-  }, [isOpen, activeTab, fetchCliProviders]);
-
   const tabDetails = useMemo(() => {
     const base = {
       general: {
