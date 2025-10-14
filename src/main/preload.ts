@@ -91,6 +91,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('fs:list', { root, ...(opts || {}) }),
   fsRead: (root: string, relPath: string, maxBytes?: number) =>
     ipcRenderer.invoke('fs:read', { root, relPath, maxBytes }),
+  // Attachments
+  saveAttachment: (args: { workspacePath: string; srcPath: string; subdir?: string }) =>
+    ipcRenderer.invoke('fs:save-attachment', args),
 
   // Project management
   openProject: () => ipcRenderer.invoke('project:open'),

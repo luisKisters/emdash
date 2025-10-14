@@ -10,7 +10,7 @@ import useCodexStream from '../hooks/useCodexStream';
 import useClaudeStream from '../hooks/useClaudeStream';
 import { useInitialPromptInjection } from '../hooks/useInitialPromptInjection';
 import { type Provider } from '../types';
-import { buildAttachmentsSection } from '../lib/attachments';
+import { buildAttachmentsSection, buildImageAttachmentsSection } from '../lib/attachments';
 import { Workspace, Message } from '../types/chat';
 
 declare const window: Window & {
@@ -38,6 +38,7 @@ interface Props {
 const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, initialProvider }) => {
   const { toast } = useToast();
   const [inputValue, setInputValue] = useState('');
+  const [imageAttachments, setImageAttachments] = useState<string[]>([]);
   const [isCodexInstalled, setIsCodexInstalled] = useState<boolean | null>(null);
   const [isClaudeInstalled, setIsClaudeInstalled] = useState<boolean | null>(null);
   const [claudeInstructions, setClaudeInstructions] = useState<string | null>(null);
@@ -324,11 +325,12 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
       maxFiles: 6,
       maxBytesPerFile: 200 * 1024,
     });
+    const imageSection = buildImageAttachmentsSection(workspace.path, imageAttachments);
 
     const result =
       provider === 'codex'
-        ? await codexStream.send(messageWithContext, attachmentsSection)
-        : await claudeStream.send(messageWithContext, attachmentsSection);
+        ? await codexStream.send(messageWithContext, attachmentsSection + imageSection)
+        : await claudeStream.send(messageWithContext, attachmentsSection + imageSection);
     if (!result.success) {
       if (result.error && result.error !== 'stream-in-progress') {
         toast({
@@ -341,6 +343,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
     }
 
     setInputValue('');
+    setImageAttachments([]);
   };
 
   const handleCancelStream = async () => {

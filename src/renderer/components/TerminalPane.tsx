@@ -233,6 +233,30 @@ const TerminalPaneComponent: React.FC<Props> = ({
       }}
       onClick={() => termRef.current?.focus()}
       onMouseDown={() => termRef.current?.focus()}
+      onDragOver={(e) => {
+        // Allow dropping files onto the terminal surface
+        e.preventDefault();
+      }}
+      onDrop={(e) => {
+        try {
+          e.preventDefault();
+          const dt = e.dataTransfer;
+          if (!dt || !dt.files || dt.files.length === 0) return;
+          const paths: string[] = [];
+          for (let i = 0; i < dt.files.length; i++) {
+            const file = dt.files[i] as any;
+            const p: string | undefined = file?.path;
+            if (p) paths.push(p);
+          }
+          if (paths.length === 0) return;
+          // Insert absolute paths (quoted) into the PTY, separated by spaces
+          const escaped = paths.map((p) => `'${p.replace(/'/g, "'\\''")}'`).join(' ');
+          window.electronAPI.ptyInput({ id, data: escaped });
+          termRef.current?.focus();
+        } catch {
+          // ignore
+        }
+      }}
     >
       <div
         ref={containerRef}

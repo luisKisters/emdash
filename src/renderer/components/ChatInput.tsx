@@ -22,6 +22,10 @@ interface ChatInputProps {
   provider?: Provider;
   onProviderChange?: (p: Provider) => void;
   selectDisabled?: boolean;
+  // Image attachments (paths relative to workspace)
+  imageAttachments?: string[];
+  onAttachImages?: (filePaths: string[]) => void;
+  onRemoveImage?: (relPath: string) => void;
 }
 
 const MAX_LOADING_SECONDS = 60 * 60; // 60 minutes
@@ -62,6 +66,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({
   provider = 'codex',
   onProviderChange,
   selectDisabled = false,
+  imageAttachments = [],
+  onAttachImages,
+  onRemoveImage,
 }) => {
   const [isFocused, setIsFocused] = useState(false);
   // Provider is controlled by parent (codex | claude | droid | gemini | cursor | copilot)
@@ -220,8 +227,30 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         ? baseDisabled
         : baseDisabled || !trimmedValue;
 
+  // Drag & drop images into the input area
+  const handleDrop = (e: React.DragEvent) => {
+    if (!workspacePath) return;
+    if (!e.dataTransfer || !e.dataTransfer.files) return;
+    e.preventDefault();
+    const files: string[] = [];
+    for (let i = 0; i < e.dataTransfer.files.length; i++) {
+      const f = e.dataTransfer.files[i] as any;
+      const name: string = f.name || '';
+      const path: string | undefined = (f as any).path;
+      const type: string = f.type || '';
+      const isImage = type.startsWith('image/') || /\.(png|jpe?g|gif|webp|bmp|svg)$/i.test(name);
+      if (isImage && path) files.push(path);
+    }
+    if (files.length > 0) onAttachImages?.(files);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    if (!workspacePath) return;
+    e.preventDefault();
+  };
+
   return (
-    <div className="px-6 pb-6 pt-4">
+    <div className="px-6 pb-6 pt-4" onDrop={handleDrop} onDragOver={handleDragOver}>
       <div className="mx-auto max-w-4xl">
         <div
           className={`relative rounded-md border border-gray-200 bg-white transition-shadow duration-200 dark:border-gray-700 dark:bg-gray-800 ${
@@ -229,6 +258,26 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           }`}
         >
           <div className="p-4">
+            {imageAttachments && imageAttachments.length > 0 && (
+              <div className="mb-3 flex flex-wrap gap-2">
+                {imageAttachments.map((rel) => (
+                  <div
+                    key={rel}
+                    className="inline-flex items-center gap-2 rounded-md border border-gray-300 bg-gray-50 px-2 py-1 text-xs dark:border-gray-600 dark:bg-gray-700"
+                  >
+                    <span className="max-w-[220px] truncate">{rel}</span>
+                    <button
+                      type="button"
+                      aria-label="Remove image"
+                      className="text-gray-500 hover:text-gray-800 dark:text-gray-300 dark:hover:text-white"
+                      onClick={() => onRemoveImage?.(rel)}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
             <textarea
               ref={textareaRef}
               className="w-full resize-none border-none bg-transparent text-sm text-gray-900 placeholder-gray-500 outline-none dark:text-gray-100 dark:placeholder-gray-400"

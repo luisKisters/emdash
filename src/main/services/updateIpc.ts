@@ -11,6 +11,12 @@ const UpdateChannels = {
   downloaded: 'update:downloaded',
 } as const;
 
+// Centralized dev-mode hints
+const DEV_HINT_CHECK =
+  'Updates are disabled in development.';
+const DEV_HINT_DOWNLOAD =
+  'Cannot download updates in development.';
+
 // Basic updater configuration
 // Publish config is provided via electron-builder (package.json -> build.publish)
 // We keep autoDownload off; downloads start only when the user clicks.
@@ -77,7 +83,7 @@ export function registerUpdateIpc() {
       if (dev && !forced) {
         return {
           success: false,
-          error: 'Updates are disabled in development.',
+          error: DEV_HINT_CHECK,
           devDisabled: true,
         } as any;
       }
@@ -99,7 +105,7 @@ export function registerUpdateIpc() {
       if (dev && !forced) {
         return {
           success: false,
-          error: 'Cannot download updates in development unless EMDASH_DEV_UPDATES=true is set.',
+          error: DEV_HINT_DOWNLOAD,
           devDisabled: true,
         } as any;
       }
