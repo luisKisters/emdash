@@ -7,6 +7,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppVersion: () => ipcRenderer.invoke('app:getAppVersion'),
   getElectronVersion: () => ipcRenderer.invoke('app:getElectronVersion'),
   getPlatform: () => ipcRenderer.invoke('app:getPlatform'),
+  // Updater
+  checkForUpdates: () => ipcRenderer.invoke('update:check'),
+  downloadUpdate: () => ipcRenderer.invoke('update:download'),
+  quitAndInstallUpdate: () => ipcRenderer.invoke('update:quit-and-install'),
+  openLatestDownload: () => ipcRenderer.invoke('update:open-latest'),
+  onUpdateEvent: (listener: (data: { type: string; payload?: any }) => void) => {
+    const pairs: Array<[string, string]> = [
+      ['update:checking', 'checking'],
+      ['update:available', 'available'],
+      ['update:not-available', 'not-available'],
+      ['update:error', 'error'],
+      ['update:download-progress', 'download-progress'],
+      ['update:downloaded', 'downloaded'],
+    ];
+    const handlers: Array<() => void> = [];
+    for (const [channel, type] of pairs) {
+      const wrapped = (_: Electron.IpcRendererEvent, payload: any) => listener({ type, payload });
+      ipcRenderer.on(channel, wrapped);
+      handlers.push(() => ipcRenderer.removeListener(channel, wrapped));
+    }
+    return () => handlers.forEach((off) => off());
+  },
 
   // PTY management
   ptyStart: (opts: {
@@ -271,6 +293,12 @@ export interface ElectronAPI {
   // App info
   getVersion: () => Promise<string>;
   getPlatform: () => Promise<string>;
+  // Updater
+  checkForUpdates: () => Promise<{ success: boolean; result?: any; error?: string }>;
+  downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
+  quitAndInstallUpdate: () => Promise<{ success: boolean; error?: string }>;
+  openLatestDownload: () => Promise<{ success: boolean; error?: string }>;
+  onUpdateEvent: (listener: (data: { type: string; payload?: any }) => void) => () => void;
 
   // PTY management
   ptyStart: (opts: {

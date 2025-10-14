@@ -8,6 +8,12 @@ declare global {
       getAppVersion: () => Promise<string>;
       getElectronVersion: () => Promise<string>;
       getPlatform: () => Promise<string>;
+      // Updater
+      checkForUpdates: () => Promise<{ success: boolean; result?: any; error?: string }>;
+      downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
+      quitAndInstallUpdate: () => Promise<{ success: boolean; error?: string }>;
+      openLatestDownload: () => Promise<{ success: boolean; error?: string }>;
+      onUpdateEvent: (listener: (data: { type: string; payload?: any }) => void) => () => void;
 
       // PTY
       ptyStart: (opts: {
@@ -361,6 +367,12 @@ export interface ElectronAPI {
   // App info
   getVersion: () => Promise<string>;
   getPlatform: () => Promise<string>;
+  // Updater
+  checkForUpdates: () => Promise<{ success: boolean; result?: any; error?: string }>;
+  downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
+  quitAndInstallUpdate: () => Promise<{ success: boolean; error?: string }>;
+  openLatestDownload: () => Promise<{ success: boolean; error?: string }>;
+  onUpdateEvent: (listener: (data: { type: string; payload?: any }) => void) => () => void;
 
   // PTY
   ptyStart: (opts: {
