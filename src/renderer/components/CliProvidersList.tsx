@@ -18,6 +18,58 @@ interface CliProvidersListProps {
   error?: string | null;
 }
 
+export const BASE_CLI_PROVIDERS: CliProviderStatus[] = [
+  { id: 'codex', name: 'Codex', status: 'missing', docUrl: 'https://github.com/openai/codex' },
+  {
+    id: 'claude',
+    name: 'Claude Code',
+    status: 'missing',
+    docUrl: 'https://docs.anthropic.com/claude/docs/claude-code',
+  },
+  {
+    id: 'cursor',
+    name: 'Cursor',
+    status: 'missing',
+    docUrl: 'https://cursor.sh',
+  },
+  {
+    id: 'gemini',
+    name: 'Gemini',
+    status: 'missing',
+    docUrl: 'https://github.com/google-gemini/gemini-cli',
+  },
+  {
+    id: 'droid',
+    name: 'Droid',
+    status: 'missing',
+    docUrl: 'https://docs.factory.ai/cli/getting-started/quickstart',
+  },
+  {
+    id: 'amp',
+    name: 'Amp',
+    status: 'missing',
+    docUrl: 'https://ampcode.com/manual#install',
+  },
+  {
+    id: 'opencode',
+    name: 'OpenCode',
+    status: 'missing',
+    docUrl: 'https://opencode.ai/docs/cli/',
+  },
+  {
+    id: 'copilot',
+    name: 'GitHub Copilot',
+    status: 'missing',
+    docUrl: 'https://docs.github.com/en/copilot/how-tos/set-up/install-copilot-cli',
+  },
+  {
+    id: 'charm',
+    name: 'Charm',
+    status: 'missing',
+    docUrl: 'https://github.com/charmbracelet/crush',
+  },
+];
+
 const PROVIDER_LOGOS: Record<string, string> = {
   codex: codexLogo,
   claude: claudeLogo,
@@ -72,7 +124,8 @@ const renderProviderRow = (provider: CliProviderStatus) => {
 
 const CliProvidersList: React.FC<CliProvidersListProps> = ({ providers, isLoading, error }) => {
   const sortedProviders = useMemo(() => {
-    return [...providers].sort((a, b) => {
+    const source = providers.length ? providers : BASE_CLI_PROVIDERS;
+    return [...source].sort((a, b) => {
       if (a.status === 'connected' && b.status !== 'connected') return -1;
       if (b.status === 'connected' && a.status !== 'connected') return 1;
       return a.name.localeCompare(b.name);
@@ -87,15 +140,9 @@ const CliProvidersList: React.FC<CliProvidersListProps> = ({ providers, isLoadin
         </div>
       ) : null}
 
-      {providers.length > 0 ? (
-        <div className="space-y-2">{sortedProviders.map((provider) => renderProviderRow(provider))}</div>
-      ) : (
-        <div className="rounded-lg border border-dashed border-border/50 bg-muted/30 px-3 py-2 text-sm text-muted-foreground">
-          {isLoading
-            ? 'Detecting CLI status…'
-            : 'No CLI providers detected yet. Run “Detect CLIs” once you have them installed locally.'}
-        </div>
-      )}
+      <div className="space-y-2">
+        {sortedProviders.map((provider) => renderProviderRow(provider))}
+      </div>
     </div>
   );
 };

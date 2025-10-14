@@ -6,10 +6,30 @@ import { X, Settings2, Cable } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import VersionCard from './VersionCard';
 import IntegrationsCard from './IntegrationsCard';
-import CliProvidersList from './CliProvidersList';
+import CliProvidersList, { BASE_CLI_PROVIDERS } from './CliProvidersList';
 import TelemetryCard from './TelemetryCard';
 import { CliProviderStatus } from '../types/connections';
 import { Separator } from './ui/separator';
+
+const createDefaultCliProviders = (): CliProviderStatus[] =>
+  BASE_CLI_PROVIDERS.map((provider) => ({ ...provider }));
+
+const mergeCliProviders = (incoming: CliProviderStatus[]): CliProviderStatus[] => {
+  const mergedMap = new Map<string, CliProviderStatus>();
+
+  BASE_CLI_PROVIDERS.forEach((provider) => {
+    mergedMap.set(provider.id, { ...provider });
+  });
+
+  incoming.forEach((provider) => {
+    mergedMap.set(provider.id, {
+      ...(mergedMap.get(provider.id) ?? {}),
+      ...provider,
+    });
+  });
+
+  return Array.from(mergedMap.values());
+};
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -28,7 +48,9 @@ const ORDERED_TABS: SettingsTab[] = ['general', 'connections'];
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
-  const [cliProviders, setCliProviders] = useState<CliProviderStatus[]>([]);
+  const [cliProviders, setCliProviders] = useState<CliProviderStatus[]>(() =>
+    createDefaultCliProviders()
+  );
   const [cliError, setCliError] = useState<string | null>(null);
   const [cliLoading, setCliLoading] = useState<boolean>(false);
   const shouldReduceMotion = useReducedMotion();
@@ -55,7 +77,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
 
   const fetchCliProviders = useCallback(async () => {
     if (!window?.electronAPI?.getCliProviders) {
-      setCliProviders([]);
+      setCliProviders(createDefaultCliProviders());
       setCliError('CLI detection is unavailable in this build.');
       return;
     }
@@ -66,14 +88,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
     try {
       const result = await window.electronAPI.getCliProviders();
       if (result?.success && Array.isArray(result.providers)) {
-        setCliProviders(result.providers);
+        setCliProviders(mergeCliProviders(result.providers));
       } else {
-        setCliProviders([]);
         setCliError(result?.error || 'Failed to detect CLI providers.');
       }
     } catch (error) {
       console.error('CLI detection failed:', error);
-      setCliProviders([]);
       setCliError('Unable to detect CLI providers.');
     } finally {
       setCliLoading(false);
