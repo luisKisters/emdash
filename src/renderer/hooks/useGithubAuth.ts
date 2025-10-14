@@ -2,53 +2,86 @@ import { useCallback, useEffect, useState } from 'react';
 
 type GithubUser = any;
 
+type GithubCache = {
+  installed: boolean;
+  authenticated: boolean;
+  user: GithubUser | null;
+} | null;
+
+let cachedGithubStatus: GithubCache = null;
+
 export function useGithubAuth() {
-  const [installed, setInstalled] = useState<boolean>(true);
-  const [authenticated, setAuthenticated] = useState<boolean>(false);
-  const [user, setUser] = useState<GithubUser | null>(null);
+  const [installed, setInstalled] = useState<boolean>(() => cachedGithubStatus?.installed ?? true);
+  const [authenticated, setAuthenticated] = useState<boolean>(
+    () => cachedGithubStatus?.authenticated ?? false
+  );
+  const [user, setUser] = useState<GithubUser | null>(() => cachedGithubStatus?.user ?? null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  const syncCache = useCallback(
+    (next: { installed: boolean; authenticated: boolean; user: GithubUser | null }) => {
+      cachedGithubStatus = next;
+      setInstalled(next.installed);
+      setAuthenticated(next.authenticated);
+      setUser(next.user);
+    },
+    []
+  );
 
   const checkStatus = useCallback(async () => {
     try {
       const status = await window.electronAPI.githubGetStatus();
-      setInstalled(!!status?.installed);
-      setAuthenticated(!!status?.authenticated);
-      setUser(status?.user || null);
+      const normalized = {
+        installed: !!status?.installed,
+        authenticated: !!status?.authenticated,
+        user: status?.user || null,
+      };
+      syncCache(normalized);
       return status;
     } catch (e) {
-      setInstalled(false);
-      setAuthenticated(false);
-      setUser(null);
-      return { installed: false, authenticated: false };
+      const fallback = { installed: false, authenticated: false, user: null };
+      syncCache(fallback);
+      return fallback;
     }
-  }, []);
+  }, [syncCache]);
 
   const login = useCallback(async () => {
     setIsLoading(true);
     try {
       const result = await window.electronAPI.githubAuth();
       if (result?.success) {
-        setAuthenticated(true);
-        setUser(result.user || null);
+        syncCache({
+          installed: true,
+          authenticated: true,
+          user: result.user || null,
+        });
       } else {
-        setAuthenticated(false);
+        syncCache({
+          installed: cachedGithubStatus?.installed ?? true,
+          authenticated: false,
+          user: null,
+        });
       }
       return result;
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [syncCache]);
 
   const logout = useCallback(async () => {
     try {
       await window.electronAPI.githubLogout();
     } finally {
-      setAuthenticated(false);
-      setUser(null);
+      syncCache({
+        installed: cachedGithubStatus?.installed ?? true,
+        authenticated: false,
+        user: null,
+      });
     }
-  }, []);
+  }, [syncCache]);
 
   useEffect(() => {
+    if (cachedGithubStatus) return;
     checkStatus();
   }, [checkStatus]);
 

@@ -24,14 +24,26 @@ const defaultLinearState: LinearState = {
   error: null,
 };
 
+let cachedLinearState: LinearState | null = null;
+
 const IntegrationsCard: React.FC = () => {
-  const [linearState, setLinearState] = useState<LinearState>(defaultLinearState);
+  const [linearState, setLinearState] = useState<LinearState>(() => cachedLinearState ?? defaultLinearState);
   const { installed, authenticated, user, isLoading, login, checkStatus } = useGithubAuth();
   const [githubError, setGithubError] = useState<string | null>(null);
+  const updateLinearState = useCallback(
+    (updater: (prev: LinearState) => LinearState) => {
+      setLinearState((prev) => {
+        const next = updater(prev);
+        cachedLinearState = next;
+        return next;
+      });
+    },
+    []
+  );
 
   const loadLinearStatus = useCallback(async () => {
     if (!window?.electronAPI?.linearCheckConnection) {
-      setLinearState((prev) => ({
+      updateLinearState((prev) => ({
         ...prev,
         checking: false,
         connected: false,
@@ -43,7 +55,7 @@ const IntegrationsCard: React.FC = () => {
 
     try {
       const status = await window.electronAPI.linearCheckConnection();
-      setLinearState((prev) => ({
+      updateLinearState((prev) => ({
         ...prev,
         checking: false,
         connected: !!status?.connected,
@@ -52,7 +64,7 @@ const IntegrationsCard: React.FC = () => {
       }));
     } catch (error) {
       console.error('Failed to check Linear connection:', error);
-      setLinearState((prev) => ({
+      updateLinearState((prev) => ({
         ...prev,
         checking: false,
         connected: false,
@@ -60,15 +72,16 @@ const IntegrationsCard: React.FC = () => {
         error: 'Unable to verify Linear connection.',
       }));
     }
-  }, []);
+  }, [updateLinearState]);
 
   useEffect(() => {
+    if (cachedLinearState) return;
     loadLinearStatus();
   }, [loadLinearStatus]);
 
   const handleLinearInputChange = useCallback((value: string) => {
-    setLinearState((prev) => ({ ...prev, input: value, error: null }));
-  }, []);
+    updateLinearState((prev) => ({ ...prev, input: value, error: null }));
+  }, [updateLinearState]);
 
   const handleLinearConnect = useCallback(async () => {
     const token = linearState.input.trim();
@@ -76,21 +89,21 @@ const IntegrationsCard: React.FC = () => {
       return;
     }
 
-    setLinearState((prev) => ({ ...prev, loading: true, error: null }));
+    updateLinearState((prev) => ({ ...prev, loading: true, error: null }));
 
     try {
       const result = await window.electronAPI.linearSaveToken(token);
       if (result?.success) {
-        setLinearState({
+        updateLinearState(() => ({
           checking: false,
           loading: false,
           connected: true,
           detail: result?.workspaceName ?? null,
           input: '',
           error: null,
-        });
+        }));
       } else {
-        setLinearState((prev) => ({
+        updateLinearState((prev) => ({
           ...prev,
           loading: false,
           connected: false,
@@ -100,7 +113,7 @@ const IntegrationsCard: React.FC = () => {
       }
     } catch (error) {
       console.error('Linear connect failed:', error);
-      setLinearState((prev) => ({
+      updateLinearState((prev) => ({
         ...prev,
         loading: false,
         connected: false,
@@ -108,7 +121,7 @@ const IntegrationsCard: React.FC = () => {
         error: 'Could not connect. Try again.',
       }));
     }
-  }, [linearState.input]);
+  }, [linearState.input, updateLinearState]);
 
   const handleLinearKeyDown = useCallback(
     (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -127,20 +140,20 @@ const IntegrationsCard: React.FC = () => {
       return;
     }
 
-    setLinearState((prev) => ({ ...prev, loading: true, error: null }));
+    updateLinearState((prev) => ({ ...prev, loading: true, error: null }));
     try {
       const result = await window.electronAPI.linearClearToken();
       if (result?.success) {
-        setLinearState({
+        updateLinearState(() => ({
           checking: false,
           loading: false,
           connected: false,
           detail: null,
           input: '',
           error: null,
-        });
+        }));
       } else {
-        setLinearState((prev) => ({
+        updateLinearState((prev) => ({
           ...prev,
           loading: false,
           error: result?.error || 'Failed to disconnect.',
@@ -148,13 +161,13 @@ const IntegrationsCard: React.FC = () => {
       }
     } catch (error) {
       console.error('Linear disconnect failed:', error);
-      setLinearState((prev) => ({
+      updateLinearState((prev) => ({
         ...prev,
         loading: false,
         error: 'Failed to disconnect.',
       }));
     }
-  }, []);
+  }, [updateLinearState]);
 
   const githubDetail = useMemo(() => {
     if (!user) return null;
