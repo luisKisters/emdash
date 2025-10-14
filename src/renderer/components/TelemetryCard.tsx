@@ -1,7 +1,6 @@
 import React from 'react';
 import { Switch } from './ui/switch';
 import { Button } from './ui/button';
-import { ExternalLink } from 'lucide-react';
 
 const TelemetryCard: React.FC = () => {
   const [enabled, setEnabled] = React.useState<boolean>(true);
@@ -65,25 +64,18 @@ const TelemetryCard: React.FC = () => {
           aria-label="Enable anonymous telemetry"
         />
       </div>
-      {envDisabled ? (
-        <div className="text-xs text-muted-foreground">
-          Telemetry disabled by environment variable (TELEMETRY_ENABLED=false).
-        </div>
-      ) : null}
-      <div className="text-xs text-muted-foreground">
-        You can also disable telemetry via environment variable:{' '}
-        <code>TELEMETRY_ENABLED=false</code>.
-      </div>
       <div className="flex gap-2">
         <Button
           type="button"
           variant="outline"
           size="sm"
-          className="gap-2"
+          className="group gap-2"
           onClick={() => window.electronAPI.openExternal('https://posthog.com/product')}
         >
-          <span>About PostHog</span>
-          <ExternalLink className="h-3.5 w-3.5 opacity-80" aria-hidden="true" />
+          <span className="transition-colors group-hover:text-foreground">About PostHog</span>
+          <span aria-hidden="true" className="text-xs text-muted-foreground transition-colors group-hover:text-foreground">
+            ↗
+          </span>
         </Button>
       </div>
     </div>
