@@ -32,13 +32,10 @@ const TelemetryCard: React.FC = () => {
 
   return (
     <div className="grid gap-3">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="text-sm font-medium text-foreground">Anonymous Telemetry</div>
-          <div className="text-xs text-muted-foreground">
-            Help improve Emdash by sending anonymous usage data.
-            <span className="ml-1">See docs/telemetry.md for details.</span>
-          </div>
+      <div className="flex items-center justify-between gap-4">
+        <div className="space-y-1 text-xs text-muted-foreground">
+          <p>Help improve Emdash by sending anonymous usage data.</p>
+          <p>See docs/telemetry.md for details.</p>
         </div>
         <Switch
           checked={enabled}

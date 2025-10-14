@@ -96,12 +96,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         description: '',
         sections: [
           {
-            title: 'Privacy & telemetry',
+            title: 'Telemetry',
             render: () => <TelemetryCard />,
-          },
-          {
-            title: 'Workspace defaults',
-            description: 'General configuration options will appear here soon.',
           },
           {
             title: 'Version',
@@ -178,9 +174,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           }
 
           return (
-            <React.Fragment key={section.title}>
-              {index > 0 ? <Separator className="border-border/60" /> : null}
-              <section className="space-y-3">
+          <React.Fragment key={section.title}>
+            {index > 0 ? <Separator className="border-border/60" /> : null}
+            <section className="space-y-3">
               <div className="space-y-1">
                 <div className="flex items-center justify-between gap-3">
                   <h3 className="text-sm font-medium">{section.title}</h3>
@@ -192,8 +188,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
               </div>
               {renderedContent ? <div className="flex flex-col gap-3">{renderedContent}</div> : null}
             </section>
-            </React.Fragment>
-          );
+          </React.Fragment>
+        );
         })}
       </div>
     );
