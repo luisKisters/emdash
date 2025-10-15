@@ -295,7 +295,7 @@ find "$HOME" -type f -name 'emdash.db*' -print
 
 ### Telemetry
 
-- By default, Emdash collects basic, anonymous usage statistics via PostHog to understand which features are used and improve stability. This helps us prioritize development and track aggregate adoption.
+- By default, Emdash collects basic, anonymous usage statistics via PostHog to understand which features are used and improve stability. This helps us prioritize development and track aggregate adoption. We only send coarse aggregates (e.g., counts/buckets of projects and workspaces) and session duration — never code, paths, or content.
 - What we collect:
   - Lifecycle events (e.g., app start/close), feature usage events (feature name only), and non-identifying context (app version, platform, architecture, Electron version, install source).
   - We do not collect code, prompts, repository names, file paths, environment variables, or personally identifiable information.
