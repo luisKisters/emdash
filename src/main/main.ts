@@ -50,6 +50,26 @@ app.whenReady().then(async () => {
   // Initialize telemetry (privacy-first, anonymous)
   telemetry.init({ installSource: app.isPackaged ? 'dmg' : 'dev' });
 
+  // Best-effort: capture a coarse snapshot of project/workspace counts (no names/paths)
+  try {
+    const [projects, workspaces] = await Promise.all([
+      databaseService.getProjects(),
+      databaseService.getWorkspaces(),
+    ]);
+    const projectCount = projects.length;
+    const workspaceCount = workspaces.length;
+    const toBucket = (n: number) =>
+      n === 0 ? '0' : n <= 2 ? '1-2' : n <= 5 ? '3-5' : n <= 10 ? '6-10' : '>10';
+    telemetry.capture('workspace_snapshot', {
+      project_count: projectCount,
+      project_count_bucket: toBucket(projectCount),
+      workspace_count: workspaceCount,
+      workspace_count_bucket: toBucket(workspaceCount),
+    } as any);
+  } catch {
+    // ignore errors — telemetry is best-effort only
+  }
+
   // Register IPC handlers
   registerAllIpc();
 
@@ -62,6 +82,8 @@ registerAppLifecycle();
 
 // Graceful shutdown telemetry event
 app.on('before-quit', () => {
+  // Session summary with duration (no identifiers)
+  telemetry.capture('app_session');
   telemetry.capture('app_closed');
   telemetry.shutdown();
 });
