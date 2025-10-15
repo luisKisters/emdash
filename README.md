@@ -48,6 +48,23 @@ emdash is a UI layer for running multiple coding agents in parallel — currentl
 
 Either download the DMG from Releases (or click the link above), or run the app locally — see Requirements and Getting Started below.
 
+### Homebrew
+
+Install and manage emdash with Homebrew:
+
+```bash
+# Install
+brew install --cask emdash
+
+# Upgrade
+brew upgrade --cask emdash
+
+# Uninstall
+brew uninstall --cask emdash
+```
+
+If Homebrew does not find the cask yet, run `brew update`.
+
 ## Requirements
 
 - Node.js 22.12.0+ and Git
