@@ -409,7 +409,10 @@ const App: React.FC = () => {
         try {
           const gitInfo = await window.electronAPI.getGitInfo(result.path);
           if (gitInfo.isGitRepo) {
-            if (isAuthenticated) {
+            const remoteUrl = gitInfo.remote || '';
+            const isGithubRemote = /github\.com[:/]/i.test(remoteUrl);
+
+            if (isAuthenticated && isGithubRemote) {
               const githubInfo = await window.electronAPI.connectToGitHub(result.path);
               if (githubInfo.success) {
                 const projectName = result.path.split('/').pop() || 'Unknown Project';
@@ -465,7 +468,7 @@ const App: React.FC = () => {
                   branch: gitInfo.branch || undefined,
                 },
                 githubInfo: {
-                  repository: '',
+                  repository: isGithubRemote ? '' : '',
                   connected: false,
                 },
                 workspaces: [],
@@ -479,6 +482,17 @@ const App: React.FC = () => {
               } else {
                 const { log } = await import('./lib/logger');
                 log.error('Failed to save project:', saveResult.error);
+              }
+
+              // If the remote is not a GitHub URL, do not show a failure toast.
+              // Only warn when the repo is GitHub-hosted but connection fails.
+              if (isAuthenticated && !isGithubRemote && remoteUrl) {
+                // Optional: non-destructive info toast to clarify no GitHub features
+                // toast({
+                //   title: 'Non‑GitHub repository',
+                //   description: 'Connected project without GitHub features (remote is not github.com).',
+                //   variant: 'default',
+                // });
               }
             }
           } else {
