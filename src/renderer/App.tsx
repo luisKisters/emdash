@@ -468,8 +468,8 @@ const App: React.FC = () => {
                   branch: gitInfo.branch || undefined,
                 },
                 githubInfo: {
-                repository: isGithubRemote ? '' : '',
-                connected: false,
+                  repository: isGithubRemote ? '' : '',
+                  connected: false,
                 },
                 workspaces: [],
               };
