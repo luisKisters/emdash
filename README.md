@@ -50,6 +50,8 @@ Either download the DMG from Releases (or click the link above), or run the app 
 
 ### Homebrew
 
+[![Homebrew](https://img.shields.io/badge/-Homebrew-000000?style=for-the-badge&logo=homebrew&logoColor=FBB040)](https://formulae.brew.sh/cask/emdash)
+
 Install and manage emdash with Homebrew:
 
 ```bash
