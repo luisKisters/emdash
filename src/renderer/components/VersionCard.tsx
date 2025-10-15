@@ -62,33 +62,33 @@ const VersionCard: React.FC = () => {
 
       <div className="flex items-center gap-2">
         {update.status === 'idle' || update.status === 'not-available' ? (
-          <Button size="sm" onClick={check}>
+          <Button size="sm" variant="outline" onClick={check}>
             Check for updates
           </Button>
         ) : null}
 
         {update.status === 'checking' ? (
-          <Button size="sm" disabled aria-busy>
+          <Button size="sm" variant="outline" disabled aria-busy>
             <Spinner size="sm" className="mr-2" />
             Checking...
           </Button>
         ) : null}
 
         {update.status === 'available' ? (
-          <Button size="sm" onClick={download}>
+          <Button size="sm" variant="outline" onClick={download}>
             Download update
           </Button>
         ) : null}
 
         {update.status === 'downloading' ? (
-          <Button size="sm" disabled aria-busy>
+          <Button size="sm" variant="outline" disabled aria-busy>
             <Spinner size="sm" className="mr-2" />
             Downloading {progressLabel}
           </Button>
         ) : null}
 
         {update.status === 'downloaded' ? (
-          <Button size="sm" onClick={install}>
+          <Button size="sm" variant="outline" onClick={install}>
             Restart and install
           </Button>
         ) : null}

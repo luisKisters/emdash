@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Spinner } from './ui/spinner';
 import { Trash } from 'lucide-react';
 
 const LinearIntegrationCard: React.FC = () => {
@@ -171,8 +172,20 @@ const LinearIntegrationCard: React.FC = () => {
               onChange={(event) => setApiKey(event.target.value)}
               disabled={isSubmitting}
             />
-            <Button type="button" onClick={handleConnect} disabled={isSubmitting || !hasKeyInput}>
-              {buttonLabel}
+            <Button
+              type="button"
+              onClick={handleConnect}
+              disabled={isSubmitting || !hasKeyInput}
+              aria-busy={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Spinner size="sm" className="mr-2" />
+                  {buttonLabel}
+                </>
+              ) : (
+                buttonLabel
+              )}
             </Button>
           </div>
           <p className="text-xs text-muted-foreground">Paste a Linear personal API key.</p>

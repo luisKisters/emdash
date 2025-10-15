@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { Button } from './ui/button';
+import { Spinner } from './ui/spinner';
 import { RefreshCcw, LogOut, ExternalLink } from 'lucide-react';
 import { useGithubAuth } from '../hooks/useGithubAuth';
 
@@ -143,8 +144,20 @@ const GithubConnectionCard: React.FC<GithubConnectionCardProps> = ({ onStatusCha
             Sign in to gh to enable cloning and PR actions.
           </p>
           <div className="flex flex-wrap gap-3">
-            <Button type="button" onClick={handleConnect} disabled={isLoading}>
-              {isLoading ? 'Connecting…' : 'Connect GitHub'}
+            <Button
+              type="button"
+              onClick={handleConnect}
+              disabled={isLoading}
+              aria-busy={isLoading}
+            >
+              {isLoading ? (
+                <>
+                  <Spinner size="sm" className="mr-2" />
+                  Connecting…
+                </>
+              ) : (
+                'Connect GitHub'
+              )}
             </Button>
             <Button type="button" variant="outline" onClick={handleRefresh} disabled={isLoading}>
               <RefreshCcw className="mr-2 h-4 w-4" /> Check status

@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
+import { Spinner } from './ui/spinner';
 import { X, Settings2, Cable } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import VersionCard from './VersionCard';
@@ -141,7 +142,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
                   disabled={cliLoading}
                   aria-busy={cliLoading}
                 >
-                  {cliLoading ? 'Detecting…' : 'Detect CLIs'}
+                  {cliLoading ? (
+                    <>
+                      <Spinner size="sm" className="mr-2" />
+                      Detecting…
+                    </>
+                  ) : (
+                    'Detect CLIs'
+                  )}
                 </Button>
                 <CliProvidersList
                   providers={cliProviders}
