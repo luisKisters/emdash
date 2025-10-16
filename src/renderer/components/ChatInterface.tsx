@@ -481,7 +481,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
                     : undefined
                 }
                 contentFilter={
-                  provider === 'charm'
+                  provider === 'charm' && effectiveTheme !== 'dark'
                     ? 'invert(1) hue-rotate(180deg) brightness(1.1) contrast(1.05)'
                     : undefined
                 }
