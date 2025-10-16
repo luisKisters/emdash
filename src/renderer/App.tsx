@@ -783,6 +783,9 @@ const App: React.FC = () => {
             'cursor',
             'copilot',
             'amp',
+            'opencode',
+            'charm',
+            'auggie',
           ];
           for (const p of providers) {
             const k = initialPromptSentKey(workspace.id, p);

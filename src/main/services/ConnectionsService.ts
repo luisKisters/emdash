@@ -97,6 +97,13 @@ const CLI_DEFINITIONS: CliDefinition[] = [
     args: ['--version'],
     docUrl: 'https://github.com/charmbracelet/crush',
   },
+  {
+    id: 'auggie',
+    name: 'Auggie',
+    commands: ['auggie'],
+    args: ['--version'],
+    docUrl: 'https://docs.augmentcode.com/cli/overview',
+  },
 ];
 
 class ConnectionsService {
