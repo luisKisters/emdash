@@ -28,7 +28,10 @@
     "claude",
     "openai"
   ],
-  "author": "Your Name",
+  "author": {
+    "name": "Emdash Contributors",
+    "email": "support@emdash.sh"
+  },
   "devDependencies": {
     "@electron/rebuild": "^4.0.1",
     "@types/node": "^20.10.0",
