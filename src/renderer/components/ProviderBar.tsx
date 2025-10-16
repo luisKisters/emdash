@@ -89,7 +89,10 @@ export const ProviderBar: React.FC<Props> = ({ provider, linearIssue }) => {
                         <span className="font-medium">{linearIssue.identifier}</span>
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent side="bottom" className="max-w-sm bg-white text-foreground dark:bg-gray-900 dark:text-foreground">
+                    <TooltipContent
+                      side="bottom"
+                      className="max-w-sm bg-white text-foreground dark:bg-gray-900 dark:text-foreground"
+                    >
                       <div className="text-xs">
                         <div className="mb-1.5 flex min-w-0 items-center gap-2">
                           <span className="inline-flex shrink-0 items-center gap-1.5 rounded border border-gray-200 bg-gray-100 px-1.5 py-0.5 dark:border-gray-700 dark:bg-gray-800">
