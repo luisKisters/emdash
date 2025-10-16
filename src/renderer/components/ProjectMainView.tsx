@@ -56,6 +56,7 @@ function WorkspaceRow({
   onDelete: () => void | Promise<void>;
 }) {
   const [isRunning, setIsRunning] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { pr } = usePrStatus(ws.path);
   const { totalAdditions, totalDeletions, isLoading } = useWorkspaceChanges(ws.path, ws.id);
 
@@ -127,7 +128,16 @@ function WorkspaceRow({
 
         <WorkspaceDeleteButton
           workspaceName={ws.name}
-          onConfirm={onDelete}
+          onConfirm={async () => {
+            try {
+              setIsDeleting(true);
+              await onDelete();
+            } finally {
+              // If deletion succeeds, this row will unmount; if it fails, revert spinner
+              setIsDeleting(false);
+            }
+          }}
+          isDeleting={isDeleting}
           aria-label={`Delete workspace ${ws.name}`}
           className="inline-flex items-center justify-center rounded p-2 text-muted-foreground hover:bg-transparent hover:text-destructive focus-visible:ring-0"
         />
