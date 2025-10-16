@@ -1,4 +1,5 @@
 import React from 'react';
+import { ExternalLink } from 'lucide-react';
 import { type Provider } from '../types';
 import { type LinearIssueSummary } from '../types/linear';
 import openaiLogo from '../../assets/images/openai.png';
@@ -88,10 +89,21 @@ export const ProviderBar: React.FC<Props> = ({ provider, linearIssue }) => {
                         <span className="font-medium">{linearIssue.identifier}</span>
                       </button>
                     </TooltipTrigger>
-                    <TooltipContent className="max-w-xs bg-white dark:bg-gray-800">
+                    <TooltipContent
+                      side="bottom"
+                      className="max-w-sm bg-white text-foreground dark:bg-gray-900 dark:text-foreground"
+                    >
                       <div className="text-xs">
-                        <div className="mb-1 font-medium text-foreground">
-                          {linearIssue.identifier} — {linearIssue.title}
+                        <div className="mb-1.5 flex min-w-0 items-center gap-2">
+                          <span className="inline-flex shrink-0 items-center gap-1.5 rounded border border-gray-200 bg-gray-100 px-1.5 py-0.5 dark:border-gray-700 dark:bg-gray-800">
+                            <img src={linearLogo} alt="Linear" className="h-3.5 w-3.5" />
+                            <span className="text-[11px] font-medium text-foreground">
+                              {linearIssue.identifier}
+                            </span>
+                          </span>
+                          {linearIssue.title ? (
+                            <span className="truncate text-foreground">{linearIssue.title}</span>
+                          ) : null}
                         </div>
                         <div className="space-y-0.5 text-muted-foreground">
                           {linearIssue.state?.name ? (
@@ -117,8 +129,24 @@ export const ProviderBar: React.FC<Props> = ({ provider, linearIssue }) => {
                             </div>
                           ) : null}
                           {linearIssue.url ? (
-                            <div className="truncate">
-                              <span className="font-medium">URL:</span> {linearIssue.url}
+                            <div className="flex items-center gap-1.5">
+                              <span className="font-medium">Ticket:</span>
+                              <a
+                                href={linearIssue.url}
+                                target="_blank"
+                                rel="noreferrer"
+                                title="Open in Linear"
+                                className="inline-flex items-center rounded p-0.5 text-muted-foreground hover:text-foreground"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  try {
+                                    (window as any).electronAPI?.openExternal?.(linearIssue.url!);
+                                  } catch {}
+                                }}
+                              >
+                                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+                                <span className="sr-only">Open in Linear</span>
+                              </a>
                             </div>
                           ) : null}
                         </div>
