@@ -28,7 +28,13 @@ const SidebarRightToggleButton: React.FC = () => {
             <PanelRight className="h-4 w-4" />
           </Button>
         </TooltipTrigger>
-        <TooltipContent side="bottom" className="text-xs font-medium">
+        <TooltipContent
+          side="bottom"
+          align="end"
+          sideOffset={8}
+          collisionPadding={8}
+          className="text-xs font-medium"
+        >
           <span className="flex items-center gap-1">
             <Command className="h-3 w-3" aria-hidden="true" />
             <span>.</span>

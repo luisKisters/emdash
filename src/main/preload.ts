@@ -7,6 +7,28 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getAppVersion: () => ipcRenderer.invoke('app:getAppVersion'),
   getElectronVersion: () => ipcRenderer.invoke('app:getElectronVersion'),
   getPlatform: () => ipcRenderer.invoke('app:getPlatform'),
+  // Updater
+  checkForUpdates: () => ipcRenderer.invoke('update:check'),
+  downloadUpdate: () => ipcRenderer.invoke('update:download'),
+  quitAndInstallUpdate: () => ipcRenderer.invoke('update:quit-and-install'),
+  openLatestDownload: () => ipcRenderer.invoke('update:open-latest'),
+  onUpdateEvent: (listener: (data: { type: string; payload?: any }) => void) => {
+    const pairs: Array<[string, string]> = [
+      ['update:checking', 'checking'],
+      ['update:available', 'available'],
+      ['update:not-available', 'not-available'],
+      ['update:error', 'error'],
+      ['update:download-progress', 'download-progress'],
+      ['update:downloaded', 'downloaded'],
+    ];
+    const handlers: Array<() => void> = [];
+    for (const [channel, type] of pairs) {
+      const wrapped = (_: Electron.IpcRendererEvent, payload: any) => listener({ type, payload });
+      ipcRenderer.on(channel, wrapped);
+      handlers.push(() => ipcRenderer.removeListener(channel, wrapped));
+    }
+    return () => handlers.forEach((off) => off());
+  },
 
   // PTY management
   ptyStart: (opts: {
@@ -69,6 +91,9 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.invoke('fs:list', { root, ...(opts || {}) }),
   fsRead: (root: string, relPath: string, maxBytes?: number) =>
     ipcRenderer.invoke('fs:read', { root, relPath, maxBytes }),
+  // Attachments
+  saveAttachment: (args: { workspacePath: string; srcPath: string; subdir?: string }) =>
+    ipcRenderer.invoke('fs:save-attachment', args),
 
   // Project management
   openProject: () => ipcRenderer.invoke('project:open'),
@@ -129,6 +154,7 @@ contextBridge.exposeInMainWorld('electronAPI', {
   linearInitialFetch: (limit?: number) => ipcRenderer.invoke('linear:initialFetch', limit),
   linearSearchIssues: (searchTerm: string, limit?: number) =>
     ipcRenderer.invoke('linear:searchIssues', searchTerm, limit),
+  getCliProviders: () => ipcRenderer.invoke('connections:getCliProviders'),
   // Database methods
   getProjects: () => ipcRenderer.invoke('db:getProjects'),
   saveProject: (project: any) => ipcRenderer.invoke('db:saveProject', project),
@@ -271,6 +297,12 @@ export interface ElectronAPI {
   // App info
   getVersion: () => Promise<string>;
   getPlatform: () => Promise<string>;
+  // Updater
+  checkForUpdates: () => Promise<{ success: boolean; result?: any; error?: string }>;
+  downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
+  quitAndInstallUpdate: () => Promise<{ success: boolean; error?: string }>;
+  openLatestDownload: () => Promise<{ success: boolean; error?: string }>;
+  onUpdateEvent: (listener: (data: { type: string; payload?: any }) => void) => () => void;
 
   // PTY management
   ptyStart: (opts: {

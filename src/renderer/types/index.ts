@@ -55,4 +55,5 @@ export type Provider =
   | 'copilot'
   | 'amp'
   | 'opencode'
-  | 'charm';
+  | 'charm'
+  | 'auggie';

@@ -80,7 +80,7 @@ export class LinearService {
     }
   }
 
-  async initialFetch(limit = 5): Promise<any[]> {
+  async initialFetch(limit = 50): Promise<any[]> {
     const token = await this.getStoredToken();
     if (!token) {
       throw new Error('Linear token not set. Connect Linear in settings first.');

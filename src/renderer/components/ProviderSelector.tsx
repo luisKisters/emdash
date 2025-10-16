@@ -19,6 +19,7 @@ import ampLogo from '../../assets/images/ampcode.png';
 import opencodeLogo from '../../assets/images/opencode.png';
 import charmLogo from '../../assets/images/charm.png';
 import qwenLogo from '../../assets/images/qwen.png';
+import augmentLogo from '../../assets/images/augmentcode.png';
 
 interface ProviderSelectorProps {
   value: Provider;
@@ -87,6 +88,11 @@ const providerConfig = {
     logo: charmLogo,
     alt: 'Charm CLI',
     invertInDark: false,
+  },
+  auggie: {
+    name: 'Auggie',
+    logo: augmentLogo,
+    alt: 'Auggie CLI',
   },
 } as const;
 

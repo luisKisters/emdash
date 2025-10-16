@@ -26,6 +26,18 @@ const DEFAULT_IGNORES = new Set([
   '.DS_Store',
 ]);
 
+// Centralized configuration/constants for attachments
+const ALLOWED_IMAGE_EXTENSIONS = new Set<string>([
+  '.png',
+  '.jpg',
+  '.jpeg',
+  '.gif',
+  '.webp',
+  '.bmp',
+  '.svg',
+]);
+const DEFAULT_ATTACHMENTS_SUBDIR = 'attachments' as const;
+
 function safeStat(p: string): fs.Stats | null {
   try {
     return fs.statSync(p);
@@ -129,6 +141,57 @@ export function registerFsIpc(): void {
       } catch (error) {
         console.error('fs:read failed:', error);
         return { success: false, error: 'Failed to read file' };
+      }
+    }
+  );
+
+  // Save an attachment (e.g., image) into a workspace-managed folder
+  ipcMain.handle(
+    'fs:save-attachment',
+    async (_event, args: { workspacePath: string; srcPath: string; subdir?: string }) => {
+      try {
+        const { workspacePath, srcPath } = args;
+        if (!workspacePath || !fs.existsSync(workspacePath))
+          return { success: false, error: 'Invalid workspacePath' };
+        if (!srcPath || !fs.existsSync(srcPath))
+          return { success: false, error: 'Invalid srcPath' };
+
+        const ext = path.extname(srcPath).toLowerCase();
+        if (!ALLOWED_IMAGE_EXTENSIONS.has(ext)) {
+          return { success: false, error: 'Unsupported attachment type' };
+        }
+
+        const baseDir = path.join(
+          workspacePath,
+          '.emdash',
+          args.subdir || DEFAULT_ATTACHMENTS_SUBDIR
+        );
+        fs.mkdirSync(baseDir, { recursive: true });
+
+        const baseName = path.basename(srcPath);
+        let destName = baseName;
+        let counter = 1;
+        let destAbs = path.join(baseDir, destName);
+        while (fs.existsSync(destAbs)) {
+          const name = path.basename(baseName, ext);
+          destName = `${name}-${counter}${ext}`;
+          destAbs = path.join(baseDir, destName);
+          counter++;
+        }
+
+        // Copy file
+        fs.copyFileSync(srcPath, destAbs);
+
+        const relFromWorkspace = path.relative(workspacePath, destAbs);
+        return {
+          success: true,
+          absPath: destAbs,
+          relPath: relFromWorkspace,
+          fileName: destName,
+        };
+      } catch (error) {
+        console.error('fs:save-attachment failed:', error);
+        return { success: false, error: 'Failed to save attachment' };
       }
     }
   );

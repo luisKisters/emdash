@@ -8,6 +8,12 @@ declare global {
       getAppVersion: () => Promise<string>;
       getElectronVersion: () => Promise<string>;
       getPlatform: () => Promise<string>;
+      // Updater
+      checkForUpdates: () => Promise<{ success: boolean; result?: any; error?: string }>;
+      downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
+      quitAndInstallUpdate: () => Promise<{ success: boolean; error?: string }>;
+      openLatestDownload: () => Promise<{ success: boolean; error?: string }>;
+      onUpdateEvent: (listener: (data: { type: string; payload?: any }) => void) => () => void;
 
       // PTY
       ptyStart: (opts: {
@@ -206,6 +212,18 @@ declare global {
         content?: string;
         error?: string;
       }>;
+      // Attachments
+      saveAttachment: (args: {
+        workspacePath: string;
+        srcPath: string;
+        subdir?: string;
+      }) => Promise<{
+        success: boolean;
+        absPath?: string;
+        relPath?: string;
+        fileName?: string;
+        error?: string;
+      }>;
 
       // Run events
       onRunEvent: (callback: (event: any) => void) => void;
@@ -253,6 +271,19 @@ declare global {
       ) => Promise<{
         success: boolean;
         issues?: any[];
+        error?: string;
+      }>;
+      getCliProviders?: () => Promise<{
+        success: boolean;
+        providers?: Array<{
+          id: string;
+          name: string;
+          status: 'connected' | 'missing' | 'needs_key' | 'error';
+          version?: string | null;
+          message?: string | null;
+          docUrl?: string | null;
+          command?: string | null;
+        }>;
         error?: string;
       }>;
 
@@ -361,6 +392,12 @@ export interface ElectronAPI {
   // App info
   getVersion: () => Promise<string>;
   getPlatform: () => Promise<string>;
+  // Updater
+  checkForUpdates: () => Promise<{ success: boolean; result?: any; error?: string }>;
+  downloadUpdate: () => Promise<{ success: boolean; error?: string }>;
+  quitAndInstallUpdate: () => Promise<{ success: boolean; error?: string }>;
+  openLatestDownload: () => Promise<{ success: boolean; error?: string }>;
+  onUpdateEvent: (listener: (data: { type: string; payload?: any }) => void) => () => void;
 
   // PTY
   ptyStart: (opts: {
@@ -443,6 +480,19 @@ export interface ElectronAPI {
     success: boolean;
     repository?: string;
     branch?: string;
+    error?: string;
+  }>;
+  getCliProviders?: () => Promise<{
+    success: boolean;
+    providers?: Array<{
+      id: string;
+      name: string;
+      status: 'connected' | 'missing' | 'needs_key' | 'error';
+      version?: string | null;
+      message?: string | null;
+      docUrl?: string | null;
+      command?: string | null;
+    }>;
     error?: string;
   }>;
   // Telemetry

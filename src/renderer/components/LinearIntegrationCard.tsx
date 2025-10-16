@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
+import { Spinner } from './ui/spinner';
 import { Trash } from 'lucide-react';
 
 const LinearIntegrationCard: React.FC = () => {
@@ -15,7 +16,7 @@ const LinearIntegrationCard: React.FC = () => {
   const markConnected = useCallback((name?: string | null) => {
     setStatus('connected');
     setWorkspaceName(name ?? null);
-    setMessage(`Connected${name ? ` to ${name}` : ''}.`);
+    setMessage(null);
     if (typeof window !== 'undefined') {
       window.localStorage.setItem('linear:connected', 'true');
     }
@@ -24,7 +25,7 @@ const LinearIntegrationCard: React.FC = () => {
   const markDisconnected = useCallback(() => {
     setStatus('disconnected');
     setWorkspaceName(null);
-    setMessage('Not connected.');
+    setMessage('Disconnected');
     if (typeof window !== 'undefined') {
       window.localStorage.removeItem('linear:connected');
     }
@@ -93,7 +94,7 @@ const LinearIntegrationCard: React.FC = () => {
     } catch (error) {
       console.error('Linear connection failed:', error);
       setStatus('error');
-      setMessage(error instanceof Error ? error.message : 'Failed to connect to Linear.');
+      setMessage('Connection failed.');
     } finally {
       setIsSubmitting(false);
     }
@@ -119,7 +120,7 @@ const LinearIntegrationCard: React.FC = () => {
     } catch (error) {
       console.error('Linear disconnection failed:', error);
       setStatus('error');
-      setMessage(error instanceof Error ? error.message : 'Failed to disconnect from Linear.');
+      setMessage('Failed to disconnect.');
     } finally {
       setIsSubmitting(false);
     }
@@ -127,7 +128,7 @@ const LinearIntegrationCard: React.FC = () => {
 
   const isConnected = status === 'connected';
   const isIdleConnected = isConnected && !hasKeyInput && !isSubmitting;
-  const buttonLabel = isSubmitting ? 'Connecting…' : isIdleConnected ? 'Connected' : 'Connect';
+  const buttonLabel = isSubmitting ? 'Working…' : isIdleConnected ? 'Connected' : 'Connect';
 
   return (
     <div className="space-y-3">
@@ -137,7 +138,7 @@ const LinearIntegrationCard: React.FC = () => {
             <div className="flex items-center gap-2">
               <div className="h-2 w-2 rounded-full bg-emerald-500"></div>
               <span className="text-sm font-medium text-foreground">
-                Connected{workspaceName ? ` to ${workspaceName}` : ''}
+                Connected{workspaceName ? ` · ${workspaceName}` : ''}
               </span>
             </div>
             <button
@@ -171,19 +172,32 @@ const LinearIntegrationCard: React.FC = () => {
               onChange={(event) => setApiKey(event.target.value)}
               disabled={isSubmitting}
             />
-            <Button type="button" onClick={handleConnect} disabled={isSubmitting || !hasKeyInput}>
-              {buttonLabel}
+            <Button
+              type="button"
+              onClick={handleConnect}
+              disabled={isSubmitting || !hasKeyInput}
+              aria-busy={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>
+                  <Spinner size="sm" className="mr-2" />
+                  {buttonLabel}
+                </>
+              ) : (
+                buttonLabel
+              )}
             </Button>
           </div>
-          <p className="text-xs text-muted-foreground">
-            Paste a Linear personal API key with read access to issues. Keys are stored securely in
-            your system keychain.
-          </p>
+          <p className="text-xs text-muted-foreground">Paste a Linear personal API key.</p>
         </div>
       )}
 
-      {message && status === 'error' ? (
-        <div className="text-sm text-red-600 dark:text-red-400">{message}</div>
+      {message ? (
+        <div
+          className={`text-sm ${status === 'error' ? 'text-red-600 dark:text-red-400' : 'text-muted-foreground'}`}
+        >
+          {message}
+        </div>
       ) : null}
     </div>
   );

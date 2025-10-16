@@ -8,19 +8,29 @@ export type UiProvider =
   | 'copilot'
   | 'amp'
   | 'opencode'
-  | 'charm';
+  | 'charm'
+  | 'auggie';
 
 export type ProviderMeta = {
   label: string;
-  icon?: string; // import path to image asset
+  icon?: string;
   terminalOnly: boolean;
-  cli?: string; // command to launch in TerminalPane, for terminal-only providers
-  helpUrl?: string; // docs link for terminal-only providers
+  cli?: string;
+  helpUrl?: string;
   idlePatterns?: RegExp[];
   busyPatterns?: RegExp[];
 };
 
 export const providerMeta: Record<UiProvider, ProviderMeta> = {
+  auggie: {
+    label: 'Auggie',
+    icon: '../../assets/images/augmentcode.png',
+    terminalOnly: true,
+    cli: 'auggie',
+    helpUrl: 'https://docs.augmentcode.com/cli/overview',
+    idlePatterns: [/Ready|Awaiting|Press Enter|Next command/i],
+    busyPatterns: [/Thinking|Working|Executing|Running|Applying|Analyzing|Planning/i],
+  },
   qwen: {
     label: 'Qwen Code',
     icon: '../../assets/images/qwen.png',

@@ -11,7 +11,15 @@ try {
 import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 
-type TelemetryEvent = 'app_started' | 'app_closed' | 'feature_used' | 'error';
+type TelemetryEvent =
+  | 'app_started'
+  | 'app_closed'
+  | 'feature_used'
+  | 'error'
+  // Aggregates (privacy-safe)
+  | 'workspace_snapshot'
+  // Session summary (duration only)
+  | 'app_session';
 
 interface InitOptions {
   installSource?: string;
@@ -23,6 +31,7 @@ let host: string | undefined;
 let instanceId: string | undefined;
 let installSource: string | undefined;
 let userOptOut: boolean | undefined; // persisted user setting
+let sessionStartMs: number = Date.now();
 
 const libName = 'emdash';
 
@@ -103,6 +112,13 @@ function sanitizeEventAndProps(event: TelemetryEvent, props: Record<string, any>
     // explicitly allow only these keys to avoid PII
     'feature',
     'type',
+    // session
+    'session_duration_ms',
+    // aggregates (counts + buckets only)
+    'workspace_count',
+    'workspace_count_bucket',
+    'project_count',
+    'project_count_bucket',
   ]);
 
   if (props) {
@@ -114,6 +130,15 @@ function sanitizeEventAndProps(event: TelemetryEvent, props: Record<string, any>
     }
   }
 
+  // Helpers
+  const clampInt = (n: any, min = 0, max = 10_000_000) => {
+    const v = typeof n === 'number' ? Math.floor(n) : Number.parseInt(String(n), 10);
+    if (!Number.isFinite(v)) return undefined;
+    return Math.min(Math.max(v, min), max);
+  };
+
+  const BUCKETS = new Set(['0', '1-2', '3-5', '6-10', '>10']);
+
   // Event-specific constraints
   switch (event) {
     case 'feature_used':
@@ -122,6 +147,46 @@ function sanitizeEventAndProps(event: TelemetryEvent, props: Record<string, any>
       break;
     case 'error':
       if (typeof p.type !== 'string') delete p.type;
+      break;
+    case 'app_session':
+      // Only duration
+      if (p.session_duration_ms != null) {
+        const v = clampInt(p.session_duration_ms, 0, 1000 * 60 * 60 * 24); // up to 24h
+        if (v == null) delete p.session_duration_ms;
+        else p.session_duration_ms = v;
+      }
+      // strip any other keys
+      for (const k of Object.keys(p)) if (k !== 'session_duration_ms') delete p[k];
+      break;
+    case 'workspace_snapshot':
+      // Allow only counts and very coarse buckets
+      if (p.workspace_count != null) {
+        const v = clampInt(p.workspace_count, 0, 100000);
+        if (v == null) delete p.workspace_count;
+        else p.workspace_count = v;
+      }
+      if (p.project_count != null) {
+        const v = clampInt(p.project_count, 0, 100000);
+        if (v == null) delete p.project_count;
+        else p.project_count = v;
+      }
+      if (p.workspace_count_bucket && !BUCKETS.has(String(p.workspace_count_bucket))) {
+        delete p.workspace_count_bucket;
+      }
+      if (p.project_count_bucket && !BUCKETS.has(String(p.project_count_bucket))) {
+        delete p.project_count_bucket;
+      }
+      // strip anything else
+      for (const k of Object.keys(p)) {
+        if (
+          k !== 'workspace_count' &&
+          k !== 'workspace_count_bucket' &&
+          k !== 'project_count' &&
+          k !== 'project_count_bucket'
+        ) {
+          delete p[k];
+        }
+      }
       break;
     default:
       // no additional props for lifecycle events
@@ -172,6 +237,7 @@ export function init(options?: InitOptions) {
 
   const state = loadOrCreateState();
   instanceId = state.instanceId;
+  sessionStartMs = Date.now();
   // If enabledOverride is explicitly false, user opted out; otherwise leave undefined
   userOptOut =
     typeof state.enabledOverride === 'boolean' ? state.enabledOverride === false : undefined;

@@ -11,6 +11,8 @@ import { registerDebugIpc } from './debugIpc';
 import { registerGitIpc } from './gitIpc';
 import { registerAgentIpc } from './agentIpc';
 import { registerLinearIpc } from './linearIpc';
+import { registerConnectionsIpc } from './connectionsIpc';
+import { registerUpdateIpc } from '../services/updateIpc';
 import { registerTelemetryIpc } from './telemetryIpc';
 
 export function registerAllIpc() {
@@ -18,6 +20,7 @@ export function registerAllIpc() {
   registerAppIpc();
   registerDebugIpc();
   registerTelemetryIpc();
+  registerUpdateIpc();
 
   // Domain IPC
   registerProjectIpc();
@@ -32,6 +35,7 @@ export function registerAllIpc() {
   setupCodexIpc();
   registerAgentIpc();
   registerLinearIpc();
+  registerConnectionsIpc();
 
   // console.log('✅ All IPC handlers registered');
 }
