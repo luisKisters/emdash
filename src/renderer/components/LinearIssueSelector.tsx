@@ -27,6 +27,8 @@ export const LinearIssueSelector: React.FC<LinearIssueSelectorProps> = ({
   const [searchResults, setSearchResults] = useState<LinearIssueSummary[]>([]);
   const [isSearching, setIsSearching] = useState(false);
   const isMountedRef = useRef(true);
+  // Only render a subset of issues initially; load more on scroll
+  const [visibleCount, setVisibleCount] = useState(10);
 
   const canListLinear = typeof window !== 'undefined' && !!window.electronAPI?.linearInitialFetch;
   const issuesLoaded = availableIssues.length > 0;
@@ -47,6 +49,7 @@ export const LinearIssueSelector: React.FC<LinearIssueSelectorProps> = ({
       setSearchResults([]);
       setIsSearching(false);
       onIssueChange(null);
+      setVisibleCount(10);
     }
   }, [isOpen, onIssueChange]);
 
@@ -65,7 +68,8 @@ export const LinearIssueSelector: React.FC<LinearIssueSelectorProps> = ({
 
     setIsLoadingIssues(true);
     try {
-      const result = await api.linearInitialFetch();
+      // Fetch a generous set from Linear; UI renders 10 initially
+      const result = await api.linearInitialFetch(50);
       if (!isMountedRef.current) return;
       if (!result?.success) {
         throw new Error(result?.error || 'Failed to load Linear issues.');
@@ -139,6 +143,27 @@ export const LinearIssueSelector: React.FC<LinearIssueSelectorProps> = ({
     }
     return availableIssues;
   }, [searchTerm, searchResults, availableIssues]);
+
+  // Reset how many are visible when the search term changes
+  useEffect(() => {
+    setVisibleCount(10);
+  }, [searchTerm]);
+
+  const showIssues = useMemo(
+    () => displayIssues.slice(0, Math.max(10, visibleCount)),
+    [displayIssues, visibleCount]
+  );
+
+  const handleScroll = useCallback(
+    (e: React.UIEvent<HTMLDivElement>) => {
+      const el = e.currentTarget;
+      const nearBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 16;
+      if (nearBottom && showIssues.length < displayIssues.length) {
+        setVisibleCount((prev) => Math.min(prev + 10, displayIssues.length));
+      }
+    },
+    [displayIssues.length, showIssues.length]
+  );
 
   const handleIssueSelect = (identifier: string) => {
     const issue = displayIssues.find((issue) => issue.identifier === identifier) ?? null;
@@ -215,33 +240,35 @@ export const LinearIssueSelector: React.FC<LinearIssueSelectorProps> = ({
             />
           </div>
           <Separator />
-          {displayIssues.length > 0 ? (
-            displayIssues.map((issue) => (
-              <SelectItem key={issue.id || issue.identifier} value={issue.identifier}>
-                <SelectItemText>
-                  <span className="flex min-w-0 items-center gap-2">
-                    <span className="inline-flex shrink-0 items-center gap-1.5 rounded border border-gray-200 bg-gray-100 px-1.5 py-0.5 dark:border-gray-700 dark:bg-gray-800">
-                      <img src={linearLogo} alt="Linear" className="h-3.5 w-3.5" />
-                      <span className="text-[11px] font-medium text-foreground">
-                        {issue.identifier}
+          <div className="max-h-80 overflow-y-auto" onScroll={handleScroll}>
+            {showIssues.length > 0 ? (
+              showIssues.map((issue) => (
+                <SelectItem key={issue.id || issue.identifier} value={issue.identifier}>
+                  <SelectItemText>
+                    <span className="flex min-w-0 items-center gap-2">
+                      <span className="inline-flex shrink-0 items-center gap-1.5 rounded border border-gray-200 bg-gray-100 px-1.5 py-0.5 dark:border-gray-700 dark:bg-gray-800">
+                        <img src={linearLogo} alt="Linear" className="h-3.5 w-3.5" />
+                        <span className="text-[11px] font-medium text-foreground">
+                          {issue.identifier}
+                        </span>
                       </span>
+                      {issue.title ? (
+                        <>
+                          <span className="truncate text-muted-foreground">{issue.title}</span>
+                        </>
+                      ) : null}
                     </span>
-                    {issue.title ? (
-                      <>
-                        <span className="truncate text-muted-foreground">{issue.title}</span>
-                      </>
-                    ) : null}
-                  </span>
-                </SelectItemText>
-              </SelectItem>
-            ))
-          ) : searchTerm.trim() ? (
-            <div className="px-3 py-2 text-sm text-muted-foreground">
-              {isSearching ? 'Searching...' : `No issues found for "${searchTerm}"`}
-            </div>
-          ) : (
-            <div className="px-3 py-2 text-sm text-muted-foreground">No issues available</div>
-          )}
+                  </SelectItemText>
+                </SelectItem>
+              ))
+            ) : searchTerm.trim() ? (
+              <div className="px-3 py-2 text-sm text-muted-foreground">
+                {isSearching ? 'Searching...' : `No issues found for "${searchTerm}"`}
+              </div>
+            ) : (
+              <div className="px-3 py-2 text-sm text-muted-foreground">No issues available</div>
+            )}
+          </div>
         </SelectContent>
       </Select>
       {issueListError ? (
