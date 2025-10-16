@@ -15,8 +15,8 @@ export type ProviderMeta = {
   label: string;
   icon?: string;
   terminalOnly: boolean;
-  cli?: string; 
-  helpUrl?: string; 
+  cli?: string;
+  helpUrl?: string;
   idlePatterns?: RegExp[];
   busyPatterns?: RegExp[];
 };
