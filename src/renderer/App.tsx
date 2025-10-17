@@ -22,6 +22,17 @@ import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from './componen
 import { loadPanelSizes, savePanelSizes } from './lib/persisted-layout';
 import type { ImperativePanelHandle } from 'react-resizable-panels';
 import SettingsModal from './components/SettingsModal';
+import type { PullRequestSummary } from './hooks/usePullRequests';
+
+const sanitizeWorkspaceName = (input: string) =>
+  input
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 64);
 
 const SidebarHotkeys: React.FC = () => {
   const { toggle: toggleLeftSidebar } = useSidebar();
@@ -89,6 +100,13 @@ interface Project {
 interface WorkspaceMetadata {
   linearIssue?: LinearIssueSummary | null;
   initialPrompt?: string | null;
+  pullRequest?: {
+    number: number;
+    title: string;
+    url?: string;
+    author?: string | null;
+    branch?: string;
+  } | null;
 }
 
 interface Workspace {
@@ -734,6 +752,123 @@ const App: React.FC = () => {
     }
   };
 
+  const handleCheckoutPullRequest = async (
+    pr: PullRequestSummary
+  ): Promise<{ success: boolean; error?: string }> => {
+    if (!selectedProject) {
+      const message = 'Select a project before checking out a pull request.';
+      toast({
+        title: 'No project selected',
+        description: message,
+        variant: 'destructive',
+      });
+      return { success: false, error: message };
+    }
+
+    const existingNames = new Set(
+      (selectedProject.workspaces || []).map((w) => w.name.toLowerCase())
+    );
+    const baseLabel = pr.title ? `pr-${pr.number}-${pr.title}` : `pr-${pr.number}`;
+    const baseSanitized = sanitizeWorkspaceName(baseLabel) || `pr-${pr.number}`;
+    let uniqueName = baseSanitized;
+    let attempt = 1;
+    while (existingNames.has(uniqueName.toLowerCase())) {
+      const suffix = `-${attempt}`;
+      const baseSlice = baseSanitized.slice(0, Math.max(1, 64 - suffix.length));
+      uniqueName = `${baseSlice}${suffix}`;
+      attempt += 1;
+    }
+
+    try {
+      const response = await window.electronAPI.githubCreatePullRequestWorktree({
+        projectPath: selectedProject.path,
+        projectId: selectedProject.id,
+        prNumber: pr.number,
+        prTitle: pr.title,
+        workspaceName: uniqueName,
+      });
+
+      if (!response?.success || !response?.worktree) {
+        const message =
+          response?.error || 'Failed to create a workspace for this pull request.';
+        toast({
+          title: 'Pull Request Checkout Failed',
+          description: message,
+          variant: 'destructive',
+        });
+        return { success: false, error: message };
+      }
+
+      const worktree = response.worktree;
+      const workspaceMetadata: WorkspaceMetadata | null = {
+        pullRequest: {
+          number: pr.number,
+          title: pr.title,
+          url: pr.url,
+          author: pr.authorLogin ?? null,
+          branch: worktree.branch,
+        },
+      };
+
+      const newWorkspace: Workspace = {
+        id: worktree.id,
+        name: uniqueName,
+        branch: worktree.branch,
+        path: worktree.path,
+        status: 'idle',
+        metadata: workspaceMetadata,
+      };
+
+      const saveResult = await window.electronAPI.saveWorkspace({
+        ...newWorkspace,
+        projectId: selectedProject.id,
+        metadata: workspaceMetadata,
+      });
+
+      if (!saveResult?.success) {
+        const message = saveResult?.error || 'Failed to save workspace in the database.';
+        toast({
+          title: 'Workspace Save Failed',
+          description: message,
+          variant: 'destructive',
+        });
+        return { success: false, error: message };
+      }
+
+      setProjects((prev) =>
+        prev.map((project) =>
+          project.id === selectedProject.id
+            ? { ...project, workspaces: [...(project.workspaces || []), newWorkspace] }
+            : project
+        )
+      );
+
+      setSelectedProject((prev) =>
+        prev
+          ? { ...prev, workspaces: [...(prev.workspaces || []), newWorkspace] }
+          : null
+      );
+
+      setActiveWorkspace(newWorkspace);
+      setActiveWorkspaceProvider('codex');
+
+      toast({
+        title: `Workspace ready for PR #${pr.number}`,
+        description: `"${uniqueName}" now tracks the pull request branch.`,
+      });
+
+      return { success: true };
+    } catch (error: any) {
+      const message = error?.message || String(error);
+      toast({
+        title: 'Pull Request Checkout Failed',
+        description: message,
+        variant: 'destructive',
+      });
+      return { success: false, error: message };
+    }
+  };
+
   const handleGoHome = () => {
     setSelectedProject(null);
     setShowHomeView(true);
@@ -958,6 +1093,7 @@ const App: React.FC = () => {
               onSelectWorkspace={handleSelectWorkspace}
               onDeleteWorkspace={handleDeleteWorkspace}
               isCreatingWorkspace={isCreatingWorkspace}
+              onCheckoutPullRequest={handleCheckoutPullRequest}
             />
           )}
         </div>
