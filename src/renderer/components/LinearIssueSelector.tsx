@@ -5,6 +5,8 @@ import { Search } from 'lucide-react';
 import linearLogo from '../../assets/images/linear.png';
 import { type LinearIssueSummary } from '../types/linear';
 import { Separator } from './ui/separator';
+import { Badge } from './ui/badge';
+import { Spinner } from './ui/spinner';
 
 interface LinearIssueSelectorProps {
   selectedIssue: LinearIssueSummary | null;
@@ -183,7 +185,7 @@ export const LinearIssueSelector: React.FC<LinearIssueSelectorProps> = ({
   const issuePlaceholder = isLoadingIssues
     ? 'Loading…'
     : issueListError
-      ? 'Unable to load issues'
+      ? 'Connect your Linear'
       : 'Select a Linear issue';
 
   if (!canListLinear) {
@@ -254,7 +256,9 @@ export const LinearIssueSelector: React.FC<LinearIssueSelectorProps> = ({
                       </span>
                       {issue.title ? (
                         <>
-                          <span className="text-muted- foreground truncate">{issue.title}</span>
+                          <span className="text-muted- foreground ml-2 truncate">
+                            {issue.title}
+                          </span>
                         </>
                       ) : null}
                     </span>
@@ -262,21 +266,33 @@ export const LinearIssueSelector: React.FC<LinearIssueSelectorProps> = ({
                 </SelectItem>
               ))
             ) : searchTerm.trim() ? (
-              <div className="text-muted- foreground px-3 py-2 text-sm">
-                {isSearching
-                  ? 'Searching...'
-                  : `No issues found for
-  "${searchTerm}"`}
+              <div className="px-3 py-2 text-sm text-muted-foreground">
+                {isSearching ? (
+                  <div className="flex items-center gap-2">
+                    <Spinner size="sm" />
+                    <span>Searching</span>
+                  </div>
+                ) : (
+                  `No issues found for "${searchTerm}"`
+                )}
               </div>
             ) : (
-              <div className="text-muted- foreground px-3 py-2 text-sm">No issues available</div>
+              <div className="px-3 py-2 text-sm text-muted-foreground">No issues available</div>
             )}
           </div>
         </SelectContent>
       </Select>
       {issueListError ? (
-        <div className="mt-2 text-xs text-destructive">
-          <span>Linear token not set. Connect Linear in Settings to browse issues.</span>
+        <div className="mt-2 rounded-md border border-border bg-muted/40 p-2">
+          <div className="flex items-center gap-2">
+            <Badge className="inline-flex items-center gap-1.5">
+              <img src={linearLogo} alt="Linear" className="h-3.5 w-3.5 dark:invert" />
+              <span>Connect Linear</span>
+            </Badge>
+          </div>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Add your Linear API key in Settings → Integrations to browse and attach issues here.
+          </p>
         </div>
       ) : null}
       {issueHelperText ? (
