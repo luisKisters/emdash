@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Button } from './ui/button';
-import { GitBranch, Plus, Loader2, Trash, RefreshCw } from 'lucide-react';
+import { GitBranch, Plus, Loader2 } from 'lucide-react';
 import { Breadcrumb, BreadcrumbItem, BreadcrumbLink, BreadcrumbList } from './ui/breadcrumb';
 import { Badge } from './ui/badge';
 import { Separator } from './ui/separator';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 import { usePrStatus } from '../hooks/usePrStatus';
-import { usePullRequests, type PullRequestSummary } from '../hooks/usePullRequests';
 import { useWorkspaceChanges } from '../hooks/useWorkspaceChanges';
 import { ChangesBadge } from './WorkspaceChanges';
 import { Spinner } from './ui/spinner';
@@ -154,9 +153,6 @@ interface ProjectMainViewProps {
   onSelectWorkspace: (workspace: Workspace) => void;
   onDeleteWorkspace: (project: Project, workspace: Workspace) => void | Promise<void>;
   isCreatingWorkspace?: boolean;
-  onCheckoutPullRequest: (
-    pr: PullRequestSummary
-  ) => Promise<{ success: boolean; error?: string }>;
 }
 
 const ProjectMainView: React.FC<ProjectMainViewProps> = ({
@@ -166,53 +162,8 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
   onSelectWorkspace,
   onDeleteWorkspace,
   isCreatingWorkspace = false,
-  onCheckoutPullRequest,
 }) => {
-  const canLoadPrs = Boolean(project.githubInfo?.connected && project.gitInfo?.isGitRepo);
-  const {
-    prs,
-    loading: prsLoading,
-    error: prsError,
-    refresh: refreshPrs,
-  } = usePullRequests(canLoadPrs ? project.path : undefined, canLoadPrs);
-  const [checkoutPrNumber, setCheckoutPrNumber] = useState<number | null>(null);
-
-  const handleCheckoutPr = async (pr: PullRequestSummary) => {
-    setCheckoutPrNumber(pr.number);
-    try {
-      const result = await onCheckoutPullRequest(pr);
-      if (result?.success) {
-        try {
-          await refreshPrs();
-        } catch {
-          // ignore refresh errors
-        }
-      }
-    } finally {
-      setCheckoutPrNumber(null);
-    }
-  };
-
-  const formatRelativeTime = (iso?: string | null) => {
-    if (!iso) return null;
-    const parsed = new Date(iso);
-    if (Number.isNaN(parsed.getTime())) return null;
-    const diffMs = Date.now() - parsed.getTime();
-    if (diffMs < 0) return 'just now';
-    const minutes = Math.floor(diffMs / (60 * 1000));
-    if (minutes < 1) return 'just now';
-    if (minutes < 60) return `${minutes} min${minutes === 1 ? '' : 's'} ago`;
-    const hours = Math.floor(minutes / 60);
-    if (hours < 24) return `${hours} hr${hours === 1 ? '' : 's'} ago`;
-    const days = Math.floor(hours / 24);
-    if (days < 7) return `${days} day${days === 1 ? '' : 's'} ago`;
-    const weeks = Math.floor(days / 7);
-    if (weeks < 5) return `${weeks} wk${weeks === 1 ? '' : 's'} ago`;
-    const months = Math.floor(days / 30);
-    if (months < 12) return `${months} mo${months === 1 ? '' : 's'} ago`;
-    const years = Math.floor(days / 365);
-    return `${years} yr${years === 1 ? '' : 's'} ago`;
-  };
+  // PR list functionality is temporarily disabled.
 
   return (
     <div className="flex min-h-0 flex-1 flex-col bg-background">
@@ -294,129 +245,7 @@ const ProjectMainView: React.FC<ProjectMainViewProps> = ({
               </Alert>
             )}
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h2 className="text-lg font-semibold">Pull Requests</h2>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="gap-1 text-xs"
-                  onClick={() => refreshPrs()}
-                  disabled={!canLoadPrs || prsLoading}
-                >
-                  {prsLoading ? (
-                    <>
-                      <Loader2 className="size-3.5 animate-spin" />
-                      Loading…
-                    </>
-                  ) : (
-                    <>
-                      <RefreshCw className="size-3.5" />
-                      Refresh
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {!project.githubInfo?.connected ? (
-                <Alert variant="secondary">
-                  <AlertTitle>Connect GitHub</AlertTitle>
-                  <AlertDescription className="text-sm text-muted-foreground">
-                    Sign in with the GitHub CLI (`gh auth login`) to load pull requests for this
-                    project.
-                  </AlertDescription>
-                </Alert>
-              ) : (
-                <>
-                  {prsError && (
-                    <Alert variant="destructive">
-                      <AlertTitle>Failed to load pull requests</AlertTitle>
-                      <AlertDescription className="text-sm">
-                        {prsError}
-                      </AlertDescription>
-                    </Alert>
-                  )}
-
-                  {prsLoading ? (
-                    <div className="flex items-center gap-3 rounded-lg border border-dashed border-border px-4 py-5 text-sm text-muted-foreground">
-                      <Spinner size="sm" />
-                      <span>Fetching pull requests…</span>
-                    </div>
-                  ) : prs.length === 0 ? (
-                    <p className="text-sm text-muted-foreground">
-                      No open pull requests were found for this repository.
-                    </p>
-                  ) : (
-                    <div className="space-y-2">
-                      {prs.map((pr) => (
-                        <div
-                          key={pr.number}
-                          className="flex flex-col gap-3 rounded-xl border border-border bg-background px-4 py-3 transition-colors hover:border-primary/40 sm:flex-row sm:items-start sm:justify-between"
-                        >
-                          <div className="min-w-0 space-y-1">
-                            <div className="flex flex-wrap items-center gap-2 text-[11px] uppercase tracking-wide text-muted-foreground">
-                              <Badge variant="outline" className="font-mono text-[11px]">
-                                #{pr.number}
-                              </Badge>
-                              {pr.isDraft ? (
-                                <Badge variant="secondary" className="text-[11px]">
-                                  Draft
-                                </Badge>
-                              ) : null}
-                              {pr.authorLogin ? <span>@{pr.authorLogin}</span> : null}
-                            </div>
-                            <div className="text-sm font-medium leading-tight">{pr.title}</div>
-                            <div className="text-xs text-muted-foreground">
-                              {pr.headRefName ? (
-                                <span className="font-mono">{pr.headRefName}</span>
-                              ) : null}
-                              {pr.headRefName && pr.baseRefName ? <span> → </span> : null}
-                              {pr.baseRefName ? (
-                                <span className="font-mono text-foreground/80">{pr.baseRefName}</span>
-                              ) : null}
-                            </div>
-                            {formatRelativeTime(pr.updatedAt) && (
-                              <div className="text-[11px] text-muted-foreground">
-                                Updated {formatRelativeTime(pr.updatedAt)}
-                              </div>
-                            )}
-                          </div>
-                          <div className="flex flex-col items-stretch gap-2 sm:items-end">
-                            <Button
-                              variant="secondary"
-                              size="sm"
-                              onClick={() => handleCheckoutPr(pr)}
-                              disabled={checkoutPrNumber === pr.number}
-                              aria-busy={checkoutPrNumber === pr.number}
-                              className="text-xs"
-                            >
-                              {checkoutPrNumber === pr.number ? (
-                                <Spinner size="sm" />
-                              ) : (
-                                'Open in Workspace'
-                              )}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="text-xs text-muted-foreground hover:text-foreground"
-                              onClick={() => {
-                                if (pr.url) {
-                                  window.electronAPI.openExternal(pr.url);
-                                }
-                              }}
-                              disabled={!pr.url}
-                            >
-                              View on GitHub
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
+            {/* Pull Requests section temporarily removed */}
           </div>
         </div>
       </div>
