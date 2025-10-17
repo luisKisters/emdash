@@ -69,10 +69,6 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
       });
 
       if (result.success) {
-        toast({
-          title: 'File Staged',
-          description: `${filePath} has been staged successfully.`,
-        });
         await refreshChanges();
       } else {
         toast({
@@ -108,12 +104,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
 
       if (result.success) {
         const action = result.action;
-        if (action === 'unstaged') {
-          toast({
-            title: 'File Unstaged',
-            description: `${filePath} has been unstaged. Click again to revert changes.`,
-          });
-        } else {
+        if (action !== 'unstaged') {
           toast({
             title: 'File Reverted',
             description: `${filePath} changes have been reverted.`,
@@ -356,7 +347,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
           <div
             key={index}
             className={`flex cursor-pointer items-center justify-between border-b border-gray-100 px-4 py-2.5 last:border-b-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-900/40 ${
-              change.isStaged ? 'bg-gray-50' : ''
+              change.isStaged ? 'bg-gray-50 dark:bg-gray-900/40' : ''
             }`}
             onClick={() => {
               setSelectedPath(change.path);
@@ -406,7 +397,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 text-gray-500 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                  className="h-6 w-6 text-gray-500 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-gray-900/20 dark:hover:text-gray-400"
                   onClick={(e) => handleRevertFile(change.path, e)}
                   disabled={revertingFiles.has(change.path)}
                   title={
