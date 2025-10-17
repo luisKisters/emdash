@@ -214,8 +214,7 @@ export function registerGitIpc() {
           if (aheadCount <= 0) {
             return {
               success: false,
-              error:
-                `No commits to create a PR. Make a commit on 
+              error: `No commits to create a PR. Make a commit on 
 current branch '${currentBranch}' ahead of base '${baseRef}'.`,
             };
           }
@@ -233,7 +232,9 @@ current branch '${currentBranch}' ahead of base '${baseRef}'.`,
           flags.push(`--head ${JSON.stringify(head)}`);
         } else if (currentBranch) {
           // Prefer owner:branch form when repo is known; otherwise branch name
-          const headRef = repoNameWithOwner ? `${repoNameWithOwner.split('/')[0]}:${currentBranch}` : currentBranch;
+          const headRef = repoNameWithOwner
+            ? `${repoNameWithOwner.split('/')[0]}:${currentBranch}`
+            : currentBranch;
           flags.push(`--head ${JSON.stringify(headRef)}`);
         }
         if (draft) flags.push('--draft');

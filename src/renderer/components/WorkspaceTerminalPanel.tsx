@@ -56,7 +56,9 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
           isCharm = p === 'charm';
         } catch {}
         return (
-          <div className={`bw-terminal flex-1 overflow-hidden ${effectiveTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}>
+          <div
+            className={`bw-terminal flex-1 overflow-hidden ${effectiveTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
+          >
             <TerminalPane
               id={`workspace-${workspace.id}`}
               cwd={workspace.path}

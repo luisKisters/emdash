@@ -73,7 +73,8 @@ export function useCreatePR() {
           // ignore onSuccess errors
         }
       } else {
-        const details = res?.output && typeof res.output === 'string' ? `\n\nDetails:\n${res.output}` : '';
+        const details =
+          res?.output && typeof res.output === 'string' ? `\n\nDetails:\n${res.output}` : '';
         toast({
           title: (
             <span className="inline-flex items-center gap-2">

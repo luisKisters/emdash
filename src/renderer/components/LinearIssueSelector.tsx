@@ -240,47 +240,38 @@ export const LinearIssueSelector: React.FC<LinearIssueSelectorProps> = ({
             />
           </div>
           <Separator />
-<div className="max-h-80 overflow-y-auto"
-  onScroll={handleScroll}>
-    {showIssues.length > 0 ? (
-      showIssues.map((issue) => (
-        <SelectItem key={issue.id || issue.identifier}
-  value={issue.identifier}>
-          <SelectItemText>
-            <span className="flex min-w-0 items-center gap-
-  2">
-              <span className="inline-flex shrink-0 items-
-  center gap-1.5 rounded border border-gray-200 bg-gray-100
-  px-1.5 py-0.5 dark:border-gray-700 dark:bg-gray-800">
-                <img src={linearLogo} alt="Linear"
-  className="h-3.5 w-3.5 dark:invert" />
-                <span className="text-[11px] font-medium
-  text-foreground">
-                  {issue.identifier}
-                </span>
-              </span>
-              {issue.title ? (
-                <>
-                  <span className="truncate text-muted-
-  foreground">{issue.title}</span>
-                </>
-              ) : null}
-            </span>
-          </SelectItemText>
-        </SelectItem>
-      ))
-    ) : searchTerm.trim() ? (
-      <div className="px-3 py-2 text-sm text-muted-
-  foreground">
-        {isSearching ? 'Searching...' : `No issues found for
+          <div className="max-h-80 overflow-y-auto" onScroll={handleScroll}>
+            {showIssues.length > 0 ? (
+              showIssues.map((issue) => (
+                <SelectItem key={issue.id || issue.identifier} value={issue.identifier}>
+                  <SelectItemText>
+                    <span className="gap- 2 flex min-w-0 items-center">
+                      <span className="items- center inline-flex shrink-0 gap-1.5 rounded border border-gray-200 bg-gray-100 px-1.5 py-0.5 dark:border-gray-700 dark:bg-gray-800">
+                        <img src={linearLogo} alt="Linear" className="h-3.5 w-3.5 dark:invert" />
+                        <span className="text-[11px] font-medium text-foreground">
+                          {issue.identifier}
+                        </span>
+                      </span>
+                      {issue.title ? (
+                        <>
+                          <span className="text-muted- foreground truncate">{issue.title}</span>
+                        </>
+                      ) : null}
+                    </span>
+                  </SelectItemText>
+                </SelectItem>
+              ))
+            ) : searchTerm.trim() ? (
+              <div className="text-muted- foreground px-3 py-2 text-sm">
+                {isSearching
+                  ? 'Searching...'
+                  : `No issues found for
   "${searchTerm}"`}
-      </div>
-    ) : (
-      <div className="px-3 py-2 text-sm text-muted-
-  foreground">No issues available</div>
-    )}
-  </div>
-
+              </div>
+            ) : (
+              <div className="text-muted- foreground px-3 py-2 text-sm">No issues available</div>
+            )}
+          </div>
         </SelectContent>
       </Select>
       {issueListError ? (

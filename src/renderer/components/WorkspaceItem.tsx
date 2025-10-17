@@ -39,9 +39,7 @@ export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({ workspace, onDelet
         ) : (
           <GitBranch className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
         )}
-        <span className="block truncate text-xs font-medium text-foreground">
-          {workspace.name}
-        </span>
+        <span className="block truncate text-xs font-medium text-foreground">{workspace.name}</span>
         {workspace.agentId && <Bot className="h-3 w-3 flex-shrink-0 text-purple-500" />}
         {/* No left-side delete icon; only show next to status badge on the right */}
       </div>

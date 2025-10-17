@@ -157,7 +157,11 @@ export const ProviderSelector: React.FC<ProviderSelectorProps> = ({
           {Object.entries(providerConfig).map(([key, config]) => (
             <SelectItem key={key} value={key}>
               <div className="flex items-center gap-2">
-                <img src={config.logo} alt={config.alt} className={`h-4 w-4 rounded-sm ${config.invertInDark ? 'dark:invert' : ''}`} />
+                <img
+                  src={config.logo}
+                  alt={config.alt}
+                  className={`h-4 w-4 rounded-sm ${config.invertInDark ? 'dark:invert' : ''}`}
+                />
                 <SelectItemText>{config.name}</SelectItemText>
               </div>
             </SelectItem>

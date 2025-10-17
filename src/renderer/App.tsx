@@ -944,11 +944,7 @@ const AppContent: React.FC = () => {
             </div>
 
             <div className="flex flex-col justify-center gap-4 sm:flex-row">
-              <Button
-                onClick={handleOpenProject}
-                size="lg"
-                className="min-w-[200px]"
-              >
+              <Button onClick={handleOpenProject} size="lg" className="min-w-[200px]">
                 <FolderOpen className="mr-2 h-5 w-5" />
                 Open Project
               </Button>
@@ -1008,11 +1004,7 @@ const AppContent: React.FC = () => {
           </div>
 
           <div className="mb-8 flex flex-col justify-center gap-4 sm:flex-row">
-            <Button
-              onClick={handleOpenProject}
-              size="lg"
-              className="min-w-[200px]"
-            >
+            <Button onClick={handleOpenProject} size="lg" className="min-w-[200px]">
               <FolderOpen className="mr-2 h-5 w-5" />
               Open Project
             </Button>

@@ -151,7 +151,11 @@
     color: #ffffff !important;
     background-color: #1f2937 !important;
   }
-  .dark .bw-terminal .xterm .xterm-cursor.xterm-focus:not(.xterm-hidden-cursor) .xterm-cursor-block {
+  .dark
+    .bw-terminal
+    .xterm
+    .xterm-cursor.xterm-focus:not(.xterm-hidden-cursor)
+    .xterm-cursor-block {
     background-color: #ffffff !important;
   }
   .dark .bw-terminal .xterm .xterm-cursor .xterm-cursor-outline,
