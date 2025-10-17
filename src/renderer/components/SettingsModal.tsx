@@ -4,7 +4,6 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
 import { Spinner } from './ui/spinner';
 import { X, Settings2, Cable } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import VersionCard from './VersionCard';
 import IntegrationsCard from './IntegrationsCard';
 import CliProvidersList, { BASE_CLI_PROVIDERS } from './CliProvidersList';
@@ -112,9 +111,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         title: 'General',
         description: '',
         sections: [
-          { title: 'Theme', render: () => <ThemeCard /> },
           { title: 'Privacy & Telemetry', render: () => <TelemetryCard /> },
           { title: 'Version', render: () => <VersionCard /> },
+          { title: 'Theme', render: () => <ThemeCard /> },
         ],
       },
       connections: {
