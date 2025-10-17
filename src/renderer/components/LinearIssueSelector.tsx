@@ -256,7 +256,9 @@ export const LinearIssueSelector: React.FC<LinearIssueSelectorProps> = ({
                       </span>
                       {issue.title ? (
                         <>
-                          <span className="text-muted- foreground truncate ml-2">{issue.title}</span>
+                          <span className="text-muted- foreground ml-2 truncate">
+                            {issue.title}
+                          </span>
                         </>
                       ) : null}
                     </span>
