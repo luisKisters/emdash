@@ -1,6 +1,7 @@
 import React from 'react';
 import { TerminalPane } from './TerminalPane';
 import { Bot, Terminal } from 'lucide-react';
+import { useTheme } from '../hooks/useTheme';
 
 interface Workspace {
   id: string;
@@ -16,6 +17,8 @@ interface Props {
 }
 
 const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className }) => {
+  const { effectiveTheme } = useTheme();
+
   if (!workspace) {
     return (
       <div
@@ -53,34 +56,62 @@ const WorkspaceTerminalPanelComponent: React.FC<Props> = ({ workspace, className
           isCharm = p === 'charm';
         } catch {}
         return (
-          <div className={`bw-terminal flex-1 overflow-hidden bg-black`}>
+          <div
+            className={`bw-terminal flex-1 overflow-hidden ${effectiveTheme === 'dark' ? 'bg-gray-800' : 'bg-white'}`}
+          >
             <TerminalPane
               id={`workspace-${workspace.id}`}
               cwd={workspace.path}
-              variant="dark"
-              themeOverride={{
-                background: '#000000',
-                foreground: '#ffffff',
-                cursor: '#ffffff',
-                selectionBackground: '#ffffff33',
-                // Keep ANSI backgrounds black; force all other colors to white
-                black: '#000000',
-                red: '#ffffff',
-                green: '#ffffff',
-                yellow: '#ffffff',
-                blue: '#ffffff',
-                magenta: '#ffffff',
-                cyan: '#ffffff',
-                white: '#ffffff',
-                brightBlack: '#ffffff',
-                brightRed: '#ffffff',
-                brightGreen: '#ffffff',
-                brightYellow: '#ffffff',
-                brightBlue: '#ffffff',
-                brightMagenta: '#ffffff',
-                brightCyan: '#ffffff',
-                brightWhite: '#ffffff',
-              }}
+              variant={effectiveTheme === 'dark' ? 'dark' : 'light'}
+              themeOverride={
+                effectiveTheme === 'dark'
+                  ? {
+                      background: '#1f2937',
+                      foreground: '#ffffff',
+                      cursor: '#ffffff',
+                      selectionBackground: '#ffffff33',
+                      // Keep ANSI backgrounds matching the dark theme background
+                      black: '#1f2937',
+                      red: '#ffffff',
+                      green: '#ffffff',
+                      yellow: '#ffffff',
+                      blue: '#ffffff',
+                      magenta: '#ffffff',
+                      cyan: '#ffffff',
+                      white: '#ffffff',
+                      brightBlack: '#ffffff',
+                      brightRed: '#ffffff',
+                      brightGreen: '#ffffff',
+                      brightYellow: '#ffffff',
+                      brightBlue: '#ffffff',
+                      brightMagenta: '#ffffff',
+                      brightCyan: '#ffffff',
+                      brightWhite: '#ffffff',
+                    }
+                  : {
+                      background: '#ffffff',
+                      foreground: '#000000',
+                      cursor: '#000000',
+                      selectionBackground: '#00000033',
+                      // Keep ANSI backgrounds white; force all other colors to black
+                      black: '#ffffff',
+                      red: '#000000',
+                      green: '#000000',
+                      yellow: '#000000',
+                      blue: '#000000',
+                      magenta: '#000000',
+                      cyan: '#000000',
+                      white: '#000000',
+                      brightBlack: '#000000',
+                      brightRed: '#000000',
+                      brightGreen: '#000000',
+                      brightYellow: '#000000',
+                      brightBlue: '#000000',
+                      brightMagenta: '#000000',
+                      brightCyan: '#000000',
+                      brightWhite: '#000000',
+                    }
+              }
               className="h-full w-full"
             />
           </div>

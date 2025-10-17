@@ -72,7 +72,11 @@ export function GithubStatus({
       <Tooltip>
         <TooltipTrigger asChild>
           <div className={`flex items-center space-x-2 text-sm text-muted-foreground ${className}`}>
-            <img src={githubLogo} alt="GitHub" className="h-4 w-4 rounded-sm object-contain" />
+            <img
+              src={githubLogo}
+              alt="GitHub"
+              className="h-4 w-4 rounded-sm object-contain dark:invert"
+            />
             <span className="block truncate">{displayName}</span>
           </div>
         </TooltipTrigger>

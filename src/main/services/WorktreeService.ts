@@ -143,9 +143,7 @@ export class WorktreeService {
           const branch = branchMatch ? branchMatch[1] : 'unknown';
 
           const managedBranch =
-            branch.startsWith('agent/') ||
-            branch.startsWith('pr/') ||
-            branch.startsWith('orch/');
+            branch.startsWith('agent/') || branch.startsWith('pr/') || branch.startsWith('orch/');
 
           if (!managedBranch) {
             const tracked = Array.from(this.worktrees.values()).find(

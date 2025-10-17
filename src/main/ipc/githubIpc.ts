@@ -138,25 +138,22 @@ export function registerGithubIpc() {
     }
   });
 
-  ipcMain.handle(
-    'github:listPullRequests',
-    async (_, args: { projectPath: string }) => {
-      const projectPath = args?.projectPath;
-      if (!projectPath) {
-        return { success: false, error: 'Project path is required' };
-      }
-
-      try {
-        const prs = await githubService.getPullRequests(projectPath);
-        return { success: true, prs };
-      } catch (error) {
-        log.error('Failed to list pull requests:', error);
-        const message =
-          error instanceof Error ? error.message : 'Unable to list pull requests via GitHub CLI';
-        return { success: false, error: message };
-      }
+  ipcMain.handle('github:listPullRequests', async (_, args: { projectPath: string }) => {
+    const projectPath = args?.projectPath;
+    if (!projectPath) {
+      return { success: false, error: 'Project path is required' };
     }
-  );
+
+    try {
+      const prs = await githubService.getPullRequests(projectPath);
+      return { success: true, prs };
+    } catch (error) {
+      log.error('Failed to list pull requests:', error);
+      const message =
+        error instanceof Error ? error.message : 'Unable to list pull requests via GitHub CLI';
+      return { success: false, error: message };
+    }
+  });
 
   ipcMain.handle(
     'github:createPullRequestWorktree',

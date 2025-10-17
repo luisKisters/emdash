@@ -69,10 +69,6 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
       });
 
       if (result.success) {
-        toast({
-          title: 'File Staged',
-          description: `${filePath} has been staged successfully.`,
-        });
         await refreshChanges();
       } else {
         toast({
@@ -108,12 +104,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
 
       if (result.success) {
         const action = result.action;
-        if (action === 'unstaged') {
-          toast({
-            title: 'File Unstaged',
-            description: `${filePath} has been unstaged. Click again to revert changes.`,
-          });
-        } else {
+        if (action !== 'unstaged') {
           toast({
             title: 'File Reverted',
             description: `${filePath} changes have been reverted.`,
@@ -317,7 +308,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
                   onClick={() => {
                     window.electronAPI?.openExternal?.(pr.url);
                   }}
-                  className={`cursor-pointer rounded border px-2 py-0.5 text-[11px] ${pr.state === 'MERGED' ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${pr.state === 'OPEN' && pr.isDraft ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${pr.state === 'OPEN' && !pr.isDraft ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${pr.state === 'CLOSED' ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} `}
+                  className="cursor-pointer rounded border border-border bg-muted px-2 py-0.5 text-[11px] text-muted-foreground"
                   title={pr.title || 'Pull Request'}
                 >
                   PR {pr.isDraft ? 'draft' : pr.state.toLowerCase()}
@@ -356,7 +347,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
           <div
             key={index}
             className={`flex cursor-pointer items-center justify-between border-b border-gray-100 px-4 py-2.5 last:border-b-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-900/40 ${
-              change.isStaged ? 'bg-gray-50' : ''
+              change.isStaged ? 'bg-gray-50 dark:bg-gray-900/40' : ''
             }`}
             onClick={() => {
               setSelectedPath(change.path);
@@ -406,7 +397,7 @@ const FileChangesPanelComponent: React.FC<FileChangesPanelProps> = ({ workspaceI
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 text-gray-500 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
+                  className="h-6 w-6 text-gray-500 hover:bg-gray-50 hover:text-gray-600 dark:hover:bg-gray-900/20 dark:hover:text-gray-400"
                   onClick={(e) => handleRevertFile(change.path, e)}
                   disabled={revertingFiles.has(change.path)}
                   title={

@@ -35,13 +35,11 @@ export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({ workspace, onDelet
     <div className="flex min-w-0 items-center justify-between">
       <div className="flex min-w-0 flex-1 items-center gap-2 py-1">
         {isRunning || workspace.status === 'running' || workspace.agentId ? (
-          <Spinner size="sm" className="h-3 w-3 flex-shrink-0 text-gray-400" />
+          <Spinner size="sm" className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
         ) : (
-          <GitBranch className="h-3 w-3 flex-shrink-0 text-gray-400" />
+          <GitBranch className="h-3 w-3 flex-shrink-0 text-muted-foreground" />
         )}
-        <span className="block truncate text-xs font-medium text-gray-700 dark:text-gray-300">
-          {workspace.name}
-        </span>
+        <span className="block truncate text-xs font-medium text-foreground">{workspace.name}</span>
         {workspace.agentId && <Bot className="h-3 w-3 flex-shrink-0 text-purple-500" />}
         {/* No left-side delete icon; only show next to status badge on the right */}
       </div>
@@ -63,11 +61,11 @@ export const WorkspaceItem: React.FC<WorkspaceItemProps> = ({ workspace, onDelet
                 }}
                 isDeleting={isDeleting}
                 aria-label={`Delete workspace ${workspace.name}`}
-                className="inline-flex items-center justify-center rounded p-1 text-gray-500 hover:bg-gray-100 hover:text-red-600 dark:hover:bg-gray-800"
+                className="inline-flex items-center justify-center rounded p-1 text-muted-foreground hover:bg-muted hover:text-destructive"
               />
             ) : null}
             <span
-              className={`rounded border px-1.5 py-0.5 text-[10px] ${pr.state === 'MERGED' ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${pr.state === 'OPEN' && pr.isDraft ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${pr.state === 'OPEN' && !pr.isDraft ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${pr.state === 'CLOSED' ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} `}
+              className="rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
               title={`${pr.title || 'Pull Request'} (#${pr.number})`}
             >
               {pr.isDraft ? 'draft' : pr.state.toLowerCase()}

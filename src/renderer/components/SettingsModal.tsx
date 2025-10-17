@@ -4,11 +4,12 @@ import { AnimatePresence, motion, useReducedMotion } from 'motion/react';
 import { Button } from './ui/button';
 import { Spinner } from './ui/spinner';
 import { X, Settings2, Cable } from 'lucide-react';
-import type { LucideIcon } from 'lucide-react';
 import VersionCard from './VersionCard';
 import IntegrationsCard from './IntegrationsCard';
 import CliProvidersList, { BASE_CLI_PROVIDERS } from './CliProvidersList';
 import TelemetryCard from './TelemetryCard';
+import ThemeCard from './ThemeCard';
+
 import { CliProviderStatus } from '../types/connections';
 import { Separator } from './ui/separator';
 
@@ -45,6 +46,7 @@ interface SettingsSection {
   action?: React.ReactNode;
   render?: () => React.ReactNode;
 }
+
 const ORDERED_TABS: SettingsTab[] = ['general', 'connections'];
 
 const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
@@ -102,21 +104,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
   }, []);
 
   const tabDetails = useMemo(() => {
-    const base = {
+    return {
       general: {
         icon: Settings2,
         label: 'General',
         title: 'General',
         description: '',
         sections: [
-          {
-            title: 'Telemetry',
-            render: () => <TelemetryCard />,
-          },
-          {
-            title: 'Version',
-            render: () => <VersionCard />,
-          },
+          { title: 'Privacy & Telemetry', render: () => <TelemetryCard /> },
+          { title: 'Version', render: () => <VersionCard /> },
+          { title: 'Theme', render: () => <ThemeCard /> },
         ],
       },
       connections: {
@@ -125,11 +122,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
         title: 'Connections',
         description: '',
         sections: [
-          {
-            title: 'Integrations',
-            description: '',
-            render: () => <IntegrationsCard />,
-          },
+          { title: 'Integrations', render: () => <IntegrationsCard /> },
           {
             title: 'CLI providers',
             render: () => (
@@ -161,18 +154,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose }) => {
           },
         ],
       },
-    } satisfies Record<
-      SettingsTab,
-      {
-        icon: LucideIcon;
-        label: string;
-        title: string;
-        description: string;
-        sections: SettingsSection[];
-      }
-    >;
-
-    return base;
+    } as const;
   }, [cliProviders, cliLoading, cliError, fetchCliProviders]);
 
   const activeTabDetails = tabDetails[activeTab];

@@ -43,11 +43,10 @@ export const WorkspaceList: React.FC<Props> = ({
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-xl font-semibold">Workspaces</h2>
         <Button
-          variant="outline"
+          variant="default"
           size="sm"
           onClick={onCreateWorkspace}
           disabled={isCreatingWorkspace}
-          className="bg-black text-white hover:bg-gray-800"
         >
           {isCreatingWorkspace ? (
             <>

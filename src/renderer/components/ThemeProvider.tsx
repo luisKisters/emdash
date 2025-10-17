@@ -1,0 +1,90 @@
+import React, { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+
+type Theme = 'light' | 'dark' | 'system';
+
+const STORAGE_KEY = 'emdash-theme';
+
+function getSystemTheme(): 'light' | 'dark' {
+  if (typeof window === 'undefined') return 'light';
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+}
+
+function getStoredTheme(): Theme {
+  if (typeof window === 'undefined') return 'system';
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored === 'light' || stored === 'dark' || stored === 'system') {
+      return stored;
+    }
+  } catch {
+    // Ignore localStorage errors
+  }
+  return 'system';
+}
+
+function applyTheme(theme: Theme) {
+  if (typeof document === 'undefined') return;
+
+  const root = document.documentElement;
+  const effectiveTheme = theme === 'system' ? getSystemTheme() : theme;
+
+  if (effectiveTheme === 'dark') {
+    root.classList.add('dark');
+  } else {
+    root.classList.remove('dark');
+  }
+}
+
+interface ThemeContextType {
+  theme: Theme;
+  setTheme: (theme: Theme) => void;
+  effectiveTheme: 'light' | 'dark';
+}
+
+export const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+export function ThemeProvider({ children }: { children: ReactNode }) {
+  const [theme, setThemeState] = useState<Theme>(getStoredTheme);
+  const [effectiveTheme, setEffectiveTheme] = useState<'light' | 'dark'>(() =>
+    theme === 'system' ? getSystemTheme() : theme
+  );
+
+  useEffect(() => {
+    const newEffectiveTheme = theme === 'system' ? getSystemTheme() : theme;
+    setEffectiveTheme(newEffectiveTheme);
+    applyTheme(theme);
+
+    try {
+      localStorage.setItem(STORAGE_KEY, theme);
+    } catch {
+      // Ignore localStorage errors
+    }
+  }, [theme]);
+
+  useEffect(() => {
+    if (theme !== 'system') return undefined;
+
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handler = () => {
+      const newEffectiveTheme = getSystemTheme();
+      setEffectiveTheme(newEffectiveTheme);
+      applyTheme('system');
+    };
+
+    // Modern browsers
+    if (mediaQuery.addEventListener) {
+      mediaQuery.addEventListener('change', handler);
+      return () => mediaQuery.removeEventListener('change', handler);
+    }
+
+    // Legacy browsers
+    mediaQuery.addListener(handler);
+    return () => mediaQuery.removeListener(handler);
+  }, [theme]);
+
+  return (
+    <ThemeContext.Provider value={{ theme, setTheme: setThemeState, effectiveTheme }}>
+      {children}
+    </ThemeContext.Provider>
+  );
+}

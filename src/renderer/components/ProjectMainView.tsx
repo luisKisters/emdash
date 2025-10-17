@@ -114,11 +114,7 @@ function WorkspaceRow({
           <ChangesBadge additions={totalAdditions} deletions={totalDeletions} />
         ) : pr ? (
           <span
-            className={`rounded border px-1.5 py-0.5 text-[10px] ${pr.state === 'MERGED' ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} ${
-              pr.state === 'OPEN' && pr.isDraft ? 'border-gray-200 bg-gray-100 text-gray-700' : ''
-            } ${
-              pr.state === 'OPEN' && !pr.isDraft ? 'border-gray-200 bg-gray-100 text-gray-700' : ''
-            } ${pr.state === 'CLOSED' ? 'border-gray-200 bg-gray-100 text-gray-700' : ''} `}
+            className="rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
             title={`${pr.title || 'Pull Request'} (#${pr.number})`}
           >
             {pr.isDraft ? 'draft' : pr.state.toLowerCase()}

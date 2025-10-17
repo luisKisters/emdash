@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { useToast } from '../hooks/use-toast';
+import { useTheme } from '../hooks/useTheme';
 import { TerminalPane } from './TerminalPane';
 import { TerminalModeBanner } from './TerminalModeBanner';
 import { WorkspaceNotice } from './WorkspaceNotice';
@@ -37,6 +38,7 @@ interface Props {
 
 const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, initialProvider }) => {
   const { toast } = useToast();
+  const { effectiveTheme } = useTheme();
   const [inputValue, setInputValue] = useState('');
   const [imageAttachments, setImageAttachments] = useState<string[]>([]);
   const [isCodexInstalled, setIsCodexInstalled] = useState<boolean | null>(null);
@@ -453,7 +455,7 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
           <div className="mt-4 min-h-0 flex-1 px-6">
             <div
               className={`mx-auto h-full max-w-4xl overflow-hidden rounded-md ${
-                provider === 'charm' ? 'bg-white' : ''
+                provider === 'charm' ? (effectiveTheme === 'dark' ? 'bg-gray-800' : 'bg-white') : ''
               }`}
             >
               <TerminalPane
@@ -472,10 +474,14 @@ const ChatInterface: React.FC<Props> = ({ workspace, projectName, className, ini
                   setCliStartFailed(true);
                 }}
                 onStartSuccess={() => setCliStartFailed(false)}
-                variant="light"
-                themeOverride={provider === 'charm' ? { background: '#ffffff' } : undefined}
-                contentFilter={
+                variant={effectiveTheme === 'dark' ? 'dark' : 'light'}
+                themeOverride={
                   provider === 'charm'
+                    ? { background: effectiveTheme === 'dark' ? '#1f2937' : '#ffffff' }
+                    : undefined
+                }
+                contentFilter={
+                  provider === 'charm' && effectiveTheme !== 'dark'
                     ? 'invert(1) hue-rotate(180deg) brightness(1.1) contrast(1.05)'
                     : undefined
                 }
