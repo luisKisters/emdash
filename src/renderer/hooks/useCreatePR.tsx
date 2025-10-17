@@ -73,6 +73,7 @@ export function useCreatePR() {
           // ignore onSuccess errors
         }
       } else {
+        const details = res?.output && typeof res.output === 'string' ? `\n\nDetails:\n${res.output}` : '';
         toast({
           title: (
             <span className="inline-flex items-center gap-2">
@@ -80,7 +81,7 @@ export function useCreatePR() {
               Failed to Create PR
             </span>
           ),
-          description: res?.error || 'Unknown error',
+          description: (res?.error || 'Unknown error') + details,
           variant: 'destructive',
         });
       }

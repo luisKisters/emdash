@@ -152,12 +152,90 @@ export function registerGitIpc() {
           }
         }
 
-        // Build gh pr create command
+        // Resolve repo owner/name (prefer gh, fallback to parsing origin url)
+        let repoNameWithOwner = '';
+        try {
+          const { stdout: repoOut } = await execAsync(
+            'gh repo view --json nameWithOwner -q .nameWithOwner',
+            { cwd: workspacePath }
+          );
+          repoNameWithOwner = (repoOut || '').trim();
+        } catch {
+          try {
+            const { stdout: urlOut } = await execAsync('git remote get-url origin', {
+              cwd: workspacePath,
+            });
+            const url = (urlOut || '').trim();
+            // Handle both SSH and HTTPS forms
+            const m =
+              url.match(/github\.com[/:]([^/]+)\/([^/.]+)(?:\.git)?$/i) ||
+              url.match(/([^/:]+)[:/]([^/]+)\/([^/.]+)(?:\.git)?$/i);
+            if (m) {
+              const owner = m[1].includes('github.com') ? m[1].split('github.com').pop() : m[1];
+              const repo = m[2] || m[3];
+              repoNameWithOwner = `${owner}/${repo}`.replace(/^\/*/, '');
+            }
+          } catch {}
+        }
+
+        // Determine current branch and default base branch (fallback to main)
+        let currentBranch = '';
+        try {
+          const { stdout } = await execAsync('git branch --show-current', { cwd: workspacePath });
+          currentBranch = (stdout || '').trim();
+        } catch {}
+        let defaultBranch = 'main';
+        try {
+          const { stdout } = await execAsync(
+            'gh repo view --json defaultBranchRef -q .defaultBranchRef.name',
+            { cwd: workspacePath }
+          );
+          const db = (stdout || '').trim();
+          if (db) defaultBranch = db;
+        } catch {
+          try {
+            const { stdout } = await execAsync(
+              'git remote show origin | sed -n "/HEAD branch/s/.*: //p"',
+              { cwd: workspacePath }
+            );
+            const db2 = (stdout || '').trim();
+            if (db2) defaultBranch = db2;
+          } catch {}
+        }
+
+        // Guard: ensure there is at least one commit ahead of base
+        try {
+          const baseRef = base || defaultBranch;
+          const { stdout: aheadOut } = await execAsync(
+            `git rev-list --count ${JSON.stringify(`origin/${baseRef}`)}..HEAD`,
+            { cwd: workspacePath }
+          );
+          const aheadCount = parseInt((aheadOut || '0').trim(), 10) || 0;
+          if (aheadCount <= 0) {
+            return {
+              success: false,
+              error:
+                `No commits to create a PR. Make a commit on 
+current branch '${currentBranch}' ahead of base '${baseRef}'.`,
+            };
+          }
+        } catch {
+          // Non-fatal; continue
+        }
+
+        // Build gh pr create command with explicit repo/base/head for reliability
         const flags: string[] = [];
+        if (repoNameWithOwner) flags.push(`--repo ${JSON.stringify(repoNameWithOwner)}`);
         if (title) flags.push(`--title ${JSON.stringify(title)}`);
         if (body) flags.push(`--body ${JSON.stringify(body)}`);
-        if (base) flags.push(`--base ${JSON.stringify(base)}`);
-        if (head) flags.push(`--head ${JSON.stringify(head)}`);
+        if (base || defaultBranch) flags.push(`--base ${JSON.stringify(base || defaultBranch)}`);
+        if (head) {
+          flags.push(`--head ${JSON.stringify(head)}`);
+        } else if (currentBranch) {
+          // Prefer owner:branch form when repo is known; otherwise branch name
+          const headRef = repoNameWithOwner ? `${repoNameWithOwner.split('/')[0]}:${currentBranch}` : currentBranch;
+          flags.push(`--head ${JSON.stringify(headRef)}`);
+        }
         if (draft) flags.push('--draft');
         if (web) flags.push('--web');
         if (fill) flags.push('--fill');
