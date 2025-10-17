@@ -6,6 +6,7 @@ import linearLogo from '../../assets/images/linear.png';
 import { type LinearIssueSummary } from '../types/linear';
 import { Separator } from './ui/separator';
 import { Badge } from './ui/badge';
+import { Spinner } from './ui/spinner';
 
 interface LinearIssueSelectorProps {
   selectedIssue: LinearIssueSummary | null;
@@ -263,14 +264,18 @@ export const LinearIssueSelector: React.FC<LinearIssueSelectorProps> = ({
                 </SelectItem>
               ))
             ) : searchTerm.trim() ? (
-              <div className="text-muted- foreground px-3 py-2 text-sm">
-                {isSearching
-                  ? 'Searching...'
-                  : `No issues found for
-  "${searchTerm}"`}
+              <div className="px-3 py-2 text-sm text-muted-foreground">
+                {isSearching ? (
+                  <div className="flex items-center gap-2">
+                    <Spinner size="sm" />
+                    <span>Searching</span>
+                  </div>
+                ) : (
+                  `No issues found for "${searchTerm}"`
+                )}
               </div>
             ) : (
-              <div className="text-muted- foreground px-3 py-2 text-sm">No issues available</div>
+              <div className="px-3 py-2 text-sm text-muted-foreground">No issues available</div>
             )}
           </div>
         </SelectContent>
