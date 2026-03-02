@@ -268,31 +268,35 @@ const AppContent: React.FC = () => {
   });
 
   // Focus task when OS notification is clicked
-  const allTasksRef = useRef(taskMgmt.allTasks);
+  const notificationFocusRef = useRef({
+    allTasks: taskMgmt.allTasks,
+    selectedProject: projectMgmt.selectedProject,
+    handleSelectTask: taskMgmt.handleSelectTask,
+  });
   useEffect(() => {
-    allTasksRef.current = taskMgmt.allTasks;
-  }, [taskMgmt.allTasks]);
+    notificationFocusRef.current = {
+      allTasks: taskMgmt.allTasks,
+      selectedProject: projectMgmt.selectedProject,
+      handleSelectTask: taskMgmt.handleSelectTask,
+    };
+  });
 
   useEffect(() => {
     const cleanup = window.electronAPI.onNotificationFocusTask((taskId: string) => {
-      const entry = allTasksRef.current.find((t) => t.task.id === taskId);
+      const { allTasks, selectedProject, handleSelectTask } = notificationFocusRef.current;
+      const entry = allTasks.find((t) => t.task.id === taskId);
       if (!entry) return;
       const { task, project } = entry;
-      if (!projectMgmt.selectedProject || projectMgmt.selectedProject.id !== project.id) {
+      if (!selectedProject || selectedProject.id !== project.id) {
         projectMgmt.activateProjectView(project);
       }
       setShowKanban(false);
       setShowEditorMode(false);
       handleCloseSettingsPage();
-      taskMgmt.handleSelectTask(task);
+      handleSelectTask(task);
     });
     return cleanup;
-  }, [
-    projectMgmt.selectedProject,
-    projectMgmt.activateProjectView,
-    taskMgmt.handleSelectTask,
-    handleCloseSettingsPage,
-  ]);
+  }, [projectMgmt.activateProjectView, handleCloseSettingsPage]);
 
   // --- Panel layout ---
   const {
