@@ -281,10 +281,18 @@ const AppContent: React.FC = () => {
       if (!projectMgmt.selectedProject || projectMgmt.selectedProject.id !== project.id) {
         projectMgmt.activateProjectView(project);
       }
+      setShowKanban(false);
+      setShowEditorMode(false);
+      handleCloseSettingsPage();
       taskMgmt.handleSelectTask(task);
     });
     return cleanup;
-  }, [projectMgmt.selectedProject, projectMgmt.activateProjectView, taskMgmt.handleSelectTask]);
+  }, [
+    projectMgmt.selectedProject,
+    projectMgmt.activateProjectView,
+    taskMgmt.handleSelectTask,
+    handleCloseSettingsPage,
+  ]);
 
   // --- Panel layout ---
   const {
