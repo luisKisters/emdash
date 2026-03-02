@@ -151,6 +151,7 @@ export function useTaskManagement(options: UseTaskManagementOptions) {
     }
     setSelectedProject(project);
     setShowHomeView(false);
+    setShowSkillsView(false);
     setActiveTask(task);
     setActiveTaskAgent(getAgentForTask(task));
     saveActiveIds(project.id, task.id);
@@ -170,6 +171,7 @@ export function useTaskManagement(options: UseTaskManagementOptions) {
     }
     setSelectedProject(project);
     setShowHomeView(false);
+    setShowSkillsView(false);
     setActiveTask(task);
     setActiveTaskAgent(getAgentForTask(task));
     saveActiveIds(project.id, task.id);
