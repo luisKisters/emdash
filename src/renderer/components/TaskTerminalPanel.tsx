@@ -65,6 +65,23 @@ const TaskTerminalPanelComponent: React.FC<Props> = ({
 
   const selection = useTerminalSelection({ task, taskTerminals, globalTerminals });
 
+  const terminalRefs = useRef<Map<string, { focus: () => void }>>(new Map());
+  const setTerminalRef = useCallback((id: string, ref: { focus: () => void } | null) => {
+    if (ref) {
+      terminalRefs.current.set(id, ref);
+    } else {
+      terminalRefs.current.delete(id);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!selection.activeTerminalId) return;
+    const timer = setTimeout(() => {
+      terminalRefs.current.get(selection.activeTerminalId!)?.focus();
+    }, 50);
+    return () => clearTimeout(timer);
+  }, [selection.activeTerminalId]);
+
   const [runStatus, setRunStatus] = useState<LifecyclePhaseStatus>('idle');
   const [setupStatus, setSetupStatus] = useState<LifecyclePhaseStatus>('idle');
   const [teardownStatus, setTeardownStatus] = useState<LifecyclePhaseStatus>('idle');
@@ -646,6 +663,7 @@ const TaskTerminalPanelComponent: React.FC<Props> = ({
                 )}
               >
                 <TerminalPane
+                  ref={(r) => setTerminalRef(terminal.id, r)}
                   id={terminal.id}
                   cwd={terminal.cwd || task?.path}
                   remote={remote?.connectionId ? { connectionId: remote.connectionId } : undefined}
@@ -672,6 +690,7 @@ const TaskTerminalPanelComponent: React.FC<Props> = ({
                 )}
               >
                 <TerminalPane
+                  ref={(r) => setTerminalRef(terminal.id, r)}
                   id={terminal.id}
                   cwd={terminal.cwd || projectPath}
                   remote={remote?.connectionId ? { connectionId: remote.connectionId } : undefined}
