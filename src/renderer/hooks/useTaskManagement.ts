@@ -126,6 +126,10 @@ export function useTaskManagement(options: UseTaskManagementOptions) {
 
   const handleSelectTask = (task: Task) => {
     const taskProject = projects.find((project) => project.id === task.projectId);
+    const isProjectSwitch = !selectedProject || selectedProject.id !== task.projectId;
+    if (isProjectSwitch) {
+      setShowEditorMode(false);
+    }
     if (taskProject && selectedProject?.id !== taskProject.id) {
       setSelectedProject(taskProject);
     }
