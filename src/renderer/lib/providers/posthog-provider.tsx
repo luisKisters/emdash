@@ -16,11 +16,8 @@ export function PostHogFeatureFlagsProvider({ children }: { children: ReactNode 
             autocapture: false,
           });
         }
+        return rpc.telemetry.getStatus();
       })
-      .catch(() => {});
-
-    rpc.telemetry
-      .getStatus()
       .then(({ status }) => {
         if (status?.instance_id) posthog.identify(status.instance_id);
       })
