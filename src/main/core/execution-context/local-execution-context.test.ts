@@ -3,9 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { GIT_EXECUTABLE } from '@main/core/utils/exec';
 
 const spawnMock = vi.hoisted(() => vi.fn());
+const execFileMock = vi.hoisted(() => vi.fn());
 
 vi.mock('node:child_process', () => ({
-  execFile: vi.fn(),
+  execFile: execFileMock,
   spawn: spawnMock,
 }));
 
@@ -19,7 +20,24 @@ class FakeChildProcess extends EventEmitter {
 
 describe('LocalExecutionContext', () => {
   beforeEach(() => {
+    execFileMock.mockReset();
     spawnMock.mockReset();
+  });
+
+  it('resolves logical git command for buffered local execution', async () => {
+    execFileMock.mockImplementation((_command, _args, _options, callback) => {
+      callback(null, { stdout: '', stderr: '' });
+    });
+    const ctx = new LocalExecutionContext({ root: '/repo' });
+
+    await ctx.exec('git', ['status']);
+
+    expect(execFileMock).toHaveBeenCalledWith(
+      GIT_EXECUTABLE,
+      ['status'],
+      expect.objectContaining({ cwd: '/repo' }),
+      expect.any(Function)
+    );
   });
 
   it('resolves logical git command for streaming local execution', async () => {
