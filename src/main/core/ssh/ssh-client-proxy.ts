@@ -1,4 +1,5 @@
 import type { Client } from 'ssh2';
+import { captureRemoteShellProfile, type RemoteShellProfile } from './remote-shell-profile';
 
 /**
  * Stable reference to an ssh2 Client that survives reconnects.
@@ -12,35 +13,34 @@ import type { Client } from 'ssh2';
  */
 export class SshClientProxy {
   private _client: Client | null = null;
-  private _remoteEnv: Record<string, string> | null = null;
+  private _remoteShellProfile: RemoteShellProfile | null = null;
+  private _remoteShellProfileInFlight: Promise<RemoteShellProfile> | null = null;
 
   /** Called by SshConnectionManager when a connection becomes ready. */
   update(client: Client): void {
     this._client = client;
   }
 
-  /**
-   * Called by SshConnectionManager after the connection is ready with the
-   * remote machine's login-shell environment. Stored here so downstream
-   * consumers (probers, providers) can use it without re-capturing per command.
-   */
-  updateRemoteEnv(env: Record<string, string>): void {
-    this._remoteEnv = env;
+  getRemoteShellProfile(): Promise<RemoteShellProfile> {
+    if (this._remoteShellProfile) return Promise.resolve(this._remoteShellProfile);
+    if (!this._remoteShellProfileInFlight) {
+      this._remoteShellProfileInFlight = captureRemoteShellProfile(this.client)
+        .then((profile) => {
+          this._remoteShellProfile = profile;
+          return profile;
+        })
+        .finally(() => {
+          this._remoteShellProfileInFlight = null;
+        });
+    }
+    return this._remoteShellProfileInFlight;
   }
 
   /** Called by SshConnectionManager when the connection drops. */
   invalidate(): void {
     this._client = null;
-    this._remoteEnv = null;
-  }
-
-  /**
-   * The remote machine's login-shell environment, captured once after the
-   * connection becomes ready. `null` until the capture completes or if
-   * capture failed — callers should fall back to `bash -l -c` in that case.
-   */
-  get remoteEnv(): Record<string, string> | null {
-    return this._remoteEnv;
+    this._remoteShellProfile = null;
+    this._remoteShellProfileInFlight = null;
   }
 
   /**
