@@ -1,8 +1,17 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { afterEach, describe, expect, it } from 'vitest';
-import { ensureUserBinDirsInPath, ensureWindowsNpmGlobalBinInPath } from './userEnv';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const execSyncMock = vi.fn();
+
+vi.mock('node:child_process', () => ({
+  execSync: execSyncMock,
+}));
+
+const { ensureUserBinDirsInPath, ensureWindowsNpmGlobalBinInPath, resolveUserEnv } = await import(
+  './userEnv'
+);
 
 const originalPath = process.env.PATH;
 
@@ -43,5 +52,52 @@ describe('ensureWindowsNpmGlobalBinInPath', () => {
 
     expect(added).toBe('C:\\Users\\test\\AppData\\Roaming\\npm');
     expect(env.Path).toBe('C:\\Users\\test\\AppData\\Roaming\\npm;C:\\Windows\\System32');
+  });
+});
+
+describe('resolveUserEnv (AppImage env scrub)', () => {
+  const APPIMAGE_KEYS = ['APPIMAGE', 'APPDIR', 'ARGV0', 'OWD', 'CHROME_DESKTOP'] as const;
+  const savedEnv: Partial<
+    Record<(typeof APPIMAGE_KEYS)[number] | 'PATH' | 'LD_LIBRARY_PATH', string | undefined>
+  > = {};
+
+  beforeEach(() => {
+    execSyncMock.mockReset();
+    execSyncMock.mockReturnValue('');
+    for (const key of [...APPIMAGE_KEYS, 'PATH' as const, 'LD_LIBRARY_PATH' as const]) {
+      savedEnv[key] = process.env[key];
+    }
+  });
+
+  afterEach(() => {
+    for (const [key, value] of Object.entries(savedEnv)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+  });
+
+  it('strips AppImage runtime vars and /tmp/.mount_* PATH entries from the probe shell env', async () => {
+    process.env.APPIMAGE = '/home/user/emdash.AppImage';
+    process.env.APPDIR = '/tmp/.mount_emdashTest';
+    process.env.ARGV0 = '/home/user/emdash.AppImage';
+    process.env.OWD = '/home/user';
+    process.env.PATH = '/tmp/.mount_emdashTest/usr/bin:/usr/local/bin:/usr/bin';
+    process.env.LD_LIBRARY_PATH = '/tmp/.mount_emdashTest/usr/lib:/usr/lib';
+
+    await resolveUserEnv();
+
+    expect(execSyncMock).toHaveBeenCalledTimes(1);
+    const opts = execSyncMock.mock.calls[0]?.[1] as { env?: NodeJS.ProcessEnv } | undefined;
+    expect(opts?.env).toBeDefined();
+    const probeEnv = opts!.env!;
+    expect(probeEnv.APPIMAGE).toBeUndefined();
+    expect(probeEnv.APPDIR).toBeUndefined();
+    expect(probeEnv.ARGV0).toBeUndefined();
+    expect(probeEnv.OWD).toBeUndefined();
+    expect(probeEnv.PATH ?? '').not.toContain('/tmp/.mount_');
+    expect(probeEnv.LD_LIBRARY_PATH ?? '').not.toContain('/tmp/.mount_');
+    // Helper hint vars must still be set so oh-my-zsh / tmux plugins stay quiet.
+    expect(probeEnv.DISABLE_AUTO_UPDATE).toBe('true');
+    expect(probeEnv.ZSH_TMUX_AUTOSTART).toBe('false');
   });
 });

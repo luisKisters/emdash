@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { log } from '@main/lib/logger';
+import { buildExternalToolEnv } from './childProcessEnv';
 import { getWindowsEnvValue, prependWindowsPathEntry } from './windows-env';
 
 /**
@@ -113,8 +114,13 @@ export async function resolveUserEnv(): Promise<void> {
     const raw = execSync(`${shell} -ilc 'env'`, {
       encoding: 'utf8',
       timeout: 5_000,
+      // Route through buildExternalToolEnv so AppImage runtime vars (APPIMAGE,
+      // APPDIR, ARGV0, ...) and `/tmp/.mount_*` PATH entries don't leak into
+      // the probe shell. Otherwise login-shell hooks that resolve a binary by
+      // name through PATH (mise/starship/oh-my-zsh) can re-enter the AppImage
+      // and fork-bomb the app on Linux. See #1679.
       env: {
-        ...process.env,
+        ...buildExternalToolEnv(),
         // Prevent oh-my-zsh and tmux plugins from producing extra output or
         // blocking the env capture.
         DISABLE_AUTO_UPDATE: 'true',
