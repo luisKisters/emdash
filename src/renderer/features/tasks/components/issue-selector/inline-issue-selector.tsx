@@ -50,10 +50,6 @@ export const InlineIssueSelector = observer(function InlineIssueSelector({
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLDivElement>(null);
-  // Hold the latest map in a ref so handleKeyDown stays referentially stable.
-  // useMemo would break MobX reactivity here — observables wouldn't be re-read on cached renders.
-  const linkedIssueMapRef = useRef(linkedIssueMap);
-  linkedIssueMapRef.current = linkedIssueMap;
 
   // Scroll highlighted item into view whenever it changes
   useEffect(() => {
@@ -88,31 +84,19 @@ export const InlineIssueSelector = observer(function InlineIssueSelector({
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLInputElement>) => {
       if (issues.length === 0) return;
-      const linked = linkedIssueMapRef.current;
       switch (e.key) {
         case 'ArrowDown':
           e.preventDefault();
-          setHighlightedIndex((prev) => {
-            for (let i = prev + 1; i < issues.length; i++) {
-              if (!linked.has(issues[i].url)) return i;
-            }
-            return prev;
-          });
+          setHighlightedIndex((prev) => Math.min(prev + 1, issues.length - 1));
           break;
         case 'ArrowUp':
           e.preventDefault();
-          setHighlightedIndex((prev) => {
-            for (let i = prev - 1; i >= 0; i--) {
-              if (!linked.has(issues[i].url)) return i;
-            }
-            return prev;
-          });
+          setHighlightedIndex((prev) => Math.max(prev - 1, 0));
           break;
         case 'Enter': {
           e.preventDefault();
           const issue = issues[highlightedIndex];
           if (!issue) break;
-          if (linked.has(issue.url)) break;
           onValueChange(issue === value ? null : issue);
           break;
         }
@@ -194,25 +178,17 @@ export const InlineIssueSelector = observer(function InlineIssueSelector({
             const isSelected = value?.identifier === issue.identifier;
             const isHighlighted = index === highlightedIndex;
             const linkedTo = linkedIssueMap.get(issue.url);
-            const isLinked = !!linkedTo;
             return (
               <button
                 key={issue.identifier}
                 type="button"
-                disabled={isLinked}
                 className={cn(
                   'relative flex min-w-0 w-full cursor-default items-center gap-2 rounded-sm py-1.5 pl-2 pr-8 text-sm outline-none select-none',
-                  isHighlighted && !isSelected && !isLinked && 'bg-background-2',
-                  isSelected && 'bg-background-2',
-                  isLinked && 'cursor-not-allowed opacity-50'
+                  isHighlighted && !isSelected && 'bg-background-2',
+                  isSelected && 'bg-background-2'
                 )}
-                onMouseEnter={() => {
-                  if (!isLinked) setHighlightedIndex(index);
-                }}
-                onClick={() => {
-                  if (isLinked) return;
-                  onValueChange(isSelected ? null : issue);
-                }}
+                onMouseEnter={() => setHighlightedIndex(index)}
+                onClick={() => onValueChange(isSelected ? null : issue)}
               >
                 <IssueRow issue={issue} linkedTo={linkedTo} />
                 {isSelected && (

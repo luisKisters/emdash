@@ -1,4 +1,4 @@
-import { ExternalLink, Loader2 } from 'lucide-react';
+import { ExternalLink, Link2, Loader2 } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
 import { forwardRef, useCallback, useRef, useState } from 'react';
 import type { Issue } from '@shared/tasks';
@@ -77,17 +77,13 @@ export function ProviderLogo({
   return <img src={src} alt={alt} className={className ?? 'h-3.5 w-3.5'} />;
 }
 
-function truncateEnd(value: string, max = 20): string {
-  return value.length > max ? `${value.slice(0, max)}…` : value;
-}
-
-export function LinkedToTaskBadge({ linkedTo }: { linkedTo: LinkedIssueInfo }) {
+export function LinkedIssueIndicator({ linkedTo }: { linkedTo: LinkedIssueInfo }) {
   return (
     <Tooltip>
       <TooltipTrigger
         render={
-          <span className="ml-auto shrink-0 rounded border border-border px-1 text-xs text-foreground-muted">
-            Linked to {truncateEnd(linkedTo.taskName)}
+          <span className="ml-auto flex shrink-0 items-center text-foreground-muted">
+            <Link2 className="size-3.5" />
           </span>
         }
       />
@@ -105,7 +101,7 @@ export function IssueRow({ issue, linkedTo }: { issue: Issue; linkedTo?: LinkedI
       </Tooltip>
       <IssueIdentifier identifier={issue.identifier} />
       {issue.title ? <span className="truncate text-foreground">{issue.title}</span> : null}
-      {linkedTo ? <LinkedToTaskBadge linkedTo={linkedTo} /> : null}
+      {linkedTo ? <LinkedIssueIndicator linkedTo={linkedTo} /> : null}
     </span>
   );
 }
@@ -254,12 +250,7 @@ export const IssueSelector = observer(function IssueSelector({
               {(issue: Issue) => {
                 const linkedTo = linkedIssueMap.get(issue.url);
                 return (
-                  <ComboboxItem
-                    key={issue.identifier}
-                    value={issue}
-                    className="pr-2"
-                    disabled={!!linkedTo}
-                  >
+                  <ComboboxItem key={issue.identifier} value={issue} className="pr-2">
                     <IssueRow issue={issue} linkedTo={linkedTo} />
                   </ComboboxItem>
                 );
