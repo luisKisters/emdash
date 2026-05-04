@@ -132,15 +132,17 @@ void app.whenReady().then(async () => {
   }
 });
 
-app.on('before-quit', () => {
+app.on('before-quit', (event) => {
+  event.preventDefault();
   telemetryService.capture('app_closed');
-  telemetryService.dispose();
-
-  agentHookService.dispose();
-  updateService.dispose();
-  prSyncScheduler.dispose();
-  void gitWatcherRegistry.dispose();
-  projectManager.dispose().catch((e) => {
-    log.error('Failed to shutdown project manager:', e);
+  void telemetryService.dispose().finally(() => {
+    agentHookService.dispose();
+    updateService.dispose();
+    prSyncScheduler.dispose();
+    void gitWatcherRegistry.dispose();
+    void projectManager.dispose().catch((e) => {
+      log.error('Failed to shutdown project manager:', e);
+    });
+    app.exit(0);
   });
 });

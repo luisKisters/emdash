@@ -208,17 +208,14 @@ class TelemetryService implements IInitializable, IDisposable {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(5_000),
       }).catch(() => undefined);
     } catch {
       // swallow errors; telemetry must never crash the app
     }
   }
 
-  private async posthogIdentify(
-    username: string,
-    accountId?: string,
-    email?: string
-  ): Promise<void> {
+  private async posthogIdentify(username: string, email?: string): Promise<void> {
     if (!this.isEnabled() || !username) return;
     try {
       const u = (this.host ?? '').replace(/\/$/, '') + '/capture/';
@@ -228,8 +225,6 @@ class TelemetryService implements IInitializable, IDisposable {
         properties: {
           distinct_id: this.instanceId,
           $set: {
-            github_username: username,
-            ...(accountId ? { account_id: accountId } : {}),
             ...(email ? { email } : {}),
             ...this.getBaseProps(),
           },
@@ -239,6 +234,7 @@ class TelemetryService implements IInitializable, IDisposable {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
+        signal: AbortSignal.timeout(5_000),
       }).catch(() => undefined);
     } catch {
       // swallow errors; telemetry must never crash the app
@@ -376,15 +372,15 @@ class TelemetryService implements IInitializable, IDisposable {
     }, 60_000);
   }
 
-  dispose(): void {
+  async dispose(): Promise<void> {
     if (this.heartbeatInterval !== undefined) {
       clearInterval(this.heartbeatInterval);
       this.heartbeatInterval = undefined;
     }
-    // Clear the stored session ID so the next startup knows this was a clean exit
-    // and won't emit a synthetic crash app_closed event.
-    void this.kv.del('lastSessionId');
-    void this.kv.del('lastHeartbeatTs');
+    // Await both deletes so the process cannot exit before they complete.
+    // If these are fire-and-forget, the next startup will see lastSessionId still
+    // in KV and incorrectly emit a synthetic app_closed with was_crash: true.
+    await Promise.all([this.kv.del('lastSessionId'), this.kv.del('lastHeartbeatTs')]);
   }
 
   /**
@@ -398,7 +394,7 @@ class TelemetryService implements IInitializable, IDisposable {
     this.cachedGithubUsername = username;
     this.cachedAccountId = userId;
     this.cachedEmail = email;
-    await this.posthogIdentify(username, userId, email);
+    await this.posthogIdentify(username, email);
     await this.posthogDecide();
   }
 

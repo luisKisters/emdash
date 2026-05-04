@@ -9,6 +9,10 @@ export function FeatureFlagProvider({ children }: { children: ReactNode }) {
     queryKey: ['feature-flags'],
     queryFn: () => rpc.telemetry.getFeatureFlags(),
     staleTime: Infinity,
+    refetchInterval: (query) => {
+      const data = query.state.data;
+      return !data || Object.keys(data).length === 0 ? 2_000 : false;
+    },
   });
   return <FeatureFlagContext value={flags}>{children}</FeatureFlagContext>;
 }
