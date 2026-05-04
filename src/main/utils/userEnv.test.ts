@@ -84,7 +84,8 @@ describe('resolveUserEnv (AppImage env scrub)', () => {
     }
   });
 
-  it('strips AppImage runtime vars and /tmp/.mount_* path entries from the probe shell env', async () => {
+  it('strips AppImage runtime vars and /tmp/.mount_* path entries from the probe shell env and final PATH', async () => {
+    execSyncMock.mockReturnValue('PATH=/usr/local/bin:/usr/bin\n');
     process.env.APPIMAGE = '/home/user/emdash.AppImage';
     process.env.APPDIR = '/tmp/.mount_emdashTest';
     process.env.ARGV0 = '/home/user/emdash.AppImage';
@@ -107,6 +108,7 @@ describe('resolveUserEnv (AppImage env scrub)', () => {
     for (const key of PATH_LIKE_KEYS) {
       expect(probeEnv[key] ?? '').not.toContain('/tmp/.mount_');
     }
+    expect(process.env.PATH ?? '').not.toContain('/tmp/.mount_');
     // Helper hint vars must still be set so oh-my-zsh / tmux plugins stay quiet.
     expect(probeEnv.DISABLE_AUTO_UPDATE).toBe('true');
     expect(probeEnv.ZSH_TMUX_AUTOSTART).toBe('false');

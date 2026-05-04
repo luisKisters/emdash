@@ -115,6 +115,7 @@ export async function resolveUserEnv(): Promise<void> {
   }
 
   const shell = process.env.SHELL ?? (process.platform === 'darwin' ? '/bin/zsh' : '/bin/bash');
+  const baseEnv = buildExternalToolEnv();
 
   try {
     const raw = execSync(`${shell} -ilc 'env'`, {
@@ -126,7 +127,7 @@ export async function resolveUserEnv(): Promise<void> {
       // name through PATH (mise/starship/oh-my-zsh) can re-enter the AppImage
       // and fork-bomb the app on Linux. See #1679.
       env: {
-        ...buildExternalToolEnv(),
+        ...baseEnv,
         ...SHELL_ENV_CAPTURE_GUARD,
       },
     });
@@ -137,7 +138,7 @@ export async function resolveUserEnv(): Promise<void> {
       if (PRESERVE_KEYS.has(key)) continue;
 
       if (key === 'PATH') {
-        const current = process.env.PATH ?? '';
+        const current = baseEnv.PATH ?? '';
         process.env.PATH = mergePath(value, current);
       } else {
         process.env[key] = value;
