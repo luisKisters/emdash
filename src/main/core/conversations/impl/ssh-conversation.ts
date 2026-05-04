@@ -1,5 +1,5 @@
 import type { AgentSessionConfig } from '@shared/agent-session';
-import { type Conversation } from '@shared/conversations';
+import type { Conversation } from '@shared/conversations';
 import { agentSessionExitedChannel } from '@shared/events/agentEvents';
 import { makePtySessionId } from '@shared/ptySessionId';
 import { wireAgentClassifier } from '@main/core/agent-hooks/classifier-wiring';
@@ -7,11 +7,12 @@ import { claudeTrustService } from '@main/core/agent-hooks/claude-trust-service'
 import type { ConversationProvider } from '@main/core/conversations/types';
 import type { IExecutionContext } from '@main/core/execution-context/types';
 import { SshFileSystem } from '@main/core/fs/impl/ssh-fs';
-import { type Pty } from '@main/core/pty/pty';
+import type { Pty } from '@main/core/pty/pty';
 import { ptySessionRegistry } from '@main/core/pty/pty-session-registry';
 import { resolveSshCommand } from '@main/core/pty/spawn-utils';
 import { openSsh2Pty } from '@main/core/pty/ssh2-pty';
 import { killTmuxSession, makeTmuxSessionName } from '@main/core/pty/tmux-session-name';
+import { providerOverrideSettings } from '@main/core/settings/provider-settings-service';
 import type { SshClientProxy } from '@main/core/ssh/ssh-client-proxy';
 import { events } from '@main/lib/events';
 import { log } from '@main/lib/logger';
@@ -86,8 +87,10 @@ export class SshConversationProvider implements ConversationProvider {
       remoteFs: new SshFileSystem(this.proxy, '/'),
     });
 
-    const { command, args } = await buildAgentCommand({
+    const providerConfig = await providerOverrideSettings.getItem(conversation.providerId);
+    const { command, args } = buildAgentCommand({
       providerId: conversation.providerId,
+      providerConfig,
       autoApprove: conversation.autoApprove,
       sessionId: conversation.id,
       isResuming,
