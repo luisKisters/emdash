@@ -9,6 +9,7 @@ import {
 import { makePtySessionId } from '@shared/ptySessionId';
 import { events, rpc } from '@renderer/lib/ipc';
 import { PtySession } from '@renderer/lib/pty/pty-session';
+import { log } from '@renderer/utils/logger';
 import { soundPlayer } from '@renderer/utils/soundPlayer';
 
 export type AgentStatus = 'idle' | 'working' | 'awaiting-input' | 'error' | 'completed';
@@ -127,7 +128,15 @@ export class ConversationManagerStore {
     }
 
     runInAction(() => {
-      this.conversations.get(conversationId)?.setWorking();
+      const store = this.conversations.get(conversationId);
+      if (!store) {
+        log.warn(`ConversationManagerStore: conversation ${conversationId} not found after load`, {
+          projectId: this.projectId,
+          taskId: this.taskId,
+        });
+        return;
+      }
+      store.setWorking();
     });
   }
 

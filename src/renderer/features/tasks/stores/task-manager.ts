@@ -14,6 +14,7 @@ import { getProjectManagerStore } from '@renderer/features/projects/stores/proje
 import type { ProjectSettingsStore } from '@renderer/features/projects/stores/project-settings-store';
 import type { RepositoryStore } from '@renderer/features/projects/stores/repository-store';
 import { events, rpc } from '@renderer/lib/ipc';
+import { log } from '@renderer/utils/logger';
 import {
   createUnprovisionedTask,
   createUnregisteredTask,
@@ -24,13 +25,21 @@ import {
   type TaskStore,
 } from './task';
 
-async function markInitialConversationWorkingAfterProvision(
+export async function markInitialConversationWorkingAfterProvision(
   task: TaskStore | undefined,
   initialConversation: CreateTaskParams['initialConversation']
 ): Promise<void> {
   if (!initialConversation?.initialPrompt?.trim()) return;
   if (!task || !isProvisioned(task)) return;
-  await task.provisionedTask.conversations.markConversationWorking(initialConversation.id);
+  try {
+    await task.provisionedTask.conversations.markConversationWorking(initialConversation.id);
+  } catch (error) {
+    log.warn('TaskManagerStore: failed to mark initial conversation as working', {
+      conversationId: initialConversation.id,
+      taskId: initialConversation.taskId,
+      error,
+    });
+  }
 }
 
 function formatCreateTaskError(error: CreateTaskError): string {
