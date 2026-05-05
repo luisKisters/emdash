@@ -55,12 +55,14 @@ export const TaskRow = observer(function TaskRow({
   const canPin = task.state !== 'unregistered';
   const agentAttention = taskAgentStatus(task);
   const currentPr = task.data.prs ? selectCurrentPr(task.data.prs) : undefined;
+  const branchName = task.provisionedTask?.workspace.git.branchName ?? task.data.taskBranch;
 
   return (
     <TaskContextMenu
       isPinned={task.data.isPinned}
       canPin={canPin}
       isArchived={isArchived}
+      branchName={branchName}
       onPin={() => void task.setPinned(true)}
       onUnpin={() => void task.setPinned(false)}
       onRename={handleRename}
