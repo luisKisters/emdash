@@ -1,9 +1,9 @@
 import React, { forwardRef, useImperativeHandle, useRef } from 'react';
 import { rpc } from '@renderer/lib/ipc';
 import { log } from '@renderer/utils/logger';
+import { cn } from '@renderer/utils/utils';
 import type { FrontendPty, SessionTheme } from './pty';
 import { usePty } from './use-pty';
-import { cn } from '@renderer/utils/utils';
 
 type Props = {
   /**

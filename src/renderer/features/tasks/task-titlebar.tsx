@@ -376,7 +376,9 @@ const ActiveTaskTitlebar = observer(function ActiveTaskTitlebar({
                 <Terminal className="size-3.5" />
               </Toggle>
             </TooltipTrigger>
-            <TooltipContent>Toggle terminal <ShortcutHint settingsKey="toggleTerminalDrawer" /></TooltipContent>
+            <TooltipContent>
+              Toggle terminal <ShortcutHint settingsKey="toggleTerminalDrawer" />
+            </TooltipContent>
           </Tooltip>
         </div>
       }

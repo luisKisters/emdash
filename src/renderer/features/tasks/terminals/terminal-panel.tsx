@@ -58,9 +58,7 @@ export const TerminalsPanel = observer(function TerminalsPanel() {
   // Always derive the active terminal id from the MobX-authoritative store so that
   // auto-selection (e.g. after removal) is reflected without stale local state.
   const activeTerminalId =
-    activeItem.kind === 'terminal'
-      ? (terminalTabView.activeTabId ?? activeItem.id)
-      : undefined;
+    activeItem.kind === 'terminal' ? (terminalTabView.activeTabId ?? activeItem.id) : undefined;
 
   const activeSession =
     activeItem.kind === 'terminal'

@@ -1,15 +1,13 @@
 import { Pause, Play, Plus, Settings, Terminal, X } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
-import { type ReactNode, useEffect, useRef, useState } from 'react';
-import {
-  type LifecycleScriptsStore,
-} from '@renderer/features/tasks/stores/lifecycle-scripts';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { type LifecycleScriptsStore } from '@renderer/features/tasks/stores/lifecycle-scripts';
 import { type TerminalTabViewStore } from '@renderer/features/tasks/terminals/terminal-tab-view-store';
+import { useNavigate } from '@renderer/lib/layout/navigation-provider';
 import { MicroLabel } from '@renderer/lib/ui/label';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@renderer/lib/ui/tooltip';
 import { cn } from '@renderer/utils/utils';
 import { scriptIcon } from './terminal-tabs';
-import { useNavigate } from '@renderer/lib/layout/navigation-provider';
 
 interface TerminalDrawerSidebarProps {
   lifecycleScriptsMgr: LifecycleScriptsStore | null;
@@ -93,16 +91,22 @@ export const TerminalDrawerSidebar = observer(function TerminalDrawerSidebar({
         ))}
       </Section>
       {scripts.length > 0 && lifecycleScriptsMgr && (
-        <Section label="Scripts" action={
-          <Tooltip>
-            <TooltipTrigger>
-              <button onClick={() => navigate('project', { projectId })} className="flex items-center justify-center size-5 rounded hover:bg-background-2 text-foreground-muted hover:text-foreground">
-                <Settings className="size-3" />
-              </button>
-            </TooltipTrigger>
-            <TooltipContent>Configure in project settings</TooltipContent>
-          </Tooltip>
-        }>
+        <Section
+          label="Scripts"
+          action={
+            <Tooltip>
+              <TooltipTrigger>
+                <button
+                  onClick={() => navigate('project', { projectId })}
+                  className="flex items-center justify-center size-5 rounded hover:bg-background-2 text-foreground-muted hover:text-foreground"
+                >
+                  <Settings className="size-3" />
+                </button>
+              </TooltipTrigger>
+              <TooltipContent>Configure in project settings</TooltipContent>
+            </Tooltip>
+          }
+        >
           {scripts.map((script) => {
             const isActive = activeScriptId === script.data.id;
             return (
@@ -143,7 +147,6 @@ export const TerminalDrawerSidebar = observer(function TerminalDrawerSidebar({
           })}
         </Section>
       )}
-
     </div>
   );
 });
