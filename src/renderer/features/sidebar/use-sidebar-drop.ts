@@ -86,18 +86,29 @@ export function useSidebarDrop() {
             );
           } catch (err) {
             log.error('Failed to add dropped project:', err);
+            toast({
+              title: 'Cannot add project',
+              description: `Failed to add ${basenameFromAnyPath(filePath)} as a project.`,
+              variant: 'destructive',
+            });
             return null;
           }
         })
       ).then((results) => {
-        let lastProjectId: string | undefined;
-        for (const r of results) {
-          if (r.status === 'fulfilled' && r.value != null) {
-            lastProjectId = r.value;
-          }
+        const projectIds = results.flatMap((r) =>
+          r.status === 'fulfilled' && r.value != null ? [r.value] : []
+        );
+        const firstProjectId = projectIds[0];
+
+        if (firstProjectId) {
+          navigate('project', { projectId: firstProjectId });
         }
-        if (lastProjectId) {
-          navigate('project', { projectId: lastProjectId });
+
+        if (projectIds.length > 1) {
+          toast({
+            title: 'Projects added',
+            description: `${projectIds.length} projects added.`,
+          });
         }
       });
     },

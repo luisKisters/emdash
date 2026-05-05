@@ -1,4 +1,4 @@
-import { FolderPlus, FolderInput, MessageSquareShare, Plug, Puzzle, Settings } from 'lucide-react';
+import { FolderInput, FolderPlus, MessageSquareShare, Plug, Puzzle, Settings } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
 import React from 'react';
 import {
