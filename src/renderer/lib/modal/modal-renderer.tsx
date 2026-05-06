@@ -1,6 +1,6 @@
 import { Dialog as DialogPrimitive } from '@base-ui/react/dialog';
 import { observer } from 'mobx-react-lite';
-import { useRef } from 'react';
+import { useCallback, useRef } from 'react';
 import {
   modalRegistry,
   type ModalPosition,
@@ -61,12 +61,30 @@ export const ModalRenderer = observer(function ModalRenderer() {
     }
   };
 
+  const popupRef = useRef<HTMLDivElement>(null);
+  const initialFocus = useCallback(() => {
+    const marker = popupRef.current?.querySelector<HTMLElement>('[data-autofocus]');
+    if (!marker) return true;
+    const focusableSelector =
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const target = marker.matches(focusableSelector)
+      ? marker
+      : marker.querySelector<HTMLElement>(focusableSelector);
+    if (!target) return true;
+    if (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) {
+      requestAnimationFrame(() => target.select());
+    }
+    return target;
+  }, []);
+
   return (
     <Dialog open={modalStore.isOpen} onOpenChange={handleOpenChange}>
       <DialogPortal>
         <DialogOverlay />
         <DialogPrimitive.Popup
+          ref={popupRef}
           finalFocus={false}
+          initialFocus={initialFocus}
           data-slot="dialog-content"
           onKeyDownCapture={(e) => {
             if ((e.metaKey || e.ctrlKey || e.altKey) && e.key === 'Enter') {
