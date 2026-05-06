@@ -58,7 +58,7 @@ export const agentConfig: Record<AgentProviderId, AgentInfo> = {
   junie: {
     name: 'Junie',
     logo: junieLogo,
-    alt: 'Junie',
+    alt: 'Junie CLI',
   },
   amp: { name: 'Amp', logo: ampLogo, alt: 'Amp Code' },
   // Without initial prompt support

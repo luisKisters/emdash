@@ -447,7 +447,7 @@ export const AGENT_PROVIDERS: AgentProviderDefinition[] = [
     initialPromptFlag: '--task',
     sessionIdFlag: '--session-id',
     icon: 'junie-color.png',
-    alt: 'Junie',
+    alt: 'Junie CLI',
     terminalOnly: true,
   },
   {
