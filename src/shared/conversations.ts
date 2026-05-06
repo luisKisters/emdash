@@ -1,4 +1,4 @@
-import { AgentProviderId } from '@shared/agent-provider-registry';
+import type { AgentProviderId } from '@shared/agent-provider-registry';
 
 export type Conversation = {
   id: string;
@@ -6,6 +6,7 @@ export type Conversation = {
   taskId: string;
   providerId: AgentProviderId;
   title: string;
+  lastInteractedAt: string | null;
   resume?: boolean;
   autoApprove?: boolean;
 };

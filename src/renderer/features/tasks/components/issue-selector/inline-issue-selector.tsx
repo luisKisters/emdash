@@ -6,8 +6,8 @@ import {
   ISSUE_PROVIDER_ORDER,
 } from '@renderer/features/integrations/issue-provider-meta';
 import { InputGroup, InputGroupAddon, InputGroupInput } from '@renderer/lib/ui/input-group';
+import { Kbd } from '@renderer/lib/ui/kbd';
 import { Select, SelectContent, SelectItem, SelectTrigger } from '@renderer/lib/ui/select';
-import { ShortcutHint } from '@renderer/lib/ui/shortcut-hint';
 import { cn } from '@renderer/utils/utils';
 import { ConnectIssueIntegrationPlaceholder, IssueRow, ProviderLogo } from './issue-selector';
 import { useIssueSearch } from './useIssueSearch';
@@ -16,7 +16,7 @@ export interface InlineIssueSelectorProps {
   value: Issue | null;
   onValueChange: (issue: Issue | null) => void;
   projectId?: string;
-  nameWithOwner?: string;
+  repositoryUrl?: string;
   projectPath?: string;
   disabled?: boolean;
 }
@@ -25,7 +25,7 @@ export function InlineIssueSelector({
   value,
   onValueChange,
   projectId,
-  nameWithOwner = '',
+  repositoryUrl = '',
   projectPath = '',
   disabled,
 }: InlineIssueSelectorProps) {
@@ -38,7 +38,7 @@ export function InlineIssueSelector({
     connectedProviderCount,
     handleSetSearchTerm,
     setSelectedIssueProvider,
-  } = useIssueSearch(nameWithOwner, projectPath, projectId);
+  } = useIssueSearch(repositoryUrl, projectPath, projectId);
 
   const [query, setQuery] = useState('');
   const [highlightedIndex, setHighlightedIndex] = useState(0);
@@ -195,7 +195,7 @@ export function InlineIssueSelector({
         <div className="text-foreground-muted">Navigate with arrow keys</div>
         <div className="text-foreground-muted">
           <button className="flex items-center gap-2">
-            Select Issue <ShortcutHint settingsKey="confirm" />
+            Select Issue <Kbd>↵</Kbd>
           </button>{' '}
         </div>
       </div>
