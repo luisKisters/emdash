@@ -3,6 +3,7 @@ import { observer } from 'mobx-react-lite';
 import { useEffect, type ReactNode } from 'react';
 import { type ViewId, type WrapParams } from '@renderer/app/view-registry';
 import { appState } from '@renderer/lib/stores/app-state';
+import { viewEvents } from '@renderer/lib/stores/navigation-store';
 import { focusTracker } from '@renderer/utils/focus-tracker';
 import { clearTelemetryTaskScope, setTelemetryTaskScope } from '@renderer/utils/telemetry-scope';
 import { captureTelemetry } from '@renderer/utils/telemetryClient';
@@ -27,23 +28,6 @@ function syncTelemetryScope(currentViewId: ViewId, viewParamsStore: ViewParamsSt
 
   clearTelemetryTaskScope();
 }
-
-const viewEvents: Record<
-  ViewId,
-  | 'home_viewed'
-  | 'project_viewed'
-  | 'task_viewed'
-  | 'settings_viewed'
-  | 'skills_viewed'
-  | 'mcp_viewed'
-> = {
-  home: 'home_viewed',
-  project: 'project_viewed',
-  task: 'task_viewed',
-  settings: 'settings_viewed',
-  skills: 'skills_viewed',
-  mcp: 'mcp_viewed',
-};
 
 export const WorkspaceViewProvider = observer(function WorkspaceViewProvider({
   children,

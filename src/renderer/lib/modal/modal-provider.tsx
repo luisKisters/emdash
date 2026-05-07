@@ -65,14 +65,20 @@ export function useModalContext() {
 }
 
 export function useShowModal<MId extends ModalId>(id: MId) {
-  return (args: UserArgs<MId>) => {
-    modalStore.setModal(id, wrapArgs(args));
-    window.dispatchEvent(new CustomEvent('emdash:overlay:changed', { detail: { open: true } }));
-  };
+  return useCallback(
+    (args: UserArgs<MId>) => {
+      modalStore.setModal(id, wrapArgs(args));
+      window.dispatchEvent(new CustomEvent('emdash:overlay:changed', { detail: { open: true } }));
+    },
+    [id]
+  );
 }
 
 export function useTransitionModal<MId extends ModalId>(id: MId) {
-  return (args: UserArgs<MId>) => {
-    modalStore.setModal(id, wrapArgs(args));
-  };
+  return useCallback(
+    (args: UserArgs<MId>) => {
+      modalStore.setModal(id, wrapArgs(args));
+    },
+    [id]
+  );
 }

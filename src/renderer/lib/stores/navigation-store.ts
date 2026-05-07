@@ -8,7 +8,7 @@ import type { Snapshottable } from './snapshottable';
 
 type ViewParamsStore = Partial<{ [K in ViewId]: WrapParams<K> }>;
 
-const viewEvents: Record<
+export const viewEvents: Record<
   ViewId,
   | 'home_viewed'
   | 'project_viewed'
@@ -50,13 +50,13 @@ export class NavigationStore implements Snapshottable<NavigationSnapshot> {
       captureTelemetry(viewEvents[viewId], {
         from_view: transition?.previous.view ?? null,
       });
+      this.currentViewId = viewId;
+      this.isNavigating = true;
     }
-    this.currentViewId = viewId;
     if (params !== undefined) {
       this.viewParamsStore = { ...this.viewParamsStore, [viewId]: params };
     }
     modalStore.closeModal();
-    this.isNavigating = true;
   }
 
   updateViewParams<TId extends ViewId>(
