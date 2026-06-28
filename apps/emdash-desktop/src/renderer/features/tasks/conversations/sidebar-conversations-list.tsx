@@ -24,6 +24,10 @@ import { cn } from '@renderer/utils/utils';
 import { MAX_CONVERSATION_TITLE_LENGTH } from '@shared/core/conversations/conversations';
 import { AgentStatusIndicator } from '../components/agent-status-indicator';
 import { activeConversationId as getActiveConversationId } from './pane-selectors';
+import {
+  RecentConversationShortcutBadge,
+  useRecentConversationShortcut,
+} from './recent-conversation-shortcuts';
 
 const ROW_HEIGHT = 32;
 
@@ -38,6 +42,7 @@ const ConversationRow = observer(function ConversationRow({
   const conversations = useConversations();
   const { activePane, paneLayout } = taskView;
   const showConfirm = useShowModal('confirmActionModal');
+  const shortcut = useRecentConversationShortcut(conversationId);
 
   const handleRenameInputRef = useCallback((input: HTMLInputElement | null) => {
     input?.focus();
@@ -132,6 +137,7 @@ const ConversationRow = observer(function ConversationRow({
           ) : (
             <span className="min-w-0 flex-1 truncate">{displayTitle}</span>
           )}
+          {!isEditing && <RecentConversationShortcutBadge shortcut={shortcut} />}
           <span className="shrink-0">
             {conversation.indicatorStatus ? (
               <AgentStatusIndicator status={conversation.indicatorStatus} disableTooltip />

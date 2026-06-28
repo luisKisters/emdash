@@ -5,6 +5,7 @@ import { WelcomeScreen } from './app/welcome';
 import { Workspace } from './app/workspace';
 import { IntegrationsProvider } from './features/integrations/integrations-provider';
 import { Onboarding } from './features/onboarding/onboarding';
+import { RecentConversationShortcutsProvider } from './features/tasks/conversations/recent-conversation-shortcuts';
 import { FramelessTitlebarOverlay } from './lib/components/titlebar/window-controls';
 import { useAccountSession } from './lib/hooks/useAccount';
 import { useLegacyPortStatus } from './lib/hooks/useLegacyPort';
@@ -99,12 +100,14 @@ function AppContent() {
             <IntegrationsProvider>
               <WorkspaceViewProvider>
                 <AppMenuEvents onOpenSettings={handleOpenSettingsFromMenu} />
-                <RightSidebarProvider>
-                  <ThemeProvider>
-                    <ModalRenderer />
-                    {renderContent()}
-                  </ThemeProvider>
-                </RightSidebarProvider>
+                <RecentConversationShortcutsProvider>
+                  <RightSidebarProvider>
+                    <ThemeProvider>
+                      <ModalRenderer />
+                      {renderContent()}
+                    </ThemeProvider>
+                  </RightSidebarProvider>
+                </RecentConversationShortcutsProvider>
               </WorkspaceViewProvider>
             </IntegrationsProvider>
           </GithubContextProvider>
