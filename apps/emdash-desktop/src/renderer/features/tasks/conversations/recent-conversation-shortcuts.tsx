@@ -21,6 +21,7 @@ import {
 } from '@shared/core/conversations/conversationEvents';
 import {
   buildRecentConversationShortcuts,
+  isRecentConversationModifierKey,
   isRecentConversationModifierPressed,
   recentConversationShortcutNumber,
   type RecentConversationShortcut,
@@ -32,6 +33,7 @@ const RECENT_CONVERSATION_QUERY_KEY = ['recent-conversation-shortcuts'] as const
 interface RecentConversationShortcutContextValue {
   isModifierPressed: boolean;
   shortcutsByConversationId: ReadonlyMap<string, RecentConversationShortcut>;
+  shortcutsByTaskId: ReadonlyMap<string, RecentConversationShortcut>;
 }
 
 const EMPTY_SHORTCUTS = new Map<string, RecentConversationShortcut>();
@@ -39,6 +41,7 @@ const EMPTY_SHORTCUTS = new Map<string, RecentConversationShortcut>();
 const RecentConversationShortcutContext = createContext<RecentConversationShortcutContextValue>({
   isModifierPressed: false,
   shortcutsByConversationId: EMPTY_SHORTCUTS,
+  shortcutsByTaskId: EMPTY_SHORTCUTS,
 });
 
 function openConversationShortcut(shortcut: RecentConversationShortcut): void {
@@ -95,7 +98,10 @@ export function RecentConversationShortcutsProvider({ children }: { children: Re
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
-      setIsModifierPressed(isRecentConversationModifierPressed(event, PLATFORM));
+      setIsModifierPressed(
+        isRecentConversationModifierKey(event, PLATFORM) ||
+          isRecentConversationModifierPressed(event, PLATFORM)
+      );
       if (modalStore.isOpen) return;
 
       const shortcutNumber = recentConversationShortcutNumber(event, PLATFORM);
@@ -111,6 +117,10 @@ export function RecentConversationShortcutsProvider({ children }: { children: Re
     };
 
     const handleKeyUp = (event: KeyboardEvent) => {
+      if (isRecentConversationModifierKey(event, PLATFORM)) {
+        setIsModifierPressed(false);
+        return;
+      }
       setIsModifierPressed(isRecentConversationModifierPressed(event, PLATFORM));
     };
 
@@ -128,10 +138,14 @@ export function RecentConversationShortcutsProvider({ children }: { children: Re
 
   const value = useMemo<RecentConversationShortcutContextValue>(() => {
     const shortcutsByConversationId = new Map<string, RecentConversationShortcut>();
+    const shortcutsByTaskId = new Map<string, RecentConversationShortcut>();
     for (const shortcut of shortcuts) {
       shortcutsByConversationId.set(shortcut.conversationId, shortcut);
+      if (!shortcutsByTaskId.has(shortcut.taskId)) {
+        shortcutsByTaskId.set(shortcut.taskId, shortcut);
+      }
     }
-    return { isModifierPressed, shortcutsByConversationId };
+    return { isModifierPressed, shortcutsByConversationId, shortcutsByTaskId };
   }, [isModifierPressed, shortcuts]);
 
   return (
@@ -146,6 +160,13 @@ export function useRecentConversationShortcut(
 ): RecentConversationShortcut | undefined {
   const { shortcutsByConversationId } = useContext(RecentConversationShortcutContext);
   return shortcutsByConversationId.get(conversationId);
+}
+
+export function useRecentConversationShortcutForTask(
+  taskId: string
+): RecentConversationShortcut | undefined {
+  const { shortcutsByTaskId } = useContext(RecentConversationShortcutContext);
+  return shortcutsByTaskId.get(taskId);
 }
 
 export function RecentConversationShortcutBadge({

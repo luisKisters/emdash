@@ -4,6 +4,10 @@ import { AgentStatusIndicator } from '@renderer/features/tasks/components/agent-
 import { TaskContextMenu } from '@renderer/features/tasks/components/task-context-menu';
 import { TaskGitDiffStats } from '@renderer/features/tasks/components/task-git-diff-stats';
 import {
+  RecentConversationShortcutBadge,
+  useRecentConversationShortcutForTask,
+} from '@renderer/features/tasks/conversations/recent-conversation-shortcuts';
+import {
   getTaskGitWorktreeStore,
   getTaskManagerStore,
   taskAgentStatus,
@@ -35,6 +39,7 @@ export const TaskRow = observer(function TaskRow({
   const showDeleteTask = useShowModal('deleteTaskModal');
   const taskManager = getTaskManagerStore(task.data.projectId);
   const shiftKeyRef = useRef(false);
+  const shortcut = useRecentConversationShortcutForTask(task.data.id);
 
   const handleArchive = () => void taskManager?.archiveTask(task.data.id);
   const handleRestore = () => void taskManager?.restoreTask(task.data.id);
@@ -107,6 +112,7 @@ export const TaskRow = observer(function TaskRow({
         <div className="flex min-w-0 flex-1 items-center gap-2">
           <div className="flex min-w-0 flex-1 items-center gap-2">
             <span className="min-w-0 truncate text-left text-sm">{task.data.name}</span>
+            <RecentConversationShortcutBadge shortcut={shortcut} className="shrink-0" />
             <TaskGitDiffStats task={task} className="shrink-0 text-xs" />
             {currentPr && <PrBadge pr={currentPr} />}
           </div>

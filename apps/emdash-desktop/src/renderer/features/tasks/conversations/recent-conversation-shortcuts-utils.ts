@@ -46,6 +46,14 @@ export function isRecentConversationModifierPressed(
   return platform === 'mac' ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey;
 }
 
+export function isRecentConversationModifierKey(
+  event: Pick<ShortcutEventInput, 'key'>,
+  platform: ShortcutPlatform
+): boolean {
+  const key = event.key.toLowerCase();
+  return platform === 'mac' ? key === 'meta' || key === 'os' : key === 'control' || key === 'ctrl';
+}
+
 export function recentConversationShortcutNumber(
   event: ShortcutEventInput,
   platform: ShortcutPlatform

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   buildRecentConversationShortcuts,
+  isRecentConversationModifierKey,
   isRecentConversationModifierPressed,
   recentConversationShortcutNumber,
 } from '@renderer/features/tasks/conversations/recent-conversation-shortcuts-utils';
@@ -41,6 +42,13 @@ describe('recent conversation shortcuts', () => {
     expect(isRecentConversationModifierPressed({ metaKey: true, ctrlKey: true }, 'mac')).toBe(
       false
     );
+  });
+
+  it('detects holding the platform modifier key by itself', () => {
+    expect(isRecentConversationModifierKey({ key: 'Meta' }, 'mac')).toBe(true);
+    expect(isRecentConversationModifierKey({ key: 'OS' }, 'mac')).toBe(true);
+    expect(isRecentConversationModifierKey({ key: 'Control' }, 'linux')).toBe(true);
+    expect(isRecentConversationModifierKey({ key: 'Meta' }, 'linux')).toBe(false);
   });
 
   it('maps unshifted modifier number presses to shortcut numbers', () => {
