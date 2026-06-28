@@ -87,6 +87,7 @@ export const interfaceSettingsSchema = z.object({
   showLeftSidebarPrStatus: z.boolean(),
   showLeftSidebarTimestamps: z.boolean(),
   hideContextBar: z.boolean(),
+  experimentalRecentShortcuts: z.boolean(),
 });
 
 export const changesViewModeSchema = z.object({

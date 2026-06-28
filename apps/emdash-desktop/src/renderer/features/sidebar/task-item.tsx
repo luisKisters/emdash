@@ -3,6 +3,10 @@ import { TaskSidebarTrailingSlot } from '@renderer/features/sidebar/task-sidebar
 import { TaskContextMenu } from '@renderer/features/tasks/components/task-context-menu';
 import { TaskGitDiffStats } from '@renderer/features/tasks/components/task-git-diff-stats';
 import {
+  RecentTaskShortcutBadge,
+  useRecentTaskShortcut,
+} from '@renderer/features/tasks/conversations/recent-conversation-shortcuts';
+import {
   getTaskGitWorktreeStore,
   getTaskManagerStore,
   getTaskStore,
@@ -45,6 +49,7 @@ export const SidebarTaskItem = observer(function SidebarTaskItem({
 
   const task = getTaskStore(projectId, taskId)!;
   const taskManager = getTaskManagerStore(projectId);
+  const shortcut = useRecentTaskShortcut(taskId);
 
   const taskName = task.data.name;
 
@@ -123,6 +128,7 @@ export const SidebarTaskItem = observer(function SidebarTaskItem({
           </span>
         </SidebarMenuAction>
         <div className="ml-2 flex shrink-0 items-center justify-end gap-1.5">
+          <RecentTaskShortcutBadge shortcut={shortcut} />
           {showLineChanges && <TaskGitDiffStats task={task} />}
           {showPrStatus && <RenderPrBadge task={task} />}
           <TaskSidebarTrailingSlot task={task} showTimestamp={showTimestamps} />

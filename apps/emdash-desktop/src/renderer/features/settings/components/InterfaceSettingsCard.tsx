@@ -15,6 +15,7 @@ const InterfaceSettingsCard: React.FC = () => {
   } = useAppSettingsKey('interface');
 
   const hideContextBar = interfaceSettings?.hideContextBar ?? false;
+  const experimentalRecentShortcuts = interfaceSettings?.experimentalRecentShortcuts ?? false;
 
   return (
     <div className="flex flex-col gap-4">
@@ -33,6 +34,25 @@ const InterfaceSettingsCard: React.FC = () => {
               checked={hideContextBar}
               disabled={loading || saving}
               onCheckedChange={(checked) => update({ hideContextBar: checked })}
+            />
+          </>
+        }
+      />
+      <SettingRow
+        title="Experimental recent shortcuts"
+        description="Show recent issue and chat shortcut hints after holding Command or Control."
+        control={
+          <>
+            <ResetToDefaultButton
+              visible={isFieldOverridden('experimentalRecentShortcuts')}
+              defaultLabel="off"
+              onReset={() => resetField('experimentalRecentShortcuts')}
+              disabled={loading || saving}
+            />
+            <Switch
+              checked={experimentalRecentShortcuts}
+              disabled={loading || saving}
+              onCheckedChange={(checked) => update({ experimentalRecentShortcuts: checked })}
             />
           </>
         }
