@@ -3,6 +3,7 @@ export type { AcpAgentConnection } from './acp-agent-connection';
 export { AcpSessionRuntime } from './acp-session-runtime';
 export { AgentTerminalManager } from './agent-terminal-manager';
 export type { AgentTerminalHooks as AgentTerminalListener } from './agent-terminal-manager';
+export { acpErr } from './errors';
 export type { AcpRuntimeError } from './errors';
 export type { AcpPermissionOption, AcpPermissionRequest } from './permissions';
 export type {

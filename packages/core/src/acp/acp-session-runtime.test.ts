@@ -279,6 +279,34 @@ describe('AcpSessionRuntime – turn model', () => {
     expect(h.recording.turns[0].turn.status).toBe('error');
   });
 
+  it('prompt() fails and commits the active turn when the agent process exits mid-turn', async () => {
+    const h = makeAcpHarness();
+    const rt = new AcpSessionRuntime(h.deps);
+
+    h.agent.newSession = vi.fn().mockResolvedValue({ sessionId: 'session-1' });
+    h.agent.prompt = vi.fn().mockReturnValue(new Promise(() => {}));
+    await rt.start(makeStartInput({ conversationId: 'conv-1' }));
+
+    h.recording.clear();
+    const promptPromise = rt.prompt('conv-1', 'work');
+    await Promise.resolve();
+
+    h.lastChild.stderr.push('adapter crashed\n');
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    h.lastChild.emitExit(1);
+
+    const result = await promptPromise;
+    expect(result.success).toBe(false);
+    if (!result.success) {
+      expect(result.error.type).toBe('prompt_failed');
+      expect(result.error.cause?.message).toContain('exit code 1');
+      expect(result.error.cause?.message).toContain('adapter crashed');
+    }
+    expect(h.recording.turns).toHaveLength(1);
+    expect(h.recording.turns[0].turn.status).toBe('error');
+    expect(rt.isRunning('conv-1')).toBe(false);
+  });
+
   it('getChatHistory returns only committed turns and correct complete flag', async () => {
     const h = makeAcpHarness();
     const rt = new AcpSessionRuntime(h.deps);

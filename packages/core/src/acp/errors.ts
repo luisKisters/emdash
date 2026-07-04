@@ -63,10 +63,14 @@ export const acpErr = {
     fail('provider_unsupported', { message: `Provider '${providerId}' does not support ACP` }),
 
   conversationNotFound: (conversationId: string) =>
-    fail('conversation_not_found', { message: conversationId }),
+    fail('conversation_not_found', {
+      message: `ACP conversation '${conversationId}' is not running`,
+    }),
 
   noActiveSession: (conversationId: string) =>
-    fail('no_active_session', { message: conversationId }),
+    fail('no_active_session', {
+      message: `ACP conversation '${conversationId}' has no active session`,
+    }),
 
   invalidState: (message: string) => fail('invalid_state', { message }),
 

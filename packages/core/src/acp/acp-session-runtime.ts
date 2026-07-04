@@ -23,10 +23,10 @@ import type {
   WriteTextFileRequest,
   WriteTextFileResponse,
 } from '@agentclientprotocol/sdk';
-import type { Result } from '@emdash/shared';
+import type { Result, SerializedError } from '@emdash/shared';
 import { isErr, LifecycleMap, ok, toSerializedError } from '@emdash/shared';
 import type { AcpAgentApi, IAcpBehavior } from '../agents/plugins/capabilities/acp';
-import { createAcpAgentConnection } from './acp-agent-connection';
+import { createAcpAgentConnection, type AcpAgentCloseEvent } from './acp-agent-connection';
 import { AgentTerminalManager } from './agent-terminal-manager';
 import type { AgentUpdate } from './agent-update';
 import type { AcpRuntimeError } from './errors';
@@ -69,6 +69,8 @@ interface AcpAgentProcess {
   loadingConversations: Set<string>;
   /** Whether the agent advertised loadSession support during initialize. */
   supportsLoadSession: boolean;
+  /** Resolves when the underlying agent process exits or emits an error. */
+  closed: Promise<AcpAgentCloseEvent>;
 }
 
 /**
@@ -614,7 +616,7 @@ export class AcpSessionRuntime implements IAcpSessionRuntime {
         providerId,
         cwd,
         buildClient: () => this.buildClientHandler(processKey),
-        onClosed: () => this.onProcessClosed(processKey),
+        onClosed: (event) => this.onProcessClosed(processKey, event),
       }
     );
 
@@ -636,6 +638,7 @@ export class AcpSessionRuntime implements IAcpSessionRuntime {
       sessionToConversation: new Map(),
       loadingConversations: new Set(),
       supportsLoadSession: capsResult.data.supportsLoadSession,
+      closed: conn.closed,
     };
 
     return ok(proc);
@@ -650,11 +653,11 @@ export class AcpSessionRuntime implements IAcpSessionRuntime {
     this.processes.teardown(processKey, async () => ok());
   }
 
-  private onProcessClosed(processKey: string): void {
+  private onProcessClosed(processKey: string, event?: AcpAgentCloseEvent): void {
     const proc = this.processes.get(processKey);
     if (!proc) return;
 
-    const exitCode = proc.handle.exitCode;
+    const exitCode = event?.exitCode ?? proc.handle.exitCode;
 
     for (const conv of proc.conversations.values()) {
       this.conversationIndex.delete(conv.conversationId);
@@ -665,6 +668,8 @@ export class AcpSessionRuntime implements IAcpSessionRuntime {
     this.deps.logger.debug('AcpSessionRuntime: process closed', {
       processKey,
       exitCode,
+      error: event?.error?.message,
+      stderrTail: event?.stderrTail,
       conversationCount: proc.conversations.size,
     });
 
@@ -879,6 +884,22 @@ export class AcpSessionRuntime implements IAcpSessionRuntime {
     return proc?.conversations.get(conversationId) ?? null;
   }
 
+  private processClosedPromptCause(event: AcpAgentCloseEvent): SerializedError {
+    const exitPart =
+      event.exitCode === null ? 'without an exit code' : `with exit code ${event.exitCode}`;
+    const details = [
+      `ACP agent process exited ${exitPart} during prompt`,
+      event.error?.message ? `Process error: ${event.error.message}` : '',
+      event.stderrTail ? `stderr: ${event.stderrTail}` : '',
+    ].filter(Boolean);
+
+    return {
+      name: event.error?.name ?? 'AcpProcessClosed',
+      message: details.join('. '),
+      ...(event.error?.stack ? { stack: event.error.stack } : {}),
+    };
+  }
+
   private async sendPromptInternal(
     proc: AcpAgentProcess,
     conv: AcpConversation,
@@ -901,20 +922,36 @@ export class AcpSessionRuntime implements IAcpSessionRuntime {
     if (!dispatchResult.success) return dispatchResult;
 
     try {
-      const res = await proc.agent.prompt({
-        sessionId: conv.acpSessionId!,
-        prompt: [
-          ...(images ?? []).map((img) => ({
-            type: 'image' as const,
-            data: img.data,
-            mimeType: img.mimeType,
-          })),
-          ...(text ? [{ type: 'text' as const, text }] : []),
-        ],
-      });
+      const promptPromise = proc.agent
+        .prompt({
+          sessionId: conv.acpSessionId!,
+          prompt: [
+            ...(images ?? []).map((img) => ({
+              type: 'image' as const,
+              data: img.data,
+              mimeType: img.mimeType,
+            })),
+            ...(text ? [{ type: 'text' as const, text }] : []),
+          ],
+        })
+        .then((response) => ({ type: 'prompt' as const, response }));
+      const closedPromise = proc.closed.then((event) => ({ type: 'closed' as const, event }));
+      const result = await Promise.race([promptPromise, closedPromise]);
+
+      if (result.type === 'closed') {
+        const errResult = acpErr.promptFailed(this.processClosedPromptCause(result.event));
+        this.deps.logger.error('AcpSessionRuntime: prompt failed because agent process closed', {
+          conversationId: conv.conversationId,
+          error: errResult.error.type,
+          cause: errResult.error.cause?.message,
+          stderrTail: result.event.stderrTail,
+        });
+        return errResult;
+      }
+
       this.applyEvent(conv, {
         type: 'TurnEnded',
-        outcome: { kind: 'stopped', stopReason: res.stopReason },
+        outcome: { kind: 'stopped', stopReason: result.response.stopReason },
       });
       return ok();
     } catch (e) {
@@ -922,6 +959,7 @@ export class AcpSessionRuntime implements IAcpSessionRuntime {
       this.deps.logger.error('AcpSessionRuntime: prompt error', {
         conversationId: conv.conversationId,
         error: errResult.error.type,
+        cause: errResult.error.cause?.message,
       });
       this.applyEvent(conv, { type: 'TurnEnded', outcome: { kind: 'errored' } });
       return errResult;

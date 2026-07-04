@@ -11,7 +11,7 @@ import {
   type TerminalSnapshot,
 } from '@emdash/core/acp';
 import type { Result } from '@emdash/shared';
-import { ok } from '@emdash/shared';
+import { err, ok } from '@emdash/shared';
 import type { Logger } from '@emdash/shared/logger';
 import type { getPlugin } from '@main/core/agents/plugin-registry';
 import { machineKey, type MachineRef } from '@main/core/runtime/types';
@@ -28,6 +28,17 @@ export interface AcpSessionManagerDeps {
   /** Persistence port for agent-assigned session ids. */
   setSessionId: typeof setSessionId;
   log: Logger;
+}
+
+type AcpRouteOptions = {
+  requireRuntime?: boolean;
+};
+
+function runtimeNotFound(conversationId: string): Result<void, AcpRuntimeError> {
+  return err({
+    type: 'conversation_not_found',
+    message: `ACP conversation '${conversationId}' is not running`,
+  } as AcpRuntimeError);
 }
 
 /**
@@ -74,16 +85,24 @@ export class AcpSessionManager {
   async prompt(
     conversationId: string,
     text: string,
-    images?: AcpPromptImage[]
+    images?: AcpPromptImage[],
+    options: AcpRouteOptions = {}
   ): Promise<Result<void, AcpRuntimeError>> {
     const rt = this.findRuntime(conversationId);
-    if (!rt) return ok();
+    if (!rt) {
+      return options.requireRuntime ? runtimeNotFound(conversationId) : ok();
+    }
     return rt.prompt(conversationId, text, images);
   }
 
-  async cancel(conversationId: string): Promise<Result<void, AcpRuntimeError>> {
+  async cancel(
+    conversationId: string,
+    options: AcpRouteOptions = {}
+  ): Promise<Result<void, AcpRuntimeError>> {
     const rt = this.findRuntime(conversationId);
-    if (!rt) return ok();
+    if (!rt) {
+      return options.requireRuntime ? runtimeNotFound(conversationId) : ok();
+    }
     return rt.cancel(conversationId);
   }
 
