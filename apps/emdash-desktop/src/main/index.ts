@@ -25,6 +25,7 @@ import { editorBufferService } from './core/editor/editor-buffer-service';
 import { githubAccountReconciliationService } from './core/github/accounts/github-account-reconciliation-instance';
 import { githubAccountRegistry } from './core/github/accounts/github-account-registry-instance';
 import { GitHubAuthServerAdapter } from './core/github/accounts/github-auth-server-adapter';
+import { loopService } from './core/loops/loop-service';
 import { projectSettingsService } from './core/projects/settings/project-settings-service';
 import { promptLibraryService } from './core/prompt-library/service';
 import { remoteTmuxReaperService } from './core/pty/remote-tmux-reaper-service';
@@ -142,6 +143,7 @@ void app.whenReady().then(async () => {
   remoteTmuxReaperService.initialize();
   automationsService.start();
   appService.initialize();
+  await loopService.initialize();
   await appSettingsService.initialize();
   browserWebContentsRegistry.setKeyboardSettings(await appSettingsService.get('keyboard'));
   setBrowserCorsRelaxationSettings(await appSettingsService.get('browser'));
