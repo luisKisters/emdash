@@ -1,4 +1,5 @@
 import type { PermissionOptionKind, SessionUpdate } from '@agentclientprotocol/sdk';
+import { noopLogger } from '@emdash/shared/logger';
 import { describe, expect, it, vi } from 'vitest';
 import { AcpSessionRuntime } from './acp-session-runtime';
 import {
@@ -453,6 +454,128 @@ describe('AcpSessionRuntime – permission requests', () => {
 
     rt.resolvePermission('conv-perm', state.pendingPermissions[0].requestId, 'allow-once');
     await permPromise;
+  });
+
+  it('auto-approves registered conversations without enqueueing pending permissions', async () => {
+    const logger = { ...noopLogger, info: vi.fn() };
+    const h = makeAcpHarness({
+      logger,
+      shouldAutoApprovePermissions: (conversationId) => conversationId === 'conv-loop',
+    });
+    const rt = new AcpSessionRuntime(h.deps);
+
+    h.agent.newSession = vi.fn().mockResolvedValue({ sessionId: 'session-perm' });
+    await rt.start(makeStartInput({ conversationId: 'conv-loop' }));
+
+    const result = await h.client().requestPermission(makePermissionParams('session-perm'));
+
+    expect(result.outcome).toEqual({ outcome: 'selected', optionId: 'allow-always' });
+    expect(rt.getSessionState('conv-loop').pendingPermissions).toHaveLength(0);
+    expect(logger.info).toHaveBeenCalledWith(
+      'AcpSessionRuntime: auto-approved permission request',
+      expect.objectContaining({
+        conversationId: 'conv-loop',
+        title: 'Read a File',
+        optionId: 'allow-always',
+      })
+    );
+  });
+
+  it('auto-approval prefers allow_always, then allow, then the first option', async () => {
+    const h = makeAcpHarness({
+      shouldAutoApprovePermissions: (conversationId) => conversationId === 'conv-loop',
+    });
+    const rt = new AcpSessionRuntime(h.deps);
+
+    h.agent.newSession = vi.fn().mockResolvedValue({ sessionId: 'session-perm' });
+    await rt.start(makeStartInput({ conversationId: 'conv-loop' }));
+
+    const allowAlways = await h.client().requestPermission({
+      ...makePermissionParams('session-perm'),
+      options: [
+        { optionId: 'reject_once', name: 'Reject', kind: 'reject_once' as PermissionOptionKind },
+        { optionId: 'allow', name: 'Allow', kind: 'allow_once' as PermissionOptionKind },
+        {
+          optionId: 'allow_always',
+          name: 'Allow always',
+          kind: 'allow_always' as PermissionOptionKind,
+        },
+      ],
+    });
+    const allow = await h.client().requestPermission({
+      ...makePermissionParams('session-perm'),
+      options: [
+        { optionId: 'reject_once', name: 'Reject', kind: 'reject_once' as PermissionOptionKind },
+        { optionId: 'allow', name: 'Allow', kind: 'allow_once' as PermissionOptionKind },
+      ],
+    });
+    const first = await h.client().requestPermission({
+      ...makePermissionParams('session-perm'),
+      options: [
+        { optionId: 'reject_once', name: 'Reject', kind: 'reject_once' as PermissionOptionKind },
+        {
+          optionId: 'reject_always',
+          name: 'Reject always',
+          kind: 'reject_always' as PermissionOptionKind,
+        },
+      ],
+    });
+
+    expect(allowAlways.outcome).toEqual({ outcome: 'selected', optionId: 'allow_always' });
+    expect(allow.outcome).toEqual({ outcome: 'selected', optionId: 'allow' });
+    expect(first.outcome).toEqual({ outcome: 'selected', optionId: 'reject_once' });
+    expect(rt.getSessionState('conv-loop').pendingPermissions).toHaveLength(0);
+  });
+
+  it('does not auto-approve unregistered conversations', async () => {
+    const h = makeAcpHarness({
+      shouldAutoApprovePermissions: (conversationId) => conversationId === 'conv-loop',
+    });
+    const rt = new AcpSessionRuntime(h.deps);
+
+    h.agent.newSession = vi.fn().mockResolvedValue({ sessionId: 'session-perm' });
+    await rt.start(makeStartInput({ conversationId: 'conv-chat' }));
+
+    let settled = false;
+    const resultPromise = h
+      .client()
+      .requestPermission(makePermissionParams('session-perm'))
+      .then(() => {
+        settled = true;
+      });
+
+    await Promise.resolve();
+    expect(settled).toBe(false);
+    const pending = rt.getSessionState('conv-chat').pendingPermissions;
+    expect(pending).toHaveLength(1);
+
+    rt.resolvePermission('conv-chat', pending[0].requestId, 'allow-once');
+    await resultPromise;
+  });
+
+  it('enables bypassPermissions mode at session start for auto-approved conversations', async () => {
+    const h = makeAcpHarness({
+      shouldAutoApprovePermissions: (conversationId) => conversationId === 'conv-loop',
+    });
+    const rt = new AcpSessionRuntime(h.deps);
+
+    h.agent.newSession = vi.fn().mockResolvedValue({
+      sessionId: 'session-bypass',
+      modes: {
+        currentModeId: 'default',
+        availableModes: [
+          { id: 'default', name: 'Default' },
+          { id: 'bypassPermissions', name: 'Bypass Permissions' },
+        ],
+      },
+    });
+
+    await rt.start(makeStartInput({ conversationId: 'conv-loop' }));
+
+    expect(h.agent.setSessionMode).toHaveBeenCalledWith({
+      sessionId: 'session-bypass',
+      modeId: 'bypassPermissions',
+    });
   });
 
   it('resolvePermission fulfils the promise with the chosen optionId', async () => {

@@ -51,10 +51,15 @@ function runtimeNotFound(conversationId: string): Result<void, AcpRuntimeError> 
 export class AcpSessionManager {
   private readonly runtimes = new Map<string, IAcpSessionRuntime>();
   private readonly convToMachine = new Map<string, string>();
+  private readonly permissionAutoApproveConversations = new Set<string>();
   private readonly deps: AcpSessionManagerDeps;
 
   constructor(deps: AcpSessionManagerDeps) {
     this.deps = deps;
+  }
+
+  registerPermissionAutoApproval(conversationId: string): void {
+    this.permissionAutoApproveConversations.add(conversationId);
   }
 
   async start(
@@ -209,6 +214,8 @@ export class AcpSessionManager {
         this.deps.setSessionId(conversationId, sessionId),
       listener: this.deps.listener,
       logger: this.deps.log,
+      shouldAutoApprovePermissions: (conversationId) =>
+        this.permissionAutoApproveConversations.has(conversationId),
     });
 
     this.runtimes.set(key, runtime);
