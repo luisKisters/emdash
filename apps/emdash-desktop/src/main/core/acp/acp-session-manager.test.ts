@@ -216,6 +216,38 @@ describe('AcpSessionManager – delegation and cleanup', () => {
     expect(state.activeTurn).toBeNull();
   });
 
+  it('prompt returns an explicit error for missing runtimes when strict routing is requested', async () => {
+    const deps = makeManagerDeps();
+    const mgr = new AcpSessionManager(deps);
+
+    const defaultResult = await mgr.prompt('no-such-conv', 'hello');
+    expect(defaultResult.success).toBe(true);
+
+    const strictResult = await mgr.prompt('no-such-conv', 'hello', undefined, {
+      requireRuntime: true,
+    });
+    expect(strictResult.success).toBe(false);
+    if (!strictResult.success) {
+      expect(strictResult.error.type).toBe('conversation_not_found');
+      expect(strictResult.error.message).toContain('no-such-conv');
+    }
+  });
+
+  it('cancel returns an explicit error for missing runtimes when strict routing is requested', async () => {
+    const deps = makeManagerDeps();
+    const mgr = new AcpSessionManager(deps);
+
+    const defaultResult = await mgr.cancel('no-such-conv');
+    expect(defaultResult.success).toBe(true);
+
+    const strictResult = await mgr.cancel('no-such-conv', { requireRuntime: true });
+    expect(strictResult.success).toBe(false);
+    if (!strictResult.success) {
+      expect(strictResult.error.type).toBe('conversation_not_found');
+      expect(strictResult.error.message).toContain('no-such-conv');
+    }
+  });
+
   it('maps conversation to correct machine when routing multiple conversations', async () => {
     const fakeHost1 = new FakeAcpProcessHost();
     const fakeHost2 = new FakeAcpProcessHost();

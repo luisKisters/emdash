@@ -1,5 +1,5 @@
 import type { Client, InitializeResponse, SessionUpdate } from '@agentclientprotocol/sdk';
-import type { Result } from '@emdash/shared';
+import type { Result, SerializedError } from '@emdash/shared';
 import { ok, toSerializedError } from '@emdash/shared';
 import type { AcpAgentApi, IAcpBehavior } from '../agents/plugins/capabilities/acp';
 import { type Logger, noopLogger } from '../lib';
@@ -16,6 +16,22 @@ export interface AcpAgentConnection {
   normalize: (raw: SessionUpdate) => AgentUpdate;
   /** Resolves with agent capabilities once initialize completes, or an error if it fails. */
   initialized: Promise<Result<{ supportsLoadSession: boolean }, InitializeFailedError>>;
+  /** Resolves when the underlying agent process exits or emits an error. */
+  closed: Promise<AcpAgentCloseEvent>;
+}
+
+export interface AcpAgentCloseEvent {
+  exitCode: number | null;
+  error?: SerializedError;
+  stderrTail?: string;
+}
+
+const STDERR_TAIL_LIMIT = 32 * 1024;
+
+function appendStderrTail(current: string, chunk: string): string {
+  const next = current + chunk;
+  if (next.length <= STDERR_TAIL_LIMIT) return next;
+  return next.slice(next.length - STDERR_TAIL_LIMIT);
 }
 
 /**
@@ -36,7 +52,7 @@ export async function createAcpAgentConnection(
     /** Factory called once; the runtime passes its buildClientHandler result here. */
     buildClient: (agent: AcpAgentApi) => Client;
     /** Called when the process exits unexpectedly or initialize fails. */
-    onClosed: () => void;
+    onClosed: (event: AcpAgentCloseEvent) => void;
   }
 ): Promise<Result<AcpAgentConnection, SpawnFailedError>> {
   const { providerId, cwd, buildClient, onClosed } = args;
@@ -61,16 +77,49 @@ export async function createAcpAgentConnection(
     return acpErr.spawnFailed(toSerializedError(e));
   }
 
+  let stderrTail = '';
   if (handle.stderr) {
     handle.stderr.on('data', (data: Buffer) => {
-      logger.debug('createAcpAgentConnection: agent stderr', { text: data.toString().trim() });
+      const text = data.toString();
+      stderrTail = appendStderrTail(stderrTail, text);
+      logger.debug('createAcpAgentConnection: agent stderr', { text: text.trim() });
     });
   }
 
-  handle.onExit(() => onClosed());
+  let resolveClosed!: (event: AcpAgentCloseEvent) => void;
+  const closed = new Promise<AcpAgentCloseEvent>((resolve) => {
+    resolveClosed = resolve;
+  });
+  let didClose = false;
+  const closeOnce = (event: Omit<AcpAgentCloseEvent, 'stderrTail'>): void => {
+    if (didClose) return;
+    didClose = true;
+    const closedEvent: AcpAgentCloseEvent = {
+      ...event,
+      ...(stderrTail.trim() ? { stderrTail: stderrTail.trim() } : {}),
+    };
+
+    const logPayload = {
+      providerId,
+      cwd,
+      exitCode: closedEvent.exitCode,
+      error: closedEvent.error?.message,
+      stderrTail: closedEvent.stderrTail,
+    };
+    if (closedEvent.error || closedEvent.exitCode !== 0 || closedEvent.stderrTail) {
+      logger.warn('createAcpAgentConnection: agent process closed', logPayload);
+    } else {
+      logger.debug('createAcpAgentConnection: agent process closed', logPayload);
+    }
+
+    onClosed(closedEvent);
+    resolveClosed(closedEvent);
+  };
+
+  handle.onExit((exitCode) => closeOnce({ exitCode }));
   handle.onError((err) => {
     logger.error('createAcpAgentConnection: agent process error', { error: err.message });
-    onClosed();
+    closeOnce({ exitCode: handle.exitCode, error: toSerializedError(err) });
   });
 
   const connection = behavior.connect({ stdin: handle.stdin, stdout: handle.stdout }, buildClient);
@@ -98,10 +147,11 @@ export async function createAcpAgentConnection(
     .catch((e: unknown) => {
       logger.error('createAcpAgentConnection: initialize failed', {
         error: e instanceof Error ? e.message : String(e),
+        stderrTail: stderrTail.trim() || undefined,
       });
-      onClosed();
+      closeOnce({ exitCode: handle.exitCode, error: toSerializedError(e) });
       return acpErr.initializeFailed(toSerializedError(e));
     });
 
-  return ok({ handle, agent: connection, normalize, initialized });
+  return ok({ handle, agent: connection, normalize, initialized, closed });
 }

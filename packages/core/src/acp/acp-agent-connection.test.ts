@@ -52,6 +52,28 @@ describe('createAcpAgentConnection()', () => {
     await createAcpAgentConnection({ host, behavior }, connArgs(onClosed));
     host.lastHandle.emitExit(0);
     expect(onClosed).toHaveBeenCalledTimes(1);
+    expect(onClosed).toHaveBeenCalledWith({ exitCode: 0 });
+  });
+
+  it('captures stderr tail in the close event', async () => {
+    const { host, behavior } = makeCtx();
+    const onClosed = vi.fn();
+    const result = await createAcpAgentConnection({ host, behavior }, connArgs(onClosed));
+    expect(isOk(result)).toBe(true);
+    if (!isOk(result)) return;
+
+    host.lastHandle.stderr.push('adapter failed\n');
+    await new Promise<void>((resolve) => setImmediate(resolve));
+    host.lastHandle.emitExit(1);
+
+    expect(onClosed).toHaveBeenCalledWith({
+      exitCode: 1,
+      stderrTail: 'adapter failed',
+    });
+    await expect(result.data.closed).resolves.toEqual({
+      exitCode: 1,
+      stderrTail: 'adapter failed',
+    });
   });
 
   it('initialized resolves ok with supportsLoadSession derived from agent capabilities', async () => {
@@ -85,6 +107,10 @@ describe('createAcpAgentConnection()', () => {
     if (!isErr(caps)) return;
     expect(caps.error.type).toBe('initialize_failed');
     expect(onClosed).toHaveBeenCalledTimes(1);
+    await expect(result.data.closed).resolves.toMatchObject({
+      exitCode: null,
+      error: { message: 'init-failed' },
+    });
   });
 
   it('advertises terminal capability based on host.spawnTerminal presence', async () => {
