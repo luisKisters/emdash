@@ -32,6 +32,7 @@ import type { AgentUpdate } from './agent-update';
 import type { AcpRuntimeError } from './errors';
 import { acpErr } from './errors';
 import type { AcpPermissionRequest } from './permissions';
+import { selectAutoApprovePermissionOption } from './permissions';
 import type { AcpSessionRuntimeDeps, AcpStartInput, IAcpSessionRuntime } from './runtime';
 import { SessionMachine } from './session-machine';
 import type { Command, DomainEvent, Effect } from './session-machine';
@@ -73,6 +74,8 @@ interface AcpAgentProcess {
   closed: Promise<AcpAgentCloseEvent>;
 }
 
+const BYPASS_PERMISSIONS_MODE_ID = 'bypassPermissions';
+
 /**
  * Machine-agnostic ACP session engine.
  */
@@ -87,7 +90,7 @@ export class AcpSessionRuntime implements IAcpSessionRuntime {
   private permissionResolvers = new Map<string, (r: RequestPermissionResponse) => void>();
 
   constructor(deps: AcpSessionRuntimeDeps) {
-    this.deps = { ...deps };
+    this.deps = { shouldAutoApprovePermissions: () => false, ...deps };
     this.terminals = new AgentTerminalManager(this.deps.host, this.deps.listener);
   }
 
@@ -239,6 +242,10 @@ export class AcpSessionRuntime implements IAcpSessionRuntime {
       // trust the agent's authoritative configOptions from loadSession instead.
       if (establishedViaNewSession && model && proc.agent.setSessionConfigOption) {
         await this.applyConfigOptionInternal(proc.agent, acpSessionId, 'model', model, conv);
+      }
+
+      if (this.deps.shouldAutoApprovePermissions(conv.conversationId)) {
+        await this.enableBypassPermissionsMode(proc, conv, acpSessionId);
       }
 
       if (initialPrompt?.trim()) {
@@ -784,6 +791,29 @@ export class AcpSessionRuntime implements IAcpSessionRuntime {
           })),
         };
 
+        if (this.deps.shouldAutoApprovePermissions(conversationId)) {
+          const option = selectAutoApprovePermissionOption(payload.options);
+          if (!option) {
+            this.deps.logger.warn('AcpSessionRuntime: auto-approval had no permission options', {
+              conversationId,
+              requestId,
+              title: payload.title,
+            });
+            return Promise.resolve({ outcome: { outcome: 'cancelled' } });
+          }
+
+          this.deps.logger.info('AcpSessionRuntime: auto-approved permission request', {
+            conversationId,
+            requestId,
+            title: payload.title,
+            optionId: option.optionId,
+          });
+
+          return Promise.resolve({
+            outcome: { outcome: 'selected', optionId: option.optionId },
+          });
+        }
+
         this.deps.logger.debug('AcpSessionRuntime: requesting user permission', {
           conversationId,
           requestId,
@@ -990,6 +1020,55 @@ export class AcpSessionRuntime implements IAcpSessionRuntime {
         error: errResult.error.type,
       });
       return errResult;
+    }
+  }
+
+  private async enableBypassPermissionsMode(
+    proc: AcpAgentProcess,
+    conv: AcpConversation,
+    acpSessionId: string
+  ): Promise<void> {
+    const modes = conv.machine.modes;
+    if (!proc.agent.setSessionMode || !modes) return;
+
+    if (modes.currentModeId === BYPASS_PERMISSIONS_MODE_ID) return;
+
+    const hasBypassMode = modes.availableModes.some(
+      (mode) => mode.id === BYPASS_PERMISSIONS_MODE_ID
+    );
+    if (!hasBypassMode) {
+      this.deps.logger.debug('AcpSessionRuntime: bypassPermissions mode is unavailable', {
+        conversationId: conv.conversationId,
+      });
+      return;
+    }
+
+    const dispatchResult = this.dispatch(conv, {
+      type: 'SetMode',
+      modeId: BYPASS_PERMISSIONS_MODE_ID,
+    });
+    if (!dispatchResult.success) {
+      this.deps.logger.warn('AcpSessionRuntime: failed to validate bypassPermissions mode', {
+        conversationId: conv.conversationId,
+        error: dispatchResult.error.type,
+      });
+      return;
+    }
+
+    try {
+      await proc.agent.setSessionMode({
+        sessionId: acpSessionId,
+        modeId: BYPASS_PERMISSIONS_MODE_ID,
+      });
+      this.deps.logger.info('AcpSessionRuntime: enabled bypassPermissions mode', {
+        conversationId: conv.conversationId,
+      });
+    } catch (e) {
+      const errResult = acpErr.setModeFailed(toSerializedError(e));
+      this.deps.logger.warn('AcpSessionRuntime: failed to enable bypassPermissions mode', {
+        conversationId: conv.conversationId,
+        error: errResult.error.type,
+      });
     }
   }
 

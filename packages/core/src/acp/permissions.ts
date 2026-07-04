@@ -28,3 +28,18 @@ export type AcpPermissionRequest = {
   toolKind?: string;
   options: AcpPermissionOption[];
 };
+
+function optionSearchText(option: AcpPermissionOption): string {
+  return `${option.optionId} ${option.kind}`.toLowerCase().replace(/[-\s]+/g, '_');
+}
+
+export function selectAutoApprovePermissionOption(
+  options: AcpPermissionOption[]
+): AcpPermissionOption | null {
+  return (
+    options.find((option) => /allow_always/.test(optionSearchText(option))) ??
+    options.find((option) => /allow/.test(optionSearchText(option))) ??
+    options[0] ??
+    null
+  );
+}

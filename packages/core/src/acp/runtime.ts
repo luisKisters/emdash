@@ -99,6 +99,8 @@ export interface AcpSessionRuntimeDeps {
   /** Outbound event sink (mapped to IPC channels by the desktop adapter). */
   listener: AcpRuntimeListener;
   logger: Logger;
+  /** Return true for headless conversations whose ACP permission requests should be approved. */
+  shouldAutoApprovePermissions?: (conversationId: string) => boolean;
 }
 
 /**
