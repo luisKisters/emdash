@@ -20,6 +20,7 @@ import { gitlabController } from './core/gitlab/controller';
 import { issueController } from './core/issues/controller';
 import { jiraController } from './core/jira/controller';
 import { linearController } from './core/linear/controller';
+import { loopsController } from './core/loops/controller';
 import { mcpController } from './core/mcp/controller';
 import { mondayController } from './core/monday/controller';
 import { plainController } from './core/plain/controller';
@@ -68,6 +69,7 @@ export const rpcRouter = createRPCRouter({
   issues: issueController,
   jira: jiraController,
   linear: linearController,
+  loops: loopsController,
   monday: mondayController,
   plane: planeController,
   plain: plainController,
