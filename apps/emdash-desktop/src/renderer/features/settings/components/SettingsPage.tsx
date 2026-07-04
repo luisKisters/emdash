@@ -5,6 +5,7 @@ import { rpc } from '@renderer/lib/ipc';
 import { AgentsSettingsPage } from '../agents-page/AgentsSettingsPage';
 import { AccountTab } from './AccountTab';
 import { BrowserSettingsCard } from './BrowserSettingsCard';
+import { ExperimentalSettingsCard } from './ExperimentalSettingsCard';
 import HiddenToolsSettingsCard from './HiddenToolsSettingsCard';
 import IntegrationsCard from './IntegrationsCard';
 import InterfaceSettingsCard from './InterfaceSettingsCard';
@@ -37,6 +38,7 @@ export type SettingsPageTab =
   | 'browser'
   | 'repository'
   | 'interface'
+  | 'experimental'
   | 'docs';
 
 // ---------------------------------------------------------------------------
@@ -137,6 +139,19 @@ function InterfaceSettingsPage() {
   );
 }
 
+function ExperimentalSettingsPage() {
+  return (
+    <div className="space-y-8 pb-4">
+      <PageHeader
+        sticky
+        title="Experimental"
+        description="Try features that are still in progress."
+      />
+      <ExperimentalSettingsCard />
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------------------
 // SettingsPage
 // ---------------------------------------------------------------------------
@@ -164,6 +179,7 @@ export function SettingsPage({
     { id: 'connections', label: 'Connections' },
     { id: 'repository', label: 'Repository' },
     { id: 'interface', label: 'Interface' },
+    { id: 'experimental', label: 'Experimental' },
     { id: 'browser', label: 'Browser' },
     { id: 'docs', label: 'Docs', isExternal: true },
   ];
@@ -186,6 +202,7 @@ export function SettingsPage({
     ),
     repository: <RepositorySettingsPage />,
     interface: <InterfaceSettingsPage />,
+    experimental: <ExperimentalSettingsPage />,
   };
 
   const currentContent = tabContent[activeTab];

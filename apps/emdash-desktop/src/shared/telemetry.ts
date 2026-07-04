@@ -17,7 +17,8 @@ export type FocusView =
   | 'library'
   | 'skills'
   | 'mcp'
-  | 'automations';
+  | 'automations'
+  | 'loop';
 export type FocusMainPanel = 'agents' | 'editor' | 'diff' | 'browser';
 export type FocusedRegion = 'main' | 'bottom';
 
@@ -62,6 +63,7 @@ export type TelemetryEventProperties = {
   skills_viewed: { from_view: FocusView | null };
   mcp_viewed: { from_view: FocusView | null };
   automations_viewed: { from_view: FocusView | null };
+  loop_viewed: { from_view: FocusView | null };
 
   automation_created: {
     enabled: boolean;
