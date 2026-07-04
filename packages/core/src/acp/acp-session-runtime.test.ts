@@ -537,12 +537,11 @@ describe('AcpSessionRuntime – permission requests', () => {
     await rt.start(makeStartInput({ conversationId: 'conv-chat' }));
 
     let settled = false;
-    const resultPromise = h
-      .client()
-      .requestPermission(makePermissionParams('session-perm'))
-      .then(() => {
-        settled = true;
-      });
+    const resultPromise = Promise.resolve(
+      h.client().requestPermission(makePermissionParams('session-perm'))
+    ).then(() => {
+      settled = true;
+    });
 
     await Promise.resolve();
     expect(settled).toBe(false);
