@@ -1,0 +1,4 @@
+interface:
+  display_name: "Agent Browser Electron"
+  short_description: "Test Electron apps with Agent Browser"
+  default_prompt: "Use $agent-browser-electron-dev-server to test the Electron dev server through Agent Browser remote debugging."
