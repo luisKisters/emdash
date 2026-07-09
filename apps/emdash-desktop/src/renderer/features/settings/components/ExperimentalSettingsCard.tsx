@@ -22,6 +22,7 @@ export function ExperimentalSettingsCard() {
 
   return (
     <SettingRow
+      settingId="loops"
       title="Loops"
       description="Show autonomous phased loop controls in task sidebars and enable loop creation."
       control={
