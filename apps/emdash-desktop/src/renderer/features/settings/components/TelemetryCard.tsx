@@ -12,6 +12,7 @@ const TelemetryCard: React.FC = () => {
 
   return (
     <SettingRow
+      settingId="privacy-telemetry"
       title="Privacy & Telemetry"
       description={
         <div>
