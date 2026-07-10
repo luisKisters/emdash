@@ -29,17 +29,19 @@ export function GitHubAccountsSection() {
         </div>
         <TooltipProvider delay={150}>
           <Tooltip>
-            <TooltipTrigger>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-sm"
-                onClick={() => showConnectGitHub({})}
-                aria-label="Add GitHub account"
-              >
-                <Plus className="h-3.5 w-3.5" />
-              </Button>
-            </TooltipTrigger>
+            <TooltipTrigger
+              render={
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon-sm"
+                  onClick={() => showConnectGitHub({})}
+                  aria-label="Add GitHub account"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                </Button>
+              }
+            />
             <TooltipContent side="top">Add GitHub account</TooltipContent>
           </Tooltip>
         </TooltipProvider>
@@ -73,7 +75,17 @@ export function GitHubAccountRows({ accounts }: { accounts: GitHubAccountSummary
   const { toast } = useToast();
 
   const setDefaultAccount = async (account: GitHubAccountSummary) => {
-    const result = await setDefaultMutation.mutateAsync(account.accountId);
+    let result;
+    try {
+      result = await setDefaultMutation.mutateAsync(account.accountId);
+    } catch (err) {
+      toast({
+        title: 'Unable to update default account',
+        description: err instanceof Error ? err.message : 'Please try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
     if (!result.success) {
       toast({
         title: 'Unable to update default account',
@@ -89,7 +101,17 @@ export function GitHubAccountRows({ accounts }: { accounts: GitHubAccountSummary
   };
 
   const removeAccount = async (account: GitHubAccountSummary) => {
-    const result = await removeMutation.mutateAsync(account.accountId);
+    let result;
+    try {
+      result = await removeMutation.mutateAsync(account.accountId);
+    } catch (err) {
+      toast({
+        title: 'Unable to remove GitHub account',
+        description: err instanceof Error ? err.message : 'Please try again.',
+        variant: 'destructive',
+      });
+      return;
+    }
     if (!result.success) {
       toast({
         title: 'Unable to remove GitHub account',
@@ -175,43 +197,47 @@ function GitHubAccountRow({
         <p className="text-muted-foreground truncate text-xs">{account.host}</p>
       </div>
       <Tooltip>
-        <TooltipTrigger>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            disabled={setDefaultPending}
-            onClick={account.isDefault ? undefined : onSetDefault}
-            aria-label={
-              account.isDefault
-                ? `@${account.login} is the default GitHub account`
-                : `Set @${account.login} as default GitHub account`
-            }
-          >
-            {account.isDefault ? (
-              <CircleCheck className="text-foreground" />
-            ) : (
-              <Circle className="text-foreground-muted" />
-            )}
-          </Button>
-        </TooltipTrigger>
+        <TooltipTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              disabled={setDefaultPending}
+              onClick={account.isDefault ? undefined : onSetDefault}
+              aria-label={
+                account.isDefault
+                  ? `@${account.login} is the default GitHub account`
+                  : `Set @${account.login} as default GitHub account`
+              }
+            >
+              {account.isDefault ? (
+                <CircleCheck className="text-foreground" />
+              ) : (
+                <Circle className="text-foreground-muted" />
+              )}
+            </Button>
+          }
+        />
         <TooltipContent side="top">
           {account.isDefault ? 'Default account' : 'Set as default'}
         </TooltipContent>
       </Tooltip>
       <Tooltip>
-        <TooltipTrigger>
-          <Button
-            type="button"
-            variant="ghost"
-            size="icon-sm"
-            disabled={removePending}
-            onClick={onRemove}
-            aria-label={`Remove @${account.login}`}
-          >
-            <X />
-          </Button>
-        </TooltipTrigger>
+        <TooltipTrigger
+          render={
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-sm"
+              disabled={removePending}
+              onClick={onRemove}
+              aria-label={`Remove @${account.login}`}
+            >
+              <X />
+            </Button>
+          }
+        />
         <TooltipContent side="top">Remove account</TooltipContent>
       </Tooltip>
     </div>
