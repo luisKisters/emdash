@@ -1,11 +1,7 @@
 import React from 'react';
 import { cn } from '@renderer/utils/utils';
-import {
-  SETTING_HIGHLIGHT_CLASS,
-  SettingsSearchTarget,
-  useSettingsSearchHighlight,
-} from '../search/settings-search-context';
 import { slugifySettingLabel } from '../search/settings-search';
+import { SettingsSearchTarget } from '../search/settings-search-context';
 
 interface SettingRowProps {
   title: React.ReactNode;
@@ -28,16 +24,10 @@ export function SettingRow({
 }: SettingRowProps) {
   const id =
     searchId ?? settingId ?? (typeof title === 'string' ? slugifySettingLabel(title) : undefined);
-  const highlighted = useSettingsSearchHighlight(id);
   return (
     <div
       data-setting-id={id}
-      data-highlighted={highlighted || undefined}
-      className={cn(
-        'flex min-w-0 flex-wrap items-start gap-x-4 gap-y-2',
-        highlighted && SETTING_HIGHLIGHT_CLASS,
-        className
-      )}
+      className={cn('flex min-w-0 flex-wrap items-start gap-x-4 gap-y-2', className)}
     >
       <div className="flex min-w-0 flex-1 basis-64 flex-col gap-0.5">
         <div className="text-sm break-words text-foreground">{title}</div>

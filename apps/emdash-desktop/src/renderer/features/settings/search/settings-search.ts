@@ -350,11 +350,3 @@ export function matchedTabsForQuery(
   const matchedTabs = new Set(searchSettings(query, index).map((entry) => entry.tab));
   return SETTINGS_TABS.filter((tab) => matchedTabs.has(tab.id)).map((tab) => tab.id);
 }
-
-/** Ids of matching entries, used to highlight setting rows. */
-export function matchedIdsForQuery(
-  query: string,
-  index: SettingsSearchEntry[] = SETTINGS_SEARCH_INDEX
-): ReadonlySet<string> {
-  return new Set(searchSettings(query, index).map((entry) => entry.id));
-}

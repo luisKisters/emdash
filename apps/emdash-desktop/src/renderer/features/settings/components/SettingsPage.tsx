@@ -1,11 +1,11 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { PageHeader } from '@renderer/lib/components/page-header';
 import { PageContent, PageLayout, PageSidebarMenu } from '@renderer/lib/components/page-layout';
 import { rpc } from '@renderer/lib/ipc';
 import { SearchInput } from '@renderer/lib/ui/search-input';
 import { AgentsSettingsPage } from '../agents-page/AgentsSettingsPage';
-import { SettingsSearchProvider, SettingsSearchTarget } from '../search/settings-search-context';
 import { matchedTabsForQuery, searchSettings } from '../search/settings-search';
+import { SettingsSearchProvider, SettingsSearchTarget } from '../search/settings-search-context';
 import { SETTINGS_TABS, type SettingsPageTab } from '../settings-tabs';
 import { AccountTab } from './AccountTab';
 import { BrowserSettingsCard } from './BrowserSettingsCard';
@@ -181,7 +181,6 @@ export function SettingsPage({
   onTabChange: (tab: SettingsPageTab) => void;
 }) {
   const [searchQuery, setSearchQuery] = useState('');
-  const contentRef = useRef<HTMLDivElement>(null);
   const query = searchQuery.trim();
   const isSearching = query.length > 0;
 
@@ -209,16 +208,6 @@ export function SettingsPage({
     }
   }, [isSearching, visibleTabs, activeTab, onTabChange]);
 
-  useEffect(() => {
-    if (!isSearching) return;
-    const frame = requestAnimationFrame(() => {
-      contentRef.current
-        ?.querySelector('[data-highlighted="true"]')
-        ?.scrollIntoView({ block: 'nearest' });
-    });
-    return () => cancelAnimationFrame(frame);
-  }, [isSearching, query, activeTab]);
-
   const Content =
     (activeTab !== 'docs' ? TAB_CONTENT[activeTab] : undefined) ?? GeneralSettingsPage;
 
@@ -230,6 +219,8 @@ export function SettingsPage({
             <SearchInput
               placeholder="Search settings"
               aria-label="Search settings"
+              aria-keyshortcuts="Meta+F Control+F /"
+              shortcutHotkey="Mod+F"
               value={searchQuery}
               onChange={(event) => setSearchQuery(event.target.value)}
               onKeyDown={(event) => {
@@ -238,7 +229,7 @@ export function SettingsPage({
                   setSearchQuery('');
                 }
               }}
-              focusHotkey={false}
+              focusSlashHotkey
             />
           }
           emptyMessage="No matching settings"
@@ -256,9 +247,7 @@ export function SettingsPage({
     >
       <PageContent>
         <SettingsSearchProvider query={query}>
-          <div ref={contentRef}>
-            <Content />
-          </div>
+          <Content />
         </SettingsSearchProvider>
       </PageContent>
     </PageLayout>
