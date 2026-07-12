@@ -17,11 +17,13 @@
 import { browserTabProvider } from '@renderer/features/browser/browser-tab-provider';
 import { type KindOf, type OpenArgsOf } from '@renderer/features/tabs/core/tab-provider-registry';
 import { createTabView } from '@renderer/features/tabs/tab-view-factory';
-import { acpChatTabProvider } from './acp/acp-chat-tab-provider';
-import { conversationTabProvider } from './conversations/conversation-tab-provider';
+import { acpChatTabProvider } from '../conversations/acp/acp-chat-tab-provider';
+import { conversationTabProvider } from '../conversations/conversation-tab-provider';
+import type { TaskTabContext } from '../tabs/core/task-tab-context';
 import { diffTabProvider } from './diff-view/diff-tab-provider';
 import { fileTabProvider } from './editor/file-tab-provider';
 import { TaskTabViewPersistor } from './stores/task-tab-view-persistor';
+import { terminalTabProvider } from './terminals/terminal-tab-provider';
 
 export const taskTabView = createTabView(
   [
@@ -30,8 +32,9 @@ export const taskTabView = createTabView(
     fileTabProvider,
     diffTabProvider,
     browserTabProvider,
+    terminalTabProvider,
   ] as const,
-  { makePersistor: (ctx) => new TaskTabViewPersistor(ctx.viewId) }
+  { makePersistor: (ctx) => new TaskTabViewPersistor(ctx as TaskTabContext) }
 );
 
 type TaskRegistry = typeof taskTabView.registry;

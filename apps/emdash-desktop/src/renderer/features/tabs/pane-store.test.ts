@@ -1,4 +1,5 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { makeObservable, observable, runInAction } from 'mobx';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { browserDiagnosticsStore } from '@renderer/features/browser/browser-diagnostics-store';
 import { browserSessionStore } from '@renderer/features/browser/browser-session-store';
 import { events } from '@renderer/lib/ipc';
@@ -15,6 +16,11 @@ vi.mock('@renderer/lib/ipc', () => ({
     browser: {
       unregisterSession: vi.fn(),
     },
+    ssh: {
+      getConnections: vi.fn(async () => []),
+      getConnectionState: vi.fn(async () => ({})),
+      getHealthStates: vi.fn(async () => ({})),
+    },
   },
 }));
 
@@ -26,6 +32,18 @@ vi.mock('@renderer/lib/monaco/monaco-model-registry', () => ({
     modelTotalSizes: new Map<string, number>(),
     toDiskUri: (uri: string) => uri,
   },
+}));
+
+vi.mock('@renderer/lib/stores/app-state', () => ({
+  appState: {
+    projects: {
+      projects: new Map(),
+    },
+    sshConnections: {
+      healthFor: vi.fn(() => ({ status: 'ok' })),
+    },
+  },
+  sidebarStore: {},
 }));
 
 vi.mock('@renderer/utils/telemetry-scope', () => ({
@@ -42,7 +60,7 @@ vi.mock('@renderer/features/tasks/editor/file-tab-item', () => ({
   FileTabBarItem: () => null,
   FileTabBarItemDragPreview: () => null,
 }));
-vi.mock('@renderer/features/tasks/conversations/conversation-tab-item', () => ({
+vi.mock('@renderer/features/conversations/conversation-tab-item', () => ({
   ConversationTabBarItem: () => null,
   ConversationTabBarItemDragPreview: () => null,
 }));
@@ -51,26 +69,31 @@ vi.mock('@renderer/features/tasks/diff-view/diff-tab-item', () => ({
   DiffTabBarItemDragPreview: () => null,
   diffGroupSuffix: (group: string) => `(${group})`,
 }));
-vi.mock('@renderer/features/tasks/conversations/conversation-title-utils', () => ({
+vi.mock('@renderer/features/conversations/conversation-title-utils', () => ({
   formatConversationTitleForDisplay: (_providerId: unknown, title: unknown) =>
     (title as string) ?? 'Conversation',
 }));
 
 // ACP imports chat-ui which calls document.createElement at module load time.
 // Stub out the entire chat-store chain to avoid the DOM dependency in node tests.
-vi.mock('@renderer/features/tasks/acp/acp-chat-store', () => ({
+vi.mock('@renderer/features/conversations/acp/acp-chat-store', () => ({
   AcpChatStore: class {
     conversationId = '';
     dispose() {}
     bootstrap() {}
   },
 }));
-vi.mock('@renderer/features/tasks/acp/acp-chat-panel', () => ({
+vi.mock('@renderer/features/conversations/acp/acp-chat-panel', () => ({
   AcpChatPanel: () => null,
 }));
 
 import type { BrowserTabResource } from '@renderer/features/browser/browser-tab-resource';
+import { terminalRegistry } from '@renderer/features/tasks/stores/terminal-registry';
 import { taskTabView } from '@renderer/features/tasks/task-tab-registry';
+import type {
+  TerminalManagerStore,
+  TerminalStore,
+} from '@renderer/features/tasks/terminals/terminal-manager';
 import type { ResolvedTab } from './core/tab-provider';
 import { PaneStore } from './pane-store';
 
@@ -90,11 +113,57 @@ function browserResource(tab: ResolvedTab | undefined): BrowserTabResource | und
   return tab?.resource as BrowserTabResource | undefined;
 }
 
+class FakeTerminalManagerStore {
+  terminals = observable.map<string, TerminalStore>();
+  sessions = observable.map();
+  isLoaded: boolean;
+  dispose = vi.fn();
+
+  constructor({ terminalIds, isLoaded }: { terminalIds: string[]; isLoaded: boolean }) {
+    this.isLoaded = isLoaded;
+    for (const id of terminalIds) {
+      this.terminals.set(id, {
+        data: {
+          id,
+          projectId: 'project-1',
+          taskId: 'task-1',
+          shellId: 'system',
+          name: 'Terminal 1',
+        },
+      } as TerminalStore);
+    }
+    makeObservable(this, {
+      terminals: observable,
+      sessions: observable,
+      isLoaded: observable,
+    });
+  }
+}
+
+function terminalRegistryEntries(): {
+  set(taskId: string, manager: TerminalManagerStore): void;
+  delete(taskId: string): boolean;
+} {
+  return (
+    terminalRegistry as unknown as {
+      entries: {
+        set(taskId: string, manager: TerminalManagerStore): void;
+        delete(taskId: string): boolean;
+      };
+    }
+  ).entries;
+}
+
 describe('PaneStore browser tabs', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     browserDiagnosticsStore.clear();
     browserSessionStore.clear();
+  });
+
+  afterEach(() => {
+    terminalRegistry.release('task-1');
+    terminalRegistryEntries().delete('task-1');
   });
 
   it('opens browser tabs backed by the default browser profile session', () => {
@@ -219,43 +288,108 @@ describe('PaneStore browser tabs', () => {
   });
 });
 
-function makeFakeElement(width: number, height: number): HTMLElement {
-  return {
-    getBoundingClientRect: () => ({ width, height, top: 0, left: 0, right: width, bottom: height }),
-  } as unknown as HTMLElement;
-}
-
-describe('PaneStore.remeasure', () => {
-  it('updates dimensions from getBoundingClientRect after attachMeasureSource', () => {
-    const manager = createTabManager();
-    const el = makeFakeElement(800, 600);
-    manager.attachMeasureSource(el);
-    manager.remeasure();
-    expect(manager.dimensions).toEqual({ width: 800, height: 600 });
+describe('PaneStore terminal tabs', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    terminalRegistryEntries().set(
+      'task-1',
+      new FakeTerminalManagerStore({
+        terminalIds: ['terminal-1'],
+        isLoaded: true,
+      }) as unknown as TerminalManagerStore
+    );
   });
 
-  it('is a no-op when no element has been attached', () => {
-    const manager = createTabManager();
-    manager.remeasure();
-    expect(manager.dimensions).toBeNull();
+  afterEach(() => {
+    terminalRegistry.release('task-1');
+    terminalRegistryEntries().delete('task-1');
   });
 
-  it('is a no-op when getBoundingClientRect returns zero size', () => {
+  it('opens and snapshots an existing terminal as a task tab', () => {
     const manager = createTabManager();
-    manager.attachMeasureSource(makeFakeElement(0, 0));
-    manager.remeasure();
-    expect(manager.dimensions).toBeNull();
+
+    manager.open('terminal', { terminalId: 'terminal-1' });
+
+    expect(manager.resolvedTabs[0]).toMatchObject({
+      kind: 'terminal',
+      isActive: true,
+    });
+    expect(manager.snapshot.tabs[0]).toMatchObject({
+      kind: 'terminal',
+      terminalId: 'terminal-1',
+      isPreview: false,
+    });
   });
 
-  it('clears the measure source when null is passed to attachMeasureSource', () => {
-    const manager = createTabManager();
-    manager.attachMeasureSource(makeFakeElement(800, 600));
-    manager.remeasure();
-    expect(manager.dimensions).toEqual({ width: 800, height: 600 });
+  it('restores terminal tab descriptors without creating a new terminal runtime', () => {
+    const restored = createTabManager();
 
-    manager.attachMeasureSource(null);
-    // Overwrite to a new value to confirm remeasure no longer fires.
-    manager.remeasure();
-    expect(manager.dimensions).toEqual({ width: 800, height: 600 }); // unchanged
+    restored.restoreSnapshot({
+      activeTabId: 'tab-terminal-1',
+      tabs: [
+        {
+          kind: 'terminal',
+          tabId: 'tab-terminal-1',
+          terminalId: 'terminal-1',
+          isPreview: false,
+        },
+      ],
+    });
+
+    expect(restored.resolvedTabs[0]).toMatchObject({
+      kind: 'terminal',
+      tabId: 'tab-terminal-1',
+      isActive: true,
+    });
+    expect(terminalRegistry.get('task-1')?.terminals.has('terminal-1')).toBe(true);
+  });
+
+  it('closing a terminal task tab only closes the tab view', () => {
+    const manager = createTabManager();
+    manager.open('terminal', { terminalId: 'terminal-1' });
+
+    manager.closeTab(manager.resolvedTabs[0]?.tabId ?? '');
+
+    expect(manager.resolvedTabs).toEqual([]);
+    expect(terminalRegistry.get('task-1')?.terminals.has('terminal-1')).toBe(true);
+  });
+
+  it('stale-closes terminal tabs when the drawer-owned terminal is removed', async () => {
+    const manager = createTabManager();
+    manager.open('terminal', { terminalId: 'terminal-1' });
+
+    runInAction(() => {
+      terminalRegistry.get('task-1')?.terminals.delete('terminal-1');
+    });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(manager.resolvedTabs).toEqual([]);
+  });
+
+  it('stale-closes restored terminal tabs after initialization finishes', async () => {
+    const terminals = terminalRegistry.get('task-1') as unknown as FakeTerminalManagerStore;
+    runInAction(() => {
+      terminals.terminals.clear();
+      terminals.isLoaded = true;
+    });
+
+    const restored = createTabManager();
+    restored.restoreSnapshot({
+      activeTabId: 'tab-terminal-1',
+      tabs: [
+        {
+          kind: 'terminal',
+          tabId: 'tab-terminal-1',
+          terminalId: 'terminal-1',
+          isPreview: false,
+        },
+      ],
+    });
+
+    expect(restored.resolvedTabs).toHaveLength(1);
+
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(restored.resolvedTabs).toEqual([]);
   });
 });

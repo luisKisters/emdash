@@ -28,11 +28,26 @@ import './styles/global.css';
 export { createChatContext } from './chat-context';
 export type { ChatContext, ChatContextOptions } from './chat-context';
 
-export { createChatState } from './state/chat-state';
-export type { ChatState, ChatStateOptions, ScrollAnchor, HeightmapStore } from './state/chat-state';
+export { connectSession, createChatState, tailMode, pinTopMode } from './state/chat-state';
+export type {
+  ChatState,
+  ChatStateOptions,
+  ScrollMode,
+  HeightmapStore,
+  ChatSessionState,
+  ChatSessionSnapshot,
+  PendingPrompt,
+  ConnectSessionSource,
+  ConnectSessionOptions,
+} from './state/chat-state';
 
 export { createChatView } from './chat-view';
-export type { ChatView, ChatViewOptions } from './chat-view';
+export type {
+  ChatView,
+  ChatViewOptions,
+  ComposerPlacement,
+  ComposerPlacementOptions,
+} from './chat-view';
 
 // ── Data types ────────────────────────────────────────────────────────────────
 
@@ -55,21 +70,16 @@ export type {
   FileOpKind,
   FileOp,
   ToolStatus,
+  TranscriptTurn,
+  TranscriptItem,
+  ToolNode,
+  AcpPermissionRequest,
+  PlanState,
 } from './model';
 
 // ── Transcript API ────────────────────────────────────────────────────────────
 
-export type { TurnStatus, TranscriptApi, ChatHistory, ActiveTurn } from './state/transcript';
-export { createTranscript } from './state/transcript';
-export type { ActiveTurnEvent } from './state/turn-reducer';
-export { applyTurnEvent, finalizeTurn } from './state/turn-reducer';
-export { createStreamSmoother } from './state/stream-smoother';
-export type {
-  StreamSmoother,
-  StreamSmootherOptions,
-  SmootherScheduler,
-  TranscriptEvent,
-} from './state/stream-smoother';
+export type { TurnStatus, TranscriptApi, ChatHistory } from './state/transcript';
 
 // ── Theme ─────────────────────────────────────────────────────────────────────
 
@@ -98,9 +108,19 @@ export type {
   ChatMentionKind,
 } from './core/markdown/mention-provider';
 
+// ── Command provider ──────────────────────────────────────────────────────────
+
+export type { CommandProvider, ChatCommandMeta } from './core/markdown/command-provider';
+
 // ── Commands + scroll helpers ─────────────────────────────────────────────────
 
-export type { ChatCommands, ScrollToItemOptions } from './commands';
+export { CHAT_VIEW_COMMANDS } from './commands';
+export type {
+  ChatCommands,
+  ChatViewCommand,
+  ChatViewCommandId,
+  ScrollToItemOptions,
+} from './commands';
 
 // ── Dev helpers ───────────────────────────────────────────────────────────────
 

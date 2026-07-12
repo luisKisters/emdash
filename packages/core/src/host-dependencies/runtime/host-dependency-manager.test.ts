@@ -133,6 +133,31 @@ describe('HostDependencyManager install', () => {
     });
   });
 
+  it('uses a per-call install runner when provided', async () => {
+    const defaultRunner = vi.fn(async () =>
+      err({
+        type: 'command-failed' as const,
+        message: 'default runner should not be called',
+        output: '',
+        exitCode: 1,
+      })
+    );
+    const perCallRunner = vi.fn(async () => ok<void>());
+    const manager = new HostDependencyManager(missingCtx, {
+      dependencies: TEST_DEPENDENCIES,
+      runInstallCommand: defaultRunner,
+    });
+
+    const result = await manager.install('codex', undefined, { run: perCallRunner });
+
+    expect(perCallRunner).toHaveBeenCalledWith('npm install -g @openai/codex');
+    expect(defaultRunner).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      success: false,
+      error: { type: 'not-detected-after-install', id: 'codex' },
+    });
+  });
+
   it('returns an error result for unknown dependency ids', async () => {
     const manager = new HostDependencyManager(missingCtx, { dependencies: TEST_DEPENDENCIES });
 
@@ -373,6 +398,53 @@ describe('HostDependencyManager install', () => {
         id: 'codex',
         connectionId: 'ssh-1',
         state: expect.objectContaining({ id: 'codex', status: 'available' }),
+      })
+    );
+  });
+
+  it('builds host dependency installation state for core dependencies', async () => {
+    const gitCtx = makeCtx(async (command, args = []) => {
+      if (command === 'which' && args[0] === '-a' && args[1] === 'git') {
+        return { stdout: '/opt/homebrew/bin/git\n', stderr: '' };
+      }
+      if (command === 'which' && args[0] === 'git') {
+        return { stdout: '/opt/homebrew/bin/git\n', stderr: '' };
+      }
+      if (command === 'realpath') {
+        return { stdout: `${args[0]}\n`, stderr: '' };
+      }
+      if (command === '/opt/homebrew/bin/git' && args[0] === '--version') {
+        return { stdout: 'git version 2.45.0\n', stderr: '' };
+      }
+      throw new Error('missing');
+    });
+    const manager = new HostDependencyManager(gitCtx, {
+      dependencies: TEST_DEPENDENCIES,
+      installMethodDetector: unknownDetector,
+    });
+    const events: unknown[] = [];
+    manager.onStatusUpdated.subscribe((event) => events.push(event));
+
+    await manager.probe('git');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const hostDependency = manager.getHostDependency('git');
+    expect(hostDependency).toEqual(
+      expect.objectContaining({
+        dependencyId: 'git',
+        installations: [
+          expect.objectContaining({
+            pathEntry: '/opt/homebrew/bin/git',
+            status: 'available',
+            version: '2.45.0',
+          }),
+        ],
+      })
+    );
+    expect(events).toContainEqual(
+      expect.objectContaining({
+        id: 'git',
+        hostDependency: expect.objectContaining({ dependencyId: 'git' }),
       })
     );
   });
@@ -849,6 +921,86 @@ describe('HostDependencyManager probeOverride', () => {
 });
 
 describe('HostDependencyManager enumeration', () => {
+  it('includes a pinned installation even when it is not on PATH', async () => {
+    const pinnedPath = '/custom/git';
+    const ctx = makeCtx(async (command, args = []) => {
+      if (command === 'which' && args[0] === 'git') {
+        return { stdout: '/usr/bin/git\n', stderr: '' };
+      }
+      if (command === 'which' && args[0] === '-a' && args[1] === 'git') {
+        return { stdout: '/usr/bin/git\n', stderr: '' };
+      }
+      if (command === 'which' && args[0] === pinnedPath) {
+        return { stdout: `${pinnedPath}\n`, stderr: '' };
+      }
+      if (command === 'realpath') {
+        return { stdout: `${args[0]}\n`, stderr: '' };
+      }
+      if (command === '/usr/bin/git' && args[0] === '--version') {
+        return { stdout: 'git version 2.40.0\n', stderr: '' };
+      }
+      if (command === pinnedPath && args[0] === '--version') {
+        return { stdout: 'git version 2.45.0\n', stderr: '' };
+      }
+      throw new Error(`Unexpected: ${command} ${args.join(' ')}`);
+    });
+    const manager = new HostDependencyManager(ctx, {
+      dependencies: TEST_DEPENDENCIES,
+      getSelection: async (id) =>
+        id === 'git' ? { kind: 'pinned' as const, realpath: pinnedPath } : null,
+      installMethodDetector: unknownDetector,
+    });
+
+    await manager.probe('git');
+
+    const hostDependency = manager.getHostDependency('git');
+    expect(hostDependency?.used).toEqual({ kind: 'pinned', realpath: pinnedPath });
+    expect(hostDependency?.installations).toContainEqual(
+      expect.objectContaining({
+        realpath: pinnedPath,
+        pathEntry: null,
+        status: 'available',
+        version: '2.45.0',
+      })
+    );
+  });
+
+  it('reports a missing pinned installation as missing', async () => {
+    const pinnedPath = '/missing/git';
+    const ctx = makeCtx(async (command, args = []) => {
+      if (command === 'which' && args[0] === 'git') {
+        return { stdout: '/usr/bin/git\n', stderr: '' };
+      }
+      if (command === 'which' && args[0] === '-a' && args[1] === 'git') {
+        return { stdout: '/usr/bin/git\n', stderr: '' };
+      }
+      if (command === 'realpath') {
+        return { stdout: `${args[0]}\n`, stderr: '' };
+      }
+      if (command === '/usr/bin/git' && args[0] === '--version') {
+        return { stdout: 'git version 2.40.0\n', stderr: '' };
+      }
+      throw new Error(`Unexpected: ${command} ${args.join(' ')}`);
+    });
+    const manager = new HostDependencyManager(ctx, {
+      dependencies: TEST_DEPENDENCIES,
+      getSelection: async (id) =>
+        id === 'git' ? { kind: 'pinned' as const, realpath: pinnedPath } : null,
+      installMethodDetector: unknownDetector,
+    });
+
+    await manager.probe('git');
+
+    expect(manager.getHostDependency('git')?.installations).toContainEqual(
+      expect.objectContaining({
+        realpath: pinnedPath,
+        pathEntry: null,
+        status: 'missing',
+        version: null,
+      })
+    );
+  });
+
   it('enumerates multiple installations from which -a and dedupes by realpath', async () => {
     const BREW_PATH = '/opt/homebrew/bin/codex';
     const BREW_REAL = '/opt/homebrew/Cellar/codex/1.0.0/bin/codex';

@@ -12,6 +12,10 @@ export type PlatformConfig = {
   // query returns any results. Use when bundleIds/appNames can't distinguish
   // the app (e.g., stable and Canary share a bundle ID but differ in display name).
   mdfindQuery?: string;
+  // Windows only: detect and launch via `vswhere.exe` (the canonical Visual Studio
+  // locator). `devenv.exe` is rarely on PATH, so availability is resolved by running
+  // `vswhere -latest -property productPath` and launching the resolved devenv.exe.
+  winVswhere?: boolean;
   label?: string;
   iconPath?: string;
 };
@@ -40,6 +44,7 @@ const ICON_PATHS = {
   terminal: 'terminal.png',
   kaku: 'kaku.png',
   alacritty: 'alacritty.svg',
+  hyper: 'hyper.svg',
   warp: 'warp.png',
   iterm2: 'iterm2.png',
   ghostty: 'ghostty.png',
@@ -54,9 +59,11 @@ const ICON_PATHS = {
   pycharm: 'pycharm.svg',
   rubymine: 'rubymine.svg',
   rustrover: 'rustrover.svg',
+  rider: 'rider.svg',
   athas: 'athas.svg',
   kiro: 'kiro.png',
   antigravity: 'antigravity.png',
+  'visual-studio': 'visual-studio.svg',
 } as const;
 
 const _OPEN_IN_APPS = {
@@ -263,6 +270,30 @@ const _OPEN_IN_APPS = {
       linux: {
         openCommands: ['alacritty --working-directory {{path}}'],
         checkCommands: ['alacritty'],
+      },
+    },
+  },
+  hyper: {
+    id: 'hyper',
+    label: 'Hyper',
+    iconPath: ICON_PATHS.hyper,
+    supportsRemote: true,
+    // Hyper has no cwd flag (vercel/hyper#1213); a path arg is ignored. Best-effort
+    // via exec cwd on linux/win32; macOS opens in Hyper's default dir.
+    platforms: {
+      darwin: {
+        openCommands: ['open -na "Hyper"'],
+        checkCommands: ['hyper'],
+        bundleIds: ['co.zeit.hyper'],
+        appNames: ['Hyper'],
+      },
+      win32: {
+        openCommands: ['hyper'],
+        checkCommands: ['hyper'],
+      },
+      linux: {
+        openCommands: ['hyper'],
+        checkCommands: ['hyper'],
       },
     },
   },
@@ -526,6 +557,27 @@ const _OPEN_IN_APPS = {
       },
     },
   },
+  rider: {
+    id: 'rider',
+    label: 'Rider',
+    iconPath: ICON_PATHS.rider,
+    hideIfUnavailable: true,
+    platforms: {
+      darwin: {
+        openCommands: ['open -a "Rider" {{path}}', 'open -a "JetBrains Rider" {{path}}'],
+        bundleIds: ['com.jetbrains.rider'],
+        appNames: ['Rider', 'JetBrains Rider'],
+      },
+      win32: {
+        openCommands: ['rider64 {{path}}', 'rider {{path}}'],
+        checkCommands: ['rider64', 'rider'],
+      },
+      linux: {
+        openCommands: ['rider {{path}}', 'rider.sh {{path}}'],
+        checkCommands: ['rider', 'rider.sh'],
+      },
+    },
+  },
   'android-studio': {
     id: 'android-studio',
     label: 'Android Studio',
@@ -656,6 +708,21 @@ const _OPEN_IN_APPS = {
       linux: {
         openCommands: ['rustrover {{path}}'],
         checkCommands: ['rustrover'],
+      },
+    },
+  },
+  'visual-studio': {
+    id: 'visual-studio',
+    label: 'Visual Studio',
+    iconPath: ICON_PATHS['visual-studio'],
+    hideIfUnavailable: true,
+    platforms: {
+      // Windows-only IDE. Detected and launched via vswhere (see winVswhere);
+      // the `devenv {{path}}` fallback covers setups where devenv.exe is on PATH.
+      win32: {
+        winVswhere: true,
+        openCommands: ['start "" devenv {{path}}'],
+        checkCommands: ['devenv'],
       },
     },
   },

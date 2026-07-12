@@ -7,7 +7,7 @@
  *
  *   viewState       — collapse map (inverted semantics: true = expanded)
  *   expandedUserId  — the single expanded user message card id
- *   scroll          — anchor-based scroll position (itemId + offset + atBottom)
+ *   scroll          — declarative scroll intent (ScrollMode: tail|anchor(edge))
  *   heightmap       — Map<unitId, measuredHeight> keyed by RenderUnit.id
  *                     (stable "${itemId}#self"). lastWidth is the container
  *                     width at snapshot time; used by ChatRoot to decide
@@ -32,31 +32,26 @@
  * conversationId in AcpChatPanel) — this assumption is intentional.
  */
 
-import { createRoot, createSignal } from 'solid-js';
+import { createMemo, createRoot, createSignal } from 'solid-js';
 import type { ChatContext } from '../chat-context';
 import { createParseCaches } from '../core/caches';
 import type { ParseCaches } from '../core/caches';
+import type {
+  AcpPermissionRequest,
+  ChatImageAttachment,
+  PlanState,
+  TranscriptTurn,
+} from '../model';
 import { createTranscript } from './transcript';
 import type { TranscriptApi } from './transcript';
 import { createViewState } from './view-state';
 import type { ViewState } from './view-state';
+export type { ScrollMode } from './scroll-mode';
+export { tailMode, pinTopMode } from './scroll-mode';
 
-/**
- * Anchor-based scroll position. Stored as an item id + pixel offset within
- * that item rather than a raw scrollTop so that the position remains valid
- * even when off-screen row heights are re-estimated on remount.
- *
- * `atBottom: true` overrides the anchor — the view should stick to the bottom
- * (correct for an active/streaming conversation).
- */
-export type ScrollAnchor = {
-  /** itemId of the row at the top of the viewport, or null if unknown. */
-  anchorItemId: string | null;
-  /** Pixel offset of the viewport top within the anchor row. */
-  offsetWithinItem: number;
-  /** True when the transcript was scrolled to the bottom at snapshot time. */
-  atBottom: boolean;
-};
+// ScrollMode type and helpers live in scroll-mode.ts (re-exported above)
+// so unit tests can import them without pulling in DOM-dependent parse caches.
+import type { ScrollMode } from './scroll-mode';
 
 /**
  * Per-conversation heightmap snapshot.
@@ -79,6 +74,45 @@ export type HeightmapStore = {
   lastWidth: number;
 };
 
+export type ChatSessionState = {
+  readonly state: ChatSessionSnapshot;
+  setPermissions(permissions: readonly AcpPermissionRequest[]): void;
+  setPlan(plan: PlanState | null): void;
+  setPendingPrompt(prompt: PendingPrompt | null): void;
+  setTerminalOutput(terminalId: string, text: string | null): void;
+  setTerminalOutputs(outputs: ReadonlyMap<string, string>): void;
+};
+
+export type ChatSessionSnapshot = {
+  readonly permissions: readonly AcpPermissionRequest[];
+  readonly plan: PlanState | null;
+  readonly pendingToolCallIds: Set<string>;
+  readonly pendingPrompt: PendingPrompt | null;
+  terminalOutputText(terminalId: string): string | null;
+};
+
+export type PendingPrompt = {
+  id: string;
+  text: string;
+  attachments?: ChatImageAttachment[];
+};
+
+type LiveReadable<T> = {
+  getSnapshot(): T | null | undefined;
+  subscribe(listener: () => void): () => void;
+};
+
+export type ConnectSessionSource = {
+  activeTurn: LiveReadable<TranscriptTurn | null>;
+  plan: LiveReadable<PlanState | null>;
+  sessionState: LiveReadable<{ pendingPermissions: readonly AcpPermissionRequest[] }>;
+  terminalOutputs?: LiveReadable<ReadonlyMap<string, string>>;
+};
+
+export type ConnectSessionOptions = {
+  onTurnCommitted?: () => void;
+};
+
 export type ChatState = {
   /** Reactive transcript (history + active turn + turn status). */
   readonly transcript: TranscriptApi;
@@ -99,6 +133,9 @@ export type ChatState = {
    */
   readonly viewState: ViewState;
 
+  /** Reactive session-level slices resolved by row renderers. */
+  readonly session: ChatSessionState;
+
   /**
    * The id of the single currently-expanded user message card, or null.
    * Persisted here so re-mounting a view restores the expansion.
@@ -109,12 +146,13 @@ export type ChatState = {
   };
 
   /**
-   * Anchor-based scroll position. Written by ChatRoot on each read phase tick
-   * and on dispose; read by ChatRoot on mount to restore position.
+   * Declarative scroll intent. Written by ChatRoot's readPhase (user scroll)
+   * and by the host via view.setScrollMode(); read by ChatRoot on mount/swap
+   * to restore position without DOM geometry reads.
    */
   readonly scroll: {
-    get(): ScrollAnchor;
-    set(anchor: ScrollAnchor): void;
+    get(): ScrollMode;
+    set(mode: ScrollMode): void;
   };
 
   /**
@@ -157,6 +195,7 @@ export function createChatState(ctx: ChatContext, opts?: ChatStateOptions): Chat
   let transcript!: TranscriptApi;
   let parseCaches!: ParseCaches;
   let viewState!: ViewState;
+  let session!: ChatSessionState;
   let getExpandedUserId!: () => string | null;
   let setExpandedUserId!: (id: string | null) => void;
   let disposeRoot!: () => void;
@@ -164,14 +203,15 @@ export function createChatState(ctx: ChatContext, opts?: ChatStateOptions): Chat
   createRoot((dispose) => {
     disposeRoot = dispose;
     transcript = createTranscript();
-    parseCaches = createParseCaches(ctx.mentionProvider, opts?.uri);
+    parseCaches = createParseCaches(ctx.mentionProvider, ctx.commandProvider, opts?.uri);
     viewState = createViewState();
     [getExpandedUserId, setExpandedUserId] = createSignal<string | null>(null);
+    session = createSessionState();
   });
 
-  // Scroll anchor — plain mutable object; not reactive (ChatRoot reads it
-  // once on mount, writes it on readPhase/dispose). No signal needed.
-  let scrollAnchor: ScrollAnchor = { anchorItemId: null, offsetWithinItem: 0, atBottom: true };
+  // Scroll mode — plain mutable value; not reactive (ChatRoot reads it once on
+  // mount/swap, writes it via setAnchor in readPhase and host calls). No signal.
+  let scrollMode: ScrollMode = { kind: 'tail' };
 
   // Heightmap — plain Map keyed by RenderUnit.id.
   const heightmapData = new Map<string, number>();
@@ -199,14 +239,15 @@ export function createChatState(ctx: ChatContext, opts?: ChatStateOptions): Chat
     parseCaches,
     uri: opts?.uri,
     viewState,
+    session,
     expandedUserId: {
       get: getExpandedUserId,
       set: setExpandedUserId,
     },
     scroll: {
-      get: () => scrollAnchor,
-      set: (anchor) => {
-        scrollAnchor = anchor;
+      get: () => scrollMode,
+      set: (mode) => {
+        scrollMode = mode;
       },
     },
     heightmap,
@@ -214,5 +255,102 @@ export function createChatState(ctx: ChatContext, opts?: ChatStateOptions): Chat
       parseCaches.clearAll();
       disposeRoot();
     },
+  };
+}
+
+function createSessionState(): ChatSessionState {
+  const [permissions, setPermissions] = createSignal<readonly AcpPermissionRequest[]>([]);
+  const [plan, setPlan] = createSignal<PlanState | null>(null);
+  const [pendingPrompt, setPendingPrompt] = createSignal<PendingPrompt | null>(null);
+  const [terminalOutputs, setTerminalOutputs] = createSignal<ReadonlyMap<string, string>>(
+    new Map()
+  );
+  const pendingToolCallIds = createMemo(() => {
+    const ids = new Set<string>();
+    for (const request of permissions()) {
+      ids.add(request.toolCall.toolCallId);
+    }
+    return ids;
+  });
+
+  const state: ChatSessionSnapshot = {
+    get permissions() {
+      return permissions();
+    },
+    get plan() {
+      return plan();
+    },
+    get pendingToolCallIds() {
+      return pendingToolCallIds();
+    },
+    get pendingPrompt() {
+      return pendingPrompt();
+    },
+    terminalOutputText(terminalId) {
+      return terminalOutputs().get(terminalId) ?? null;
+    },
+  };
+
+  return {
+    state,
+    setPermissions: (next) => setPermissions([...next]),
+    setPlan,
+    setPendingPrompt,
+    setTerminalOutput(terminalId, text) {
+      setTerminalOutputs((previous) => {
+        const next = new Map(previous);
+        if (text === null) {
+          next.delete(terminalId);
+        } else {
+          next.set(terminalId, text);
+        }
+        return next;
+      });
+    },
+    setTerminalOutputs: (next) => setTerminalOutputs(new Map(next)),
+  };
+}
+
+export function connectSession(
+  state: ChatState,
+  source: ConnectSessionSource,
+  options: ConnectSessionOptions = {}
+): () => void {
+  let hadActiveTurn = source.activeTurn.getSnapshot() !== null;
+
+  const syncSessionState = (): void => {
+    const snapshot = source.sessionState.getSnapshot();
+    state.session.setPermissions(snapshot?.pendingPermissions ?? []);
+  };
+
+  const syncPlan = (): void => {
+    state.session.setPlan(source.plan.getSnapshot() ?? null);
+  };
+
+  const syncActiveTurn = (): void => {
+    const turn = source.activeTurn.getSnapshot() ?? null;
+    if (turn) state.session.setPendingPrompt(null);
+    state.transcript.activeTurn.set(turn);
+    if (!turn && hadActiveTurn) options.onTurnCommitted?.();
+    hadActiveTurn = turn !== null;
+  };
+  const syncTerminalOutputs = (): void => {
+    if (!source.terminalOutputs) return;
+    state.session.setTerminalOutputs(source.terminalOutputs.getSnapshot() ?? new Map());
+  };
+
+  syncSessionState();
+  syncPlan();
+  syncActiveTurn();
+  syncTerminalOutputs();
+
+  const unsubs = [
+    source.sessionState.subscribe(syncSessionState),
+    source.plan.subscribe(syncPlan),
+    source.activeTurn.subscribe(syncActiveTurn),
+    ...(source.terminalOutputs ? [source.terminalOutputs.subscribe(syncTerminalOutputs)] : []),
+  ];
+  return () => {
+    for (const unsub of unsubs) unsub();
   };
 }

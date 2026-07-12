@@ -4,21 +4,32 @@
  * Reuses the Mention node infrastructure from @tiptap/extension-mention under a
  * different node name (`slashCommand`) and trigger char (`/`).
  *
- * Two behaviors (determined per-item):
+ * Behaviors (determined per-item):
  *  - 'insert'  → inserts a slashCommand atom node serialized as `/${name}`.
+ *  - 'insert-text' → inserts the item's raw text directly into the editor.
  *  - 'execute' → calls onCommand(item) and removes the trigger range without
  *                inserting any node.
  */
 
 import { Mention as TipTapMention } from '@tiptap/extension-mention';
 import { PluginKey } from '@tiptap/pm/state';
+import { ReactNodeViewRenderer } from '@tiptap/react';
 import type { SuggestionOptions } from '@tiptap/suggestion';
+import { SlashCommandPill } from '../slash-command-pill';
 import type { CommandItem } from '../types';
 
 const slashCommandPluginKey = new PluginKey('slashCommand');
 
+function plainTextInsertContent(text: string) {
+  const lines = text.length > 0 ? text.split(/\r?\n/) : [''];
+  return lines.map((line) => ({
+    type: 'paragraph',
+    ...(line.length > 0 ? { content: [{ type: 'text', text: line }] } : {}),
+  }));
+}
+
 export function buildSlashCommandExtension(
-  suggestion: Partial<SuggestionOptions<CommandItem, any>>,
+  suggestion: Partial<SuggestionOptions<CommandItem>>,
   onExecute: (item: CommandItem) => void
 ) {
   return TipTapMention.extend({
@@ -28,6 +39,9 @@ export function buildSlashCommandExtension(
         id: { default: null },
         name: { default: null },
       };
+    },
+    addNodeView() {
+      return ReactNodeViewRenderer(SlashCommandPill, { as: 'span' });
     },
   }).configure({
     HTMLAttributes: { class: 'slash-command-chip' },
@@ -57,6 +71,13 @@ export function buildSlashCommandExtension(
         if (item.behavior === 'execute') {
           editor.chain().focus().deleteRange(range).run();
           onExecute(item);
+        } else if (item.behavior === 'insert-text') {
+          editor
+            .chain()
+            .focus()
+            .deleteRange(range)
+            .insertContentAt(range.from, plainTextInsertContent(item.insertText ?? ''))
+            .run();
         } else {
           editor
             .chain()
@@ -72,7 +93,7 @@ export function buildSlashCommandExtension(
             .run();
         }
       },
-      ...(suggestion as Partial<SuggestionOptions<any, any>>),
+      ...(suggestion as Partial<SuggestionOptions>),
     },
   });
 }

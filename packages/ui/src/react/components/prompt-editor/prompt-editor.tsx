@@ -25,7 +25,7 @@ import {
   ComboboxPopup,
   type ComboboxPopupHandle,
   type ComboboxPopupItem,
-} from '../../primitives/combobox-popup';
+} from '../../primitives/combobox/combobox-popup';
 import { buildMentionExtension } from './extensions/mention';
 import { buildSlashCommandExtension } from './extensions/slash-command';
 import { buildSubmitKeymap } from './extensions/submit-keymap';
@@ -74,10 +74,16 @@ function mentionToPopupItem(item: MentionItem): ComboboxPopupItem {
 }
 
 function commandToPopupItem(item: CommandItem): ComboboxPopupItem {
+  // Command entries are slash-prefixed; raw prompt entries keep their title.
+  const label =
+    item.behavior === 'insert-text'
+      ? (item.label ?? item.name)
+      : `/${item.name.replace(/^\/+/, '')}`;
   return {
     id: item.id,
-    label: item.label ?? item.name,
+    label,
     description: item.description,
+    section: item.section,
   };
 }
 
@@ -95,7 +101,7 @@ function emptySuggestion<T>(): SuggestionState<T> {
 
 /**
  * Build the `render` factory required by @tiptap/suggestion.
- * We use `any` for the generic params because the popup only needs
+ * We rely on SuggestionProps' default generics because the popup only needs
  * `items`, `clientRect`, and the `command` callback — all of which
  * are invariant regardless of whether we're rendering mentions or commands.
  */
@@ -103,20 +109,20 @@ function makeSuggestionRender<T>(
   setSuggestion: React.Dispatch<React.SetStateAction<SuggestionState<T>>>,
   popupRef: React.RefObject<ComboboxPopupHandle | null>
 ): () => {
-  onStart?: (props: SuggestionProps<any, any>) => void;
-  onUpdate?: (props: SuggestionProps<any, any>) => void;
+  onStart?: (props: SuggestionProps) => void;
+  onUpdate?: (props: SuggestionProps) => void;
   onExit?: () => void;
   onKeyDown?: (props: SuggestionKeyDownProps) => boolean;
 } {
   return () => ({
-    onStart(props: SuggestionProps<any, any>) {
+    onStart(props: SuggestionProps) {
       setSuggestion({
         items: props.items as T[],
         rect: props.clientRect?.() ?? null,
         onSelect: (item) => props.command(item),
       });
     },
-    onUpdate(props: SuggestionProps<any, any>) {
+    onUpdate(props: SuggestionProps) {
       setSuggestion({
         items: props.items as T[],
         rect: props.clientRect?.() ?? null,
@@ -132,6 +138,33 @@ function makeSuggestionRender<T>(
   });
 }
 
+function plainTextDoc(text: string) {
+  const lines = text.length > 0 ? text.split(/\r?\n/) : [''];
+  return {
+    type: 'doc',
+    content: lines.map((line) => ({
+      type: 'paragraph',
+      ...(line.length > 0 ? { content: [{ type: 'text', text: line }] } : {}),
+    })),
+  };
+}
+
+function mentionInsertContent(item: MentionItem) {
+  return [
+    {
+      type: 'mention',
+      attrs: {
+        id: item.id,
+        label: item.label,
+        name: item.name ?? null,
+        kind: item.kind,
+        pending: item.pending ?? false,
+      },
+    },
+    { type: 'text', text: ' ' },
+  ];
+}
+
 // ── Component ─────────────────────────────────────────────────────────────────
 
 export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(function PromptEditor(
@@ -140,7 +173,9 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
     disabled = false,
     onChange,
     onSubmit,
+    onMentionInsert,
     mentionProvider,
+    renderMentionIcon,
     queryMentions,
     queryCommands,
     onCommand,
@@ -151,10 +186,14 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
   // Stable refs so callbacks inside TipTap extensions always see current values.
   const onSubmitRef = useRef(onSubmit);
   onSubmitRef.current = onSubmit;
+  const onMentionInsertRef = useRef(onMentionInsert);
+  onMentionInsertRef.current = onMentionInsert;
   const onCommandRef = useRef(onCommand);
   onCommandRef.current = onCommand;
   const mentionProviderRef = useRef(mentionProvider);
   mentionProviderRef.current = mentionProvider;
+  const renderMentionIconRef = useRef(renderMentionIcon);
+  renderMentionIconRef.current = renderMentionIcon;
   const queryMentionsRef = useRef(queryMentions);
   queryMentionsRef.current = queryMentions;
   const queryCommandsRef = useRef(queryCommands);
@@ -178,39 +217,45 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
     if (!ed) return;
     const text = serializeDoc(ed.state.doc);
     if (!text.trim()) return;
+    if (!onSubmitRef.current) return;
     ed.commands.clearContent(true);
-    onSubmitRef.current?.(text);
+    onSubmitRef.current(text);
   }, []);
 
-  const mentionExtension = buildMentionExtension({
-    items: async ({ query }: { query: string }) => {
-      // Prefer mentionProvider over the legacy queryMentions callback.
-      const provider = mentionProviderRef.current;
-      if (provider) return provider.search(query);
-      return (await queryMentionsRef.current?.(query)) ?? [];
+  const mentionExtension = buildMentionExtension(
+    {
+      items: async ({ query }: { query: string }) => {
+        // Prefer mentionProvider over the legacy queryMentions callback.
+        const provider = mentionProviderRef.current;
+        if (provider) return provider.search(query);
+        return (await queryMentionsRef.current?.(query)) ?? [];
+      },
+      render: makeSuggestionRender<MentionItem>(setMentionSuggestion, mentionPopupRef),
+      command({ editor, range, props }) {
+        const item = props as unknown as MentionItem;
+        if (item.insertText !== undefined) {
+          editor
+            .chain()
+            .focus()
+            .deleteRange(range)
+            .insertContentAt(range.from, item.insertText)
+            .insertContent(' ')
+            .run();
+          return;
+        }
+        editor
+          .chain()
+          .focus()
+          .deleteRange(range)
+          .insertContentAt(range.from, mentionInsertContent(item))
+          .run();
+        onMentionInsertRef.current?.(item);
+      },
     },
-    render: makeSuggestionRender<MentionItem>(setMentionSuggestion, mentionPopupRef),
-    command({ editor, range, props }) {
-      const item = props as unknown as MentionItem;
-      editor
-        .chain()
-        .focus()
-        .deleteRange(range)
-        .insertContentAt(range.from, [
-          {
-            type: 'mention',
-            attrs: {
-              id: item.id,
-              label: item.label,
-              name: item.name ?? null,
-              kind: item.kind,
-            },
-          },
-          { type: 'text', text: ' ' },
-        ])
-        .run();
-    },
-  });
+    {
+      renderMentionIcon: (attrs) => renderMentionIconRef.current?.(attrs) ?? null,
+    }
+  );
 
   const slashExtension = buildSlashCommandExtension(
     {
@@ -276,18 +321,56 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
       if (!editor) return '';
       return serializeDoc(editor.state.doc);
     },
+    setText(text) {
+      editor?.commands.setContent(plainTextDoc(text), { emitUpdate: true });
+    },
     insertMention(item) {
-      editor
-        ?.chain()
-        .focus()
-        .insertContent([
-          {
-            type: 'mention',
-            attrs: { id: item.id, label: item.label, name: item.name ?? null, kind: item.kind },
-          },
-          { type: 'text', text: ' ' },
-        ])
-        .run();
+      if (item.insertText !== undefined) {
+        editor?.chain().focus().insertContent(item.insertText).insertContent(' ').run();
+        return;
+      }
+      editor?.chain().focus().insertContent(mentionInsertContent(item)).run();
+      onMentionInsertRef.current?.(item);
+    },
+    prependMention(item) {
+      if (!editor || item.insertText !== undefined) return;
+      const tr = editor.state.tr;
+      const ranges: Array<{ from: number; to: number }> = [];
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name !== 'mention' || node.attrs.id !== item.id) return;
+        ranges.push({ from: pos, to: pos + node.nodeSize });
+      });
+      for (const range of [...ranges].reverse()) {
+        tr.delete(range.from, range.to);
+      }
+      if (ranges.length > 0) editor.view.dispatch(tr);
+      editor.commands.insertContentAt(1, mentionInsertContent(item));
+    },
+    removeMention(id) {
+      if (!editor) return;
+      const tr = editor.state.tr;
+      const ranges: Array<{ from: number; to: number }> = [];
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name !== 'mention' || node.attrs.id !== id) return;
+        ranges.push({ from: pos, to: pos + node.nodeSize });
+      });
+      if (ranges.length === 0) return;
+      for (const range of [...ranges].reverse()) {
+        tr.delete(range.from, range.to);
+      }
+      editor.view.dispatch(tr);
+    },
+    setMentionPending(id, pending) {
+      if (!editor) return;
+      let changed = false;
+      const tr = editor.state.tr;
+      editor.state.doc.descendants((node, pos) => {
+        if (node.type.name !== 'mention' || node.attrs.id !== id) return;
+        if (node.attrs.pending === pending) return;
+        tr.setNodeMarkup(pos, undefined, { ...node.attrs, pending });
+        changed = true;
+      });
+      if (changed) editor.view.dispatch(tr);
     },
   }));
 
@@ -327,6 +410,7 @@ export const PromptEditor = forwardRef<PromptEditorRef, PromptEditorProps>(funct
             ref={commandPopupRef}
             items={commandPopupItems}
             anchorRect={commandSuggestion.rect}
+            stacked
             onSelect={(popupItem) => {
               const original = commandSuggestion.items.find((c) => c.id === popupItem.id);
               if (original) commandSuggestion.onSelect(original);

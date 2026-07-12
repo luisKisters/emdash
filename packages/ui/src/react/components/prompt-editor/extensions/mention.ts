@@ -1,29 +1,34 @@
 /**
  * @ mention extension.
  *
- * Produces atomic inline `mention` nodes with attrs { id, label, name, kind }.
+ * Produces atomic inline `mention` nodes with attrs { id, label, name, kind, pending }.
  *  - `id`    – stable identifier (e.g. file path).
  *  - `label` – full-path text serialized as `@label` in clipboard/plain text.
  *  - `name`  – short display name shown inside the pill (basename by default).
  *  - `kind`  – semantic category (file | issue | symbol | custom).
  *
  * The pill visual is rendered by MentionPill via ReactNodeViewRenderer.
- * Serializes to `@label` for both clipboard and text export.
+ * Serializes to `@label` for bare-safe labels, or `@"label"` for file mentions
+ * whose path contains spaces or other characters outside the tokenizer's char class.
  *
  * The actual popup rendering is handled externally via the `suggestion.render`
  * callback injected by PromptEditor.
  */
 
 import { Mention as TipTapMention } from '@tiptap/extension-mention';
+import type { NodeViewProps } from '@tiptap/react';
 import { ReactNodeViewRenderer } from '@tiptap/react';
 import type { SuggestionOptions } from '@tiptap/suggestion';
+import React from 'react';
 import { MentionPill } from '../mention-pill';
-import type { MentionItem } from '../types';
+import { serializeMentionLabel } from '../serialize';
+import type { MentionItem, RenderMentionIcon } from '../types';
 
 export function buildMentionExtension(
-  // Use `any` for the Selected generic so our richer MentionItem attrs don't conflict
-  // with TipTap's narrower built-in MentionNodeAttrs type.
-  suggestion: Partial<SuggestionOptions<MentionItem, any>>
+  // Omit the Selected generic (defaults to TipTap's internal type) so our richer
+  // MentionItem attrs don't conflict with TipTap's narrower built-in MentionNodeAttrs type.
+  suggestion: Partial<SuggestionOptions<MentionItem>>,
+  options: { renderMentionIcon?: RenderMentionIcon } = {}
 ) {
   return TipTapMention.extend({
     name: 'mention',
@@ -36,17 +41,29 @@ export function buildMentionExtension(
         label: { default: null },
         name: { default: null },
         kind: { default: 'custom' },
+        pending: { default: false },
       };
     },
     addNodeView() {
-      return ReactNodeViewRenderer(MentionPill, { as: 'span' });
+      return ReactNodeViewRenderer(
+        (props: NodeViewProps) =>
+          React.createElement(MentionPill, {
+            ...props,
+            renderMentionIcon: options.renderMentionIcon,
+          }),
+        { as: 'span' }
+      );
     },
   }).configure({
     HTMLAttributes: { class: 'mention-chip' },
     renderText({ node }) {
-      return `@${(node.attrs.label as string | null) ?? (node.attrs.id as string | null) ?? ''}`;
+      const label = (node.attrs.label as string | null) ?? (node.attrs.id as string | null) ?? '';
+      const name = node.attrs.name as string | null;
+      return serializeMentionLabel(label, node.attrs.kind as string | null, name);
     },
     renderHTML({ node }) {
+      const label = (node.attrs.label as string | null) ?? (node.attrs.id as string | null) ?? '';
+      const name = node.attrs.name as string | null;
       return [
         'span',
         {
@@ -57,14 +74,15 @@ export function buildMentionExtension(
           'data-kind': node.attrs.kind as string,
           class: 'mention-chip',
         },
-        `@${(node.attrs.label as string | null) ?? (node.attrs.id as string | null) ?? ''}`,
+        serializeMentionLabel(label, node.attrs.kind as string | null, name),
       ];
     },
-    // Cast to `any` to bypass the MentionNodeAttrs constraint; we control the attrs shape.
+    // Widen to the default SuggestionOptions to bypass the MentionNodeAttrs constraint;
+    // we control the attrs shape.
     suggestion: {
       char: '@',
       allowSpaces: false,
-      ...(suggestion as Partial<SuggestionOptions<any, any>>),
+      ...(suggestion as Partial<SuggestionOptions>),
     },
   });
 }

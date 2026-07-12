@@ -1,5 +1,6 @@
 import { style } from '@vanilla-extract/css';
 import { vars } from '@theme/core/contract/contract.css';
+import { tokenVars } from '@theme/tokens.css';
 // Colocated chip-class styles — global selectors for TipTap-serialized HTML.
 import './chip-classes.css';
 
@@ -18,7 +19,8 @@ export const editorPlaceholder = style({
   position: 'absolute',
   top: 0,
   left: 0,
-  fontSize: 'var(--text-sm)',
+  fontSize: tokenVars.textSm,
+  lineHeight: 1.4,
   userSelect: 'none',
   color: vars.foregroundPassive,
 });
@@ -26,7 +28,8 @@ export const editorPlaceholder = style({
 // These classes are assigned via TipTap editorProps.attributes.class
 export const promptEditorContentClass = style({
   outline: 'none',
-  fontSize: 'var(--text-sm)',
+  fontSize: tokenVars.textSm,
+  lineHeight: 1.4,
   color: vars.foreground,
-  minHeight: '36px',
+  minHeight: '1.25rem',
 });

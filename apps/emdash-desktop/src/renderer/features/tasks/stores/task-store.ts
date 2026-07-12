@@ -1,5 +1,6 @@
 import { err, type Result } from '@emdash/shared';
 import { makeAutoObservable, observable, runInAction } from 'mobx';
+import { conversationRegistry } from '@renderer/features/conversations/stores/conversation-registry';
 import type { GitRepositoryStore } from '@renderer/features/projects/stores/git-repository-store';
 import { DraftCommentsStore } from '@renderer/features/tasks/diff-view/stores/draft-comments-store';
 import { rpc } from '@renderer/lib/ipc';
@@ -11,7 +12,7 @@ import type {
   Task,
   TaskLifecycleStatus,
 } from '@shared/core/tasks/tasks';
-import { conversationRegistry } from './conversation-registry';
+import type { TaskViewSnapshot } from '@shared/view-state';
 import { workspaceRegistry } from './workspace-registry';
 import { WorkspaceViewModel } from './workspace-view-model';
 
@@ -102,7 +103,8 @@ export class TaskStore {
     path: string,
     workspaceId: string,
     gitRepository: GitRepositoryStore,
-    sshConnectionId?: string
+    sshConnectionId?: string,
+    savedSnapshot?: TaskViewSnapshot
   ): void {
     this.data = data;
     this.ensureRegisteredStores();
@@ -112,6 +114,7 @@ export class TaskStore {
     this.phase = null;
     this.errorMessage = undefined;
     this.provisionProgressMessage = null;
+    if (savedSnapshot) this.viewModel?.restoreSnapshot(savedSnapshot);
     this.viewModel?.initialize();
   }
 

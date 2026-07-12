@@ -39,9 +39,9 @@
  */
 
 import { resolveSeamGap } from '@core/spacing';
-import type { GroupChrome, Margin, RenderUnit, SegmentCtx } from '@core/units';
+import type { ItemSegmenter, Margin, RenderUnit, SegmentCtx } from '@core/units';
 import { stampGroupRoles } from '@core/units';
-import type { ChatItem, ChatMessage } from '@/model';
+import type { ChatItem, ChatMessage, SyntheticItem, TranscriptTurn } from '@/model';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -49,6 +49,14 @@ import type { ChatItem, ChatMessage } from '@/model';
 function itemIsUser(item: ChatItem): boolean {
   return item.kind === 'message' && (item as ChatMessage).role === 'user';
 }
+
+// ── ItemNode ──────────────────────────────────────────────────────────────────
+
+/** A node in a nested tool-call render tree. */
+export type ItemNode = {
+  item: ChatItem;
+  children: ItemNode[];
+};
 
 // ── flattenTier ───────────────────────────────────────────────────────────────
 
@@ -61,12 +69,9 @@ function itemIsUser(item: ChatItem): boolean {
  * first).
  */
 export function flattenTier(
-  items: readonly ChatItem[],
+  turns: readonly TranscriptTurn[],
   ctx: SegmentCtx,
-  segmenters: Record<
-    string,
-    { segment(item: ChatItem, ctx: SegmentCtx): RenderUnit[]; chrome?: GroupChrome }
-  >,
+  segmenters: Record<string, ItemSegmenter>,
   unitDefs?: Record<string, { margin?: Margin }>,
   prevKind?: string
 ): RenderUnit[] {
@@ -78,19 +83,18 @@ export function flattenTier(
   // Track the kind of the last emitted unit for seam resolution.
   let lastKind = prevKind;
 
-  for (const item of items) {
+  const processItem = (item: ChatItem | SyntheticItem): void => {
     const seg = segmenters[item.kind];
-    if (!seg) continue;
-
+    if (!seg) return;
     const group = seg.segment(item, ctx);
-    stampGroupRoles(group);
+    const chrome = seg.chrome;
 
-    if (group.length === 0) continue;
+    stampGroupRoles(group);
+    if (group.length === 0) return;
 
     // Copy chrome from the segmenter onto each unit (allows UnitRow to read it
     // without looking up the segmenter). The chrome value is stable (segmenter
     // is module-level, not data-dependent).
-    const chrome = seg.chrome;
     if (chrome) {
       for (const u of group) {
         u.chrome = chrome;
@@ -105,9 +109,33 @@ export function flattenTier(
 
     lastKind = group[group.length - 1].kind;
     out.push(...group);
+  };
+
+  for (const turn of turns) {
+    const items = turn.items as readonly ChatItem[];
+    for (const item of items) {
+      processItem(item);
+    }
+
+    if (ctx.active && shouldShowWorking(items)) {
+      processItem({ kind: 'working', id: `${turn.id}:working` });
+    }
+
+    if (!ctx.active && turn.outcome && turn.outcome.kind !== 'done') {
+      processItem({ kind: 'turn-outcome', id: `${turn.id}:outcome`, outcome: turn.outcome });
+    }
   }
 
   return out;
+}
+
+function shouldShowWorking(items: readonly ChatItem[]): boolean {
+  return !items.some(
+    (item) =>
+      item.kind === 'thinking' ||
+      item.kind !== 'message' ||
+      (item.kind === 'message' && item.role === 'assistant')
+  );
 }
 
 // ── UnitsView ─────────────────────────────────────────────────────────────────
@@ -148,11 +176,16 @@ export function makeUnitsView(committed: RenderUnit[], active: RenderUnit[]): Un
  * Accepts the committed items array directly (no longer needs the full
  * TranscriptState) and a UnitsView for index lookup.
  */
-export function collectUserTurnUnits(committed: readonly ChatItem[], units: UnitsView): number[] {
+export function collectUserTurnUnits(
+  committed: readonly TranscriptTurn[],
+  units: UnitsView
+): number[] {
   // Build a set of itemIds for committed user messages.
   const userItemIds = new Set<string>();
-  for (const item of committed) {
-    if (itemIsUser(item)) userItemIds.add(item.id);
+  for (const turn of committed) {
+    for (const item of turn.items) {
+      if (itemIsUser(item)) userItemIds.add(item.id);
+    }
   }
 
   if (userItemIds.size === 0) return [];

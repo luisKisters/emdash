@@ -5,6 +5,7 @@ import {
   createRPCNamespace,
   createRPCRouter,
   registerRPCRouter,
+  withSender,
 } from './rpc';
 
 // ---------------------------------------------------------------------------
@@ -29,13 +30,13 @@ const gitRepositoryController = createRPCController({
   branches: () => Promise.resolve(['main']),
 });
 
-const wsFsController = createRPCController({
+const wsFilesController = createRPCController({
   list: (dir: string) => Promise.resolve([dir]),
 });
 
 const workspaceNamespace = createRPCNamespace({
   gitWorktree: gitWorktreeController,
-  fs: wsFsController,
+  files: wsFilesController,
 });
 
 const router = createRPCRouter({
@@ -57,7 +58,7 @@ function makeIpcMainStub() {
     invoke(channel: string, ...args: unknown[]) {
       const handler = registered.get(channel);
       if (!handler) throw new Error(`No handler registered for channel: ${channel}`);
-      return handler({} /* _event */, ...args);
+      return handler({ sender: { id: 42 } } /* _event */, ...args);
     },
     registeredChannels() {
       return [...registered.keys()];
@@ -110,9 +111,9 @@ describe('createRPCClient', () => {
     const invoke = vi.fn().mockResolvedValue([]);
     const rpc = createRPCClient<Router>(invoke);
 
-    await rpc.workspace.fs.list('projects');
+    await rpc.workspace.files.list('projects');
 
-    expect(invoke).toHaveBeenCalledWith('workspace.fs.list', 'projects');
+    expect(invoke).toHaveBeenCalledWith('workspace.files.list', 'projects');
   });
 });
 
@@ -137,7 +138,7 @@ describe('registerRPCRouter', () => {
 
     expect(ipc.registeredChannels()).toContain('workspace.gitWorktree.clone');
     expect(ipc.registeredChannels()).toContain('gitRepository.branches');
-    expect(ipc.registeredChannels()).toContain('workspace.fs.list');
+    expect(ipc.registeredChannels()).toContain('workspace.files.list');
   });
 
   it('calls through to the original handler function with args', async () => {
@@ -154,6 +155,22 @@ describe('registerRPCRouter', () => {
 
     const result = await ipc.invoke('workspace.gitWorktree.clone', 'https://example.com');
     expect(result).toBe('cloned https://example.com');
+  });
+
+  it('passes sender id to sender-aware handlers without exposing it to callers', async () => {
+    const senderController = createRPCController({
+      currentWindow: withSender((senderId: number, label: string) => `${senderId}:${label}`),
+    });
+    const senderRouter = createRPCRouter({ sender: senderController });
+    const ipc = makeIpcMainStub();
+    registerRPCRouter(senderRouter, ipc as never);
+
+    const result = await ipc.invoke('sender.currentWindow', 'active');
+
+    expect(result).toBe('42:active');
+    expectTypeOf(createRPCClient<typeof senderRouter>(vi.fn()).sender.currentWindow).toEqualTypeOf<
+      (label: string) => Promise<string>
+    >();
   });
 
   it('does not register any channel for non-function, non-object values', () => {
@@ -190,7 +207,7 @@ describe('IpcClient type-safety', () => {
 
   it('types a nested namespace as a sub-namespace object, not a callable', () => {
     expectTypeOf(rpc.workspace).toEqualTypeOf<{
-      fs: { list: (dir: string) => Promise<string[]> };
+      files: { list: (dir: string) => Promise<string[]> };
       gitWorktree: { clone: (url: string) => Promise<string> };
     }>();
   });

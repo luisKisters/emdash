@@ -1,5 +1,6 @@
-import { style } from '@vanilla-extract/css';
+import { keyframes, style } from '@vanilla-extract/css';
 import { vars } from '@theme/core/contract/contract.css';
+import { tokenVars } from '@theme/tokens.css';
 
 export const pillWrapper = style({
   display: 'inline-block',
@@ -13,17 +14,31 @@ export const pill = style({
   userSelect: 'none',
   alignItems: 'center',
   gap: '0.25rem',
-  borderRadius: 'var(--radius-sm)',
+  borderRadius: tokenVars.radiusSm,
   backgroundColor: vars.surfaceHover,
   paddingLeft: '0.25rem',
   paddingRight: '0.25rem',
   paddingTop: '0.125rem',
   paddingBottom: '0.125rem',
-  fontSize: 'var(--text-xs)',
+  fontSize: tokenVars.textXs,
   fontWeight: 500,
   color: vars.foreground,
   boxShadow: `0 0 0 1px color-mix(in srgb, ${vars.foreground} 10%, transparent)`,
   verticalAlign: 'baseline',
+});
+
+const pendingPulse = keyframes({
+  '0%, 100%': { opacity: 1 },
+  '50%': { opacity: 0.55 },
+});
+
+export const pillPending = style({
+  animation: `${pendingPulse} 1.4s ease-in-out infinite`,
+  '@media': {
+    '(prefers-reduced-motion: reduce)': {
+      animation: 'none',
+    },
+  },
 });
 
 export const pillIconArea = style({
@@ -42,7 +57,7 @@ export const pillRemoveBtn = style({
   display: 'flex',
   alignItems: 'center',
   justifyContent: 'center',
-  borderRadius: 'var(--radius-sm)',
+  borderRadius: tokenVars.radiusSm,
   backgroundColor: vars.surfaceHover,
   opacity: 0,
   transition: 'opacity 150ms',

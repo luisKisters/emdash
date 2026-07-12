@@ -1,5 +1,7 @@
 import type { ILifecycle } from '@emdash/shared';
 import { computed, makeAutoObservable, observable, reaction, runInAction } from 'mobx';
+import { DefaultConversationSeeder } from '@renderer/features/conversations/default-conversation-seeder';
+import type { TaskTabContext } from '@renderer/features/tabs/core/task-tab-context';
 import { getDiffTabManager } from '@renderer/features/tasks/diff-view/stores/diff-tab-manager';
 import { DiffViewStore } from '@renderer/features/tasks/diff-view/stores/diff-view-store';
 import { EditorViewStore } from '@renderer/features/tasks/editor/stores/editor-view-store';
@@ -18,15 +20,21 @@ import type {
   TaskViewSnapshot,
   TerminalDrawerActiveItem,
 } from '@shared/view-state';
-import { DefaultConversationSeeder } from '../conversations/default-conversation-seeder';
 import { taskTabView } from '../task-tab-registry';
 import { PrStore } from './pr-store';
 import type { TaskStore } from './task-store';
-import type { TaskTabContext } from './task-tab-context';
 import { terminalRegistry } from './terminal-registry';
+import { resolveWorkspacePath } from './workspace-path';
 import { workspaceRegistry } from './workspace-registry';
 
-export type RendererKind = 'monaco' | 'markdown' | 'diff' | 'agents' | 'browser' | 'other-file';
+export type RendererKind =
+  | 'monaco'
+  | 'markdown'
+  | 'diff'
+  | 'agents'
+  | 'browser'
+  | 'terminal'
+  | 'other-file';
 
 export class WorkspaceViewModel implements ILifecycle {
   sidebarTab: SidebarTab;
@@ -83,13 +91,18 @@ export class WorkspaceViewModel implements ILifecycle {
     this.terminalDrawerActiveItem = undefined;
 
     const workspaceId = taskData.workspaceId ?? taskData.id;
+    const projectId = taskData.projectId;
 
     const taskCtx: TaskTabContext = {
       viewId: this.taskId,
-      projectId: taskData.projectId,
+      projectId,
       workspaceId,
       taskId: this.taskId,
+      get workspacePath(): string | undefined {
+        return workspaceRegistry.get(projectId, workspaceId)?.path;
+      },
       modelRootPath: `workspace:${workspaceId}`,
+      getRemoteConnectionId: () => this._workspace?.sshConnectionId,
     };
     this.paneLayout = taskTabView.createPaneLayoutStore(taskCtx, {
       onActiveTabChange: (tabId) => {
@@ -143,6 +156,7 @@ export class WorkspaceViewModel implements ILifecycle {
     const desc = this.activePane.activeEntry;
     if (desc?.kind === 'diff') return 'diff';
     if (desc?.kind === 'browser') return 'browser';
+    if (desc?.kind === 'terminal') return 'terminal';
     const resource = this.activePane.activeResourceOfKind<FileTabResource>('file');
     if (!resource) return 'agents';
     if (resource.contentType === 'markdown' && resource.viewMode === 'preview') return 'markdown';
@@ -221,7 +235,9 @@ export class WorkspaceViewModel implements ILifecycle {
     // Create DiffViewStore with live git/pr references from the workspace.
     this.diffView = new DiffViewStore(workspace.gitWorktree, this.prStore);
     if (this._savedDiffViewSnapshot) {
-      this.diffView.restoreSnapshot(this._savedDiffViewSnapshot);
+      this.diffView.restoreSnapshot(
+        normalizeDiffSnapshotPaths(this._savedDiffViewSnapshot, workspace.path)
+      );
     }
 
     getDiffTabManager(workspaceId).bindSession({
@@ -267,6 +283,28 @@ export class WorkspaceViewModel implements ILifecycle {
       { fireImmediately: true }
     );
     this._sessionDisposers.push(closeEmptyTerminalDrawerDisposer);
+
+    // Open this view's file-tree projection now that the workspace is provisioned.
+    this.editorView.startFiles(workspace.path);
+
+    const reconcileRegisteredScopesDisposer = reaction(
+      () => {
+        const files = this.editorView.files;
+        if (!files) return '';
+        const expanded = [...this.editorView.expandedPaths].sort().join('\0');
+        const loaded = [...files.loadedPaths].sort().join('\0');
+        const pending = [...files.pendingPaths].sort().join('\0');
+        // `nodes.size` advances as scopes load, re-triggering progressive deep registration.
+        return `${expanded}::${loaded}::${pending}::${files.nodes.size}`;
+      },
+      () => {
+        const files = this.editorView.files;
+        if (!files) return;
+        files.reconcileVisibleScopes(this.editorView.expandedPaths);
+      },
+      { fireImmediately: true }
+    );
+    this._sessionDisposers.push(reconcileRegisteredScopesDisposer);
   }
 
   /**
@@ -292,9 +330,12 @@ export class WorkspaceViewModel implements ILifecycle {
     this._snapshotDisposer = null;
     this.paneLayout.stopPersistence();
 
-    // Dispose session-scoped reactions.
+    // Dispose session-scoped reactions before tearing down the projection they drive.
     for (const d of this._sessionDisposers) d();
     this._sessionDisposers = [];
+
+    // Close this view's file-tree projection subscription.
+    this.editorView.disposeFiles();
   }
 
   /**
@@ -315,7 +356,7 @@ export class WorkspaceViewModel implements ILifecycle {
   // Actions
   // -------------------------------------------------------------------------
 
-  activateLastTabOfKind(kind: 'conversation' | 'file' | 'diff' | 'browser'): void {
+  activateLastTabOfKind(kind: 'conversation' | 'file' | 'diff' | 'browser' | 'terminal'): void {
     const tabId = [...this.activePane.tabOrder]
       .reverse()
       .find((id) => this.activePane.entries.get(id)?.kind === kind);
@@ -327,7 +368,9 @@ export class WorkspaceViewModel implements ILifecycle {
           ? 'editor'
           : kind === 'diff'
             ? 'diff'
-            : 'browser';
+            : kind === 'browser'
+              ? 'browser'
+              : 'terminal';
     focusTracker.transition({ mainPanel: panelView }, 'panel_switch');
     this.activePane.setActiveTab(tabId);
   }
@@ -394,4 +437,19 @@ export class WorkspaceViewModel implements ILifecycle {
       });
     }
   }
+}
+
+function normalizeDiffSnapshotPaths(
+  snapshot: DiffViewSnapshot,
+  workspacePath: string
+): DiffViewSnapshot {
+  const activeFile = snapshot.activeFile;
+  if (!activeFile || activeFile.group === 'pr') return snapshot;
+  return {
+    ...snapshot,
+    activeFile: {
+      ...activeFile,
+      path: resolveWorkspacePath(workspacePath, activeFile.path),
+    },
+  };
 }
