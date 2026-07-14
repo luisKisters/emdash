@@ -12,6 +12,9 @@ apps/*/dist/
 # Temporary electron-builder deploy directories (created by scripts/release/build.ts)
 .emdash-deploy-*/
 
+# Local emdash runtime worktree storage (contains nested git worktrees)
+.emdash/
+
 # Logs
 *.log
 .emdash-logs/
