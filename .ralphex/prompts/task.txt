@@ -1,0 +1,64 @@
+# task execution prompt (emdash) — extends the ralphex default with an
+# Electron + Agent Browser verification gate and a hard anti-over-engineering rule.
+#
+# available variables:
+#   {{PLAN_FILE}}     - path to the plan file being executed
+#   {{PROGRESS_FILE}} - path to the progress log file
+#   {{GOAL}}          - human-readable goal description
+#   {{DEFAULT_BRANCH}} - default branch name (main)
+
+Read the plan file at {{PLAN_FILE}}. Find the FIRST Task section (### Task N: or ### Iteration N:) that has uncompleted checkboxes ([ ]).
+
+If NO Task section has [ ] but ## Success Criteria, ## Overview, or ## Context still has [ ]: either satisfy those items and mark them [x] if actionable, or output <<<RALPHEX:ALL_TASKS_DONE>>> if they are verification-only (manual testing, deployment, etc.). Do not loop indefinitely on non-actionable items.
+
+If a Task section has [ ] checkboxes you cannot complete (manual testing, deployment verification, external checks): mark them [x] with a note like "[x] manual test (skipped - not automatable)" and proceed.
+
+NOTE: Progress is logged to {{PROGRESS_FILE}}.
+
+CRITICAL CONSTRAINT: Complete ONE Task section per iteration. Complete ALL checkboxes in that section, then STOP. Do NOT continue to the next section - the external loop will call you again for it.
+
+CRITICAL ANTI-OVER-ENGINEERING RULE (this feature was previously abandoned for being 50k+ lines of ceremony - keep it small):
+- Build the SIMPLEST thing that satisfies the current Task section and passes its checks. Nothing more.
+- Do NOT add abstractions, layers, registries, "ledgers", "authorities", "attestation", "evidence stores", "clean-room" harnesses, retry/CAS/write-ahead machinery, or config for hypothetical futures.
+- Do NOT add a dependency, a new pattern, or a new abstraction when an existing emdash pattern (service singleton, Result<T,E>, versioned JSON column, RPC controller, typed event, MobX store) already fits. Read AGENTS.md and copy the nearest existing pattern.
+- Prefer editing an existing file over creating a new one. Prefer a plain function over a class, a column over a table, in-memory state over a persistence layer - unless the plan's task text explicitly requires the heavier option.
+- If you feel the urge to generalize "for later", stop: implement only what this task needs. The plan's ## Non-Goals section lists things that are explicitly forbidden - never build them.
+- Keep new test files proportional to the code under test. Do not write 2000-line test harnesses.
+
+STEP 0 - ANNOUNCE (<=200 words, plain text): the task number + title you picked, what it will accomplish, and the key files involved.
+
+STEP 1 - IMPLEMENT:
+- Read the plan's Overview, Context, Product Decisions, Architecture Decisions, and Non-Goals before editing.
+- Follow this repo's rules in AGENTS.md and the closest agents/ topic doc (e.g. agents/conventions/*.md) for the area you touch.
+- Implement ALL items in the current Task section, and nothing outside it.
+- Add or update the tests named in the task. Use the fake/injected driver seams the plan describes - do NOT call real external services or real coding agents in tests.
+
+STEP 2 - VALIDATE:
+- Run the exact commands listed in the task and in ## Validation Commands. Node 24 is at /home/devuser/.local/node24/bin; prefix commands with PATH=/home/devuser/.local/node24/bin:$PATH when needed.
+- Prefer the narrow test command named in the task (a single vitest project/file) over the full suite to keep iterations cheap; run the fuller gate only when the task says so.
+- Fix failures and repeat until green.
+
+STEP 2.5 - BROWSER VERIFY (only if this task changed renderer UI in src/renderer):
+- emdash is an Electron app. Verify UI with Agent Browser over Chrome remote debugging, following .codex/skills/agent-browser-electron-dev-server/SKILL.md.
+- IMPORTANT: the dev server (`run dev`) renders a BLANK #root in this environment. Use the PACKAGED build path instead, which renders real UI:
+    PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop run build
+    PATH=/home/devuser/.local/node24/bin:$PATH xvfb-run -a pnpm --filter @emdash/emdash-desktop exec electron . --remote-debugging-port=9555 --no-sandbox --disable-gpu &
+- Wait for `curl -sf http://127.0.0.1:9555/json/version` to return, then:
+    agent-browser --session emdash-e2e connect 9555
+    agent-browser --session emdash-e2e find role button click --name "Skip for now"   # dismiss the GitHub onboarding to reach the app
+    agent-browser --session emdash-e2e snapshot -i -d 6
+    agent-browser --session emdash-e2e screenshot /tmp/emdash-e2e/<task>.png
+- Loops UI is behind the experiments.loops flag (default OFF). Enable it via Settings in the UI, or seed it, before asserting the loop surface is visible. Assert the specific DOM/behavior the task added with `eval`, then screenshot. Kill the electron process when done.
+- Treat the browser check as a gate: only proceed once the observed behavior matches the task intent.
+
+STEP 3 - COMPLETE (after validation AND any browser verification pass):
+- Edit {{PLAN_FILE}}: change [ ] to [x] for each checkbox you implemented in the current Task section (and any Success Criteria/Overview/Context items the implementation now satisfies).
+- Commit all changes (code + updated plan) with message: feat(loops): <brief task description>
+- If NO [ ] checkboxes remain anywhere in Task sections, output exactly: <<<RALPHEX:ALL_TASKS_DONE>>>
+- Otherwise STOP HERE - do not continue to the next section.
+
+ESCALATION: If a validation command or the browser check keeps failing after 3 honest fix attempts, or you are genuinely unsure how to proceed, do NOT guess and do NOT mark the box. Write what is blocking you into {{PROGRESS_FILE}} and output exactly: <<<RALPHEX:TASK_FAILED>>>.
+
+REMINDER: ONE Task/Iteration section per loop cycle. After commit, STOP and let the loop handle the next section.
+
+OUTPUT FORMAT: No markdown formatting (no **bold**, `code`, # headers). Plain text and - lists are fine. Do not echo phase names or step numbers - just do the work.

@@ -1,0 +1,35 @@
+# finalize prompt (emdash) — extends the ralphex default with PR creation.
+# Runs once after successful reviews, best-effort (failures logged, don't block).
+#
+# available variables:
+#   {{DEFAULT_BRANCH}} - default branch name (main)
+
+Post-completion finalize step.
+
+Rebase your commits onto the latest {{DEFAULT_BRANCH}}, organize them for merge, and open a pull request.
+
+Steps:
+
+1. Fetch latest changes: git fetch origin
+
+2. Rebase onto {{DEFAULT_BRANCH}}:
+   - Run: git rebase origin/{{DEFAULT_BRANCH}}
+   - If conflicts occur, resolve them and continue the rebase.
+   - If rebase fails completely, abort with git rebase --abort and report the issue.
+
+3. Review commit history:
+   - Run: git log origin/{{DEFAULT_BRANCH}}..HEAD --oneline
+   - Squash noisy fixup commits, but keep meaningful per-task boundaries.
+
+4. Verify the branch is ready (run from /home/devuser/projects/emdash, Node 24 on PATH):
+   - PATH=/home/devuser/.local/node24/bin:$PATH pnpm run typecheck
+   - PATH=/home/devuser/.local/node24/bin:$PATH pnpm run lint
+   - PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop run test
+
+5. Open a pull request:
+   - Run: gh pr create --fill --base {{DEFAULT_BRANCH}} --head "$(git branch --show-current)"
+   - If a PR already exists for this branch, leave it as-is.
+
+Report what was done. This step is best-effort - if rebase or PR creation fails, explain why and leave the branch as-is.
+
+OUTPUT FORMAT: No markdown formatting (no **bold**, `code`, # headers). Plain text and - lists are fine.
