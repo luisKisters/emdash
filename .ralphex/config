@@ -15,16 +15,17 @@ plans_dir = docs/plans
 # model sharp and keeps token usage low per iteration.
 task_model = opus:medium
 
-# Review phase model (the 5 built-in claude review agents). Kept at medium so the
-# first-review pass does not burn extra usage. One of these agents is
-# "simplification" — it actively flags over-engineering, which is exactly what we
-# want on this feature.
-review_model = opus:medium
-
-# Cross-model independent review: claude executes + reviews, codex runs the
-# separate external review pass. Uses the codex budget, not the claude usage.
-# Set to `none` if you want to skip external review entirely to save time.
-external_review_tool = codex
+# Reviews are OFF to conserve Claude usage (no pro plan).
+#  - external_review_tool = none  -> skips the codex external-review phase entirely.
+#  - codex_enabled = false        -> belt-and-suspenders, no codex review pass.
+# The built-in first/second review phases (the 5 claude review agents) CANNOT be
+# disabled from this config file — they can only be skipped with the --tasks-only
+# run flag. So to run with NO review at all (task execution + finalize only):
+#
+#     ralphex --tasks-only docs/plans/acp-loops-v2-ralphex.md
+#
+external_review_tool = none
+codex_enabled = false
 
 # Open a PR after reviews pass (rebase onto main + gh pr create). Best-effort.
 finalize_enabled = true
