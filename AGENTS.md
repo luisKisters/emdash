@@ -376,6 +376,22 @@ pnpm run test
   Drizzle via `versionedJsonColumn()` from `src/main/db/versioned-column.ts`.
   See `agents/conventions/versioned-schemas.md` for the full guide.
 
+## Ralphex Plans
+
+This repo is set up for [Ralphex](https://github.com/umputun/ralphex) autonomous plan
+execution. Executable plans live under `docs/plans/*.md`; run one with
+`ralphex docs/plans/<plan>.md` and re-run the same command to resume after any
+interruption (Ralphex tracks progress via the `- [ ]` / `- [x]` checkboxes and commits
+after every task).
+
+- Harness config: `.ralphex/config` (task model, review, finalize, plans dir).
+- Execution prompts: `.ralphex/prompts/task.txt` (adds an Electron + Agent Browser
+  verification gate and a hard anti-over-engineering rule) and `.ralphex/prompts/finalize.txt`.
+- To author or convert a plan, use `.codex/skills/ralphex-plan-writer` and validate with
+  `.codex/skills/ralphex-plan-writer/scripts/check_plan_format.py <plan.md>` before handoff.
+- UI verification uses `.codex/skills/agent-browser-electron-dev-server` (packaged build
+  path renders real UI; the dev server renders a blank `#root` headless).
+
 ## Further Reading
 
 - [Agent docs map](agents/README.md)

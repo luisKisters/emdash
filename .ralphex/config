@@ -1,0 +1,40 @@
+# emdash Ralphex/executr config
+# Priority: CLI flags > this file > ~/.config/ralphex/config > embedded defaults
+# Ralphex: https://github.com/umputun/ralphex
+#
+# Run a plan with:  ralphex docs/plans/<plan>.md
+# Re-run the SAME command to resume after an interruption/usage reset: ralphex
+# reads the [x] checkboxes in the plan file, skips finished tasks, and continues
+# from the first unchecked task. It commits after every task, so no work is lost.
+
+default_branch = main
+plans_dir = docs/plans
+
+# Task execution model. The user asked for "opus 4.8 medium" — cheap + capable.
+# Each task runs in a FRESH claude session with minimal context, which keeps the
+# model sharp and keeps token usage low per iteration.
+task_model = opus:medium
+
+# Review phase model (the 5 built-in claude review agents). Kept at medium so the
+# first-review pass does not burn extra usage. One of these agents is
+# "simplification" — it actively flags over-engineering, which is exactly what we
+# want on this feature.
+review_model = opus:medium
+
+# Cross-model independent review: claude executes + reviews, codex runs the
+# separate external review pass. Uses the codex budget, not the claude usage.
+# Set to `none` if you want to skip external review entirely to save time.
+external_review_tool = codex
+
+# Open a PR after reviews pass (rebase onto main + gh pr create). Best-effort.
+finalize_enabled = true
+
+# Move a fully-completed plan to docs/plans/completed/ so the watcher stops picking
+# it up.
+move_plan_on_completion = true
+
+# Run in-place on a ralphex-created branch (needs the repo's installed
+# node_modules, which a fresh worktree would not have for this pnpm monorepo).
+# Commit or stash any unrelated working-tree changes before starting a run so they
+# do not get swept into the loop branch.
+use_worktree = false
