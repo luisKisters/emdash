@@ -16,6 +16,7 @@ import {
 } from '@shared/core/automations/config';
 import { conversationConfig } from '@shared/core/conversations/conversation-config';
 import { linkedIssue } from '@shared/core/linked-issue';
+import { loopConfig } from '@shared/core/loops/loop-config';
 import { sshConnectionMetadata } from '@shared/core/ssh/ssh-connection-metadata';
 import type { TerminalShellId } from '@shared/core/terminals/terminal-settings';
 import { workspaceConfig } from '@shared/core/workspaces/workspace-config';
@@ -362,6 +363,53 @@ export const automationRuns = sqliteTable(
   })
 );
 
+export const loops = sqliteTable(
+  'loops',
+  {
+    id: text('id').primaryKey(),
+    taskId: text('task_id')
+      .notNull()
+      .references(() => tasks.id, { onDelete: 'cascade' }),
+    status: text('status').notNull(),
+    currentPhaseIndex: integer('current_phase_index').notNull().default(0),
+    config: versionedJsonColumn(loopConfig)('config'),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    taskIdIdx: index('idx_loops_task_id').on(table.taskId),
+  })
+);
+
+export const loopPhases = sqliteTable(
+  'loop_phases',
+  {
+    id: text('id').primaryKey(),
+    loopId: text('loop_id')
+      .notNull()
+      .references(() => loops.id, { onDelete: 'cascade' }),
+    orderIndex: integer('order_index').notNull(),
+    name: text('name').notNull(),
+    goal: text('goal').notNull(),
+    checks: text('checks').notNull().default('[]'), // JSON: VerifierId[]
+    status: text('status').notNull(),
+    attempts: integer('attempts').notNull().default(0),
+    createdAt: text('created_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+    updatedAt: text('updated_at')
+      .notNull()
+      .default(sql`CURRENT_TIMESTAMP`),
+  },
+  (table) => ({
+    loopIdIdx: index('idx_loop_phases_loop_id').on(table.loopId),
+  })
+);
+
 export const conversations = sqliteTable(
   'conversations',
   {
@@ -504,3 +552,7 @@ export type AppSecretRow = typeof appSecrets.$inferSelect;
 export type AppSecretInsert = typeof appSecrets.$inferInsert;
 export type WorkspaceRow = typeof workspaces.$inferSelect;
 export type WorkspaceInsert = typeof workspaces.$inferInsert;
+export type LoopRow = typeof loops.$inferSelect;
+export type LoopInsert = typeof loops.$inferInsert;
+export type LoopPhaseRow = typeof loopPhases.$inferSelect;
+export type LoopPhaseInsert = typeof loopPhases.$inferInsert;
