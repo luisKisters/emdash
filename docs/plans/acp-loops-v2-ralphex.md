@@ -427,18 +427,21 @@ network.
 
 ### Task 10: LoopService orchestrator and crash-resume
 
-- [ ] Create `apps/emdash-desktop/src/main/core/loops/loop-service.ts` — singleton
+- [x] Create `apps/emdash-desktop/src/main/core/loops/loop-service.ts` — singleton
   `loopService`: `create(taskId, phases, config)`, `start(loopId)`, `pause`, `resume`,
   `cancel`, `retry(loopId)`. `start` walks phases from `currentPhaseIndex` calling
   `runPhase`; on pass it advances, on phase failure it sets the loop `paused`, when all
   phases pass it sets `completed`. Emit progress after each transition. Add
-  `pauseRunningLoopsForBoot()` and call it from `initialize()`.
-- [ ] Wire the real `acp-driver` and `verifiers/registry` into `loopService` (the DI seam)
+  `pauseRunningLoopsForBoot()` and call it from `initialize()`. (The pure `LoopService`
+  class lives in `loop-service.ts`; the wired singleton `loopService` lives in
+  `production-loop-service.ts`, mirroring `production-acp-session-manager.ts`, so the
+  class stays importable in node tests without Electron/db side effects.)
+- [x] Wire the real `acp-driver` and `verifiers/registry` into `loopService` (the DI seam)
   while keeping `phase-runner` unit-testable with fakes.
-- [ ] Add `loop-service.test.ts` (node) proving a 2-phase happy path completes with the
+- [x] Add `loop-service.test.ts` (node) proving a 2-phase happy path completes with the
   fake driver, and `loop-service.db.test.ts` (main-db) proving a `running` loop is moved
   to `paused` by `pauseRunningLoopsForBoot`.
-- [ ] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop exec vitest run --project node src/main/core/loops/loop-service.test.ts --project main-db src/main/core/loops/loop-service.db.test.ts`.
+- [x] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop exec vitest run --project node src/main/core/loops/loop-service.test.ts --project main-db src/main/core/loops/loop-service.db.test.ts`.
 
 ### Task 11: RPC controller, events, and main-process wiring
 
