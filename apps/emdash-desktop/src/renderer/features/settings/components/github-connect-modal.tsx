@@ -86,6 +86,11 @@ export function GithubConnectModal({ onSuccess, onClose }: BaseModalProps<void>)
               : 'GitHub is connected.',
       });
       onSuccess();
+    } catch (err) {
+      setError({
+        method: 'oauth',
+        message: err instanceof Error ? err.message : 'Connection failed. Please try again.',
+      });
     } finally {
       setOauthLoading(false);
     }
@@ -120,6 +125,12 @@ export function GithubConnectModal({ onSuccess, onClose }: BaseModalProps<void>)
             : `${result.importedAccountIds.length} accounts are available in Emdash.`,
       });
       onSuccess();
+    } catch (err) {
+      setError({
+        method: 'cli',
+        message:
+          err instanceof Error ? err.message : 'GitHub CLI import failed. Please try again.',
+      });
     } finally {
       setCliLoading(false);
     }
@@ -128,7 +139,12 @@ export function GithubConnectModal({ onSuccess, onClose }: BaseModalProps<void>)
   const connectDeviceFlow = () => {
     setError(null);
     showDeviceFlow({});
-    void deviceFlowMutation.mutateAsync();
+    deviceFlowMutation.mutateAsync().catch((err: unknown) => {
+      setError({
+        method: 'device_flow',
+        message: err instanceof Error ? err.message : 'Device flow failed. Please try again.',
+      });
+    });
   };
 
   return (

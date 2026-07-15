@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { AppSettings, AppSettingsKey } from '@shared/core/app-settings';
 import {
   APP_SETTINGS_STALE_TIME_MS,
+  appSettingsGcTime,
   appSettingsMetaQueryKey,
   getAllAppSettingsFromCache,
   getAppSettingValueSnapshot,
@@ -26,6 +27,7 @@ export function useAppSettingsKey<K extends AppSettingsKey>(key: K) {
     queryKey: appSettingsMetaQueryKey(key),
     queryFn: () => requestAppSettingsMeta(key),
     staleTime: APP_SETTINGS_STALE_TIME_MS,
+    gcTime: appSettingsGcTime(key),
   });
 
   const updateMutation = useMutation<

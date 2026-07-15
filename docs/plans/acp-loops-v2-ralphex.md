@@ -35,15 +35,26 @@ Ralphex resumes from the first unchecked box after any interruption.
   `production-acp-session-manager.ts`): `prompt(conversationId, text)` runs ONE turn and
   resolves (`Result<void, AcpRuntimeError>`) when the turn ends — the stop reason is
   internal, NOT in the return value; read the final assistant text from
+<<<<<<< Updated upstream
   `acpSessionManager.getChatHistory(conversationId)` (last turn). Also `cancel` /
   `stop` / `getSessionState`. To run a turn on a task, follow the existing flow:
+=======
+  `acpSessionManager.getChatHistory(conversationId)` (last turn). Also `cancel` / `stop`
+  / `getSessionState`. To run a turn on a task, follow the existing flow:
+>>>>>>> Stashed changes
   `createConversation({ type: 'acp', ... })`
   (`src/main/core/conversations/createConversation.ts`), then
   `hydrateConversation(projectId, taskId, conversationId)`
   (`src/main/core/conversations/hydrateConversation.ts`) — it resolves the workspace via
+<<<<<<< Updated upstream
   `taskSessionManager.getWorkspaceId(taskId)` + `workspaceRegistry.get(...)`, derives
   the machine from `taskSessionManager.getPersistData(taskId)?.sshConnectionId`, and
   calls `acpSessionManager.start` — then `prompt`.
+=======
+  `taskSessionManager.getWorkspaceId(taskId)` + `workspaceRegistry.get(...)`, derives the
+  machine from `taskSessionManager.getPersistData(taskId)?.sshConnectionId`, and calls
+  `acpSessionManager.start` — then `prompt`.
+>>>>>>> Stashed changes
   `packages/core/src/acp/acp-session-runtime.ts` is the engine.
   `apps/emdash-desktop/src/main/core/conversations/conversation-session-supervisor.ts`
   (`MAX_CONVERSATION_RESUME_ATTEMPTS`) is the existing "attempt N times then give up"
@@ -60,8 +71,13 @@ Ralphex resumes from the first unchecked box after any interruption.
     `getOctokit(host, authContext)` returns an authenticated Octokit (REST + GraphQL).
   - `apps/emdash-desktop/src/main/core/github/services/github-api-auth-service.ts` —
     `githubApiAuthService.getToken(host, authContext)` yields the account token (stored
+<<<<<<< Updated upstream
     encrypted via safeStorage in `accounts/github-account-registry.ts`). The singleton
     is exported from `services/github-api-auth-service-instance.ts`.
+=======
+    encrypted via safeStorage in `accounts/github-account-registry.ts`). The singleton is
+    exported from `services/github-api-auth-service-instance.ts`.
+>>>>>>> Stashed changes
   - `apps/emdash-desktop/src/main/core/github/services/project-github-auth-context.ts` —
     `resolveProjectGitHubAuthContext(projectId)` → `{ accountId }` picks the right account.
   - `apps/emdash-desktop/src/main/core/pull-requests/pr-sync-engine.ts` —
@@ -303,6 +319,7 @@ network.
   Promise<{ finalText: string }>`.
 - [x] Create `drivers/fake-driver.ts` — a `FakeLoopDriver` returning queued canned
   `finalText` values. Keep it tiny.
+<<<<<<< Updated upstream
 - [x] Create `drivers/acp-driver.ts` — real driver mirroring the existing conversation
   flow: create a fresh `type:'acp'` conversation for the phase via `createConversation`
   (`@main/core/conversations/createConversation`), start it via
@@ -313,6 +330,17 @@ network.
   `acpSessionManager.getChatHistory(conversationId)` (last turn). Honor the
   `AbortSignal` via `acpSessionManager.cancel`.
 - [x] Add `drivers/acp-driver.test.ts` (node) with `acpSessionManager` mocked, plus a
+=======
+- [ ] Create `drivers/acp-driver.ts` — real driver mirroring the existing conversation
+  flow: create a fresh `type:'acp'` conversation for the phase via `createConversation`
+  (`@main/core/conversations/createConversation`), start it via
+  `hydrateConversation(projectId, taskId, conversationId)` (which resolves the workspace
+  + machine and calls `acpSessionManager.start`), then `await
+  acpSessionManager.prompt(...)` — it resolves when the turn ends — and return the final
+  assistant text read from `acpSessionManager.getChatHistory(conversationId)` (last
+  turn). Honor the `AbortSignal` via `acpSessionManager.cancel`.
+- [ ] Add `drivers/acp-driver.test.ts` (node) with `acpSessionManager` mocked, plus a
+>>>>>>> Stashed changes
   `fake-driver` smoke test.
 - [x] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm run typecheck` and
   `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop exec vitest run --project node src/main/core/loops/drivers`.
@@ -332,7 +360,11 @@ network.
 
 ### Task 6: Command runner and the unit-tests verifier
 
+<<<<<<< Updated upstream
 - [x] Create `apps/emdash-desktop/src/main/core/loops/runtime/loop-execution-target.ts`
+=======
+- [ ] Create `apps/emdash-desktop/src/main/core/loops/runtime/loop-execution-target.ts`
+>>>>>>> Stashed changes
   resolving a loop's task to `{ workspaceId, path, machine }` + an `IExecutionContext`.
   Mirror the resolution in `conversations/hydrateConversation.ts`:
   `taskSessionManager.getWorkspaceId(taskId)` → `workspaceRegistry.get(workspaceId)`,
@@ -340,7 +372,11 @@ network.
   the existing contexts from
   `src/main/core/execution-context/{local,ssh}-execution-context.ts`; do not build a new
   transport.
+<<<<<<< Updated upstream
 - [x] Create `runtime/loop-command-runner.ts` — `runCommand(ctx, cmd, { cwd, timeoutMs })`
+=======
+- [ ] Create `runtime/loop-command-runner.ts` — `runCommand(ctx, cmd, { cwd, timeoutMs })`
+>>>>>>> Stashed changes
   → `{ exitCode, stdout, stderr, timedOut }`, honoring an `AbortSignal`.
 - [x] Create `verifiers/types.ts` (`Verifier = { id, run(input): Promise<{ ok, skipped?,
   output }> }`), `verifiers/unit-tests.ts` (runs the project's test command via the
@@ -352,12 +388,20 @@ network.
 
 ### Task 7: GitHub check via emdash's GitHub integration + agent token injection
 
+<<<<<<< Updated upstream
 - [x] Read `apps/emdash-desktop/src/main/core/github/services/{octokit-provider.ts,github-api-auth-service.ts,github-api-auth-service-instance.ts,project-github-auth-context.ts}`,
+=======
+- [ ] Read `apps/emdash-desktop/src/main/core/github/services/{octokit-provider.ts,github-api-auth-service.ts,github-api-auth-service-instance.ts,project-github-auth-context.ts}`,
+>>>>>>> Stashed changes
   `apps/emdash-desktop/src/main/core/pull-requests/pr-sync-engine.ts`,
   `apps/emdash-desktop/src/main/core/pty/pty-env.ts` (the `providerVars` seam), and
   `apps/emdash-desktop/src/main/core/acp/transport/local-acp-process-host.ts`
   (`resolveSpawnContext`) first.
+<<<<<<< Updated upstream
 - [x] Create `apps/emdash-desktop/src/main/core/loops/github/loop-github-context.ts`:
+=======
+- [ ] Create `apps/emdash-desktop/src/main/core/loops/github/loop-github-context.ts`:
+>>>>>>> Stashed changes
   given a task, resolve `{ accountId }` via `resolveProjectGitHubAuthContext(projectId)`,
   the repo `nameWithOwner`/host, the branch/PR for the task, and a `GH_TOKEN` via
   `githubApiAuthService.getToken(...)`. Everything degrades gracefully (returns nulls) if
@@ -367,6 +411,7 @@ network.
   branch/PR. Pass when checks are complete and none failed; return a non-blocking skip
   when there is no connected account or no PR yet; fail only when a check actually failed.
   Register it in `verifiers/registry.ts`. Do NOT invoke the `gh` CLI here.
+<<<<<<< Updated upstream
 - [x] Pass GitHub context to the phase agent. Always: repo/PR facts from
   `loop-github-context` are rendered into the phase prompt in `drivers/acp-driver.ts`
   (via `renderGithubFacts(toGithubFacts(...))`). Best-effort token injection into the
@@ -376,6 +421,19 @@ network.
   explicitly allows skipping it, prompt facts alone. The `GH_TOKEN` is still resolved and
   exposed on `LoopGithubContext.token` for future use. No credential helper added.
 - [x] Add `verifiers/github.test.ts` and `github/loop-github-context.test.ts` (node) with
+=======
+- [ ] Pass GitHub context to the phase agent. Always: pass the repo/PR facts from
+  `loop-github-context` to `buildPhasePrompt` in `drivers/acp-driver.ts`. Best-effort
+  token: the ACP path has NO per-conversation env seam — env is built once per agent
+  process in `LocalAcpProcessHost.resolveSpawnContext(providerId)`. If a small change
+  suffices (e.g. let `resolveSpawnContext` accept optional extra vars that are merged
+  into `buildAgentEnv`'s `providerVars`, threaded from `acpSessionManager.start`), inject
+  `GH_TOKEN`/`GITHUB_TOKEN` there; note an already-running agent process will not pick up
+  new env. If that plumbing turns invasive, SKIP token injection — prompt facts alone are
+  acceptable — and say so in the commit message. Do not add a credential helper or
+  per-conversation env infrastructure.
+- [ ] Add `verifiers/github.test.ts` and `github/loop-github-context.test.ts` (node) with
+>>>>>>> Stashed changes
   `getOctokit` / `prSyncEngine` / the auth-context resolver mocked, covering pass, fail,
   and the no-account/no-PR skip. No real GitHub calls.
 - [x] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop exec vitest run --project node src/main/core/loops/github src/main/core/loops/verifiers/github.test.ts`.
@@ -445,19 +503,19 @@ network.
 
 ### Task 11: RPC controller, events, and main-process wiring
 
-- [ ] Create `apps/emdash-desktop/src/main/core/loops/controller.ts` via
+- [x] Create `apps/emdash-desktop/src/main/core/loops/controller.ts` via
   `createRPCController({...})` exposing `create`, `start`, `pause`, `resume`, `cancel`,
   `retry`, `getLoop`, `getLoopByTask`, `listLoops`, delegating to `loopService`. Reject
   every mutating call when `experiments.loops` is not enabled (read via
   `appSettingsService.get('experiments')` from `@main/core/settings/settings-service`).
-- [ ] Mount it as `loops: loopsController` in `apps/emdash-desktop/src/main/rpc.ts`, and
+- [x] Mount it as `loops: loopsController` in `apps/emdash-desktop/src/main/rpc.ts`, and
   call `loopService.initialize()` from `apps/emdash-desktop/src/main/index.ts` boot.
-- [ ] Create `apps/emdash-desktop/src/shared/events/loopEvents.ts` with
+- [x] Create `apps/emdash-desktop/src/shared/events/loopEvents.ts` with
   `loopUpdatedChannel` and `loopProgressChannel` (`defineEvent`), emitted from
   `loopService` via `@main/lib/events`.
-- [ ] Add `controller.test.ts` (node): methods delegate to a mocked `loopService`, and
+- [x] Add `controller.test.ts` (node): methods delegate to a mocked `loopService`, and
   mutating calls are rejected when the flag is off.
-- [ ] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm run typecheck` and
+- [x] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm run typecheck` and
   `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop exec vitest run --project node src/main/core/loops/controller.test.ts`.
 
 ### Task 12: Renderer loops store
@@ -518,9 +576,18 @@ and, optionally, a GitHub PR-checks check (via emdash's connected GitHub account
 in-app browser check (loading the task's preview URL in emdash's built-in browser) —
 retrying up to 3 times before the loop pauses. The phase agent receives GitHub context
 in its prompt (repo/PR facts; `GH_TOKEN` injection is best-effort). Pause, resume,
+<<<<<<< Updated upstream
 cancel, and retry all work, and a running loop survives an app restart by resuming as
 paused. With the flag off, no loop UI renders and loop mutation RPCs are rejected. The
 feature is delivered in roughly 12-16 source files plus tests, reusing emdash's existing
 GitHub and browser/preview infrastructure, with none of the `## Non-Goals` ceremony
 present, and the full `## Validation Commands` gate passes with no network or external
 services.
+=======
+cancel, and retry all work, and a
+running loop survives an app restart by resuming as paused. With the flag off, no loop UI
+renders and loop mutation RPCs are rejected. The feature is delivered in roughly 12-16
+source files plus tests, reusing emdash's existing GitHub and browser/preview
+infrastructure, with none of the `## Non-Goals` ceremony present, and the full
+`## Validation Commands` gate passes with no network or external services.
+>>>>>>> Stashed changes

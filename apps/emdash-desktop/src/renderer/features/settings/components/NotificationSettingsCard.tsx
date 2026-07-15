@@ -1,6 +1,7 @@
 import { FolderOpen, Play } from 'lucide-react';
 import React from 'react';
 import { useAppSettingsKey } from '@renderer/features/settings/use-app-settings-key';
+import { toast } from '@renderer/lib/hooks/use-toast';
 import { rpc } from '@renderer/lib/ipc';
 import { Button } from '@renderer/lib/ui/button';
 import {
@@ -59,6 +60,7 @@ function PreviewSoundButton({
 const NotificationSettingsCard: React.FC = () => {
   const {
     value: notifications,
+    defaults,
     update,
     isLoading: loading,
     isFieldOverridden,
@@ -81,18 +83,26 @@ const NotificationSettingsCard: React.FC = () => {
 
   const resetNotificationField = <K extends keyof NotificationSettings>(
     field: K,
-    value: NotificationSettings[K]
+    fallback: NotificationSettings[K]
   ) => {
-    configureSoundPlayer({ ...currentNotifications, [field]: value });
+    configureSoundPlayer({ ...currentNotifications, [field]: defaults?.[field] ?? fallback });
     resetField(field);
   };
 
   const chooseCustomSound = async () => {
-    const result = await rpc.app.openSelectAudioFileDialog({
-      title: 'Choose custom sound',
-      message: 'Select an audio file to play for agent events',
-    });
-    if (result) updateNotifications({ customSoundPath: result });
+    try {
+      const result = await rpc.app.openSelectAudioFileDialog({
+        title: 'Choose custom sound',
+        message: 'Select an audio file to play for agent events',
+      });
+      if (result) updateNotifications({ customSoundPath: result });
+    } catch (err) {
+      toast({
+        title: 'Unable to choose custom sound',
+        description: err instanceof Error ? err.message : 'Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   return (
@@ -105,7 +115,7 @@ const NotificationSettingsCard: React.FC = () => {
             <ResetToDefaultButton
               visible={isFieldOverridden('enabled')}
               defaultLabel="on"
-              onReset={() => resetField('enabled')}
+              onReset={() => resetNotificationField('enabled', true)}
               disabled={loading}
             />
             <Switch

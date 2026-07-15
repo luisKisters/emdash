@@ -109,17 +109,19 @@ function SingleIntegrationAccount({ integration }: { integration: IntegrationIte
       </div>
       {integration.onDisconnect && (
         <Tooltip>
-          <TooltipTrigger>
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon-sm"
-              onClick={integration.onDisconnect}
-              aria-label={`Disconnect ${integration.name}`}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </TooltipTrigger>
+          <TooltipTrigger
+            render={
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-sm"
+                onClick={integration.onDisconnect}
+                aria-label={`Disconnect ${integration.name}`}
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
+            }
+          />
           <TooltipContent side="top">Disconnect</TooltipContent>
         </Tooltip>
       )}

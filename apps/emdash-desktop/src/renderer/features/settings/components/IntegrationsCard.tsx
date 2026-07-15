@@ -10,6 +10,7 @@ import { useShowModal } from '@renderer/lib/modal/modal-provider';
 import { Sheet, SheetContent } from '@renderer/lib/ui/sheet';
 import { TooltipProvider } from '@renderer/lib/ui/tooltip';
 import type { IssueProviderType } from '@shared/issue-providers';
+import { SettingsSearchTarget } from '../search/settings-search-context';
 import { IntegrationDetailSidebar } from './IntegrationDetailSidebar';
 import { IntegrationGridCard } from './IntegrationGridCard';
 
@@ -124,24 +125,26 @@ const IntegrationsCard: React.FC = () => {
         {connectedIntegrations.length > 0 && (
           <IntegrationSection title="Connected">
             {connectedIntegrations.map((integration) => (
-              <IntegrationGridCard
-                key={integration.id}
-                integration={integration}
-                selected={integration.id === selectedProvider}
-                onSelect={() => setSelectedProvider(integration.id)}
-              />
+              <SettingsSearchTarget key={integration.id} id={`integration-${integration.id}`}>
+                <IntegrationGridCard
+                  integration={integration}
+                  selected={integration.id === selectedProvider}
+                  onSelect={() => setSelectedProvider(integration.id)}
+                />
+              </SettingsSearchTarget>
             ))}
           </IntegrationSection>
         )}
 
         <IntegrationSection title="Available">
           {availableIntegrations.map((integration) => (
-            <IntegrationGridCard
-              key={integration.id}
-              integration={integration}
-              selected={integration.id === selectedProvider}
-              onSelect={() => setSelectedProvider(integration.id)}
-            />
+            <SettingsSearchTarget key={integration.id} id={`integration-${integration.id}`}>
+              <IntegrationGridCard
+                integration={integration}
+                selected={integration.id === selectedProvider}
+                onSelect={() => setSelectedProvider(integration.id)}
+              />
+            </SettingsSearchTarget>
           ))}
         </IntegrationSection>
       </div>

@@ -57,6 +57,18 @@ export class LoopService {
     return this.deps.ops.createLoop({ taskId, config, phases });
   }
 
+  getLoop(loopId: string): Promise<Loop | null> {
+    return this.deps.ops.getLoop(loopId);
+  }
+
+  getLoopByTask(taskId: string): Promise<Loop | null> {
+    return this.deps.ops.getLoopByTask(taskId);
+  }
+
+  listLoops(): Promise<Loop[]> {
+    return this.deps.ops.listLoops();
+  }
+
   /**
    * Starts (or resumes) a loop, walking phases from `currentPhaseIndex`. The
    * returned promise settles when the run reaches a terminal/paused state; callers

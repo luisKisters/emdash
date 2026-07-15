@@ -34,6 +34,7 @@ import {
   type BrowserProfile,
   type BrowsingDataKind,
 } from '@shared/browser';
+import { SettingsSearchTarget } from '../search/settings-search-context';
 import { SettingRow } from './SettingRow';
 
 export function BrowserSettingsCard() {
@@ -190,7 +191,10 @@ export function BrowserSettingsCard() {
         }
       />
 
-      <div className="rounded-lg border border-border/70 bg-background-secondary-1 p-3">
+      <SettingsSearchTarget
+        id="browser-profiles"
+        className="rounded-lg border border-border/70 bg-background-secondary-1 p-3"
+      >
         <div className="flex flex-col gap-1">
           <div className="text-sm text-foreground">Browser profiles</div>
           <div className="text-xs text-foreground-passive">
@@ -343,9 +347,12 @@ export function BrowserSettingsCard() {
             </Button>
           )}
         </div>
-      </div>
+      </SettingsSearchTarget>
 
-      <div className="rounded-lg border border-border/70 bg-background-secondary-1 p-3">
+      <SettingsSearchTarget
+        id="browsing-data"
+        className="rounded-lg border border-border/70 bg-background-secondary-1 p-3"
+      >
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <div className="flex min-w-0 flex-1 basis-64 flex-col gap-0.5">
             <div className="text-sm text-foreground">Browsing data</div>
@@ -408,7 +415,7 @@ export function BrowserSettingsCard() {
             ))}
           </div>
         )}
-      </div>
+      </SettingsSearchTarget>
     </div>
   );
 }

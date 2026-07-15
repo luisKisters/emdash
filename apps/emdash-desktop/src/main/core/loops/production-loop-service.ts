@@ -1,5 +1,7 @@
 import { appSettingsService } from '@main/core/settings/settings-service';
+import { events } from '@main/lib/events';
 import type { AgentProviderId } from '@shared/core/agents/agent-provider-registry';
+import { loopProgressChannel, loopUpdatedChannel } from '@shared/events/loopEvents';
 import { AcpLoopDriver } from './drivers/acp-driver';
 import { LoopService } from './loop-service';
 import {
@@ -34,5 +36,9 @@ export const loopService = new LoopService({
   resolveVerifierContext: async (taskId) => {
     const target = await resolveLoopExecutionTarget(taskId);
     return { ctx: target.ctx, cwd: target.path };
+  },
+  emit: (loop) => {
+    events.emit(loopUpdatedChannel, loop);
+    events.emit(loopProgressChannel, loop);
   },
 });
