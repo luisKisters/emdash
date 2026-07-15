@@ -31,6 +31,7 @@ export const SETTINGS_DEFAULTS = {
     createBranchAndWorktree: true,
     preserveNameCapitalization: false,
     includeIssueContextByDefault: true,
+    maxLoopAttempts: 3,
   },
   notifications: {
     enabled: true,
@@ -75,6 +76,9 @@ export const SETTINGS_DEFAULTS = {
     unstaged: 'flat' as const,
     staged: 'flat' as const,
     pr: 'flat' as const,
+  },
+  experiments: {
+    loops: false,
   },
 } satisfies SettingsDefaultsMap;
 
