@@ -332,7 +332,7 @@ network.
 
 ### Task 6: Command runner and the unit-tests verifier
 
-- [ ] Create `apps/emdash-desktop/src/main/core/loops/runtime/loop-execution-target.ts`
+- [x] Create `apps/emdash-desktop/src/main/core/loops/runtime/loop-execution-target.ts`
   resolving a loop's task to `{ workspaceId, path, machine }` + an `IExecutionContext`.
   Mirror the resolution in `conversations/hydrateConversation.ts`:
   `taskSessionManager.getWorkspaceId(taskId)` → `workspaceRegistry.get(workspaceId)`,
@@ -340,15 +340,15 @@ network.
   the existing contexts from
   `src/main/core/execution-context/{local,ssh}-execution-context.ts`; do not build a new
   transport.
-- [ ] Create `runtime/loop-command-runner.ts` — `runCommand(ctx, cmd, { cwd, timeoutMs })`
+- [x] Create `runtime/loop-command-runner.ts` — `runCommand(ctx, cmd, { cwd, timeoutMs })`
   → `{ exitCode, stdout, stderr, timedOut }`, honoring an `AbortSignal`.
-- [ ] Create `verifiers/types.ts` (`Verifier = { id, run(input): Promise<{ ok, skipped?,
+- [x] Create `verifiers/types.ts` (`Verifier = { id, run(input): Promise<{ ok, skipped?,
   output }> }`), `verifiers/unit-tests.ts` (runs the project's test command via the
   command runner), and `verifiers/registry.ts` (`unit-tests` always present).
-- [ ] Add `runtime/loop-command-runner.test.ts` and `verifiers/unit-tests.test.ts` (node)
+- [x] Add `runtime/loop-command-runner.test.ts` and `verifiers/unit-tests.test.ts` (node)
   against a temp git repo with a fake local execution context (pass, non-zero exit,
   timeout).
-- [ ] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop exec vitest run --project node src/main/core/loops/runtime src/main/core/loops/verifiers`.
+- [x] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop exec vitest run --project node src/main/core/loops/runtime src/main/core/loops/verifiers`.
 
 ### Task 7: GitHub check via emdash's GitHub integration + agent token injection
 
