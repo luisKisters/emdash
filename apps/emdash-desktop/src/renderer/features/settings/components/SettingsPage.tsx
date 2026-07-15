@@ -1,8 +1,12 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { PageHeader } from '@renderer/lib/components/page-header';
 import { PageContent, PageLayout, PageSidebarMenu } from '@renderer/lib/components/page-layout';
 import { rpc } from '@renderer/lib/ipc';
+import { SearchInput } from '@renderer/lib/ui/search-input';
 import { AgentsSettingsPage } from '../agents-page/AgentsSettingsPage';
+import { SettingsSearchProvider, SettingsSearchTarget } from '../search/settings-search-context';
+import { matchedTabsForQuery, searchSettings } from '../search/settings-search';
+import { SETTINGS_TABS, type SettingsPageTab } from '../settings-tabs';
 import { AccountTab } from './AccountTab';
 import { BrowserSettingsCard } from './BrowserSettingsCard';
 import HiddenToolsSettingsCard from './HiddenToolsSettingsCard';
@@ -27,17 +31,6 @@ import TelemetryCard from './TelemetryCard';
 import TerminalSettingsCard from './TerminalSettingsCard';
 import ThemeCard from './ThemeCard';
 import { UpdateCard } from './UpdateCard';
-
-export type SettingsPageTab =
-  | 'general'
-  | 'account'
-  | 'clis-models'
-  | 'integrations'
-  | 'connections'
-  | 'browser'
-  | 'repository'
-  | 'interface'
-  | 'docs';
 
 // ---------------------------------------------------------------------------
 // Tab page components
@@ -69,7 +62,9 @@ function AccountSettingsPage() {
   return (
     <div className="space-y-8">
       <PageHeader sticky title="Account" description="Manage your Emdash account." />
-      <AccountTab />
+      <SettingsSearchTarget id="emdash-account">
+        <AccountTab />
+      </SettingsSearchTarget>
     </div>
   );
 }
@@ -91,7 +86,9 @@ function ConnectionsSettingsPage() {
         title="Connections"
         description="Manage reusable SSH connections for remote projects."
       />
-      <SshConnectionsSettingsCard />
+      <SettingsSearchTarget id="ssh-connections">
+        <SshConnectionsSettingsCard />
+      </SettingsSearchTarget>
     </div>
   );
 }
@@ -120,19 +117,34 @@ function InterfaceSettingsPage() {
         title="Interface"
         description="Customize the appearance and behavior of the app."
       />
-      <ThemeCard />
+      <SettingsSearchTarget id="color-mode">
+        <ThemeCard />
+      </SettingsSearchTarget>
       <TerminalSettingsCard />
       <SidebarMetadataSettingsCard />
       <ResourceMonitorSettingsCard />
       <InterfaceSettingsCard />
-      <div className="flex flex-col gap-3">
+      <SettingsSearchTarget id="keyboard-shortcuts" className="flex flex-col gap-3">
         <h3 className="text-sm font-normal text-foreground">Keyboard shortcuts</h3>
         <KeyboardSettingsCard />
-      </div>
-      <div className="flex flex-col gap-3">
+      </SettingsSearchTarget>
+      <SettingsSearchTarget id="open-in-tools" className="flex flex-col gap-3">
         <h3 className="text-sm font-normal text-foreground">Tools</h3>
         <HiddenToolsSettingsCard />
-      </div>
+      </SettingsSearchTarget>
+    </div>
+  );
+}
+
+function BrowserSettingsPage() {
+  return (
+    <div className="space-y-8">
+      <PageHeader
+        sticky
+        title="Browser"
+        description="Manage browser profiles and their stored logins."
+      />
+      <BrowserSettingsCard />
     </div>
   );
 }
@@ -141,6 +153,19 @@ function InterfaceSettingsPage() {
 // SettingsPage
 // ---------------------------------------------------------------------------
 
+const TAB_CONTENT: Record<Exclude<SettingsPageTab, 'docs'>, React.ComponentType> = {
+  general: GeneralSettingsPage,
+  account: AccountSettingsPage,
+  'clis-models': AgentsSettingsPage,
+  integrations: IntegrationsSettingsPage,
+  connections: ConnectionsSettingsPage,
+  browser: BrowserSettingsPage,
+  repository: RepositorySettingsPage,
+  interface: InterfaceSettingsPage,
+};
+
+const DOCS_TAB = { id: 'docs', label: 'Docs', isExternal: true } as const;
+
 export function SettingsPage({
   tab: activeTab,
   onTabChange,
@@ -148,53 +173,73 @@ export function SettingsPage({
   tab: SettingsPageTab;
   onTabChange: (tab: SettingsPageTab) => void;
 }) {
+  const [searchQuery, setSearchQuery] = useState('');
+  const contentRef = useRef<HTMLDivElement>(null);
+  const query = searchQuery.trim();
+  const isSearching = query.length > 0;
+
   const handleDocsClick = useCallback(() => {
     void rpc.app.openExternal('https://docs.emdash.sh');
   }, []);
 
-  const tabs: Array<{
-    id: SettingsPageTab;
-    label: string;
-    isExternal?: boolean;
-  }> = [
-    { id: 'general', label: 'General' },
-    { id: 'account', label: 'Account' },
-    { id: 'clis-models', label: 'Agents' },
-    { id: 'integrations', label: 'Integrations' },
-    { id: 'connections', label: 'Connections' },
-    { id: 'repository', label: 'Repository' },
-    { id: 'interface', label: 'Interface' },
-    { id: 'browser', label: 'Browser' },
-    { id: 'docs', label: 'Docs', isExternal: true },
-  ];
+  const visibleTabs = useMemo(() => {
+    if (!isSearching) return [...SETTINGS_TABS, DOCS_TAB];
+    const matchedTabs = matchedTabsForQuery(query);
+    const matchCountByTab = new Map<string, number>();
+    for (const entry of searchSettings(query)) {
+      matchCountByTab.set(entry.tab, (matchCountByTab.get(entry.tab) ?? 0) + 1);
+    }
+    return SETTINGS_TABS.filter((tab) => matchedTabs.includes(tab.id)).map((tab) => ({
+      ...tab,
+      badge: String(matchCountByTab.get(tab.id) ?? 0),
+    }));
+  }, [isSearching, query]);
 
-  const tabContent: Record<string, React.ReactNode> = {
-    general: <GeneralSettingsPage />,
-    account: <AccountSettingsPage />,
-    'clis-models': <AgentsSettingsPage />,
-    integrations: <IntegrationsSettingsPage />,
-    connections: <ConnectionsSettingsPage />,
-    browser: (
-      <div className="space-y-8">
-        <PageHeader
-          sticky
-          title="Browser"
-          description="Manage browser profiles and their stored logins."
-        />
-        <BrowserSettingsCard />
-      </div>
-    ),
-    repository: <RepositorySettingsPage />,
-    interface: <InterfaceSettingsPage />,
-  };
+  // While searching, keep the active tab on one that has matches.
+  useEffect(() => {
+    if (!isSearching || visibleTabs.length === 0) return;
+    if (!visibleTabs.some((tab) => tab.id === activeTab)) {
+      onTabChange(visibleTabs[0].id);
+    }
+  }, [isSearching, visibleTabs, activeTab, onTabChange]);
 
-  const currentContent = tabContent[activeTab];
+  // Bring the first matching setting of the open tab into view.
+  useEffect(() => {
+    if (!isSearching) return;
+    const frame = requestAnimationFrame(() => {
+      contentRef.current
+        ?.querySelector('[data-highlighted="true"]')
+        ?.scrollIntoView({ block: 'nearest' });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [isSearching, query, activeTab]);
+
+  // Fall back to General for 'docs' (external link, no content) and for stale
+  // tab ids restored from persisted view snapshots written by older builds.
+  const Content =
+    (activeTab !== 'docs' ? TAB_CONTENT[activeTab] : undefined) ?? GeneralSettingsPage;
 
   return (
     <PageLayout
       sidebar={
         <PageSidebarMenu
-          items={tabs}
+          header={
+            <SearchInput
+              placeholder="Search settings"
+              aria-label="Search settings"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape' && searchQuery) {
+                  e.stopPropagation();
+                  setSearchQuery('');
+                }
+              }}
+              focusHotkey={false}
+            />
+          }
+          emptyMessage="No matching settings"
+          items={visibleTabs}
           activeId={activeTab}
           onSelect={(item) => {
             if (item.isExternal) {
@@ -206,7 +251,13 @@ export function SettingsPage({
         />
       }
     >
-      {currentContent && <PageContent>{currentContent}</PageContent>}
+      <PageContent>
+        <SettingsSearchProvider query={query}>
+          <div ref={contentRef}>
+            <Content />
+          </div>
+        </SettingsSearchProvider>
+      </PageContent>
     </PageLayout>
   );
 }

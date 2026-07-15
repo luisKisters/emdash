@@ -6,20 +6,29 @@ export type PageSidebarItem<T extends string = string> = {
   id: T;
   label: string;
   isExternal?: boolean;
+  badge?: string;
 };
 
 export function PageSidebarMenu<T extends string>({
   items,
   activeId,
   onSelect,
+  header,
+  emptyMessage,
 }: {
   items: ReadonlyArray<PageSidebarItem<T>>;
   activeId: T;
   onSelect: (item: PageSidebarItem<T>) => void;
+  header?: React.ReactNode;
+  emptyMessage?: string;
 }) {
   return (
     <div className="sticky top-0 self-start py-10 [-webkit-app-region:drag]">
+      {header && <div className="mb-3 w-52 [-webkit-app-region:no-drag]">{header}</div>}
       <nav className="flex w-52 flex-col gap-0.5 [-webkit-app-region:no-drag]">
+        {items.length === 0 && emptyMessage && (
+          <div className="px-3 py-2 text-sm text-foreground-passive">{emptyMessage}</div>
+        )}
         {items.map((item) => {
           const isActive = item.id === activeId && !item.isExternal;
           return (
@@ -34,6 +43,11 @@ export function PageSidebarMenu<T extends string>({
               )}
             >
               <span className="text-left">{item.label}</span>
+              {item.badge && (
+                <span className="ml-auto text-xs tabular-nums text-foreground-passive">
+                  {item.badge}
+                </span>
+              )}
               {item.isExternal && <ExternalLink className="h-4 w-4" />}
             </button>
           );

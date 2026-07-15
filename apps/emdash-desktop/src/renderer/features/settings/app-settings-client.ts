@@ -14,7 +14,7 @@ export function appSettingsMetaQueryKey<K extends AppSettingsKey>(key: K) {
   return ['appSettings', key, 'meta'] as const;
 }
 
-const appSettingsGcTime = <K extends AppSettingsKey>(key: K) =>
+export const appSettingsGcTime = <K extends AppSettingsKey>(key: K) =>
   key === 'interface' || key === 'browser' ? Infinity : undefined;
 
 const appSettingsAllQueryKey = ['appSettings', 'all'] as const;
