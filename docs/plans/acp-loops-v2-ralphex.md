@@ -352,35 +352,33 @@ network.
 
 ### Task 7: GitHub check via emdash's GitHub integration + agent token injection
 
-- [ ] Read `apps/emdash-desktop/src/main/core/github/services/{octokit-provider.ts,github-api-auth-service.ts,github-api-auth-service-instance.ts,project-github-auth-context.ts}`,
+- [x] Read `apps/emdash-desktop/src/main/core/github/services/{octokit-provider.ts,github-api-auth-service.ts,github-api-auth-service-instance.ts,project-github-auth-context.ts}`,
   `apps/emdash-desktop/src/main/core/pull-requests/pr-sync-engine.ts`,
   `apps/emdash-desktop/src/main/core/pty/pty-env.ts` (the `providerVars` seam), and
   `apps/emdash-desktop/src/main/core/acp/transport/local-acp-process-host.ts`
   (`resolveSpawnContext`) first.
-- [ ] Create `apps/emdash-desktop/src/main/core/loops/github/loop-github-context.ts`:
+- [x] Create `apps/emdash-desktop/src/main/core/loops/github/loop-github-context.ts`:
   given a task, resolve `{ accountId }` via `resolveProjectGitHubAuthContext(projectId)`,
   the repo `nameWithOwner`/host, the branch/PR for the task, and a `GH_TOKEN` via
   `githubApiAuthService.getToken(...)`. Everything degrades gracefully (returns nulls) if
   no account/PR is connected.
-- [ ] Create `verifiers/github.ts`: an OPTIONAL verifier that uses `prSyncEngine.syncChecks`
+- [x] Create `verifiers/github.ts`: an OPTIONAL verifier that uses `prSyncEngine.syncChecks`
   (or `getOctokit` + the existing PR-checks query) to read PR CI status for the task's
   branch/PR. Pass when checks are complete and none failed; return a non-blocking skip
   when there is no connected account or no PR yet; fail only when a check actually failed.
   Register it in `verifiers/registry.ts`. Do NOT invoke the `gh` CLI here.
-- [ ] Pass GitHub context to the phase agent. Always: pass the repo/PR facts from
-  `loop-github-context` to `buildPhasePrompt` in `drivers/acp-driver.ts`. Best-effort
-  token: the ACP path has NO per-conversation env seam — env is built once per agent
-  process in `LocalAcpProcessHost.resolveSpawnContext(providerId)`. If a small change
-  suffices (e.g. let `resolveSpawnContext` accept optional extra vars that are merged
-  into `buildAgentEnv`'s `providerVars`, threaded from `acpSessionManager.start`), inject
-  `GH_TOKEN`/`GITHUB_TOKEN` there; note an already-running agent process will not pick up
-  new env. If that plumbing turns invasive, SKIP token injection — prompt facts alone are
-  acceptable — and say so in the commit message. Do not add a credential helper or
-  per-conversation env infrastructure.
-- [ ] Add `verifiers/github.test.ts` and `github/loop-github-context.test.ts` (node) with
+- [x] Pass GitHub context to the phase agent. Always: repo/PR facts from
+  `loop-github-context` are rendered into the phase prompt in `drivers/acp-driver.ts`
+  (via `renderGithubFacts(toGithubFacts(...))`). Best-effort token injection into the
+  agent process env was SKIPPED: the ACP path has no per-conversation env seam
+  (`LocalAcpProcessHost.resolveSpawnContext` builds env once per shared provider+machine
+  process), so token env injection would be invasive and not per-conversation — the plan
+  explicitly allows skipping it, prompt facts alone. The `GH_TOKEN` is still resolved and
+  exposed on `LoopGithubContext.token` for future use. No credential helper added.
+- [x] Add `verifiers/github.test.ts` and `github/loop-github-context.test.ts` (node) with
   `getOctokit` / `prSyncEngine` / the auth-context resolver mocked, covering pass, fail,
   and the no-account/no-PR skip. No real GitHub calls.
-- [ ] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop exec vitest run --project node src/main/core/loops/github src/main/core/loops/verifiers/github.test.ts`.
+- [x] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop exec vitest run --project node src/main/core/loops/github src/main/core/loops/verifiers/github.test.ts`.
 
 ### Task 8: In-app browser check (reuse the existing browser + preview infra)
 
