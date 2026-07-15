@@ -5,6 +5,7 @@ import { McpModal } from '@renderer/features/mcp/components/McpModal';
 import { AddProjectModal } from '@renderer/features/projects/components/add-project-modal/add-project-modal';
 import { ProjectConfigImportModal } from '@renderer/features/projects/components/settings-view/project-config-import-modal';
 import { ShareProjectConfigModal } from '@renderer/features/projects/components/settings-view/share-project-config-modal';
+import { CreateLoopForm } from '@renderer/features/loops/create-loop-form';
 import { GithubConnectModal } from '@renderer/features/settings/components/github-connect-modal';
 import { CreateSkillModal } from '@renderer/features/skills/components/CreateSkillModal';
 import { AddRemoteModal } from '@renderer/features/tasks/add-remote-modal';
@@ -63,5 +64,6 @@ export const modalRegistry = {
   githubConnectModal: createModal(GithubConnectModal, { size: 'md' }),
   addRemoteModal: createModal(AddRemoteModal),
   deleteTaskModal: createModal(DeleteTaskModal, { size: 'sm' }),
+  createLoopModal: createModal(CreateLoopForm, { size: 'lg' }),
   // oxlint-disable-next-line typescript/no-explicit-any
 } satisfies Record<string, ModalRegistryEntry<any, any>>;
