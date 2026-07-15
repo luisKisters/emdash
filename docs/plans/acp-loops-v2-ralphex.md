@@ -280,20 +280,20 @@ network.
 
 ### Task 3: Database schema, migration, and persistence operations
 
-- [ ] Add two tables to `apps/emdash-desktop/src/main/db/schema.ts` modeled on
+- [x] Add two tables to `apps/emdash-desktop/src/main/db/schema.ts` modeled on
   `automationRuns`: `loops` (`id`, `taskId` fk, `status`, `currentPhaseIndex`,
   `config` via `versionedJsonColumn(loopConfigSchema)`, `createdAt`, `updatedAt`) and
   `loop_phases` (`id`, `loopId` fk, `orderIndex`, `name`, `goal`, `checks` JSON,
   `status`, `attempts`, timestamps). No `is_primary`, no partial unique index.
-- [ ] Run `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop run db:generate` and commit the ONE generated `.sql` plus the updated
+- [x] Run `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop run db:generate` and commit the ONE generated `.sql` plus the updated
   `drizzle/meta/_journal.json`. Do not hand-edit generated migration files.
-- [ ] Create `apps/emdash-desktop/src/main/core/loops/operations/loop-operations.ts`
+- [x] Create `apps/emdash-desktop/src/main/core/loops/operations/loop-operations.ts`
   with plain functions: `createLoop`, `getLoop`, `getLoopByTask`, `listLoops`,
   `updateLoop`, `updatePhase`.
-- [ ] Add a migration test `src/main/db/tests/migrations/00NN_loops.test.ts` (migrations)
+- [x] Add a migration test `src/main/db/tests/migrations/00NN_loops.test.ts` (migrations)
   and `src/main/core/loops/operations/loop-operations.db.test.ts` (main-db) proving a
   create → read → update round-trip for a loop and its phases.
-- [ ] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop run test:migrations` and
+- [x] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop run test:migrations` and
   `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop exec vitest run --project main-db src/main/core/loops`.
 
 ### Task 4: Loop session driver interface, fake driver, and ACP driver
