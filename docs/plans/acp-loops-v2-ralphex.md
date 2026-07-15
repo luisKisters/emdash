@@ -29,27 +29,40 @@ Ralphex resumes from the first unchecked box after any interruption.
   (`@emdash/emdash-desktop`). Node 24 lives at `/home/devuser/.local/node24/bin`;
   prefix commands with `PATH=/home/devuser/.local/node24/bin:$PATH` when a fresh shell
   lacks it. pnpm workspace; path aliases `@main`→`src/main`, `@renderer`→`src/renderer`,
-  `@shared`→`src/shared`, `@emdash/core`→`packages/core`.
+  `@shared`→`src/shared`; `@emdash/core` is the `packages/core` workspace package.
 - **ACP is already landed.** `apps/emdash-desktop/src/main/core/acp/acp-session-manager.ts`
   (`AcpSessionManager`, singleton `acpSessionManager` from
   `production-acp-session-manager.ts`): `prompt(conversationId, text)` runs ONE turn and
-  resolves with a `stopReason` (`end_turn`); `cancel` / `stop` / `getSessionState`.
+  resolves (`Result<void, AcpRuntimeError>`) when the turn ends — the stop reason is
+  internal, NOT in the return value; read the final assistant text from
+  `acpSessionManager.getChatHistory(conversationId)` (last turn). Also `cancel` /
+  `stop` / `getSessionState`. To run a turn on a task, follow the existing flow:
+  `createConversation({ type: 'acp', ... })`
+  (`src/main/core/conversations/createConversation.ts`), then
+  `hydrateConversation(projectId, taskId, conversationId)`
+  (`src/main/core/conversations/hydrateConversation.ts`) — it resolves the workspace via
+  `taskSessionManager.getWorkspaceId(taskId)` + `workspaceRegistry.get(...)`, derives
+  the machine from `taskSessionManager.getPersistData(taskId)?.sshConnectionId`, and
+  calls `acpSessionManager.start` — then `prompt`.
   `packages/core/src/acp/acp-session-runtime.ts` is the engine.
   `apps/emdash-desktop/src/main/core/conversations/conversation-session-supervisor.ts`
-  is the existing "attempt N times then give up" precedent — mirror it, don't invent one.
+  (`MAX_CONVERSATION_RESUME_ATTEMPTS`) is the existing "attempt N times then give up"
+  precedent — mirror it, don't invent one.
 - **No loop code exists on this checkout** — greenfield. Ignore any
   `.emdash-loops-evidence/` screenshots (unrelated prototype).
 - Only providers with `acpCapable: true` in
-  `apps/emdash-desktop/src/shared/core/agents/agent-provider-registry.ts` (`claude`,
-  `kimi`) can drive a loop. Default to `claude`.
+  `apps/emdash-desktop/src/shared/core/agents/agent-provider-registry.ts` can drive a
+  loop. On this checkout that is ONLY `claude` — filter on the flag, do not hardcode a
+  provider list. Default to `claude`.
 - **GitHub integration already exists — reuse it, do NOT shell out to raw `gh` for
   verification:**
   - `apps/emdash-desktop/src/main/core/github/services/octokit-provider.ts` —
     `getOctokit(host, authContext)` returns an authenticated Octokit (REST + GraphQL).
   - `apps/emdash-desktop/src/main/core/github/services/github-api-auth-service.ts` —
     `githubApiAuthService.getToken(host, authContext)` yields the account token (stored
-    encrypted via safeStorage in `github-account-registry.ts`).
-  - `apps/emdash-desktop/src/main/core/github/project-github-auth-context.ts` —
+    encrypted via safeStorage in `accounts/github-account-registry.ts`). The singleton
+    is exported from `services/github-api-auth-service-instance.ts`.
+  - `apps/emdash-desktop/src/main/core/github/services/project-github-auth-context.ts` —
     `resolveProjectGitHubAuthContext(projectId)` → `{ accountId }` picks the right account.
   - `apps/emdash-desktop/src/main/core/pull-requests/pr-sync-engine.ts` —
     `prSyncEngine.syncChecks(pullRequestUrl, headRefOid, authContext)` already fetches PR
@@ -60,14 +73,18 @@ Ralphex resumes from the first unchecked box after any interruption.
     forwards `GH_TOKEN`/`GITHUB_TOKEN` only if already in the host env; agents do NOT
     inherit emdash's stored token by default. `AgentEnvOptions.providerVars` is applied
     last (`Object.assign(env, providerVars)` at ~pty-env.ts:288) and can set `GH_TOKEN`.
-    The ACP host builds env via `buildAgentEnv({ agentApiVars: true })` in
-    `acp/transport/local-acp-process-host.ts`.
+    The ACP host builds env in `LocalAcpProcessHost.resolveSpawnContext(providerId)`
+    (`acp/transport/local-acp-process-host.ts`) via `buildAgentEnv({ agentApiVars: true })`
+    — that env is PER AGENT PROCESS (one process per provider per machine, shared across
+    conversations), and there is currently NO per-conversation env seam on the ACP path.
+    Token injection for loop agents is therefore best-effort (see Task 7).
 - **In-app browser + preview already exist — reuse them:**
   - `apps/emdash-desktop/src/main/core/browser/browser-webcontents-registry.ts` —
     singleton `browserWebContentsRegistry`; holds a live Electron `WebContents` per
     `browserId` (`webContentsByBrowserId`), already uses `capturePage` /
-    `executeJavaScript` internally; `getActiveBrowser()` returns the bound browser.
-    RPC surface in `browser/controller.ts` (`rpc.browser.*`). The bound `WebContents`
+    `executeJavaScript` internally; `getActiveBrowser()` returns the active browserId
+    (`string | null`). RPC surface in `browser/controller.ts` (`rpc.browser.*`, e.g.
+    `captureScreenshot` wraps `captureScreenshotToClipboard`). The bound `WebContents`
     exists only while a `BrowserPane` (`src/renderer/features/browser/browser-pane.tsx`)
     is mounted.
   - `apps/emdash-desktop/src/main/core/preview-servers/preview-server-service.ts` —
@@ -84,11 +101,14 @@ Ralphex resumes from the first unchecked box after any interruption.
   `pnpm --filter @emdash/emdash-desktop run db:generate` after editing the schema;
   migrations apply at boot via `src/main/db/initialize.ts` (commit the generated `.sql`
   + `drizzle/meta/_journal.json`). Versioned JSON via `versionedJsonColumn(schema)`
-  (`src/main/db/versioned-column.ts`) + `defineVersionedSchema()`
-  (`@shared/lib/versioned-schema`).
+  (`src/main/db/versioned-column.ts`) + `defineVersionedSchema()` imported from
+  `@shared/lib/versioned-schema/versioned-schema` (the directory has no index file).
 - Settings: Zod schema per key in `src/main/core/settings/schema.ts` (aggregated in
-  `APP_SETTINGS_SCHEMA_MAP`), defaults in `settings-registry.ts`, shared type in
-  `@shared/core/app-settings`; renderer reads via `useAppSettingsKey(key)`.
+  `APP_SETTINGS_SCHEMA_MAP`), defaults in `settings-registry.ts` (`SETTINGS_DEFAULTS`),
+  shared type in `@shared/core/app-settings`. Renderer reads via
+  `useAppSettingsKey(key)` — it returns `{ value, ... }`, so the flag is
+  `useAppSettingsKey('experiments').value?.loops`. Main process reads via
+  `appSettingsService.get(key)` (`@main/core/settings/settings-service`).
 - Testing: Vitest projects (`vitest.config.ts`): `node` (`src/**/*.test.ts`), `main-db`
   (`src/main/core/**/*.db.test.ts`, real SQLite), `migrations`
   (`src/main/db/tests/migrations/**`, via `run test:migrations`), `browser`
@@ -123,9 +143,11 @@ Ralphex resumes from the first unchecked box after any interruption.
 - Loop statuses: `draft | running | paused | completed | failed`. Phase statuses:
   `pending | running | verifying | passed | failed`.
 - The phase agent is given GitHub context: repo `nameWithOwner`/host + branch/PR facts
-  in the prompt, and a working `GH_TOKEN` injected through the existing agent-env
-  `providerVars` seam (resolved via `githubApiAuthService` for the task's project) so it
-  can run git/`gh` operations itself. No new credential helper.
+  in the prompt (always), and — best-effort — a working `GH_TOKEN` (resolved via
+  `githubApiAuthService` for the task's project) injected into the agent process env at
+  spawn so it can run git/`gh` operations itself. The ACP agent process is shared per
+  provider+machine, so the token cannot be scoped per conversation; if injection is not
+  cleanly reachable, prompt facts alone are acceptable. No new credential helper.
 - Default provider `claude`; model from the existing conversation model list. Do not flip
   the default to codex.
 - OFF unless `experiments.loops === true`. When off: no loop UI, loop mutation RPCs
@@ -139,12 +161,13 @@ Ralphex resumes from the first unchecked box after any interruption.
   - `loop-service.ts` — singleton orchestrator (`loopService`): create / start / pause /
     resume / cancel / retry; walks `currentPhaseIndex`; marks the loop
     completed/paused/failed; emits events; `pauseRunningLoopsForBoot()` on init.
-  - `phase-runner.ts` — per-phase state machine with INJECTED dependencies (`getLoop`,
-    `updatePhase`, `driver`, `getVerifier`, `getDiff`, `signal`, `maxAttempts`). The
-    unit-testable heart; must not import `acpSessionManager` directly.
+  - `phase-runner.ts` — per-phase state machine with INJECTED dependencies
+    (`updatePhase`, `driver`, `getVerifier`, `maxAttempts`). The unit-testable heart;
+    must not import `acpSessionManager` directly.
   - `drivers/session-driver.ts` (`LoopSessionDriver` interface), `drivers/fake-driver.ts`
-    (test double), `drivers/acp-driver.ts` (real driver wrapping `acpSessionManager`,
-    injecting the GitHub `GH_TOKEN` via the agent-env seam).
+    (test double), `drivers/acp-driver.ts` (real driver: `createConversation` →
+    `hydrateConversation` → `acpSessionManager.prompt` → `getChatHistory`; best-effort
+    `GH_TOKEN` injection at agent spawn).
   - `prompt-builder.ts` — phase + retry prompts (including repo/PR facts) and sentinel
     parsing.
   - `runtime/loop-execution-target.ts` + `runtime/loop-command-runner.ts` — resolve a
@@ -241,17 +264,18 @@ network.
 
 ### Task 2: Shared loop domain types and config
 
-- [ ] Create `apps/emdash-desktop/src/shared/core/loops/loops.ts` with the domain types:
+- [x] Create `apps/emdash-desktop/src/shared/core/loops/loops.ts` with the domain types:
   `LoopStatus`, `PhaseStatus`, `VerifierId` (`'unit-tests' | 'github' | 'browser'`),
   `LoopPhase` (`id, name, goal, checks: VerifierId[], status, attempts`), `Loop`
   (`id, taskId, status, currentPhaseIndex, phases, config`), plus type guards
   (`isLoopStatus`, `isTerminalLoopStatus`).
-- [ ] Create `apps/emdash-desktop/src/shared/core/loops/loop-config.ts`: a versioned
-  config schema via `defineVersionedSchema()` holding `{ provider, model }` (version
+- [x] Create `apps/emdash-desktop/src/shared/core/loops/loop-config.ts`: a versioned
+  config schema via `defineVersionedSchema()` (import from
+  `@shared/lib/versioned-schema/versioned-schema`) holding `{ provider, model }` (version
   `'1'`). Keep it minimal.
-- [ ] Add `apps/emdash-desktop/src/shared/core/loops/loops.test.ts` (node) covering the
+- [x] Add `apps/emdash-desktop/src/shared/core/loops/loops.test.ts` (node) covering the
   type guards and a config parse + version round-trip.
-- [ ] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm run typecheck` and
+- [x] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm run typecheck` and
   `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop exec vitest run --project node src/shared/core/loops/loops.test.ts`.
 
 ### Task 3: Database schema, migration, and persistence operations
@@ -279,9 +303,15 @@ network.
   Promise<{ finalText: string }>`.
 - [ ] Create `drivers/fake-driver.ts` — a `FakeLoopDriver` returning queued canned
   `finalText` values. Keep it tiny.
-- [ ] Create `drivers/acp-driver.ts` — real driver: create/reuse a fresh `type:'acp'`
-  conversation for the phase, call `acpSessionManager.prompt(...)`, await `end_turn`,
-  return the final assistant text; honor the `AbortSignal` via `acpSessionManager.cancel`.
+- [ ] Create `drivers/acp-driver.ts` — real driver mirroring the existing conversation
+  flow: create a fresh `type:'acp'` conversation for the phase via `createConversation`
+  (`@main/core/conversations/createConversation`), start it via
+  `hydrateConversation(projectId, taskId, conversationId)` (which resolves the workspace
+  + machine and calls `acpSessionManager.start`; derive `projectId` from the task row),
+  then `await acpSessionManager.prompt(...)` — it resolves when the turn ends — and
+  return the final assistant text read from
+  `acpSessionManager.getChatHistory(conversationId)` (last turn). Honor the
+  `AbortSignal` via `acpSessionManager.cancel`.
 - [ ] Add `drivers/acp-driver.test.ts` (node) with `acpSessionManager` mocked, plus a
   `fake-driver` smoke test.
 - [ ] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm run typecheck` and
@@ -303,9 +333,13 @@ network.
 ### Task 6: Command runner and the unit-tests verifier
 
 - [ ] Create `apps/emdash-desktop/src/main/core/loops/runtime/loop-execution-target.ts`
-  resolving a loop's task to `{ workspaceId, path, machine }` + the existing local/SSH
-  `IExecutionContext` + task env (reuse `resolve-task-workspace-target` and the
-  execution-context factories; do not build a new transport).
+  resolving a loop's task to `{ workspaceId, path, machine }` + an `IExecutionContext`.
+  Mirror the resolution in `conversations/hydrateConversation.ts`:
+  `taskSessionManager.getWorkspaceId(taskId)` → `workspaceRegistry.get(workspaceId)`,
+  machine from `taskSessionManager.getPersistData(taskId)?.sshConnectionId`. Instantiate
+  the existing contexts from
+  `src/main/core/execution-context/{local,ssh}-execution-context.ts`; do not build a new
+  transport.
 - [ ] Create `runtime/loop-command-runner.ts` — `runCommand(ctx, cmd, { cwd, timeoutMs })`
   → `{ exitCode, stdout, stderr, timedOut }`, honoring an `AbortSignal`.
 - [ ] Create `verifiers/types.ts` (`Verifier = { id, run(input): Promise<{ ok, skipped?,
@@ -318,10 +352,11 @@ network.
 
 ### Task 7: GitHub check via emdash's GitHub integration + agent token injection
 
-- [ ] Read `apps/emdash-desktop/src/main/core/github/services/{octokit-provider.ts,github-api-auth-service.ts}`,
-  `.../github/project-github-auth-context.ts`,
-  `apps/emdash-desktop/src/main/core/pull-requests/pr-sync-engine.ts`, and
-  `apps/emdash-desktop/src/main/core/pty/pty-env.ts` (the `providerVars` seam) first.
+- [ ] Read `apps/emdash-desktop/src/main/core/github/services/{octokit-provider.ts,github-api-auth-service.ts,github-api-auth-service-instance.ts,project-github-auth-context.ts}`,
+  `apps/emdash-desktop/src/main/core/pull-requests/pr-sync-engine.ts`,
+  `apps/emdash-desktop/src/main/core/pty/pty-env.ts` (the `providerVars` seam), and
+  `apps/emdash-desktop/src/main/core/acp/transport/local-acp-process-host.ts`
+  (`resolveSpawnContext`) first.
 - [ ] Create `apps/emdash-desktop/src/main/core/loops/github/loop-github-context.ts`:
   given a task, resolve `{ accountId }` via `resolveProjectGitHubAuthContext(projectId)`,
   the repo `nameWithOwner`/host, the branch/PR for the task, and a `GH_TOKEN` via
@@ -332,12 +367,16 @@ network.
   branch/PR. Pass when checks are complete and none failed; return a non-blocking skip
   when there is no connected account or no PR yet; fail only when a check actually failed.
   Register it in `verifiers/registry.ts`. Do NOT invoke the `gh` CLI here.
-- [ ] Pass GitHub context to the phase agent: in `drivers/acp-driver.ts`, inject
-  `GH_TOKEN`/`GITHUB_TOKEN` (from `loop-github-context`) through the existing agent-env
-  `providerVars` seam so the agent can run git/`gh` itself, and pass the repo/PR facts to
-  `buildPhasePrompt`. Keep this minimal — if plumbing `providerVars` through the ACP start
-  path is non-trivial, inject via the conversation env config; do not add a credential
-  helper.
+- [ ] Pass GitHub context to the phase agent. Always: pass the repo/PR facts from
+  `loop-github-context` to `buildPhasePrompt` in `drivers/acp-driver.ts`. Best-effort
+  token: the ACP path has NO per-conversation env seam — env is built once per agent
+  process in `LocalAcpProcessHost.resolveSpawnContext(providerId)`. If a small change
+  suffices (e.g. let `resolveSpawnContext` accept optional extra vars that are merged
+  into `buildAgentEnv`'s `providerVars`, threaded from `acpSessionManager.start`), inject
+  `GH_TOKEN`/`GITHUB_TOKEN` there; note an already-running agent process will not pick up
+  new env. If that plumbing turns invasive, SKIP token injection — prompt facts alone are
+  acceptable — and say so in the commit message. Do not add a credential helper or
+  per-conversation env infrastructure.
 - [ ] Add `verifiers/github.test.ts` and `github/loop-github-context.test.ts` (node) with
   `getOctokit` / `prSyncEngine` / the auth-context resolver mocked, covering pass, fail,
   and the no-account/no-PR skip. No real GitHub calls.
@@ -355,14 +394,15 @@ network.
   `captureScreenshotToClipboard`: get the bound `WebContents`, `await wc.loadURL(url)`
   (reject on `did-fail-load`), read `wc.getTitle()`, and (if `selector`) evaluate
   `wc.executeJavaScript('!!document.querySelector(<sel>)', true)`. Expose it as one
-  `verifyUrl` method on `browserController` (same pattern as the screenshot method).
+  `verifyUrl` method on `browserController` (same pattern as the `captureScreenshot`
+  method).
 - [ ] Create `apps/emdash-desktop/src/main/core/loops/verifiers/browser.ts`: an OPTIONAL
   verifier that resolves the task's ready preview URL via
   `previewServerService.listForWorkspace(...)` + `previewServerUrl(...)` (filter
-  `status.kind === 'ready'`), picks the active browser via `getActiveBrowser()`, calls
-  `verifyUrl`, and passes on `{ ok: true }`. Return a non-blocking skip when no ready URL
-  or no bound browser exists (do not fail the phase for a missing preview). Register it in
-  `verifiers/registry.ts`.
+  `status.kind === 'ready'`), picks the active browser via `getActiveBrowser()` (a
+  browserId string), calls `verifyUrl`, and passes on `{ ok: true }`. Return a
+  non-blocking skip when no ready URL or no bound browser exists (do not fail the phase
+  for a missing preview). Register it in `verifiers/registry.ts`.
 - [ ] Add `verifiers/browser.test.ts` (node) with `browserWebContentsRegistry.verifyUrl`
   and `previewServerService.listForWorkspace` mocked, covering pass (loaded + selector),
   fail (load error), and skip (no ready URL / no bound browser). Add a small unit test for
@@ -373,7 +413,7 @@ network.
 
 - [ ] Create `apps/emdash-desktop/src/main/core/loops/phase-runner.ts` exposing
   `runPhase(deps, loop, phaseIndex, signal)` with injected deps (`updatePhase`, `driver`,
-  `getVerifier`, `getDiff`, `maxAttempts`). Per attempt (up to `maxAttempts`, default 3):
+  `getVerifier`, `maxAttempts`). Per attempt (up to `maxAttempts`, default 3):
   build the prompt, `driver.runTurn`, `parsePhaseOutcome`, and if `done` run every
   selected verifier in order (`unit-tests` first); pass only when all are `ok` (a
   `skipped` verifier counts as ok). Persist each transition
@@ -404,7 +444,8 @@ network.
 - [ ] Create `apps/emdash-desktop/src/main/core/loops/controller.ts` via
   `createRPCController({...})` exposing `create`, `start`, `pause`, `resume`, `cancel`,
   `retry`, `getLoop`, `getLoopByTask`, `listLoops`, delegating to `loopService`. Reject
-  every mutating call when `experiments.loops` is not enabled.
+  every mutating call when `experiments.loops` is not enabled (read via
+  `appSettingsService.get('experiments')` from `@main/core/settings/settings-service`).
 - [ ] Mount it as `loops: loopsController` in `apps/emdash-desktop/src/main/rpc.ts`, and
   call `loopService.initialize()` from `apps/emdash-desktop/src/main/index.ts` boot.
 - [ ] Create `apps/emdash-desktop/src/shared/events/loopEvents.ts` with
@@ -433,7 +474,7 @@ network.
   toggle the `github` and `browser` checks per phase (`unit-tests` is always on and shown
   as fixed), and pick the model. Submit calls `rpc.loops.create` + `rpc.loops.start`.
   Register the entry point (modal in `src/renderer/app/modal-registry.ts` or a section)
-  and gate visibility on `useAppSettingsKey('experiments').loops`.
+  and gate visibility on `useAppSettingsKey('experiments').value?.loops`.
 - [ ] Add `create-loop-form-model.test.ts` (node) covering add/remove/reorder phases, that
   `unit-tests` cannot be removed, and that `github`/`browser` toggle into a phase's checks.
 - [ ] Browser-verify per `.ralphex/prompts/task.txt` STEP 2.5: packaged build, skip GitHub
@@ -472,9 +513,10 @@ of phases, start it, and watch each phase run a fresh ACP agent turn gated on un
 and, optionally, a GitHub PR-checks check (via emdash's connected GitHub account) and an
 in-app browser check (loading the task's preview URL in emdash's built-in browser) —
 retrying up to 3 times before the loop pauses. The phase agent receives GitHub context
-(repo/PR facts + an injected `GH_TOKEN`). Pause, resume, cancel, and retry all work, and a
-running loop survives an app restart by resuming as paused. With the flag off, no loop UI
-renders and loop mutation RPCs are rejected. The feature is delivered in roughly 12-16
-source files plus tests, reusing emdash's existing GitHub and browser/preview
-infrastructure, with none of the `## Non-Goals` ceremony present, and the full
-`## Validation Commands` gate passes with no network or external services.
+in its prompt (repo/PR facts; `GH_TOKEN` injection is best-effort). Pause, resume,
+cancel, and retry all work, and a running loop survives an app restart by resuming as
+paused. With the flag off, no loop UI renders and loop mutation RPCs are rejected. The
+feature is delivered in roughly 12-16 source files plus tests, reusing emdash's existing
+GitHub and browser/preview infrastructure, with none of the `## Non-Goals` ceremony
+present, and the full `## Validation Commands` gate passes with no network or external
+services.
