@@ -412,7 +412,7 @@ network.
 
 ### Task 9: PhaseRunner attempt state machine
 
-- [ ] Create `apps/emdash-desktop/src/main/core/loops/phase-runner.ts` exposing
+- [x] Create `apps/emdash-desktop/src/main/core/loops/phase-runner.ts` exposing
   `runPhase(deps, loop, phaseIndex, signal)` with injected deps (`updatePhase`, `driver`,
   `getVerifier`, `maxAttempts`). Per attempt (up to `maxAttempts`, default 3):
   build the prompt, `driver.runTurn`, `parsePhaseOutcome`, and if `done` run every
@@ -420,10 +420,10 @@ network.
   `skipped` verifier counts as ok). Persist each transition
   (`running`→`verifying`→`passed`/`failed`). On the final failed attempt return `failed`.
   Honor the `AbortSignal`. Do NOT import `acpSessionManager` here.
-- [ ] Add `phase-runner.test.ts` (node) using `FakeLoopDriver` + fake verifiers, covering:
+- [x] Add `phase-runner.test.ts` (node) using `FakeLoopDriver` + fake verifiers, covering:
   pass on attempt 1, fail-then-pass, 3-attempt cap → `failed`, verifier hard-failure →
   retry, a `skipped` verifier still passing, and cancel via signal.
-- [ ] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop exec vitest run --project node src/main/core/loops/phase-runner.test.ts`.
+- [x] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop exec vitest run --project node src/main/core/loops/phase-runner.test.ts`.
 
 ### Task 10: LoopService orchestrator and crash-resume
 
