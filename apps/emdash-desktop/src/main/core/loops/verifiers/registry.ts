@@ -1,4 +1,5 @@
 import type { VerifierId } from '@shared/core/loops/loops';
+import { createBrowserVerifier } from './browser';
 import { createGithubVerifier } from './github';
 import type { Verifier } from './types';
 import { createUnitTestsVerifier } from './unit-tests';
@@ -10,6 +11,7 @@ import { createUnitTestsVerifier } from './unit-tests';
 const VERIFIER_FACTORIES: Partial<Record<VerifierId, () => Verifier>> = {
   'unit-tests': () => createUnitTestsVerifier(),
   github: () => createGithubVerifier(),
+  browser: () => createBrowserVerifier(),
 };
 
 export function getVerifier(id: VerifierId): Verifier | undefined {
