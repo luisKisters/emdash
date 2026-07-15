@@ -3,6 +3,7 @@ import {
   appSettingsSchema,
   type browserSettingsSchema,
   type changesViewModeSchema,
+  type experimentsSettingsSchema,
   type interfaceSettingsSchema,
   type localProjectSettingsSchema,
   type notificationSettingsSchema,
@@ -17,6 +18,7 @@ export type LocalProjectSettings = z.infer<typeof localProjectSettingsSchema>;
 export type ProjectSettings = z.infer<typeof projectSettingsSchema>;
 export type NotificationSettings = z.infer<typeof notificationSettingsSchema>;
 export type TaskSettings = z.infer<typeof taskSettingsSchema>;
+export type ExperimentsSettings = z.infer<typeof experimentsSettingsSchema>;
 export type TerminalSettings = z.infer<typeof terminalSettingsSchema>;
 export type Theme = z.infer<typeof themeSchema>;
 

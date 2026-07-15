@@ -39,6 +39,11 @@ export const taskSettingsSchema = z.object({
   createBranchAndWorktree: z.boolean(),
   preserveNameCapitalization: z.boolean(),
   includeIssueContextByDefault: z.boolean(),
+  maxLoopAttempts: z.number().int().min(1).default(3),
+});
+
+export const experimentsSettingsSchema = z.object({
+  loops: z.boolean().default(false),
 });
 
 export const terminalSettingsSchema = z.object({
@@ -147,6 +152,7 @@ export const APP_SETTINGS_SCHEMA_MAP = {
   browser: browserSettingsSchema,
   resourceMonitor: resourceMonitorSettingsSchema,
   changesViewMode: changesViewModeSchema,
+  experiments: experimentsSettingsSchema,
 } as const;
 
 export const appSettingsSchema = z.object({
@@ -164,4 +170,5 @@ export const appSettingsSchema = z.object({
   browser: browserSettingsSchema,
   resourceMonitor: resourceMonitorSettingsSchema,
   changesViewMode: changesViewModeSchema,
+  experiments: experimentsSettingsSchema,
 });

@@ -225,18 +225,18 @@ network.
 
 ### Task 1: Experiments flag (inert gate)
 
-- [ ] Read `AGENTS.md`, `agents/conventions/typescript.md`, this whole plan, and
+- [x] Read `AGENTS.md`, `agents/conventions/typescript.md`, this whole plan, and
   `apps/emdash-desktop/src/main/core/settings/{schema.ts,settings-registry.ts}` +
   `apps/emdash-desktop/src/shared/core/app-settings.ts` before editing.
-- [ ] Add an `experiments` settings group with a boolean `loops` (default `false`) to
+- [x] Add an `experiments` settings group with a boolean `loops` (default `false`) to
   `schema.ts` (`APP_SETTINGS_SCHEMA_MAP`), its default in `settings-registry.ts`, and its
   type in `@shared/core/app-settings`. Add `maxLoopAttempts` (number, default `3`) to the
   existing `tasks` settings group.
-- [ ] Do NOT add any loop code yet — only the settings keys and defaults.
-- [ ] Add a unit test (`node` project, e.g.
+- [x] Do NOT add any loop code yet — only the settings keys and defaults.
+- [x] Add a unit test (`node` project, e.g.
   `src/main/core/settings/experiments-settings.test.ts`) asserting `experiments.loops`
   defaults to `false`, round-trips, and `maxLoopAttempts` defaults to `3`.
-- [ ] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm run typecheck` and
+- [x] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm run typecheck` and
   `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop exec vitest run --project node src/main/core/settings`.
 
 ### Task 2: Shared loop domain types and config
