@@ -1,5 +1,5 @@
-import { eq } from 'drizzle-orm';
 import { isOk, type Result } from '@emdash/shared';
+import { eq } from 'drizzle-orm';
 import type { GitHubApiAuthContext } from '@main/core/github/services/github-api-auth-service';
 import type { PrSyncEngineError } from '@main/core/pull-requests/pr-sync-errors';
 import { resolveLoopGithubContext } from '../github/loop-github-context';

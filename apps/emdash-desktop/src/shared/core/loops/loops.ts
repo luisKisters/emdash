@@ -24,13 +24,7 @@ export type Loop = {
   config: LoopConfig;
 };
 
-const LOOP_STATUSES: readonly LoopStatus[] = [
-  'draft',
-  'running',
-  'paused',
-  'completed',
-  'failed',
-];
+const LOOP_STATUSES: readonly LoopStatus[] = ['draft', 'running', 'paused', 'completed', 'failed'];
 
 const TERMINAL_LOOP_STATUSES: readonly LoopStatus[] = ['completed', 'failed'];
 

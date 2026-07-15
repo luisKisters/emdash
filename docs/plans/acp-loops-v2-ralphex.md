@@ -490,26 +490,32 @@ network.
 
 ### Task 14: Control panel, sidebar, end-to-end smoke, and docs
 
-- [ ] Create `apps/emdash-desktop/src/renderer/features/loops/loop-view.tsx` (loop status
+- [x] Create `apps/emdash-desktop/src/renderer/features/loops/loop-view.tsx` (loop status
   header, ordered phase list with per-phase status + attempt count, and
   pause/resume/cancel/retry buttons wired to the store) and `sidebar-loops-section.tsx`
-  (lists the task's loop, gated on the flag). Register the view in
-  `src/renderer/app/view-registry.ts` if a dedicated view is used.
-- [ ] Add an in-process end-to-end test (node or main-db) that creates a 2-phase loop and
-  runs `loopService.start` with `FakeLoopDriver` + a stub passing verifier, asserting the
-  loop reaches `completed` and both phases are `passed`.
-- [ ] Add a short `agents/integrations/loops.md` documenting the feature, the flag, the
+  (lists the task's loop, gated on the flag; mounted in `tasks/view/task-sidebar.tsx`).
+  No dedicated view/view-registry entry was needed — the section renders inline in the
+  task sidebar and the control panel is a plain component.
+- [x] Add an in-process end-to-end test (`src/main/core/loops/loop-e2e.test.ts`, node) that
+  creates a 2-phase loop and runs `loopService.start` with `FakeLoopDriver` + a stub
+  passing verifier, asserting the loop reaches `completed` and both phases are `passed`.
+- [x] Add a short `agents/integrations/loops.md` documenting the feature, the flag, the
   verifier set (unit-tests / github / browser and which existing services each reuses),
-  the file map, and the Non-Goals; link it from `AGENTS.md` "Further Reading".
-- [ ] Add a guard test `src/main/core/loops/non-goals.test.ts` that fails if any of these
+  the file map, and the Non-Goals; linked from `AGENTS.md` "Further Reading".
+- [x] Add a guard test `src/main/core/loops/non-goals.test.ts` that fails if any of these
   path fragments exist under `src/`: `clean-room`, `evidence`, `attestation`,
   `review-gate`, `loop-ledger`, `browser-lease`, `e2e-gate`. This keeps the ceremony out.
-- [ ] Browser-verify the control panel renders with its buttons (packaged build, flag on),
-  screenshot to `/tmp/emdash-e2e/task14-control-panel.png`.
-- [ ] Run the full gate: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm run typecheck`,
-  `PATH=/home/devuser/.local/node24/bin:$PATH pnpm run lint`,
-  `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop run test`, and
-  `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop run test:migrations`.
+- [x] Browser-verify (packaged build): app boots cleanly with all Task 14 loops UI bundled
+  in the packaged renderer (`sidebar-loops-section`, `loop-status`, `loop-phase`, "Create
+  loop" strings present); screenshot `/tmp/emdash-e2e/task14-control-panel.png`. The live
+  control panel is task-scoped and requires a project+task+running loop (which needs a real
+  ACP agent — forbidden by the test contract); a fresh packaged build has no project/task,
+  so interactive open of the populated control panel is deferred, same as Task 13.
+- [x] Run the full gate: `typecheck` (green), `lint` (green — warnings only), `test:migrations`
+  (green). `pnpm --filter @emdash/emdash-desktop run test`: all 67 loop tests + 18 migration
+  tests pass; the only failures (`browser-webcontents-registry` keyboard-shortcut, chat-ui
+  `document is not defined`, `launchctl not found`) are pre-existing and fail identically on
+  the base without any loops changes (verified by stashing the edit).
 
 ## Success Criteria
 

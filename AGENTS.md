@@ -406,6 +406,7 @@ after every task).
 - [Remote development workflow](agents/workflows/remote-development.md)
 - [Provider integration](agents/integrations/providers.md)
 - [MCP integration](agents/integrations/mcp.md)
+- [Loops integration](agents/integrations/loops.md)
 - [IPC conventions](agents/conventions/ipc.md)
 - [Main-process patterns](agents/conventions/main-patterns.md)
 - [Renderer patterns](agents/conventions/renderer-patterns.md)

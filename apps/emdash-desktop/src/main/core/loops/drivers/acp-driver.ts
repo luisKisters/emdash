@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto';
+import { isErr } from '@emdash/shared';
 import { eq } from 'drizzle-orm';
 import { acpSessionManager } from '@main/core/acp/production-acp-session-manager';
 import { createConversation } from '@main/core/conversations/createConversation';
 import { hydrateConversation } from '@main/core/conversations/hydrateConversation';
 import { db } from '@main/db/client';
 import { tasks } from '@main/db/schema';
-import { isErr } from '@emdash/shared';
 import type { AgentProviderId } from '@shared/core/agents/agent-provider-registry';
 import { resolveLoopGithubContext, toGithubFacts } from '../github/loop-github-context';
 import { renderGithubFacts } from '../prompt-builder';
@@ -53,7 +53,9 @@ export class AcpLoopDriver implements LoopSessionDriver {
     // Always give the phase agent GitHub context (repo/PR facts) in its prompt.
     // Token injection into the agent process is intentionally NOT done here: the ACP
     // process is shared per provider+machine with no per-conversation env seam.
-    const githubFacts = renderGithubFacts(toGithubFacts(await resolveLoopGithubContext(input.taskId)));
+    const githubFacts = renderGithubFacts(
+      toGithubFacts(await resolveLoopGithubContext(input.taskId))
+    );
     const prompt = githubFacts ? `${input.prompt}\n${githubFacts}` : input.prompt;
 
     const onAbort = () => {
