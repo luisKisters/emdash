@@ -179,6 +179,49 @@ export class BrowserWebContentsRegistry {
     }
   }
 
+  /**
+   * Loads `url` in the browser's bound WebContents and asserts the page loaded:
+   * a non-empty title and, when a `selector` is given, that the selector matches.
+   * Used by the loop `browser` verifier; mirrors `captureScreenshotToClipboard` by
+   * operating on the already-registered WebContents rather than creating a new one.
+   */
+  async verifyUrl(
+    browserId: string,
+    url: string,
+    options: { selector?: string; waitMs?: number } = {}
+  ): Promise<{ ok: boolean; title: string; error?: string }> {
+    const webContents = this.webContentsByBrowserId.get(browserId);
+    if (!webContents || webContents.isDestroyed()) {
+      return { ok: false, title: '', error: 'no bound browser' };
+    }
+    try {
+      await webContents.loadURL(url);
+      if (options.waitMs && options.waitMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, options.waitMs));
+      }
+      const title = webContents.getTitle();
+      if (options.selector) {
+        const matched = await webContents.executeJavaScript(
+          `!!document.querySelector(${JSON.stringify(options.selector)})`,
+          true
+        );
+        if (!matched) {
+          return { ok: false, title, error: `selector not found: ${options.selector}` };
+        }
+      }
+      if (!title) {
+        return { ok: false, title, error: 'empty title' };
+      }
+      return { ok: true, title };
+    } catch (error) {
+      return {
+        ok: false,
+        title: '',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
   async clearData(browserId: string, kind: BrowserDataClearKind = 'storage'): Promise<boolean> {
     const registered = this.sessionsByBrowserId.get(browserId);
     if (!registered) return false;

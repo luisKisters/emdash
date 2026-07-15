@@ -44,6 +44,9 @@ function fakeWebContents(partition: string = PROFILE_PARTITION): FakeWebContents
     close: vi.fn(),
     isDestroyed: () => false,
     getURL: () => 'https://example.com',
+    getTitle: () => 'Example Title',
+    loadURL: vi.fn(async () => {}),
+    executeJavaScript: vi.fn(async () => true),
     getUserAgent: () => 'base-ua',
     setUserAgent: vi.fn(),
     openDevTools: vi.fn(),
@@ -367,5 +370,60 @@ describe('BrowserWebContentsRegistry', () => {
         'webSQL',
       ],
     });
+  });
+
+  function boundRegistry(): { registry: BrowserWebContentsRegistry; webContents: FakeWebContents } {
+    const registry = new BrowserWebContentsRegistry();
+    registry.registerSession({ browserId: 'browser-1', partition: PROFILE_PARTITION });
+    const webContents = fakeWebContents();
+    registry.handleWebviewAttached(webContents);
+    registry.bindWebContents('browser-1', webContents);
+    return { registry, webContents };
+  }
+
+  it('verifyUrl loads the url and reports ok with the page title', async () => {
+    const { registry, webContents } = boundRegistry();
+
+    const result = await registry.verifyUrl('browser-1', 'http://localhost:5173/');
+
+    expect(webContents.loadURL).toHaveBeenCalledWith('http://localhost:5173/');
+    expect(result).toEqual({ ok: true, title: 'Example Title' });
+  });
+
+  it('verifyUrl checks a selector when provided', async () => {
+    const { registry, webContents } = boundRegistry();
+
+    const ok = await registry.verifyUrl('browser-1', 'http://localhost:5173/', {
+      selector: '#root',
+    });
+    expect(ok.ok).toBe(true);
+    expect(webContents.executeJavaScript).toHaveBeenCalledWith(
+      '!!document.querySelector("#root")',
+      true
+    );
+
+    webContents.executeJavaScript = vi.fn(async () => false);
+    const missing = await registry.verifyUrl('browser-1', 'http://localhost:5173/', {
+      selector: '#missing',
+    });
+    expect(missing.ok).toBe(false);
+    expect(missing.error).toContain('#missing');
+  });
+
+  it('verifyUrl fails when the page fails to load', async () => {
+    const { registry, webContents } = boundRegistry();
+    webContents.loadURL = vi.fn(async () => {
+      throw new Error('ERR_CONNECTION_REFUSED');
+    });
+
+    const result = await registry.verifyUrl('browser-1', 'http://localhost:5173/');
+    expect(result.ok).toBe(false);
+    expect(result.error).toContain('ERR_CONNECTION_REFUSED');
+  });
+
+  it('verifyUrl fails (no bound browser) when the browser id is unknown', async () => {
+    const registry = new BrowserWebContentsRegistry();
+    const result = await registry.verifyUrl('missing', 'http://localhost:5173/');
+    expect(result).toEqual({ ok: false, title: '', error: 'no bound browser' });
   });
 });

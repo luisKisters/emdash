@@ -382,30 +382,33 @@ network.
 
 ### Task 8: In-app browser check (reuse the existing browser + preview infra)
 
-- [ ] Read `apps/emdash-desktop/src/main/core/browser/browser-webcontents-registry.ts`
+- [x] Read `apps/emdash-desktop/src/main/core/browser/browser-webcontents-registry.ts`
   (esp. `captureScreenshotToClipboard`, `getActiveBrowser`, `webContentsByBrowserId`),
   `apps/emdash-desktop/src/main/core/browser/controller.ts`,
   `apps/emdash-desktop/src/main/core/preview-servers/preview-server-service.ts`, and
   `apps/emdash-desktop/src/shared/core/preview-servers/types.ts` first.
-- [ ] Add ONE method `verifyUrl(browserId, url, { selector?, waitMs? }): Promise<{ ok,
+- [x] Add ONE method `verifyUrl(browserId, url, { selector?, waitMs? }): Promise<{ ok,
   title, error? }>` to `browser-webcontents-registry.ts`, mirroring
   `captureScreenshotToClipboard`: get the bound `WebContents`, `await wc.loadURL(url)`
   (reject on `did-fail-load`), read `wc.getTitle()`, and (if `selector`) evaluate
   `wc.executeJavaScript('!!document.querySelector(<sel>)', true)`. Expose it as one
   `verifyUrl` method on `browserController` (same pattern as the `captureScreenshot`
   method).
-- [ ] Create `apps/emdash-desktop/src/main/core/loops/verifiers/browser.ts`: an OPTIONAL
+- [x] Create `apps/emdash-desktop/src/main/core/loops/verifiers/browser.ts`: an OPTIONAL
   verifier that resolves the task's ready preview URL via
   `previewServerService.listForWorkspace(...)` + `previewServerUrl(...)` (filter
   `status.kind === 'ready'`), picks the active browser via `getActiveBrowser()` (a
   browserId string), calls `verifyUrl`, and passes on `{ ok: true }`. Return a
   non-blocking skip when no ready URL or no bound browser exists (do not fail the phase
   for a missing preview). Register it in `verifiers/registry.ts`.
-- [ ] Add `verifiers/browser.test.ts` (node) with `browserWebContentsRegistry.verifyUrl`
+- [x] Add `verifiers/browser.test.ts` (node) with `browserWebContentsRegistry.verifyUrl`
   and `previewServerService.listForWorkspace` mocked, covering pass (loaded + selector),
   fail (load error), and skip (no ready URL / no bound browser). Add a small unit test for
   `verifyUrl` itself with a faked `WebContents`.
-- [ ] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop exec vitest run --project node src/main/core/loops/verifiers/browser.test.ts src/main/core/browser`.
+- [x] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop exec vitest run --project node src/main/core/loops/verifiers/browser.test.ts src/main/core/browser`.
+  (New browser verifier + verifyUrl tests pass; one pre-existing keyboard-shortcut test
+  in `browser-webcontents-registry.test.ts` fails on the untouched base too — not this
+  task's code.)
 
 ### Task 9: PhaseRunner attempt state machine
 
