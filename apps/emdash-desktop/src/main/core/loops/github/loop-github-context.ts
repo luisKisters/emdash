@@ -1,7 +1,7 @@
-import { and, eq } from 'drizzle-orm';
 import { isOk, type Result } from '@emdash/shared';
-import type { GitHubApiAuthContext } from '@main/core/github/services/github-api-auth-service';
+import { and, eq } from 'drizzle-orm';
 import type { GitHubApiAuthError } from '@main/core/github/services/github-api-auth-errors';
+import type { GitHubApiAuthContext } from '@main/core/github/services/github-api-auth-service';
 import type { ProjectPullRequestContext } from '@main/core/pull-requests/project-pull-request-context';
 import type { PullRequestError } from '@shared/core/pull-requests/pull-requests';
 import type { GithubFacts } from '../prompt-builder';
@@ -70,9 +70,8 @@ const defaultDeps: LoopGithubContextDeps = {
     return row?.branchName ?? null;
   },
   async resolveProjectContext(projectId) {
-    const { resolveProjectPullRequestContext } = await import(
-      '@main/core/pull-requests/project-pull-request-context'
-    );
+    const { resolveProjectPullRequestContext } =
+      await import('@main/core/pull-requests/project-pull-request-context');
     return resolveProjectPullRequestContext(projectId);
   },
   async loadPullRequest(repositoryUrl, branch) {
@@ -92,9 +91,8 @@ const defaultDeps: LoopGithubContextDeps = {
     return row ?? null;
   },
   async getToken(host, authContext) {
-    const { githubApiAuthService } = await import(
-      '@main/core/github/services/github-api-auth-service-instance'
-    );
+    const { githubApiAuthService } =
+      await import('@main/core/github/services/github-api-auth-service-instance');
     return githubApiAuthService.getToken(host, authContext);
   },
 };
