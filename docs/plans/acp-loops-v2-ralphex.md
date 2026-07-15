@@ -319,16 +319,16 @@ network.
 
 ### Task 5: Prompt builder and sentinel parsing
 
-- [ ] Create `apps/emdash-desktop/src/main/core/loops/prompt-builder.ts` with
+- [x] Create `apps/emdash-desktop/src/main/core/loops/prompt-builder.ts` with
   `buildPhasePrompt(phase, { priorSummary?, github? })`, `buildRetryPrompt(phase,
   lastFailure)`, and `parsePhaseOutcome(text): 'done' | 'failed' | 'unknown'` recognizing
   `<<<LOOP:PHASE_DONE>>>` and `<<<LOOP:PHASE_FAILED>>>`. When `github` facts are provided
   (repo `nameWithOwner`, host, branch/PR), include them as plain text so the agent has
   GitHub context. Prompts instruct the agent to emit exactly one sentinel and work only
   the current phase goal.
-- [ ] Add `prompt-builder.test.ts` (node) covering both sentinels, the unknown case, that
+- [x] Add `prompt-builder.test.ts` (node) covering both sentinels, the unknown case, that
   a retry prompt includes the prior failure, and that github facts appear when provided.
-- [ ] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop exec vitest run --project node src/main/core/loops/prompt-builder.test.ts`.
+- [x] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop exec vitest run --project node src/main/core/loops/prompt-builder.test.ts`.
 
 ### Task 6: Command runner and the unit-tests verifier
 
