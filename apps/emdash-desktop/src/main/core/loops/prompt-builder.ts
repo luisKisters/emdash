@@ -18,7 +18,8 @@ export const PHASE_FAILED_SENTINEL = '<<<LOOP:PHASE_FAILED>>>';
 
 export type PhaseOutcome = 'done' | 'failed' | 'unknown';
 
-function githubSection(github?: GithubFacts): string {
+/** Renders repo/PR facts as a plain-text block, or `''` when nothing is known. */
+export function renderGithubFacts(github?: GithubFacts): string {
   if (!github) return '';
   const lines: string[] = [];
   if (github.nameWithOwner) lines.push(`- Repository: ${github.nameWithOwner}`);
@@ -48,7 +49,7 @@ export function buildPhasePrompt(
   if (context.priorSummary) {
     parts.push(`Result of the previous phase:\n${context.priorSummary}`);
   }
-  const gh = githubSection(context.github);
+  const gh = renderGithubFacts(context.github);
   if (gh) parts.push(gh.trim());
   parts.push(sentinelInstructions());
   return parts.join('\n\n');
