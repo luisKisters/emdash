@@ -298,12 +298,12 @@ network.
 
 ### Task 4: Loop session driver interface, fake driver, and ACP driver
 
-- [ ] Create `apps/emdash-desktop/src/main/core/loops/drivers/session-driver.ts` defining
+- [x] Create `apps/emdash-desktop/src/main/core/loops/drivers/session-driver.ts` defining
   `LoopSessionDriver` with `runTurn(input: { taskId, conversationId?, prompt, signal }):
   Promise<{ finalText: string }>`.
-- [ ] Create `drivers/fake-driver.ts` — a `FakeLoopDriver` returning queued canned
+- [x] Create `drivers/fake-driver.ts` — a `FakeLoopDriver` returning queued canned
   `finalText` values. Keep it tiny.
-- [ ] Create `drivers/acp-driver.ts` — real driver mirroring the existing conversation
+- [x] Create `drivers/acp-driver.ts` — real driver mirroring the existing conversation
   flow: create a fresh `type:'acp'` conversation for the phase via `createConversation`
   (`@main/core/conversations/createConversation`), start it via
   `hydrateConversation(projectId, taskId, conversationId)` (which resolves the workspace
@@ -312,9 +312,9 @@ network.
   return the final assistant text read from
   `acpSessionManager.getChatHistory(conversationId)` (last turn). Honor the
   `AbortSignal` via `acpSessionManager.cancel`.
-- [ ] Add `drivers/acp-driver.test.ts` (node) with `acpSessionManager` mocked, plus a
+- [x] Add `drivers/acp-driver.test.ts` (node) with `acpSessionManager` mocked, plus a
   `fake-driver` smoke test.
-- [ ] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm run typecheck` and
+- [x] Run: `PATH=/home/devuser/.local/node24/bin:$PATH pnpm run typecheck` and
   `PATH=/home/devuser/.local/node24/bin:$PATH pnpm --filter @emdash/emdash-desktop exec vitest run --project node src/main/core/loops/drivers`.
 
 ### Task 5: Prompt builder and sentinel parsing
