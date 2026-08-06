@@ -1,6 +1,7 @@
-import { chmod, mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
+import { mkdir, mkdtemp, readdir, readFile, rm, stat, writeFile } from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { IFileSystem } from '@emdash/core/files';
 import { ok } from '@emdash/shared';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -25,6 +26,10 @@ async function fixture(files: Record<string, string>): Promise<string> {
 
 function packageJson(value: Record<string, unknown>): string {
   return JSON.stringify(value, null, 2);
+}
+
+function checkedInFixture(name: 'summario' | 'notetakr'): string {
+  return path.join(path.dirname(fileURLToPath(import.meta.url)), '__fixtures__', name);
 }
 
 function localFixtureFileSystem(): IFileSystem {
@@ -68,34 +73,20 @@ function localFixtureFileSystem(): IFileSystem {
 
 describe('detectVerifiers', () => {
   it('puts the Summario aggregate first and suppresses only commands that it contains', async () => {
-    const root = await fixture({
-      'package.json': packageJson({
-        scripts: {
-          'test:phase': 'pnpm test && pnpm typecheck && pnpm lint && pnpm build',
-          test: 'vitest run',
-          lint: 'eslint .',
-          typecheck: 'tsc --noEmit',
-          build: 'next build',
-          format: 'prettier --check .',
-        },
-        devDependencies: { convex: '^1', eslint: '^9', typescript: '^6', vitest: '^4' },
-      }),
-      'pnpm-lock.yaml': '',
-      'tsconfig.json': '{}',
-      'convex/schema.ts': 'export default {};',
-    });
-
-    const result = await detectVerifiers(localFixtureFileSystem(), root, 'codex');
+    const result = await detectVerifiers(
+      localFixtureFileSystem(),
+      checkedInFixture('summario'),
+      'codex'
+    );
 
     expect(result.map(({ id }) => id)).toEqual([
       'package:root:test:phase',
-      'package:root:format',
       'tool:root:convex',
       'agent-browser',
     ]);
     expect(result[0]).toMatchObject({ command: 'pnpm test:phase', class: 'custom' });
-    expect(result[2]).toMatchObject({ command: 'pnpm exec convex deploy --dry-run', class: 'db' });
-    expect(result[3]).toEqual({
+    expect(result[1]).toMatchObject({ command: 'npx convex deploy --dry-run', class: 'db' });
+    expect(result[2]).toEqual({
       id: 'agent-browser',
       class: 'browser',
       label: 'Codex computer use',
@@ -105,25 +96,21 @@ describe('detectVerifiers', () => {
   });
 
   it('detects the executable Notetakr gate without hiding an unrelated verifier', async () => {
-    const root = await fixture({
-      'package.json': packageJson({
-        scripts: { test: 'jest', lint: 'eslint .', typecheck: 'tsc --noEmit' },
-        devDependencies: { eslint: '^9', jest: '^30', typescript: '^6' },
-      }),
-      'package-lock.json': '{}',
-      'tsconfig.json': '{}',
-      'scripts/verify.sh': '#!/bin/sh\nnpm test\nnpm run lint\n',
-    });
-    await chmod(path.join(root, 'scripts/verify.sh'), 0o755);
+    const result = await detectVerifiers(
+      localFixtureFileSystem(),
+      checkedInFixture('notetakr'),
+      'claude'
+    );
+    const byId = new Map(result.map((verifier) => [verifier.id, verifier]));
 
-    const result = await detectVerifiers(localFixtureFileSystem(), root, 'claude');
-
-    expect(result.map(({ id }) => id)).toEqual([
-      'script:scripts/verify.sh',
-      'package:root:typecheck',
-      'agent-browser',
-    ]);
+    expect(result[0]?.id).toBe('script:scripts/verify.sh');
     expect(result[0]?.command).toBe('./scripts/verify.sh');
+    expect(byId.get('tool:root:swift')?.command).toBe('swift test');
+    expect(byId.get('tool:root:xcode-ui-tests:NoteTakrUITests')?.command).toBe(
+      'xcodebuild test -only-testing:NoteTakrUITests'
+    );
+    expect(byId.get('tool:root:design-diff')?.command).toBe('./Tools/design-diff');
+    expect(byId.get('package:convex:test')?.command).toBe('cd convex && npm run test');
     expect(result.at(-1)?.label).toBe('Claude computer use');
   });
 
