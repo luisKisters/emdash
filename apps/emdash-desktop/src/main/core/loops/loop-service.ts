@@ -12,9 +12,12 @@ import {
   type CreateLoopParams,
   type Loop,
   type LoopPhase,
+  type LoopProviderId,
   type LoopVerifierAvailability,
   type LoopWithPhases,
 } from '@shared/core/loops/loops';
+import type { DetectedVerifier } from '@shared/core/loops/verifier-catalog';
+import { detectVerifiers as detectRepoVerifiers } from './detection/detect-verifiers';
 import { getLoopSessionDriver } from './drivers/driver-registry';
 import type { LoopSessionDriver } from './drivers/session-driver';
 import {
@@ -48,6 +51,16 @@ export type LoopServiceError =
   | { kind: 'invalid-state'; message: string }
   | { kind: 'workspace-unavailable'; message: string }
   | { kind: 'run-failed'; message: string };
+
+export type DetectVerifiersParams = {
+  projectId: string;
+  provider: LoopProviderId;
+};
+
+export type DetectVerifiersResult = {
+  verifiers: DetectedVerifier[];
+  availability: LoopVerifierAvailability[];
+};
 
 export const DEFAULT_LOOP_STOP_SETTLEMENT_TIMEOUT_MS = 10_000;
 
@@ -325,18 +338,46 @@ export class LoopService {
       );
     }
 
-    const availability = await Promise.all(
+    return ok(await this.checkVerifierAvailability(cwd.data));
+  }
+
+  async detectVerifiers(
+    params: DetectVerifiersParams
+  ): Promise<Result<DetectVerifiersResult, LoopServiceError>> {
+    const enabled = this.requireEnabled();
+    if (!enabled.success) return enabled;
+    const project = projectManager.getProject(params.projectId);
+    if (!project) {
+      return err({
+        kind: 'workspace-unavailable',
+        message: `Project is not open: ${params.projectId}`,
+      });
+    }
+
+    const browserLabel = params.provider === 'codex' ? 'Codex computer use' : 'Claude computer use';
+    const [verifiers, availability] = await Promise.all([
+      detectRepoVerifiers(project.fileSystem, project.repoPath, params.provider),
+      this.checkVerifierAvailability(project.repoPath, browserLabel),
+    ]);
+    return ok({ verifiers, availability });
+  }
+
+  private async checkVerifierAvailability(
+    cwd: string,
+    browserLabel = 'Native Browser Preview'
+  ): Promise<LoopVerifierAvailability[]> {
+    return await Promise.all(
       VERIFIER_IDS.map(async (id) => {
         const verifier = getVerifier(id);
         if (!verifier) {
           return {
             id,
-            label: 'Native Browser Preview',
+            label: browserLabel,
             available: false,
             reason: 'Browser verification is provided by the v2 clean-room E2E gate',
           };
         }
-        const result = await verifier.checkAvailability(cwd.data);
+        const result = await verifier.checkAvailability(cwd);
         return {
           id,
           label: verifier.label,
@@ -345,8 +386,6 @@ export class LoopService {
         };
       })
     );
-
-    return ok(availability);
   }
 
   async startLoop(loopId: string): Promise<Result<LoopWithPhases, LoopServiceError>> {

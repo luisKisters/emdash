@@ -19,6 +19,8 @@ const resolveTaskWorkspaceTargetMock = vi.hoisted(() => vi.fn());
 const resolveLoopExecutionTargetMock = vi.hoisted(() => vi.fn());
 const getTasksMock = vi.hoisted(() => vi.fn());
 const getPluginMock = vi.hoisted(() => vi.fn());
+const getProjectMock = vi.hoisted(() => vi.fn());
+const getVerifierMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@main/lib/events', () => ({
   events: { emit: emitMock },
@@ -67,13 +69,10 @@ vi.mock('./runtime/loop-execution-target', () => ({
 vi.mock('@main/core/tasks/operations/getTasks', () => ({ getTasks: getTasksMock }));
 
 vi.mock('@main/core/projects/project-manager', () => ({
-  projectManager: {
-    getProject: vi.fn(() => ({
-      repoPath: '/project',
-      settings: { get: vi.fn(async () => ({ defaultBranch: 'main' })) },
-    })),
-  },
+  projectManager: { getProject: getProjectMock },
 }));
+
+vi.mock('./verifiers/registry', () => ({ getVerifier: getVerifierMock }));
 
 const loop: Loop = {
   id: 'loop-1',
@@ -87,6 +86,82 @@ const loop: Loop = {
   createdAt: '2026-01-01T00:00:00.000Z',
   updatedAt: '2026-01-01T00:00:00.000Z',
 };
+
+beforeEach(() => {
+  getProjectMock.mockReturnValue({
+    repoPath: '/project',
+    fileSystem: {
+      glob: () =>
+        ok(
+          (async function* () {
+            // Empty repository fixture for tests that do not use detection.
+          })()
+        ),
+    },
+    settings: { get: vi.fn(async () => ({ defaultBranch: 'main' })) },
+  });
+  getVerifierMock.mockReturnValue(undefined);
+});
+
+describe('LoopService verifier detection', () => {
+  it('returns repo-root detection and availability without a task workspace', async () => {
+    const repoPath = '/remote/Project Root';
+    const packagePath = `${repoPath}/package.json`;
+    const lockPath = `${repoPath}/package-lock.json`;
+    const checkedCwds: string[] = [];
+    getProjectMock.mockReturnValue({
+      repoPath,
+      fileSystem: {
+        glob: (_patterns: string[], options: { cwd: string }) => {
+          expect(options.cwd).toBe(repoPath);
+          return ok(
+            (async function* () {
+              yield packagePath;
+              yield lockPath;
+            })()
+          );
+        },
+        readText: async (absolute: string) => {
+          const content =
+            absolute === packagePath
+              ? JSON.stringify({ scripts: { test: 'jest --runInBand' } })
+              : '{}';
+          return ok({ content, truncated: false, totalSize: content.length });
+        },
+      },
+    });
+    getVerifierMock.mockImplementation((id: string) => {
+      if (id === 'agent-browser') return undefined;
+      return {
+        id,
+        label: `${id} verifier`,
+        checkAvailability: async (cwd: string) => {
+          checkedCwds.push(cwd);
+          return ok({ available: true });
+        },
+      };
+    });
+    pauseRunningLoopsForBootMock.mockResolvedValue([]);
+    const service = new LoopService();
+    await service.initialize(true);
+
+    const result = await service.detectVerifiers({ projectId: 'project-1', provider: 'claude' });
+
+    expect(result).toMatchObject({ success: true });
+    if (!result.success) return;
+    expect(result.data.verifiers.map(({ id }) => id)).toEqual([
+      'package:root:test',
+      'agent-browser',
+    ]);
+    expect(result.data.availability.at(-1)).toMatchObject({
+      id: 'agent-browser',
+      label: 'Claude computer use',
+      available: false,
+    });
+    expect(checkedCwds).toEqual([repoPath, repoPath, repoPath]);
+    expect(resolveTaskWorkspaceTargetMock).not.toHaveBeenCalled();
+  });
+});
 
 describe('LoopService boot recovery', () => {
   beforeEach(() => {
