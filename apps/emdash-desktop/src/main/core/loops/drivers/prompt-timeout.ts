@@ -45,9 +45,13 @@ export async function sendPromptWithTimeout(input: {
   );
 
   const timeoutPromise = new Promise<Result<PromptResult, LoopSessionDriverError>>((resolve) => {
-    timeout = setTimeout(() => {
+    const handleTimeout = async (): Promise<void> => {
       if (input.cancelOnTimeout !== false) {
-        void input.driver.cancelPrompt(input.conversationId).catch(() => {});
+        try {
+          await input.driver.cancelPrompt(input.conversationId);
+        } catch {
+          // The timeout remains the primary prompt failure.
+        }
       }
       resolve(
         err({
@@ -55,7 +59,8 @@ export async function sendPromptWithTimeout(input: {
           message: `${input.timeoutLabel} timed out after ${Math.ceil(input.timeoutMs / 1000)}s.`,
         })
       );
-    }, input.timeoutMs);
+    };
+    timeout = setTimeout(() => void handleTimeout(), input.timeoutMs);
   });
 
   const result = await Promise.race([promptPromise, timeoutPromise]);

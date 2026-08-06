@@ -12,6 +12,8 @@ const runtimeMock = vi.hoisted(() => ({
   sendPrompt: vi.fn(),
   cancelTurn: vi.fn(),
   resolvePermission: vi.fn(),
+  setModeOption: vi.fn(),
+  sessionLiveModels: vi.fn(),
   getSessionState: vi.fn(),
   getChatHistory: vi.fn(),
 }));
@@ -32,6 +34,9 @@ describe('acpLoopSessionDriver', () => {
     runtimeMock.startSession.mockResolvedValue({ success: true, data: { sessionId: 'agent-1' } });
     runtimeMock.stopSession.mockReturnValue({ success: true, data: undefined });
     runtimeMock.cancelTurn.mockResolvedValue({ success: true, data: undefined });
+    runtimeMock.resolvePermission.mockReturnValue({ success: true, data: undefined });
+    runtimeMock.setModeOption.mockResolvedValue({ success: true, data: undefined });
+    runtimeMock.sessionLiveModels.mockReturnValue(null);
     runtimeMock.getSessionState.mockReturnValue({ pendingPermissions: [] });
     runtimeMock.getChatHistory.mockReturnValue({ committed: [], active: null });
   });
@@ -181,6 +186,165 @@ describe('acpLoopSessionDriver', () => {
       'permission-1',
       'always'
     );
+  });
+
+  it('uses read-only mode and rejects planning permission requests', async () => {
+    const saved = {
+      ...conversation('conv-planning'),
+      providerId: 'codex' as const,
+      model: 'gpt-5.6-sol',
+    };
+    vi.mocked(getConversationsForTask).mockResolvedValueOnce([saved]);
+    runtimeMock.sessionLiveModels.mockReturnValue({
+      states: {
+        state: {
+          snapshot: () => ({ data: { lifecycle: 'ready' } }),
+        },
+        config: {
+          snapshot: () => ({
+            data: {
+              modeOptions: {
+                configId: 'mode',
+                selected: 'agent',
+                available: [
+                  { id: 'read-only', name: 'Read-only' },
+                  { id: 'agent', name: 'Agent' },
+                ],
+              },
+            },
+          }),
+        },
+      },
+    });
+    const context = makeLoopContext();
+    const started = await acpLoopSessionDriver.startPlanningSession!({
+      conversationId: saved.id,
+      projectId: saved.projectId,
+      taskId: saved.taskId,
+      provider: 'codex',
+      model: 'gpt-5.6-sol',
+      target: context.target,
+      taskEnvironment: context.taskEnvironment,
+    });
+    runtimeMock.getSessionState.mockReturnValue({
+      pendingPermissions: [
+        {
+          requestId: 'permission-plan',
+          options: [
+            { optionId: 'allow', name: 'Allow once', kind: 'allow_once' },
+            { optionId: 'reject', name: 'Reject once', kind: 'reject_once' },
+          ],
+        },
+      ],
+    });
+    runtimeMock.sendPrompt.mockImplementationOnce(
+      () => new Promise((resolve) => setTimeout(() => resolve({ success: true, data: {} }), 5))
+    );
+
+    const prompted = await acpLoopSessionDriver.sendPlanningPrompt!(saved.id, 'Plan it');
+
+    expect(started.success).toBe(true);
+    expect(runtimeMock.setModeOption).toHaveBeenCalledWith(saved.id, 'read-only');
+    expect(prompted.success).toBe(true);
+    expect(runtimeMock.resolvePermission).toHaveBeenCalledWith(
+      saved.id,
+      'permission-plan',
+      'reject'
+    );
+  });
+
+  it('fails planning before prompting when read-only mode is unavailable', async () => {
+    const saved = {
+      ...conversation('conv-writable-planning'),
+      providerId: 'codex' as const,
+      model: 'gpt-5.6-sol',
+    };
+    vi.mocked(getConversationsForTask).mockResolvedValueOnce([saved]);
+    runtimeMock.sessionLiveModels.mockReturnValue({
+      states: {
+        state: {
+          snapshot: () => ({ data: { lifecycle: 'ready' } }),
+        },
+        config: {
+          snapshot: () => ({ data: { modeOptions: null } }),
+        },
+      },
+    });
+    const context = makeLoopContext();
+
+    const result = await acpLoopSessionDriver.startPlanningSession!({
+      conversationId: saved.id,
+      projectId: saved.projectId,
+      taskId: saved.taskId,
+      provider: 'codex',
+      model: 'gpt-5.6-sol',
+      target: context.target,
+      taskEnvironment: context.taskEnvironment,
+    });
+
+    expect(result).toMatchObject({
+      success: false,
+      error: { kind: 'hydrate-failed', message: expect.stringContaining('read-only') },
+    });
+    expect(runtimeMock.stopSession).toHaveBeenCalledWith(saved.id);
+    expect(runtimeMock.sendPrompt).not.toHaveBeenCalled();
+  });
+
+  it('fails planning when permission denial and cancellation both fail', async () => {
+    const saved = {
+      ...conversation('conv-denial-failure'),
+      providerId: 'codex' as const,
+      model: 'gpt-5.6-sol',
+    };
+    vi.mocked(getConversationsForTask).mockResolvedValueOnce([saved]);
+    runtimeMock.sessionLiveModels.mockReturnValue({
+      states: {
+        state: { snapshot: () => ({ data: { lifecycle: 'ready' } }) },
+        config: {
+          snapshot: () => ({
+            data: {
+              modeOptions: {
+                configId: 'mode',
+                selected: 'agent',
+                available: [{ id: 'read-only', name: 'Read-only' }],
+              },
+            },
+          }),
+        },
+      },
+    });
+    const context = makeLoopContext();
+    await acpLoopSessionDriver.startPlanningSession!({
+      conversationId: saved.id,
+      projectId: saved.projectId,
+      taskId: saved.taskId,
+      provider: 'codex',
+      model: 'gpt-5.6-sol',
+      target: context.target,
+      taskEnvironment: context.taskEnvironment,
+    });
+    runtimeMock.getSessionState.mockReturnValue({
+      pendingPermissions: [
+        {
+          requestId: 'permission-plan',
+          options: [{ optionId: 'allow', name: 'Allow once', kind: 'allow_once' }],
+        },
+      ],
+    });
+    runtimeMock.sendPrompt.mockReturnValueOnce(new Promise(() => {}));
+    runtimeMock.cancelTurn.mockResolvedValueOnce({
+      success: false,
+      error: { type: 'cancel_failed' },
+    });
+
+    const result = await acpLoopSessionDriver.sendPlanningPrompt!(saved.id, 'Plan it');
+
+    expect(result).toMatchObject({
+      success: false,
+      error: { kind: 'prompt-failed', message: expect.stringContaining('cancellation failed') },
+    });
+    expect(runtimeMock.resolvePermission).not.toHaveBeenCalled();
+    expect(runtimeMock.cancelTurn).toHaveBeenCalledWith(saved.id);
   });
 
   it('restarts the same persisted verification conversation on its exact target', async () => {

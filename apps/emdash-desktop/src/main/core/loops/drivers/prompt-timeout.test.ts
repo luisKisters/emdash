@@ -19,6 +19,36 @@ function driverWithHeldPrompt(): LoopSessionDriver {
 }
 
 describe('sendPromptWithTimeout', () => {
+  it('waits for cancellation to settle before returning a timeout', async () => {
+    vi.useFakeTimers();
+    const driver = driverWithHeldPrompt();
+    const cancellation = Promise.withResolvers<Result<void, LoopSessionDriverError>>();
+    driver.cancelPrompt = vi.fn(() => cancellation.promise);
+    const resultPromise = sendPromptWithTimeout({
+      driver,
+      conversationId: 'conversation',
+      prompt: 'plan',
+      timeoutMs: 25,
+      failureMessage: 'failed',
+      timeoutLabel: 'Loop planning prompt',
+    });
+
+    await vi.advanceTimersByTimeAsync(25);
+    let returned = false;
+    void resultPromise.then(() => {
+      returned = true;
+    });
+    await Promise.resolve();
+    expect(returned).toBe(false);
+
+    cancellation.resolve(ok(undefined));
+    await expect(resultPromise).resolves.toMatchObject({
+      success: false,
+      error: { message: 'Loop planning prompt timed out after 1s.' },
+    });
+    vi.useRealTimers();
+  });
+
   it('can leave cancellation to a caller that owns session quiescence', async () => {
     vi.useFakeTimers();
     const driver = driverWithHeldPrompt();

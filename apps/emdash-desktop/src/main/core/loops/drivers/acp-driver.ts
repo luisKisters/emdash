@@ -23,7 +23,18 @@ import {
 
 type ActiveLoopSession = { runtime: AcpRuntime };
 
+const PLANNING_MODE_ID = 'read-only';
+
 const activeSessions = new Map<string, ActiveLoopSession>();
+
+function stopActiveSession(conversationId: string, active: ActiveLoopSession | undefined): void {
+  activeSessions.delete(conversationId);
+  try {
+    active?.runtime.stopSession(conversationId);
+  } catch {
+    // The session is no longer eligible for Loop routing even if runtime cleanup throws.
+  }
+}
 
 function isMeaningfulMessage(message: string): boolean {
   const normalized = message.trim().toLowerCase();
@@ -145,7 +156,45 @@ async function startPlanningConversation(
 
   const started = await startRuntime(conversation, ctx);
   if (!started.success) return started;
-  return ok({ conversationId: conversation.id, title });
+
+  const active = activeSessions.get(conversation.id);
+  if (!active) {
+    return err({
+      kind: 'hydrate-failed',
+      message: 'ACP planning session did not retain its targeted runtime',
+    });
+  }
+
+  try {
+    const live = active.runtime.sessionLiveModels(conversation.id);
+    const lifecycle = live?.states.state.snapshot().data.lifecycle;
+    const modeOptions = live?.states.config.snapshot().data.modeOptions;
+    if (
+      lifecycle !== 'ready' ||
+      !modeOptions?.available.some((mode) => mode.id === PLANNING_MODE_ID)
+    ) {
+      stopActiveSession(conversation.id, active);
+      return err({
+        kind: 'hydrate-failed',
+        message: 'ACP provider does not support the required read-only planning mode',
+      });
+    }
+
+    const mode = await active.runtime.setModeOption(conversation.id, PLANNING_MODE_ID);
+    if (mode.success) return ok({ conversationId: conversation.id, title });
+
+    stopActiveSession(conversation.id, active);
+    return err({
+      kind: 'hydrate-failed',
+      message: errorMessage(mode.error, 'Failed to enable read-only ACP planning mode'),
+    });
+  } catch (error) {
+    stopActiveSession(conversation.id, active);
+    return err({
+      kind: 'hydrate-failed',
+      message: errorMessage(error, 'Failed to enable read-only ACP planning mode'),
+    });
+  }
 }
 
 async function startConversation(
@@ -232,6 +281,21 @@ function autoApprovePendingPermissions(runtime: AcpRuntime, conversationId: stri
   }
 }
 
+function rejectPendingPermissions(runtime: AcpRuntime, conversationId: string): Result<void, void> {
+  for (const request of runtime.getSessionState(conversationId).pendingPermissions) {
+    const option =
+      request.options.find((candidate) => candidate.kind === 'reject_always') ??
+      request.options.find((candidate) => candidate.kind === 'reject_once') ??
+      request.options.find((candidate) =>
+        /reject|deny/i.test(`${candidate.optionId} ${candidate.name}`)
+      );
+    if (!option) return err(undefined);
+    const result = runtime.resolvePermission(conversationId, request.requestId, option.optionId);
+    if (!result.success) return err(undefined);
+  }
+  return ok();
+}
+
 async function promptWithAutoApproval(runtime: AcpRuntime, conversationId: string, text: string) {
   let settled = false;
   const prompt = runtime.sendPrompt(conversationId, { text }).finally(() => {
@@ -241,6 +305,43 @@ async function promptWithAutoApproval(runtime: AcpRuntime, conversationId: strin
   while (!settled) {
     autoApprovePendingPermissions(runtime, conversationId);
     await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  return prompt;
+}
+
+async function promptWithPermissionRejection(
+  runtime: AcpRuntime,
+  conversationId: string,
+  text: string
+) {
+  let settled = false;
+  let permissionRejected = true;
+  const prompt = runtime.sendPrompt(conversationId, { text }).finally(() => {
+    settled = true;
+  });
+
+  while (!settled && permissionRejected) {
+    try {
+      permissionRejected = rejectPendingPermissions(runtime, conversationId).success;
+    } catch {
+      permissionRejected = false;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 25));
+  }
+  if (!permissionRejected) {
+    let cancellationFailed = false;
+    try {
+      cancellationFailed = !(await runtime.cancelTurn(conversationId)).success;
+    } catch {
+      cancellationFailed = true;
+    }
+    void prompt.catch(() => {});
+    return err({
+      kind: 'prompt-failed' as const,
+      message: cancellationFailed
+        ? 'ACP planning permission request could not be denied and cancellation failed'
+        : 'ACP planning permission request could not be denied',
+    });
   }
   return prompt;
 }
@@ -275,7 +376,7 @@ export const acpLoopSessionDriver: LoopSessionDriver = {
         message: 'ACP planning conversation is not running in its targeted Loop runtime',
       });
     }
-    const result = await active.runtime.sendPrompt(conversationId, { text });
+    const result = await promptWithPermissionRejection(active.runtime, conversationId, text);
     if (!result.success) {
       return err({
         kind: 'prompt-failed',

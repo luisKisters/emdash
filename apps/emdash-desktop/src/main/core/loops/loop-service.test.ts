@@ -37,6 +37,7 @@ vi.mock('@main/lib/events', () => ({
 vi.mock('@main/core/agents/plugin-registry', () => ({ getPlugin: getPluginMock }));
 
 vi.mock('./operations/loop-operations', () => ({
+  MAX_LOOP_PLAN_SOURCE_BYTES: 512 * 1024,
   assertLoopRunnable: assertLoopRunnableMock,
   beginLoopPreparationRetry: beginLoopPreparationRetryMock,
   createLoop: vi.fn(),
@@ -96,13 +97,6 @@ vi.mock('@main/core/search/workspace-file-index-service', () => ({
   },
 }));
 
-vi.mock('../files/file-system/workspace-file-policy', () => ({
-  resolveWorkspacePath: (rootPath: string, filePath: string) =>
-    filePath.startsWith('../')
-      ? err({ type: 'invalid-path', path: filePath, message: 'Path must be inside the workspace' })
-      : ok({ path: `${rootPath}/${filePath}` }),
-}));
-
 vi.mock('./verifiers/registry', () => ({ getVerifier: getVerifierMock }));
 
 const loop: Loop = {
@@ -121,6 +115,9 @@ const loop: Loop = {
 beforeEach(() => {
   pauseRunningLoopsForBootMock.mockResolvedValue([]);
   settlePreparingLoopsForBootMock.mockResolvedValue([]);
+  failLoopPreparationMock.mockResolvedValue(
+    err({ kind: 'not-found', message: 'Loop is unavailable in this test' })
+  );
   getProjectMock.mockReturnValue({
     repoPath: '/project',
     fileSystem: {
@@ -206,9 +203,10 @@ describe('LoopService project-root plan files', () => {
       )
     );
     const readText = vi.fn(async () => ok({ content: '# Plan', truncated: false, totalSize: 6 }));
+    const realPath = vi.fn(async (filePath: string) => ok(filePath));
     getProjectMock.mockReturnValue({
       repoPath: '/remote/repo',
-      fileSystem: { enumerate, readText },
+      fileSystem: { enumerate, readText, realPath },
     });
     onWorkspaceActivatedMock.mockImplementation(async (_id, source) => {
       source.enumerate(source.rootPath, {});
@@ -226,7 +224,7 @@ describe('LoopService project-root plan files', () => {
     ).resolves.toEqual({ success: true, data: '# Plan' });
     expect(enumerate).toHaveBeenCalledWith('/remote/repo', expect.any(Object));
     expect(readText).toHaveBeenCalledWith('/remote/repo/docs/plan.md', {
-      maxBytes: 1_000_000,
+      maxBytes: 512 * 1024 + 1,
     });
     expect(onWorkspaceDeactivatedMock).toHaveBeenCalledWith('project-plan:project-1');
   });
@@ -270,6 +268,44 @@ describe('LoopService project-root plan files', () => {
       error: { kind: 'invalid-state' },
     });
     expect(readText).not.toHaveBeenCalled();
+  });
+
+  it('rejects a plan symlink whose real path escapes the repository', async () => {
+    const readText = vi.fn();
+    const realPath = vi.fn(async (filePath: string) =>
+      ok(filePath.endsWith('/linked-plan.md') ? '/remote/secret.md' : filePath)
+    );
+    getProjectMock.mockReturnValue({
+      repoPath: '/remote/repo',
+      fileSystem: { readText, realPath },
+    });
+    const service = new LoopService();
+    await service.initialize(true);
+
+    const result = await service.readProjectPlanFile('project-1', 'linked-plan.md');
+
+    expect(result).toMatchObject({ success: false, error: { kind: 'invalid-state' } });
+    expect(readText).not.toHaveBeenCalled();
+  });
+
+  it('uses the server limit and rejects oversized or truncated plan content', async () => {
+    const oversized = 'x'.repeat(512 * 1024 + 1);
+    const readText = vi.fn(async () =>
+      ok({ content: oversized, truncated: true, totalSize: oversized.length + 1 })
+    );
+    getProjectMock.mockReturnValue({
+      repoPath: '/remote/repo',
+      fileSystem: { readText, realPath: vi.fn(async (filePath: string) => ok(filePath)) },
+    });
+    const service = new LoopService();
+    await service.initialize(true);
+
+    const result = await service.readProjectPlanFile('project-1', 'plan.md', 10_000_000);
+
+    expect(result).toMatchObject({ success: false, error: { kind: 'invalid-state' } });
+    expect(readText).toHaveBeenCalledWith('/remote/repo/plan.md', {
+      maxBytes: 512 * 1024 + 1,
+    });
   });
 });
 
@@ -362,6 +398,37 @@ describe('LoopService atomic task creation', () => {
       loopId: loop.id,
       phase: createdLoop.phases[0],
     });
+  });
+
+  it('launches preparation before a synchronous post-create notification fails', async () => {
+    const preparingLoop = {
+      ...loop,
+      status: 'preparing' as const,
+      phases: [],
+    } satisfies LoopWithPhases;
+    vi.mocked(createTaskWithLoop).mockResolvedValue({
+      success: true,
+      data: {
+        task: { task: { id: 'task-1', projectId: 'project-1' } as never },
+        loop: preparingLoop,
+      },
+    });
+    vi.mocked(getLoop).mockResolvedValue(null);
+    const { taskService } = await import('@main/core/tasks/task-service');
+    vi.mocked(taskService.notifyTaskCreated).mockImplementationOnce(() => {
+      throw new Error('notification failed');
+    });
+    const service = new LoopService();
+    await service.reconcileEnabledState(true);
+
+    const result = await service.createTaskWithLoop({
+      task: { id: 'task-1', projectId: 'project-1' },
+      loop: { model: 'gpt-5.6-sol' },
+    } as never);
+
+    expect(result.success).toBe(true);
+    expect(getLoop).toHaveBeenCalledWith(preparingLoop.id);
+    expect(emitMock).toHaveBeenCalledWith(loopUpdatedChannel, { loop: preparingLoop });
   });
 
   it('rejects a model that is not present in the Codex catalog before creating anything', async () => {

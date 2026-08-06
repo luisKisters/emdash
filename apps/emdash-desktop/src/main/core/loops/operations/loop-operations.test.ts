@@ -1,5 +1,10 @@
 import { describe, expect, it, vi } from 'vitest';
-import { assertLoopRunnable, prepareLoopShell, prepareNewLoop } from './loop-operations';
+import {
+  MAX_LOOP_PLAN_SOURCE_BYTES,
+  assertLoopRunnable,
+  prepareLoopShell,
+  prepareNewLoop,
+} from './loop-operations';
 
 vi.mock('@main/db/client', () => ({ db: {} }));
 
@@ -118,6 +123,20 @@ describe('planning and runnable boundaries', () => {
     expect(result).toMatchObject({
       success: true,
       data: { status: 'preparing', phases: [], config: { verifierPlan: [] } },
+    });
+  });
+
+  it('rejects oversized planning input before it can be persisted', () => {
+    const result = prepareLoopShell({
+      ...baseInput,
+      workPhases: [],
+      validationCommands: [],
+      planningInput: { goal: 'Ship Loops', plan: 'x'.repeat(MAX_LOOP_PLAN_SOURCE_BYTES + 1) },
+    });
+
+    expect(result).toMatchObject({
+      success: false,
+      error: { kind: 'invalid-input', message: expect.stringContaining('byte limit') },
     });
   });
 

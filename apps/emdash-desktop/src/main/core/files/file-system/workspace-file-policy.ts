@@ -63,6 +63,25 @@ export async function assertWorkspaceWriteAllowed(
   return resolved;
 }
 
+export async function assertWorkspaceReadAllowed(
+  fileSystem: IFileSystem,
+  workspacePath: string,
+  filePath: string
+): Promise<Result<WorkspacePathResolution, FileError>> {
+  const resolved = resolveWorkspacePath(workspacePath, filePath);
+  if (!resolved.success) return resolved;
+  const contained = await isRealPathContainedByRealPath(
+    fileSystem,
+    machinePathOperations,
+    workspacePath,
+    resolved.data.path,
+    { candidateMustExist: true, candidateErrorMode: 'error' }
+  );
+  if (!contained.success) return contained;
+  if (!contained.data) return pathEscapeError(filePath);
+  return resolved;
+}
+
 export async function assertWorkspaceRemoveAllowed(
   fileSystem: IFileSystem,
   workspacePath: string,
