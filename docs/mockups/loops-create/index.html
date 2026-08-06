@@ -1,0 +1,323 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Emdash — Plan-driven Loop creation</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        --background: #111;
+        --background-1: #191919;
+        --background-2: #222;
+        --background-3: #2a2a2a;
+        --foreground: #eeeeee;
+        --foreground-muted: #b4b4b4;
+        --foreground-passive: #6e6e6e;
+        --border: #313131;
+        --border-1: #606060;
+        --jade-3: #172d23;
+        --jade-4: #1a3a2d;
+        --jade-7: #386656;
+        --jade-11: #66d5a7;
+        --jade-12: #bbeed6;
+        --red-3: #361519;
+        --red-8: #a84c4c;
+        --red-11: #ff918c;
+        --amber-3: #2b230a;
+        --amber-11: #f2e364;
+        --blue-3: #142745;
+        --blue-11: #7db8ff;
+        --radius: 8px;
+        --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        --mono: Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+      }
+
+      * { box-sizing: border-box; }
+      body { margin: 0; min-width: 1100px; min-height: 100vh; overflow: hidden; background: var(--background); color: var(--foreground); font-family: var(--sans); font-size: 14px; }
+      button, input, textarea { font: inherit; color: inherit; }
+      button { cursor: default; }
+      .hidden { display: none !important; }
+
+      /* Existing Emdash application shell */
+      .app-shell { display: grid; grid-template-columns: 280px 1fr; height: 100vh; background: var(--background); }
+      .sidebar { display: grid; grid-template-rows: 42px 1fr auto; border-right: 1px solid var(--border); background: var(--background-1); }
+      .traffic-row { display: flex; align-items: center; gap: 10px; padding: 0 16px; border-bottom: 1px solid var(--border); color: var(--foreground-passive); }
+      .traffic { display: flex; gap: 7px; }
+      .traffic span { width: 10px; height: 10px; border-radius: 50%; background: #353535; }
+      .sidebar-body { padding: 20px 12px; }
+      .micro { padding: 0 8px 10px; color: var(--foreground-passive); font-size: 10px; letter-spacing: .11em; text-transform: uppercase; }
+      .project { display: flex; align-items: center; gap: 8px; padding: 8px 10px; border-radius: 7px; background: var(--background-2); font-size: 13px; }
+      .task-mini { display: flex; justify-content: space-between; margin-left: 26px; padding: 7px 7px; color: var(--foreground-muted); font-size: 12px; }
+      .task-mini.active { margin-top: 5px; border-radius: 6px; background: var(--background-3); color: var(--foreground); }
+      .age { color: var(--foreground-passive); font-size: 10px; }
+      .sidebar-footer { padding: 8px 12px 14px; border-top: 1px solid var(--border); }
+      .side-action { display: flex; align-items: center; gap: 9px; padding: 7px 8px; color: var(--foreground-muted); font-size: 12px; }
+      .shortcut { margin-left: auto; border: 1px solid var(--border); border-radius: 4px; background: var(--background-2); padding: 1px 5px; color: var(--foreground-passive); font-size: 9px; }
+      .main { display: grid; grid-template-rows: 42px 1fr; min-width: 0; }
+      .toolbar { display: flex; align-items: center; gap: 13px; border-bottom: 1px solid var(--border); padding: 0 14px; color: var(--foreground-muted); font-size: 12px; }
+      .toolbar-path { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .toolbar-actions { display: flex; gap: 14px; margin-left: auto; color: var(--foreground-passive); }
+      .project-page { display: grid; grid-template-columns: 245px 1fr; min-height: 0; }
+      .project-nav { padding: 30px 54px; border-right: 1px solid var(--border); }
+      .project-nav div { margin-bottom: 20px; color: var(--foreground-muted); }
+      .project-nav .selected { border-radius: 6px; background: var(--background-2); padding: 10px 12px; color: var(--foreground); }
+      .task-list-page { padding: 30px 36px; }
+      .task-list-top { display: flex; align-items: center; gap: 16px; }
+      .segmented { display: flex; overflow: hidden; border: 1px solid var(--border); border-radius: 7px; }
+      .segmented span { padding: 7px 13px; color: var(--foreground-muted); font-size: 12px; }
+      .segmented span:first-child { background: var(--background-2); color: var(--foreground); }
+      .search { width: 254px; height: 32px; margin-left: auto; border: 1px solid var(--border); border-radius: 6px; background: transparent; padding: 0 11px; color: var(--foreground-passive); }
+      .create-task-button { height: 32px; border: 1px solid var(--jade-7); border-radius: 6px; background: var(--jade-4); padding: 0 12px; color: var(--jade-12); }
+      .list-head { display: grid; grid-template-columns: 1fr 130px 40px; margin-top: 24px; padding: 10px 12px; border-bottom: 1px solid var(--border); color: var(--foreground-passive); font-size: 11px; }
+      .list-row { display: grid; grid-template-columns: 1fr 130px 40px; padding: 13px 12px; border-bottom: 1px solid var(--border); color: var(--foreground-muted); font-size: 12px; }
+
+      /* Existing modal composition */
+      .backdrop { position: fixed; inset: 0; z-index: 10; display: grid; place-items: center; background: rgb(0 0 0 / 55%); }
+      .modal { display: flex; width: 512px; max-height: calc(100vh - 32px); flex-direction: column; overflow: hidden; border-radius: 12px; background: var(--background); box-shadow: 0 0 0 1px rgb(255 255 255 / 10%), 0 22px 70px rgb(0 0 0 / 55%); }
+      .modal.wide { width: 560px; }
+      .modal-header { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; padding: 24px; }
+      .modal-title { color: var(--foreground-passive); font-size: 12px; }
+      .close { border: 0; background: transparent; color: var(--foreground-muted); font-size: 17px; line-height: 1; }
+      .modal-body { display: flex; min-height: 0; flex-direction: column; gap: 20px; overflow-y: auto; padding: 0 24px 24px; }
+      .modal-footer { display: flex; flex: 0 0 auto; flex-direction: column; align-items: flex-end; gap: 5px; border-top: 1px solid var(--border); background: var(--background-2); padding: 12px; }
+      .footer-actions { display: flex; width: 100%; justify-content: flex-end; gap: 8px; }
+      .field { display: flex; flex: 0 0 auto; flex-direction: column; gap: 5px; }
+      .field-label { color: var(--foreground-muted); font-size: 12px; }
+      .field-description { color: var(--foreground-passive); font-size: 11px; line-height: 1.4; }
+      .name-input { height: 32px; border: 0; border-bottom: 1px solid transparent; background: transparent; padding: 0; outline: 0; font-size: 14px; }
+      .name-input::placeholder { color: var(--foreground-passive); }
+      .control { min-height: 34px; border: 1px solid var(--border); border-radius: 7px; background: rgb(255 255 255 / 2%); padding: 8px 10px; color: var(--foreground-muted); }
+      textarea.control { min-height: 74px; resize: none; }
+      .based-on { flex: 0 0 auto; overflow: hidden; border: 1px solid var(--border); border-radius: 8px; }
+      .based-row { display: flex; height: 40px; align-items: center; justify-content: space-between; gap: 8px; padding: 0 8px; }
+      .based-row.open { border-bottom: 1px solid var(--border); }
+      .based-label { color: var(--foreground-muted); }
+      .toggles { display: flex; gap: 4px; align-items: center; }
+      .toggle { height: 24px; border: 0; border-radius: 7px; background: transparent; padding: 0 8px; color: var(--foreground-passive); font-size: 11px; }
+      .toggle.active { background: var(--background-3); color: var(--foreground); }
+      .plan-trigger { display: flex; height: 54px; align-items: center; justify-content: space-between; padding: 0 12px; color: var(--foreground-muted); font-size: 12px; }
+      .plan-trigger .path { font-family: var(--mono); font-size: 11px; }
+      .paste-link { border: 0; background: transparent; color: var(--foreground-passive); font-size: 11px; }
+      .combo-wrap { position: relative; }
+      .combo { width: 100%; height: 34px; border: 1px solid var(--border-1); border-radius: 7px; background: var(--background-1); padding: 0 10px; outline: 0; }
+      .combo-popup { position: absolute; z-index: 3; top: 38px; left: 0; right: 0; overflow: hidden; border-radius: 7px; background: var(--background-1); box-shadow: 0 0 0 1px rgb(255 255 255 / 12%), 0 12px 32px rgb(0 0 0 / 45%); }
+      .combo-item { padding: 9px 11px; border-top: 1px solid var(--border); font: 11px var(--mono); }
+      .combo-item:first-child { border-top: 0; }
+      .combo-item.selected { background: var(--background-3); }
+      .combo-meta { margin-top: 3px; color: var(--foreground-passive); font: 10px var(--sans); }
+      .loop-section { display: flex; flex: 0 0 auto; flex-direction: column; gap: 16px; border: 1px solid var(--border); border-radius: 8px; background: var(--background-1); padding: 16px; }
+      .switch-row { display: flex; align-items: flex-start; gap: 9px; }
+      .switch { position: relative; width: 32px; height: 18px; flex: 0 0 auto; margin-top: 2px; border-radius: 999px; background: var(--foreground-passive); }
+      .switch::after { position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 50%; background: var(--background); content: ""; }
+      .switch.on { background: var(--foreground); }
+      .switch.on::after { left: 16px; background: var(--background); }
+      .switch-title { color: var(--foreground-muted); font-size: 13px; }
+      .switch-copy { max-width: 360px; margin-top: 3px; color: var(--foreground); font-size: 12px; line-height: 1.45; }
+      .auto-note { margin-left: auto; border-radius: 999px; background: var(--background-3); padding: 4px 7px; color: var(--foreground-passive); font-size: 9px; }
+      .section-top { display: flex; align-items: flex-start; justify-content: space-between; }
+      .verification-summary { display: flex; flex: 0 0 auto; align-items: center; justify-content: space-between; border: 1px solid var(--border); border-radius: 8px; background: var(--background-1); padding: 11px 12px; }
+      .summary-title { font-size: 12px; }
+      .summary-path { margin-top: 3px; color: var(--foreground-passive); font: 10px var(--mono); }
+      .summary-count { border-radius: 999px; background: var(--background-3); padding: 4px 8px; color: var(--foreground-muted); font-size: 10px; }
+      .detected { color: var(--jade-11); font-size: 10px; }
+      .verifier-groups { display: flex; flex-direction: column; gap: 10px; }
+      .group-label { margin-bottom: 4px; color: var(--foreground-passive); font-size: 10px; text-transform: uppercase; letter-spacing: .06em; }
+      .verifier-row { display: grid; grid-template-columns: 17px 1fr auto; gap: 8px; align-items: center; min-height: 32px; border-top: 1px solid var(--border); padding: 6px 2px; }
+      .verifier-row:first-of-type { border-top: 0; }
+      .checkbox { display: grid; width: 16px; height: 16px; place-items: center; border: 1px solid var(--border-1); border-radius: 4px; background: var(--foreground); color: var(--background); font-size: 10px; }
+      .command { font: 11px var(--mono); }
+      .source { color: var(--foreground-passive); font-size: 10px; }
+      .covered { opacity: .48; }
+      .covered .checkbox { background: transparent; color: var(--foreground-passive); }
+      .add-custom { display: flex; align-items: center; gap: 8px; min-height: 34px; border: 1px dashed var(--border-1); border-radius: 7px; padding: 0 9px; color: var(--foreground-passive); font-size: 11px; }
+      .plus { font-size: 16px; }
+      .panel-tabs { display: grid; flex: 0 0 auto; grid-template-columns: 1fr 1fr; border-radius: 7px; background: var(--background-1); padding: 3px; }
+      .panel-tab { border: 0; border-radius: 6px; background: transparent; padding: 6px; color: var(--foreground-muted); font-size: 11px; }
+      .panel-tab.active { background: var(--background-3); color: var(--foreground); }
+      .button { height: 28px; border: 1px solid transparent; border-radius: 6px; padding: 0 10px; background: var(--jade-4); color: var(--jade-12); font-size: 12px; }
+      .button.secondary { border-color: var(--border); background: var(--background); color: var(--foreground-muted); }
+      .button:disabled { border-color: var(--border); background: var(--background-3); color: var(--foreground-passive); opacity: .5; }
+      .disabled-reason { color: var(--red-11); font-size: 11px; }
+      .error-callout { border: 1px solid var(--red-8); border-radius: 7px; background: var(--red-3); padding: 9px 10px; color: var(--red-11); font-size: 11px; }
+
+      /* Full-screen Loop setup, following the original Emdash mockup flow */
+      .verification-page { display: grid; grid-template-rows: 41px minmax(0, 1fr); min-height: 0; }
+      .setup-tabbar { display: flex; align-items: center; border-bottom: 1px solid var(--border); background: var(--background-1); }
+      .setup-tab { display: flex; height: 41px; align-items: center; gap: 7px; border: 0; border-right: 1px solid var(--border); background: var(--background); padding: 0 13px; color: var(--foreground); font-size: 12px; }
+      .setup-scroll { min-height: 0; overflow-y: auto; padding: 26px 48px; }
+      .setup-center { width: min(720px, 100%); margin: 0 auto; }
+      .setup-header { margin-bottom: 16px; }
+      .setup-eyebrow { margin-bottom: 8px; color: var(--foreground-passive); font-size: 10px; letter-spacing: .09em; text-transform: uppercase; }
+      .setup-title { margin: 0; font-size: 21px; font-weight: 500; }
+      .setup-description { max-width: 590px; margin: 6px 0 0; color: var(--foreground-muted); font-size: 12px; line-height: 1.45; }
+      .setup-card { overflow: hidden; border: 1px solid var(--border); border-radius: 10px; background: var(--background-1); }
+      .setup-summary { display: flex; align-items: center; justify-content: space-between; gap: 20px; border-bottom: 1px solid var(--border); padding: 11px 16px; }
+      .setup-content { display: flex; flex-direction: column; gap: 11px; padding: 12px 16px; }
+      .setup-content .verifier-groups { gap: 5px; }
+      .setup-content .verifier-row { min-height: 27px; padding: 3px 2px; }
+      .setup-content .add-custom { min-height: 30px; }
+      .setup-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-top: 12px; }
+      .setup-note { color: var(--foreground-passive); font-size: 10px; }
+      .setup-actions { display: flex; gap: 8px; margin-left: auto; }
+
+      /* Existing task-tab surface */
+      .task-page { display: grid; grid-template-rows: 41px 1fr; min-height: 0; }
+      .task-tabs { display: flex; align-items: center; border-bottom: 1px solid var(--border); background: var(--background-1); }
+      .task-tab { height: 41px; border: 0; border-right: 1px solid var(--border); background: transparent; padding: 0 12px; color: var(--foreground-muted); font-size: 12px; }
+      .task-tab.active { background: var(--background); color: var(--foreground); }
+      .unread { color: var(--jade-11); }
+      .loop-page { overflow: auto; padding: 38px 56px; }
+      .loop-content { max-width: 910px; margin: 0 auto; }
+      .loop-head { display: flex; align-items: center; gap: 10px; }
+      .loop-head h1 { margin: 0; font-size: 20px; font-weight: 500; }
+      .status { border-radius: 999px; padding: 3px 8px; background: var(--blue-3); color: var(--blue-11); font-size: 10px; }
+      .phase-count { margin-top: 9px; color: var(--foreground-muted); font-size: 12px; }
+      .rule { margin: 23px 0 20px; border-top: 1px solid var(--border); }
+      .preparing { display: flex; align-items: center; gap: 9px; border: 1px solid var(--border); border-radius: 8px; padding: 12px; color: var(--foreground-muted); font-size: 12px; }
+      .spinner { width: 13px; height: 13px; border: 2px solid var(--border-1); border-top-color: var(--foreground); border-radius: 50%; animation: spin 1s linear infinite; }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .planning-link { margin-left: auto; color: var(--jade-11); }
+      .phase-list { display: flex; flex-direction: column; gap: 12px; margin-top: 20px; }
+      .phase-card { border: 1px solid var(--border); border-radius: 9px; background: var(--background-1); padding: 14px 16px; }
+      .phase-title { display: flex; align-items: center; gap: 8px; }
+      .phase-number { color: var(--foreground-passive); font: 10px var(--mono); }
+      .kind { border-radius: 4px; background: var(--background-3); padding: 2px 5px; color: var(--foreground-muted); font-size: 10px; }
+      .phase-state { margin-left: auto; color: var(--blue-11); font-size: 10px; }
+      .phase-card p { margin: 7px 0 0 47px; color: var(--foreground-muted); font-size: 12px; }
+      .streaming-line { width: 42%; height: 8px; margin: 9px 0 0 47px; border-radius: 5px; background: linear-gradient(90deg, var(--background-3), var(--border-1), var(--background-3)); background-size: 200% 100%; animation: shimmer 1.5s linear infinite; }
+      @keyframes shimmer { to { background-position: -200% 0; } }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="traffic-row"><div class="traffic"><span></span><span></span><span></span></div></div>
+        <div class="sidebar-body">
+          <div class="micro">Projects</div>
+          <div class="project"><span>▱</span><span data-project-name>summario</span><span style="margin-left:auto">⌄</span></div>
+          <div class="task-mini active"><span>Improve onboarding analytics</span><span class="age">now</span></div>
+          <div class="task-mini"><span>Fix report filters</span><span class="age">4m</span></div>
+          <div class="task-mini"><span>Upgrade event schema</span><span class="age">12m</span></div>
+        </div>
+        <div class="sidebar-footer">
+          <div class="side-action">⌕ <span>Search…</span><span class="shortcut">Ctrl K</span></div>
+          <div class="side-action">◷ <span>Automations</span></div>
+          <div class="side-action">≋ <span>Library</span><span class="shortcut">Ctrl L</span></div>
+          <div class="side-action">⚙ <span>Settings</span></div>
+        </div>
+      </aside>
+      <main class="main">
+        <div class="toolbar"><span>←</span><span>→</span><span>▣</span><span class="toolbar-path" data-project-path>summario / Users/kisters/code/projects/summario</span><div class="toolbar-actions"><span>▰</span><span>⌄</span><span>〉_</span><span>▱</span><span>◷</span></div></div>
+        <div class="project-page" data-project-page>
+          <aside class="project-nav"><div class="selected">Tasks</div><div>Pull Requests</div><div>Settings</div></aside>
+          <section class="task-list-page"><div class="task-list-top"><div class="segmented"><span>Active (4)</span><span>Archived (0)</span></div><div class="search">⌕ &nbsp; Search tasks...</div><button class="create-task-button">Create Task</button></div><div class="list-head"><span>Task</span><span>Last used</span><span></span></div><div class="list-row"><span>Improve onboarding analytics</span><span>now</span><span>◉</span></div><div class="list-row"><span>Fix report filters</span><span>4m</span><span>◉</span></div><div class="list-row"><span>Upgrade event schema</span><span>12m</span><span>◉</span></div></section>
+        </div>
+
+        <div class="verification-page hidden" data-verification-page>
+          <div class="setup-tabbar"><button class="setup-tab">↻&nbsp; Loop setup <span style="color:var(--foreground-passive)">×</span></button></div>
+          <div class="setup-scroll">
+            <div class="setup-center">
+              <header class="setup-header">
+                <div class="setup-eyebrow">Create with Loop</div>
+                <h1 class="setup-title">Verification</h1>
+                <p class="setup-description">Choose the repository checks that every Loop phase must pass. Emdash detected these checks from repository scripts, configuration, and CI.</p>
+              </header>
+              <section class="setup-card">
+                <div class="setup-summary"><div><div class="summary-title">Improve onboarding analytics Loop</div><div class="summary-path">docs/plans/onboarding-analytics.md</div></div><span class="summary-count" data-summary-count>7 selected</span></div>
+                <div class="setup-content">
+                  <div class="section-top"><div><div class="field-label">Detected checks</div><div class="field-description">Repository-authored aggregate gates run first and replace checks they already cover.</div></div><span class="detected">● Detected</span></div>
+                  <div class="verifier-groups" data-repo-content="summario">
+                    <div><div class="group-label">Repository gate</div><div class="verifier-row"><span class="checkbox">✓</span><span class="command">pnpm test:phase</span><span class="source">package.json · runs first</span></div><div class="verifier-row covered"><span class="checkbox">↳</span><span class="command">pnpm test</span><span class="source">covered by test:phase</span></div></div>
+                    <div><div class="group-label">End to end</div><div class="verifier-row"><span class="checkbox">✓</span><span class="command">pnpm test:e2e</span><span class="source">package.json</span></div><div class="verifier-row"><span class="checkbox">✓</span><span>Codex computer use</span><span class="source">clean-room browser</span></div></div>
+                    <div><div class="group-label">Static and build</div><div class="verifier-row"><span class="checkbox">✓</span><span class="command">pnpm lint</span><span class="source">package.json</span></div><div class="verifier-row"><span class="checkbox">✓</span><span class="command">pnpm typecheck</span><span class="source">package.json</span></div><div class="verifier-row"><span class="checkbox">✓</span><span class="command">pnpm build</span><span class="source">package.json</span></div></div>
+                    <div><div class="group-label">Database</div><div class="verifier-row"><span class="checkbox">✓</span><span class="command">npx convex deploy --dry-run</span><span class="source">convex</span></div></div>
+                  </div>
+                  <div class="verifier-groups hidden" data-repo-content="notetakr">
+                    <div><div class="group-label">Repository gate</div><div class="verifier-row"><span class="checkbox">✓</span><span class="command">scripts/verify.sh</span><span class="source">executable · runs first</span></div></div>
+                    <div><div class="group-label">Unit and end to end</div><div class="verifier-row"><span class="checkbox">✓</span><span class="command">swift test</span><span class="source">Package.swift</span></div><div class="verifier-row"><span class="checkbox">✓</span><span class="command">xcodebuild test -only-testing:NoteUITests</span><span class="source">Note.xcodeproj</span></div></div>
+                    <div><div class="group-label">Custom and database</div><div class="verifier-row"><span class="checkbox">✓</span><span class="command">Tools/design-diff editor idle</span><span class="source">repository tool</span></div><div class="verifier-row"><span class="checkbox">✓</span><span class="command">cd convex &amp;&amp; npm test</span><span class="source">convex/package.json</span></div></div>
+                  </div>
+                  <div class="add-custom"><span class="plus">＋</span><span>Add custom verifier by name</span></div>
+                </div>
+              </section>
+              <footer class="setup-footer"><span class="setup-note">You can change these checks later in Loop settings.</span><div class="setup-actions"><button class="button secondary" data-setup-back>Back</button><button class="button" data-setup-create>Create task</button></div></footer>
+            </div>
+          </div>
+        </div>
+
+        <div class="task-page hidden" data-task-page>
+          <div class="task-tabs"><button class="task-tab active">↻&nbsp; Improve onboarding analytics Loop</button><button class="task-tab">Loop planning <span class="unread">●</span></button><button class="task-tab">Terminal</button></div>
+          <div class="loop-page"><div class="loop-content"><div class="loop-head"><h1>Improve onboarding analytics Loop</h1><span class="status">Preparing</span></div><div class="phase-count">Preparing phases from docs/plans/onboarding-analytics.md</div><div class="rule"></div><div class="preparing"><span class="spinner"></span><span>Codex is converting the plan and resolving 1 custom verifier.</span><span class="planning-link">Open planning chat →</span></div><div class="phase-list"><div class="phase-card"><div class="phase-title"><span class="phase-number">1</span><span class="kind">Work</span><span>Instrument onboarding events</span><span class="phase-state">Ready</span></div><p>Add typed events and preserve existing analytics behavior.</p></div><div class="phase-card"><div class="phase-title"><span class="phase-number">2</span><span class="kind">Work</span><span>Build the funnel report</span><span class="phase-state">Ready</span></div><p>Add the report query and its loading, empty, and error states.</p></div><div class="phase-card"><div class="phase-title"><span class="phase-number">3</span><span class="kind">Work</span><span style="color:var(--foreground-passive)">Receiving phase…</span></div><div class="streaming-line"></div></div></div></div></div>
+        </div>
+      </main>
+    </div>
+
+    <div class="backdrop" data-modal-layer>
+      <section class="modal" data-modal>
+        <header class="modal-header"><span class="modal-title" data-modal-title>Create Task</span><button class="close" aria-label="Close">×</button></header>
+        <div class="modal-body">
+          <div class="field" data-authoring><span class="field-label">Task name</span><input class="name-input" value="Improve onboarding analytics" /></div>
+
+          <div class="based-on" data-authoring>
+            <div class="based-row open"><span class="based-label">Based on</span><div class="toggles"><button class="toggle">Issue</button><button class="toggle">Pull Request</button><button class="toggle active">Plan file</button></div></div>
+            <div class="plan-trigger"><span class="path">docs/plans/onboarding-analytics.md</span><span>⌄</span></div>
+          </div>
+
+          <div class="field hidden" data-plan-picker>
+            <div style="display:flex;justify-content:space-between"><span class="field-label">Plan file</span><button class="paste-link">Paste instead</button></div>
+            <div class="combo-wrap"><input class="combo" value="onboarding" /><div class="combo-popup"><div class="combo-item selected">docs/plans/onboarding-analytics.md<div class="combo-meta">Markdown · 6.2 KB</div></div><div class="combo-item">docs/plans/onboarding-events.md<div class="combo-meta">Markdown · 3.8 KB</div></div><div class="combo-item">planning/onboarding-checklist.md<div class="combo-meta">Markdown · 1.4 KB</div></div></div></div>
+          </div>
+
+          <section class="loop-section">
+            <div class="switch-row" data-loop-toggle><span class="switch on"></span><div><div class="switch-title">Create with Loop</div><div class="switch-copy">Run this task as editable work phases with optional terminal verification.</div></div><span class="auto-note">Enabled by Plan file</span></div>
+            <div class="error-callout hidden" data-error>Loop planning needs a Codex model. Select Codex and a model, or turn off Create with Loop.</div>
+          </section>
+
+          <div class="panel-tabs" data-authoring><button class="panel-tab active">Initial Conversation</button><button class="panel-tab">Workspace Settings</button></div>
+          <div class="control" data-authoring style="display:flex;justify-content:space-between"><span>Codex</span><span>GPT-5.4&nbsp; ⌄</span></div>
+        </div>
+        <footer class="modal-footer"><div class="footer-actions"><button class="button secondary hidden" data-back>Back</button><button class="button" data-create>Continue</button></div><span class="disabled-reason hidden" data-disabled-reason>Loop planning needs a Codex model.</span></footer>
+      </section>
+    </div>
+
+    <script>
+      const panels = ['based', 'plan', 'verification', 'disabled', 'after'];
+      function setCurrentRepo(repo) {
+        document.querySelectorAll('[data-repo-content]').forEach((node) => node.classList.toggle('hidden', node.dataset.repoContent !== repo));
+        document.querySelector('[data-summary-count]').textContent = repo === 'notetakr' ? '5 selected' : '7 selected';
+        document.querySelector('[data-project-name]').textContent = repo;
+        document.querySelector('[data-project-path]').textContent = `${repo} / Users/kisters/code/projects/${repo}`;
+      }
+      function showPanel(value) {
+        const panel = panels.includes(value) ? value : 'based';
+        const isVerification = panel === 'verification';
+        const isAfter = panel === 'after';
+        document.querySelector('[data-modal-layer]').classList.toggle('hidden', isVerification || isAfter);
+        document.querySelector('[data-project-page]').classList.toggle('hidden', isVerification || isAfter);
+        document.querySelector('[data-verification-page]').classList.toggle('hidden', !isVerification);
+        document.querySelector('[data-task-page]').classList.toggle('hidden', panel !== 'after');
+        document.querySelector('[data-plan-picker]').classList.toggle('hidden', panel !== 'plan');
+        document.querySelector('[data-error]').classList.toggle('hidden', panel !== 'disabled');
+        document.querySelector('[data-disabled-reason]').classList.toggle('hidden', panel !== 'disabled');
+        const button = document.querySelector('[data-create]');
+        button.disabled = panel === 'disabled';
+        button.textContent = 'Continue';
+        button.title = panel === 'disabled' ? 'Loop planning needs a Codex model.' : '';
+        const body = document.querySelector('.modal-body');
+        body.scrollTop = 0;
+        if (panel === 'verification') requestAnimationFrame(() => {
+          setCurrentRepo(new URLSearchParams(location.search).get('repo') === 'notetakr' ? 'notetakr' : 'summario');
+        });
+        if (location.hash !== `#${panel}`) history.replaceState(null, '', `#${panel}`);
+      }
+      document.querySelector('[data-setup-back]').addEventListener('click', () => { location.hash = 'based'; });
+      document.querySelector('[data-setup-create]').addEventListener('click', () => { location.hash = 'after'; });
+      document.querySelector('[data-create]').addEventListener('click', () => {
+        if (location.hash !== '#verification' && location.hash !== '#disabled') location.hash = 'verification';
+      });
+      addEventListener('hashchange', () => showPanel(location.hash.slice(1)));
+      showPanel(location.hash.slice(1));
+    </script>
+  </body>
+</html>
