@@ -16,8 +16,9 @@ export function useBranchName(opts: {
   linkedIssue?: LinkedIssue | null;
   projectId?: string;
   resetKey?: unknown;
+  initialValue?: string;
 }): BranchNameState {
-  const { taskName, linkedIssue, projectId, resetKey } = opts;
+  const { taskName, linkedIssue, projectId, resetKey, initialValue } = opts;
 
   const { value: project } = useAppSettingsKey('project');
   const branchPrefix = project?.branchPrefix ?? '';
@@ -39,8 +40,8 @@ export function useBranchName(opts: {
     [branchPrefix, appendRandomSuffix, suffix, linkedIssue]
   );
 
-  const [userValue, setUserValue] = useState<string | undefined>(undefined);
-  const [isUserModified, setIsUserModified] = useState(false);
+  const [userValue, setUserValue] = useState<string | undefined>(initialValue);
+  const [isUserModified, setIsUserModified] = useState(initialValue !== undefined);
   const [prevResetKey, setPrevResetKey] = useState(resetKey);
   const [prevLinkedIssue, setPrevLinkedIssue] = useState(linkedIssue);
 

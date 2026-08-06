@@ -2,6 +2,7 @@ import { nextDefaultConversationTitle } from '@renderer/features/conversations/c
 import type { LoopPlanDraft } from '@renderer/features/loops/loop-plan-model';
 import type { InitialConversationState } from '@renderer/features/tasks/task-config/initial-conversation-section';
 import { extractIssueMentionTargets } from '@shared/core/issues/issue-context';
+import type { SelectedVerifier } from '@shared/core/loops/verifier-catalog';
 import type { PullRequest } from '@shared/core/pull-requests/pull-requests';
 import type { TaskConfig } from '@shared/core/tasks/task-config';
 import type { TaskLifecycleStatus } from '@shared/core/tasks/tasks';
@@ -68,6 +69,9 @@ export type LoopTaskAuthoringInput = {
   browserPreview: { enabled: boolean };
   workPhases: { name: string; goal: string }[];
   acceptanceCriteria: string[];
+  verifierPlan: SelectedVerifier[];
+  verifiers: [];
+  provider: 'codex';
 };
 
 export function buildLoopTaskAuthoringInput(
@@ -89,6 +93,9 @@ export function buildLoopTaskAuthoringInput(
     acceptanceCriteria: draft.acceptanceCriteria
       .map((criterion) => criterion.trim())
       .filter(Boolean),
+    verifierPlan: draft.verifierPlan.map((verifier) => ({ ...verifier })),
+    verifiers: [],
+    provider: 'codex',
   };
 }
 

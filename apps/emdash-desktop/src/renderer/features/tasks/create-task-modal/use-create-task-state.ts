@@ -3,17 +3,19 @@ import { useQuery } from '@tanstack/react-query';
 import { useMemo, useState } from 'react';
 import {
   createDefaultLoopPlanDraft,
+  type LoopPlanDraft,
   validateLoopPlanDraft,
 } from '@renderer/features/loops/loop-plan-model';
 import { useTaskSettings } from '@renderer/features/tasks/hooks/useTaskSettings';
 import { rpc } from '@renderer/lib/ipc';
 import type { LinkedIssue } from '@shared/core/linked-issue';
 import type { PullRequest } from '@shared/core/pull-requests/pull-requests';
+import type { CreateTaskDraft } from './create-task-draft';
 import { getIssueTaskName } from './issue-task-name';
 import { useTaskName } from './use-task-name';
 import { useWorkspaceConfig } from './use-workspace-config';
 
-export type LinkedType = 'issue' | 'pr' | null;
+export type LinkedType = 'issue' | 'pr' | 'plan' | null;
 
 export type CreateTaskState = ReturnType<typeof useCreateTaskState>;
 
@@ -24,14 +26,26 @@ export function useCreateTaskState(
   currentBranch: string | null,
   repositoryWorkspaceId: string | null | undefined,
   initialPR?: PullRequest,
-  initialLinkedType: LinkedType = null
+  initialLinkedType: LinkedType = null,
+  initialDraft?: CreateTaskDraft
 ) {
   const { autoGenerateName, createBranchAndWorktree } = useTaskSettings();
 
-  const [linkedType, setLinkedTypeRaw] = useState<LinkedType>(initialPR ? 'pr' : initialLinkedType);
-  const [linkedIssue, setLinkedIssueRaw] = useState<LinkedIssue | null>(null);
-  const [linkedPR, setLinkedPRRaw] = useState<PullRequest | null>(initialPR ?? null);
-  const [loopPlan, setLoopPlan] = useState(createDefaultLoopPlanDraft);
+  const [linkedType, setLinkedTypeRaw] = useState<LinkedType>(
+    initialDraft?.linkedType ?? (initialPR ? 'pr' : initialLinkedType)
+  );
+  const [linkedIssue, setLinkedIssueRaw] = useState<LinkedIssue | null>(
+    initialDraft?.linkedIssue ?? null
+  );
+  const [linkedPR, setLinkedPRRaw] = useState<PullRequest | null>(
+    initialDraft?.linkedPR ?? initialPR ?? null
+  );
+  const [loopPlan, setLoopPlan] = useState<LoopPlanDraft>(
+    initialDraft?.loopPlan ?? createDefaultLoopPlanDraft()
+  );
+  const [selectedPlanPath, setSelectedPlanPath] = useState<string | null>(
+    initialDraft?.selectedPlanPath ?? null
+  );
   const [prevProjectId, setPrevProjectId] = useState(projectId);
 
   // Reset linked state when project changes.
@@ -109,6 +123,7 @@ export function useCreateTaskState(
     generatedName,
     isPending,
     resetKey: projectId,
+    initialName: initialDraft?.taskName,
   });
 
   const workspaceConfig = useWorkspaceConfig({
@@ -122,11 +137,13 @@ export function useCreateTaskState(
     linkedIssue: linkedType === 'issue' ? linkedIssue : null,
     createBranchAndWorktreeDefault: createBranchAndWorktree,
     resetKey: projectId,
+    initial: initialDraft?.workspace,
   });
 
   // Switching linked type clears the selection for the previous type.
   const setLinkedType = (type: LinkedType) => {
     setLinkedTypeRaw(type);
+    if (type === 'plan') setLoopPlan((current) => ({ ...current, enabled: true }));
   };
 
   const setLinkedIssue = (issue: LinkedIssue | null) => {
@@ -137,12 +154,27 @@ export function useCreateTaskState(
     setLinkedPRRaw(pr);
   };
 
+  const setPlanSource = (path: string | null, planSource: string): void => {
+    setSelectedPlanPath(path);
+    setLoopPlan((current) => ({
+      ...current,
+      enabled: true,
+      goal: taskName.effectiveTaskName,
+      planSource,
+      validationCommands: [],
+      acceptanceCriteria: [],
+      workPhases: [],
+    }));
+  };
+
   // Issue/PR selection is optional enrichment — not required for creation.
   const isValid =
     taskName.effectiveTaskName.trim().length > 0 &&
     !taskName.isPending &&
     workspaceConfig.isValid &&
-    validateLoopPlanDraft(loopPlan).length === 0;
+    (linkedType === 'plan'
+      ? loopPlan.planSource.trim().length > 0
+      : validateLoopPlanDraft(loopPlan).length === 0);
 
   return {
     linkedType,
@@ -155,6 +187,9 @@ export function useCreateTaskState(
     workspaceConfig,
     loopPlan,
     setLoopPlan,
+    selectedPlanPath,
+    setSelectedPlanPath,
+    setPlanSource,
     isValid,
   };
 }

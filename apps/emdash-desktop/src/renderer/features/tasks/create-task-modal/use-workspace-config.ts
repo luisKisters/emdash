@@ -47,6 +47,7 @@ export type WorkspaceConfigState = {
   setupSteps: string[];
   /** Whether enough information is present to submit the form. */
   isValid: boolean;
+  invalidReason: string | null;
   /**
    * When the user picks "Checkout branch" in the new-worktree preset and the
    * chosen branch is already checked out in another worktree, this holds the
@@ -116,6 +117,7 @@ export type WorkspaceConfigInitial = {
   presetId?: WorkspacePresetId;
   selectedWorkspaceId?: string | null;
   branchSelection?: BranchSelectionInitial;
+  branchName?: string;
 };
 
 export function useWorkspaceConfig(opts: {
@@ -205,6 +207,7 @@ export function useWorkspaceConfig(opts: {
     linkedIssue,
     projectId,
     resetKey,
+    initialValue: initial?.branchName,
   });
 
   // ── Resolved config ──────────────────────────────────────────────────────
@@ -298,34 +301,36 @@ export function useWorkspaceConfig(opts: {
 
   // ── Validity ─────────────────────────────────────────────────────────────
 
-  const isValid = useMemo((): boolean => {
-    if (mode === 'sandbox') return true;
+  const invalidReason = useMemo((): string | null => {
+    if (mode === 'sandbox') return null;
 
     if (mode === 'existing') {
-      return !!(selectedWorkspaceId || repositoryWorkspaceId);
+      return selectedWorkspaceId || repositoryWorkspaceId ? null : 'Select a workspace.';
     }
 
     // new-worktree
     if (presetId === 'checkout-pr' || presetId === 'pr-new-branch') {
-      if (!pr) return false;
+      if (!pr) return 'Select a pull request for this workspace preset.';
       if (presetId === 'pr-new-branch') {
-        return branchNameState.branchName.trim().length > 0 && !branchNameState.branchAlreadyExists;
+        if (!branchNameState.branchName.trim()) return 'Enter a branch name.';
+        if (branchNameState.branchAlreadyExists) return 'A branch with this name already exists.';
       }
-      return true;
+      return null;
     }
 
     // new-worktree — checkout existing branch
     if (!branchSelection.createBranchAndWorktree) {
-      return branchSelection.selectedBranch !== undefined && !branchConflict;
+      if (!branchSelection.selectedBranch) return 'Select a branch.';
+      if (branchConflict) return 'This branch is already checked out in another workspace.';
+      return null;
     }
 
     // new-worktree — create new branch
-    if (isUnborn) return true;
-    return (
-      branchNameState.branchName.trim().length > 0 &&
-      !branchNameState.branchAlreadyExists &&
-      branchSelection.selectedBranch !== undefined
-    );
+    if (isUnborn) return null;
+    if (!branchNameState.branchName.trim()) return 'Enter a branch name.';
+    if (branchNameState.branchAlreadyExists) return 'A branch with this name already exists.';
+    if (!branchSelection.selectedBranch) return 'Select a base branch.';
+    return null;
   }, [
     mode,
     presetId,
@@ -339,6 +344,7 @@ export function useWorkspaceConfig(opts: {
     branchSelection.createBranchAndWorktree,
     branchConflict,
   ]);
+  const isValid = invalidReason === null;
 
   return {
     mode,
@@ -352,6 +358,7 @@ export function useWorkspaceConfig(opts: {
     resolvedConfig,
     setupSteps,
     isValid,
+    invalidReason,
     branchConflict,
   };
 }

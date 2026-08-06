@@ -25,6 +25,7 @@ export const viewEvents: Record<
   automations: 'automations_viewed',
   library: 'library_viewed',
   project: 'project_viewed',
+  loopVerification: 'project_viewed',
   task: 'task_viewed',
   settings: 'settings_viewed',
   skills: 'skills_viewed',

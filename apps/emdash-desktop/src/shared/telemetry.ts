@@ -18,6 +18,7 @@ export type FocusView =
   | 'skills'
   | 'mcp'
   | 'automations'
+  | 'loopVerification'
   | 'loop';
 export type FocusMainPanel = 'agents' | 'editor' | 'diff' | 'browser' | 'terminal';
 export type FocusedRegion = 'main' | 'bottom';

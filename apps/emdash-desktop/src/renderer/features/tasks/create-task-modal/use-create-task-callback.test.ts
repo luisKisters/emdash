@@ -4,7 +4,11 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createDefaultLoopPlanDraft } from '@renderer/features/loops/loop-plan-model';
 import type { InitialConversationState } from '../task-config/initial-conversation-section';
-import { useCreateTaskCallback } from './use-create-task-callback';
+import {
+  getCreateTaskDisabledReason,
+  useCreateTaskCallback,
+  type CreateTaskBlockers,
+} from './use-create-task-callback';
 import type { CreateTaskState } from './use-create-task-state';
 
 const mocks = vi.hoisted(() => ({
@@ -154,5 +158,65 @@ describe('useCreateTaskCallback', () => {
     expect(mocks.createTask).not.toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
+  });
+
+  it.each<{
+    name: string;
+    change: Partial<CreateTaskBlockers>;
+    reason: string;
+  }>([
+    { name: 'no project', change: { projectId: undefined }, reason: 'Select a project.' },
+    { name: 'empty task name', change: { taskName: ' ' }, reason: 'Enter a task name.' },
+    {
+      name: 'pending generated task name',
+      change: { taskName: '', taskNamePending: true },
+      reason: 'Wait for the task name to finish generating.',
+    },
+    {
+      name: 'missing Loop provider',
+      change: { provider: null },
+      reason: 'Loops require the Codex provider.',
+    },
+    {
+      name: 'unsupported Loop provider',
+      change: { provider: 'claude' },
+      reason: 'Loops require the Codex provider.',
+    },
+    {
+      name: 'missing Loop model',
+      change: { model: null },
+      reason: 'Select a Codex model.',
+    },
+    {
+      name: 'branch conflict',
+      change: { workspaceReason: 'This branch is already checked out in another workspace.' },
+      reason: 'This branch is already checked out in another workspace.',
+    },
+    {
+      name: 'branch exists',
+      change: { workspaceReason: 'A branch with this name already exists.' },
+      reason: 'A branch with this name already exists.',
+    },
+    {
+      name: 'missing PR data',
+      change: { workspaceReason: 'Select a pull request for this workspace preset.' },
+      reason: 'Select a pull request for this workspace preset.',
+    },
+    {
+      name: 'no selected workspace',
+      change: { workspaceReason: 'Select a workspace.' },
+      reason: 'Select a workspace.',
+    },
+  ])('returns the precise disabled reason for $name', ({ change, reason }) => {
+    const valid: CreateTaskBlockers = {
+      projectId: 'project-1',
+      taskName: 'Feature task',
+      taskNamePending: false,
+      loopEnabled: true,
+      provider: 'codex',
+      model: 'gpt-5',
+      workspaceReason: null,
+    };
+    expect(getCreateTaskDisabledReason({ ...valid, ...change })).toBe(reason);
   });
 });
