@@ -16,8 +16,8 @@ workspace.
   512 KiB plan limit, delimiter-safe prompt data, and isolated post-create notifications.
 - Verified in the built Electron app: Summario and notetakr detection, Plan file selection,
   full-screen Verification, disabled reason, Preparing, live planning chat, and final phases.
-- HTML and app screenshots are stored next to the mockup. The local Emdash Dev app is replaced only
-  after the final package smoke check.
+- HTML and app screenshots are stored next to the mockup. The local Emdash Dev app was replaced with
+  commit `fbc619b43` and passed a short Agent Browser smoke check over remote debugging.
 - Known database gap: Drizzle Kit 0.24.2 does not generate a migration when only the SQLite Loop
   status `CHECK` changes. The application schema and lifecycle support the new statuses, but the DB
   constraint cannot be updated without a manual migration or a dependency upgrade. Do not hand-edit
