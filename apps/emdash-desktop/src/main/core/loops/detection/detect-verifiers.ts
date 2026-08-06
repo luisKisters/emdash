@@ -5,6 +5,7 @@ import type { DetectedVerifier, VerifierClass } from '@shared/core/loops/verifie
 
 const MAX_CONFIG_BYTES = 512 * 1024;
 const GENERATED_SEGMENTS = new Set([
+  '.build',
   '.emdash',
   '.git',
   '.next',
@@ -383,7 +384,7 @@ async function addToolSignals(
     const has = (pattern: RegExp) =>
       configs.some((file) => pattern.test(path.posix.basename(file.relative)));
 
-    if (dependencies.has('vitest') || has(/^vitest\.config\./)) {
+    if (!pkg.value.scripts.test && (dependencies.has('vitest') || has(/^vitest\.config\./))) {
       add(
         'unit-test',
         'vitest',
@@ -392,7 +393,7 @@ async function addToolSignals(
         packageExec(manager, 'vitest run'),
         pkg.relative
       );
-    } else if (dependencies.has('jest') || has(/^jest\.config\./)) {
+    } else if (!pkg.value.scripts.test && (dependencies.has('jest') || has(/^jest\.config\./))) {
       add(
         'unit-test',
         'jest',
@@ -402,7 +403,10 @@ async function addToolSignals(
         pkg.relative
       );
     }
-    if (dependencies.has('@playwright/test') || has(/^playwright\.config\./)) {
+    if (
+      !pkg.value.scripts['test:e2e'] &&
+      (dependencies.has('@playwright/test') || has(/^playwright\.config\./))
+    ) {
       add(
         'e2e',
         'playwright',
@@ -411,7 +415,10 @@ async function addToolSignals(
         packageExec(manager, 'playwright test'),
         pkg.relative
       );
-    } else if (dependencies.has('cypress') || has(/^cypress\.config\./)) {
+    } else if (
+      !pkg.value.scripts['test:e2e'] &&
+      (dependencies.has('cypress') || has(/^cypress\.config\./))
+    ) {
       add(
         'e2e',
         'cypress',
@@ -421,7 +428,10 @@ async function addToolSignals(
         pkg.relative
       );
     }
-    if (dependencies.has('eslint') || has(/^eslint\.config\./) || has(/^\.eslintrc(?:\.|$)/)) {
+    if (
+      !pkg.value.scripts.lint &&
+      (dependencies.has('eslint') || has(/^eslint\.config\./) || has(/^\.eslintrc(?:\.|$)/))
+    ) {
       add(
         'lint',
         'eslint',
@@ -430,7 +440,10 @@ async function addToolSignals(
         packageExec(manager, 'eslint .'),
         pkg.relative
       );
-    } else if (dependencies.has('@biomejs/biome') || has(/^biome\.jsonc?$/)) {
+    } else if (
+      !pkg.value.scripts.lint &&
+      (dependencies.has('@biomejs/biome') || has(/^biome\.jsonc?$/))
+    ) {
       add(
         'lint',
         'biome',
@@ -441,6 +454,7 @@ async function addToolSignals(
       );
     }
     if (
+      !pkg.value.scripts.typecheck &&
       dependencies.has('typescript') &&
       fileSet.has(atDirectory(pkg.directory, 'tsconfig.json'))
     ) {

@@ -111,6 +111,7 @@ describe('detectVerifiers', () => {
     );
     expect(byId.get('tool:root:design-diff')?.command).toBe('./Tools/design-diff');
     expect(byId.get('package:convex:test')?.command).toBe('cd convex && npm run test');
+    expect(byId.has('tool:convex:vitest')).toBe(false);
     expect(result.at(-1)?.label).toBe('Claude computer use');
   });
 
@@ -158,6 +159,7 @@ describe('detectVerifiers', () => {
       'package.json': '{ broken',
       'pnpm-lock.yaml': '',
       'packages/web app/package.json': packageJson({ scripts: { test: 'vitest run' } }),
+      '.build/checkouts/copied/Package.swift': '.testTarget(name: "CopiedTests")',
       'node_modules/copied/package.json': packageJson({ scripts: { lint: 'eslint .' } }),
       'dist/package.json': packageJson({ scripts: { build: 'vite build' } }),
     });
