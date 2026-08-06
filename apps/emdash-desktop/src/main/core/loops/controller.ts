@@ -4,6 +4,7 @@ import { loopService } from './loop-service';
 export const loopsController = createRPCController({
   createLoop: loopService.createLoop.bind(loopService),
   createTaskWithLoop: loopService.createTaskWithLoop.bind(loopService),
+  retryLoopPreparation: loopService.retryLoopPreparation.bind(loopService),
   getLoopsForProject: loopService.getLoopsForProject.bind(loopService),
   getLoop: loopService.getLoop.bind(loopService),
   getVerifierAvailability: loopService.getVerifierAvailability.bind(loopService),

@@ -7,7 +7,9 @@ import {
   DEFAULT_LOOP_PROVIDER,
   LEGACY_DEFAULT_LOOP_PROVIDER,
   createLoopConfigV2,
+  isLoopBusyStatus,
   isLoopConfig,
+  isLoopErrorStatus,
   isLoopPhaseCriterion,
   isLoopStatus,
   isPhaseStatus,
@@ -119,6 +121,40 @@ describe('loop versioned schemas', () => {
       newLoopConfigV2Schema.safeParse({ ...config, provider: 'claude', model: null }).success
     ).toBe(false);
     expect(() => createLoopConfigV2({ ...config, model: '   ' })).toThrow();
+  });
+
+  it('reads old v2 config unchanged and adds verifierPlan only at the new write boundary', () => {
+    const config = createLoopConfigV2({
+      model: 'gpt-5.6-sol',
+      validationCommands: ['pnpm test'],
+      planSource: 'Plan',
+      terminalGates: { review: false, e2e: false },
+      browserPreview: { enabled: false },
+      verifierPlan: [
+        {
+          kind: 'detected',
+          id: 'test',
+          class: 'unit-test',
+          label: 'Unit tests',
+          command: 'pnpm test',
+        },
+        { kind: 'custom', name: 'Contract check', command: null },
+      ],
+    });
+    const { verifierPlan: _verifierPlan, ...oldConfig } = config;
+
+    expect(newLoopConfigV2Schema.strict().parse(oldConfig)).toEqual(oldConfig);
+    expect(config.verifierPlan).toEqual([
+      expect.objectContaining({ kind: 'detected', class: 'unit-test' }),
+      { kind: 'custom', name: 'Contract check', command: null },
+    ]);
+  });
+
+  it('classifies preparation as busy and preparation failure only as an error', () => {
+    expect(isLoopBusyStatus('preparing')).toBe(true);
+    expect(isLoopBusyStatus('prepare-failed')).toBe(false);
+    expect(isLoopErrorStatus('prepare-failed')).toBe(true);
+    expect(isLoopErrorStatus('preparing')).toBe(false);
   });
 
   it('round-trips a v1 loop config through serialize and parseJson', () => {

@@ -38,7 +38,13 @@ export const loopSessionTargetSchema = z
   })
   .strict();
 
-export const LOOP_SESSION_PURPOSES = ['work', 'review', 'browser-verification', 'e2e'] as const;
+export const LOOP_SESSION_PURPOSES = [
+  'planning',
+  'work',
+  'review',
+  'browser-verification',
+  'e2e',
+] as const;
 export const LOOP_SESSION_ATTEMPT_STATUSES = [
   'starting',
   'running',
@@ -148,6 +154,10 @@ export const loopStateV2Schema = z
     e2eAttemptsConsumed: z.number().int().nonnegative().max(CLEAN_ROOM_E2E_MAX_ATTEMPTS),
     sessionAttempts: z.array(loopSessionAttemptSchema).max(CLEAN_ROOM_MAX_DURABLE_SESSION_ATTEMPTS),
     verification: loopVerificationWorkspaceStateSchema.nullable(),
+    /** Optional so existing v2 rows remain byte-shape compatible on read. */
+    preparationConversationId: boundedIdSchema.optional(),
+    preparationError: boundedMessageSchema.optional(),
+    preparationGoal: boundedMessageSchema.optional(),
   })
   .strict()
   .superRefine((state, ctx) => validateUniqueSessionIdentities(state.sessionAttempts, ctx));
@@ -157,7 +167,7 @@ function validateUniqueSessionIdentities(
   ctx: z.RefinementCtx
 ): void {
   const attemptIds = new Set<string>();
-  const conversationIds = new Set<string>();
+  const conversationPurposes = new Map<string, z.infer<typeof loopSessionPurposeSchema>>();
   for (const [index, attempt] of attempts.entries()) {
     if (attemptIds.has(attempt.attemptId)) {
       ctx.addIssue({
@@ -166,7 +176,8 @@ function validateUniqueSessionIdentities(
         message: 'Session attempt IDs must be append-only and unique',
       });
     }
-    if (conversationIds.has(attempt.conversationId)) {
+    const existingPurpose = conversationPurposes.get(attempt.conversationId);
+    if (existingPurpose && (existingPurpose !== 'planning' || attempt.purpose !== 'planning')) {
       ctx.addIssue({
         code: 'custom',
         path: ['sessionAttempts', index, 'conversationId'],
@@ -174,7 +185,7 @@ function validateUniqueSessionIdentities(
       });
     }
     attemptIds.add(attempt.attemptId);
-    conversationIds.add(attempt.conversationId);
+    conversationPurposes.set(attempt.conversationId, attempt.purpose);
   }
 }
 

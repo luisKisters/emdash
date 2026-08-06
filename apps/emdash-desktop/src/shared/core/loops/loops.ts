@@ -2,7 +2,15 @@ import z from 'zod';
 import type { LoopPhaseState } from './loop-phase-state';
 import type { LoopState } from './loop-state';
 
-export const LOOP_STATUSES = ['draft', 'running', 'paused', 'failed', 'completed'] as const;
+export const LOOP_STATUSES = [
+  'preparing',
+  'prepare-failed',
+  'draft',
+  'running',
+  'paused',
+  'failed',
+  'completed',
+] as const;
 export const PHASE_STATUSES = [
   'pending',
   'running',
@@ -27,6 +35,14 @@ export type VerifierId = z.infer<typeof verifierIdSchema>;
 export type LoopProviderId = z.infer<typeof loopProviderSchema>;
 export type LoopPhaseKind = z.infer<typeof loopPhaseKindSchema>;
 
+export function isLoopBusyStatus(status: LoopStatus): boolean {
+  return status === 'preparing' || status === 'running';
+}
+
+export function isLoopErrorStatus(status: LoopStatus): boolean {
+  return status === 'prepare-failed' || status === 'failed';
+}
+
 /** Provider used by newly authored v2 Loops. Historical v1 rows had a Claude default. */
 export const DEFAULT_LOOP_PROVIDER = 'codex' as const satisfies LoopProviderId;
 export const LEGACY_DEFAULT_LOOP_PROVIDER = 'claude' as const satisfies LoopProviderId;
@@ -44,8 +60,46 @@ export const loopBrowserPreviewConfigSchema = z
   })
   .strict();
 
+export const LOOP_VERIFIER_CLASSES = [
+  'unit-test',
+  'e2e',
+  'lint',
+  'typecheck',
+  'build',
+  'format',
+  'browser',
+  'db',
+  'custom',
+] as const;
+
+export const loopVerifierClassSchema = z.enum(LOOP_VERIFIER_CLASSES);
+
+/** Minimal Phase-1 compatibility boundary. Replace this with the shared catalog type when present. */
+export const selectedVerifierSchema = z.discriminatedUnion('kind', [
+  z
+    .object({
+      kind: z.literal('detected'),
+      id: z.string().trim().min(1).max(256),
+      class: loopVerifierClassSchema,
+      label: z.string().trim().min(1).max(256),
+      command: z.string().trim().min(1).max(4096),
+    })
+    .strict(),
+  z
+    .object({
+      kind: z.literal('custom'),
+      name: z.string().trim().min(1).max(128),
+      command: z.string().trim().min(1).max(4096).nullable(),
+    })
+    .strict(),
+]);
+
+export const loopVerifierPlanSchema = z.array(selectedVerifierSchema).max(64);
+
 export type LoopTerminalGates = z.infer<typeof loopTerminalGatesSchema>;
 export type LoopBrowserPreviewConfig = z.infer<typeof loopBrowserPreviewConfigSchema>;
+export type LoopVerifierClass = z.infer<typeof loopVerifierClassSchema>;
+export type SelectedVerifier = z.infer<typeof selectedVerifierSchema>;
 
 export const loopConfigV1Schema = z.object({
   version: z.literal('1'),
@@ -82,6 +136,8 @@ export const loopConfigV2Schema = z.object({
       cdpPort: z.number().int().positive().optional(),
     })
     .optional(),
+  /** Optional so existing v2 rows remain valid. New authoring writes always set this field. */
+  verifierPlan: loopVerifierPlanSchema.optional(),
 });
 
 /** New v2 Loops must persist a single Codex provider/model pair. */
@@ -108,6 +164,7 @@ export type CreateLoopConfigV2Input = {
   browserPreview: LoopBrowserPreviewConfig;
   verifiers?: VerifierId[];
   agentBrowser?: LoopConfigV1['agentBrowser'];
+  verifierPlan?: SelectedVerifier[];
 };
 
 export function createLoopConfigV2(input: CreateLoopConfigV2Input): NewLoopConfigV2 {
@@ -121,6 +178,7 @@ export function createLoopConfigV2(input: CreateLoopConfigV2Input): NewLoopConfi
     browserPreview: input.browserPreview,
     reviewEnabled: input.terminalGates.review,
     verifiers: input.verifiers ?? [],
+    verifierPlan: input.verifierPlan ?? [],
     ...(input.agentBrowser ? { agentBrowser: input.agentBrowser } : {}),
   });
 }

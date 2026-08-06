@@ -6,7 +6,11 @@ import {
 } from '@main/core/tasks/operations/createTask';
 import { db } from '@main/db/client';
 import { createTaskWithLoop } from './create-task-with-loop';
-import { commitPreparedLoop, prepareNewLoop } from './loop-operations';
+import {
+  commitPreparedLoop,
+  commitPreparedPlanningConversation,
+  prepareNewLoop,
+} from './loop-operations';
 
 vi.mock('@main/core/tasks/operations/createTask', () => ({
   prepareCreateTask: vi.fn(),
@@ -17,6 +21,7 @@ vi.mock('@main/core/tasks/operations/createTask', () => ({
 vi.mock('./loop-operations', () => ({
   prepareNewLoop: vi.fn(),
   commitPreparedLoop: vi.fn(),
+  commitPreparedPlanningConversation: vi.fn(),
 }));
 
 vi.mock('@main/db/client', () => ({
@@ -61,12 +66,49 @@ describe('createTaskWithLoop', () => {
       convRow: undefined,
     } as never);
     vi.mocked(commitPreparedLoop).mockReturnValue({ id: 'loop-1', phases: [] } as never);
+    vi.mocked(commitPreparedPlanningConversation).mockReturnValue(undefined);
     vi.mocked(finalizeCreateTask).mockReturnValue({
       task: { id: 'task-1', projectId: 'project-1' },
     } as never);
     vi.mocked(db.transaction).mockImplementation(((callback: (tx: object) => void) => {
       callback({ transaction: 'shared' });
     }) as never);
+  });
+
+  it('commits exactly one persisted planning conversation in the create transaction', async () => {
+    vi.mocked(commitPreparedPlanningConversation).mockReturnValue({
+      id: 'planning-conversation-1',
+      projectId: 'project-1',
+      taskId: 'task-1',
+      provider: 'codex',
+      title: 'task-loop-planning',
+      config: { version: '1', type: 'acp', model: 'gpt-5.6-sol' },
+      type: 'acp',
+      sessionId: null,
+      isInitialConversation: false,
+      lastInteractedAt: null,
+      agentStatus: null,
+      agentStatusSeen: 1,
+    } as never);
+
+    const result = await createTaskWithLoop({
+      task: taskParams,
+      loop: {
+        ...loopParams,
+        workPhases: [],
+        planningInput: { goal: 'Ship it', plan: 'Plan the work.' },
+      },
+    });
+
+    expect(result).toMatchObject({
+      success: true,
+      data: { planningConversation: { id: 'planning-conversation-1' } },
+    });
+    expect(commitPreparedPlanningConversation).toHaveBeenCalledOnce();
+    expect(commitPreparedPlanningConversation).toHaveBeenCalledWith(
+      expect.anything(),
+      vi.mocked(commitCreateTask).mock.calls[0]![1]
+    );
   });
 
   it('commits the task and primary Loop in one transaction before finalizing', async () => {

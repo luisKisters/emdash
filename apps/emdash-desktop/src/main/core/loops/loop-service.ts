@@ -1,4 +1,6 @@
+import { randomUUID } from 'node:crypto';
 import { getPlugin } from '@main/core/agents/plugin-registry';
+import { conversationEvents } from '@main/core/conversations/conversation-events';
 import { projectManager } from '@main/core/projects/project-manager';
 import { getTasks } from '@main/core/tasks/operations/getTasks';
 import { taskService } from '@main/core/tasks/task-service';
@@ -6,6 +8,8 @@ import { resolveTaskWorkspaceTarget } from '@main/core/workspaces/resolve-task-w
 import { events } from '@main/lib/events';
 import { log } from '@main/lib/logger';
 import { err, ok, type Result } from '@main/lib/result';
+import { conversationCreatedChannel } from '@shared/core/conversations/conversationEvents';
+import type { LoopSessionAttempt, LoopStateV2 } from '@shared/core/loops/loop-state';
 import { loopPhaseUpdatedChannel, loopUpdatedChannel } from '@shared/core/loops/loopEvents';
 import {
   VERIFIER_IDS,
@@ -14,8 +18,15 @@ import {
   type LoopPhase,
   type LoopVerifierAvailability,
   type LoopWithPhases,
+  newLoopConfigV2Schema,
+  type SelectedVerifier,
 } from '@shared/core/loops/loops';
 import { getLoopSessionDriver } from './drivers/driver-registry';
+import {
+  resolvePromptTimeoutMs,
+  safeMessage,
+  sendPromptWithTimeout,
+} from './drivers/prompt-timeout';
 import type { LoopSessionDriver } from './drivers/session-driver';
 import {
   createTaskWithLoop as createTaskWithLoopOperation,
@@ -24,17 +35,24 @@ import {
   type CreateTaskWithLoopSuccess,
 } from './operations/create-task-with-loop';
 import {
+  assertLoopRunnable,
+  beginLoopPreparationRetry,
   createLoop as createLoopOperation,
   deleteLoop as deleteLoopOperation,
+  failLoopPreparation,
   getLoop as getLoopOperation,
   getLoopsForProject as getLoopsForProjectOperation,
   pauseRunningLoopsForBoot,
   resetPhaseForRetry,
+  settlePreparingLoopsForBoot,
   updateLoop,
   updatePhase,
 } from './operations/loop-operations';
+import { replaceLoopPhases } from './operations/replace-loop-phases';
+import { commitSessionAttempt } from './operations/session-progress';
 import type { LoopOperationError } from './operations/types';
 import { PhaseRunner, type LoopRunControl } from './phase-runner';
+import { buildLoopPlanPrompt, parseLoopPlan, type LoopPlanResult } from './plan-prompt';
 import { runLoopCommand } from './runtime/loop-command-runner';
 import {
   resolveLoopExecutionTarget,
@@ -50,6 +68,7 @@ export type LoopServiceError =
   | { kind: 'run-failed'; message: string };
 
 export const DEFAULT_LOOP_STOP_SETTLEMENT_TIMEOUT_MS = 10_000;
+export const DEFAULT_LOOP_PLANNING_TIMEOUT_MS = 90_000;
 
 type SettledWithin<T> = { settled: true; value: T } | { settled: false };
 
@@ -168,6 +187,50 @@ function serviceError(error: LoopOperationError): LoopServiceError {
   return error;
 }
 
+function planningTarget(target: LoopExecutionTarget) {
+  return {
+    workspaceId: target.workspaceId,
+    path: target.path,
+    machine: target.machine,
+  };
+}
+
+function resolvePlanningConfig(
+  config: ReturnType<typeof newLoopConfigV2Schema.parse>,
+  result: LoopPlanResult
+): Result<ReturnType<typeof newLoopConfigV2Schema.parse>, LoopServiceError> {
+  const customCommands = new Map(
+    result.customVerifiers.map((verifier) => [verifier.name, verifier.command] as const)
+  );
+  const verifierPlan: SelectedVerifier[] = (config.verifierPlan ?? []).map((verifier) => {
+    if (verifier.kind !== 'custom' || verifier.command) return verifier;
+    return { ...verifier, command: customCommands.get(verifier.name) ?? null };
+  });
+  if (verifierPlan.some((verifier) => verifier.kind === 'custom' && !verifier.command)) {
+    return err({
+      kind: 'invalid-state',
+      message: 'Loop planning did not resolve every selected custom verifier command',
+    });
+  }
+  const validationCommands = Array.from(
+    new Set(
+      verifierPlan.flatMap((verifier) => {
+        if (verifier.kind === 'detected') {
+          return verifier.class === 'browser' ? [] : [verifier.command];
+        }
+        return verifier.command ? [verifier.command] : [];
+      })
+    )
+  );
+  if (validationCommands.length === 0) {
+    return err({
+      kind: 'invalid-state',
+      message: 'Loop planning needs at least one selected command-running verifier',
+    });
+  }
+  return ok(newLoopConfigV2Schema.strict().parse({ ...config, verifierPlan, validationCommands }));
+}
+
 async function loadLoop(loopId: string): Promise<Result<LoopWithPhases, LoopServiceError>> {
   const loop = await getLoopOperation(loopId);
   if (!loop) return err({ kind: 'not-found', message: 'Loop not found' });
@@ -209,6 +272,7 @@ async function resolveExecutionTarget(
 
 export class LoopService {
   private readonly activeRuns = new Map<string, LoopRunHandle>();
+  private readonly activePreparations = new Map<string, Promise<void>>();
   private enabled = false;
   private readonly runner: PhaseRunner;
   private readonly stopSettlementTimeoutMs: number;
@@ -228,6 +292,8 @@ export class LoopService {
     for (const loop of paused) {
       emitLoop(loop);
     }
+    const interrupted = await settlePreparingLoopsForBoot();
+    for (const loop of interrupted) emitLoop(loop);
   }
 
   async reconcileEnabledState(enabled: boolean): Promise<void> {
@@ -285,9 +351,215 @@ export class LoopService {
     if (!result.success) return result;
 
     taskService.notifyTaskCreated(result.data.task.task, params.task);
+    if (result.data.planningConversation) {
+      conversationEvents._emit('conversation:created', result.data.planningConversation);
+      events.emit(conversationCreatedChannel, {
+        conversation: result.data.planningConversation,
+      });
+    }
     emitLoop(result.data.loop);
     for (const phase of result.data.loop.phases) emitPhase(phase);
+    if (result.data.loop.status === 'preparing') {
+      this.launchPreparation(result.data.loop.id);
+    }
     return result;
+  }
+
+  async retryLoopPreparation(loopId: string): Promise<Result<LoopWithPhases, LoopServiceError>> {
+    const enabled = this.requireEnabled();
+    if (!enabled.success) return enabled;
+    if (this.activePreparations.has(loopId)) {
+      return err({ kind: 'conflict', message: 'Loop planning is already running' });
+    }
+    const retry = await beginLoopPreparationRetry(loopId);
+    if (!retry.success) return err(serviceError(retry.error));
+    emitLoop(retry.data);
+    this.launchPreparation(loopId);
+    return retry;
+  }
+
+  private launchPreparation(loopId: string): void {
+    if (this.activePreparations.has(loopId)) return;
+    const preparation = this.prepareLoop(loopId)
+      .catch(async (error) => {
+        const failed = await failLoopPreparation(
+          loopId,
+          safeMessage(error, 'Loop planning failed unexpectedly')
+        );
+        if (failed.success) emitLoop(failed.data);
+      })
+      .finally(() => {
+        if (this.activePreparations.get(loopId) === preparation) {
+          this.activePreparations.delete(loopId);
+        }
+      });
+    this.activePreparations.set(loopId, preparation);
+  }
+
+  private async prepareLoop(loopId: string): Promise<void> {
+    let attempt: LoopSessionAttempt | undefined;
+    let state: LoopStateV2 | undefined;
+    let target: LoopExecutionTarget | undefined;
+    const fail = async (value: unknown): Promise<void> => {
+      const message = safeMessage(value, 'Loop planning failed');
+      if (attempt && state) {
+        const settled: LoopSessionAttempt = {
+          ...attempt,
+          status: 'failed',
+          finishedAt: new Date().toISOString(),
+          error: message.slice(0, 4_096),
+        };
+        const progress = await commitSessionAttempt({
+          loopId,
+          expected: state,
+          previous: attempt,
+          next: settled,
+        });
+        if (progress.success) state = progress.data;
+      }
+      const failed = await failLoopPreparation(loopId, message);
+      if (failed.success) emitLoop(failed.data);
+    };
+
+    try {
+      const loop = await getLoopOperation(loopId);
+      const config = newLoopConfigV2Schema.strict().safeParse(loop?.config);
+      if (
+        !loop ||
+        loop.status !== 'preparing' ||
+        loop.state?.version !== '2' ||
+        !loop.state.preparationConversationId ||
+        !loop.state.preparationGoal ||
+        !config.success
+      ) {
+        await fail('Loop planning state is incomplete');
+        return;
+      }
+      const preparationGoal = loop.state.preparationGoal;
+      const conversationId = loop.state.preparationConversationId;
+      state = loop.state;
+
+      const provisioned = await taskService.provisionWorkspace(loop.taskId);
+      if (!provisioned.success) {
+        await fail(provisioned.error);
+        return;
+      }
+      const resolvedTarget = await resolveExecutionTarget(loop);
+      if (!resolvedTarget.success) {
+        await fail(resolvedTarget.error);
+        return;
+      }
+      target = resolvedTarget.data;
+
+      const starting: LoopSessionAttempt = {
+        attemptId: randomUUID(),
+        conversationId,
+        purpose: 'planning',
+        target: planningTarget(target),
+        status: 'starting',
+        startedAt: new Date().toISOString(),
+      };
+      attempt = starting;
+      const appended = await commitSessionAttempt({ loopId, expected: state, next: starting });
+      if (!appended.success) {
+        await fail(appended.error);
+        return;
+      }
+      state = appended.data;
+
+      const driver = getLoopSessionDriver('acp');
+      if (!driver.startPlanningSession || !driver.sendPlanningPrompt) {
+        await fail('ACP planning is not available');
+        return;
+      }
+      const session = await driver.startPlanningSession({
+        conversationId,
+        projectId: loop.projectId,
+        taskId: loop.taskId,
+        provider: config.data.provider,
+        model: config.data.model,
+        target: planningTarget(target),
+        taskEnvironment: target.taskEnv,
+      });
+      if (!session.success) {
+        await fail(session.error);
+        return;
+      }
+
+      const running: LoopSessionAttempt = { ...starting, status: 'running' };
+      const runningProgress = await commitSessionAttempt({
+        loopId,
+        expected: state,
+        previous: starting,
+        next: running,
+      });
+      if (!runningProgress.success) {
+        await fail(runningProgress.error);
+        return;
+      }
+      attempt = running;
+      state = runningProgress.data;
+
+      const prompt = await sendPromptWithTimeout({
+        driver,
+        conversationId,
+        prompt: buildLoopPlanPrompt({
+          goal: preparationGoal,
+          plan: config.data.planSource,
+          verifierPlan: config.data.verifierPlan ?? [],
+        }),
+        timeoutMs: resolvePromptTimeoutMs(DEFAULT_LOOP_PLANNING_TIMEOUT_MS),
+        failureMessage: 'Loop planning prompt failed',
+        timeoutLabel: 'Loop planning prompt',
+        sendPrompt: driver.sendPlanningPrompt.bind(driver),
+      });
+      if (!prompt.success) {
+        await fail(prompt.error);
+        return;
+      }
+      const parsed = parseLoopPlan(prompt.data.finalText);
+      if (!parsed.success) {
+        await fail(parsed.error.message);
+        return;
+      }
+      const resolvedConfig = resolvePlanningConfig(config.data, parsed.data);
+      if (!resolvedConfig.success) {
+        await fail(resolvedConfig.error);
+        return;
+      }
+
+      const completed: LoopSessionAttempt = {
+        ...running,
+        status: 'completed',
+        finishedAt: new Date().toISOString(),
+      };
+      const completedProgress = await commitSessionAttempt({
+        loopId,
+        expected: state,
+        previous: running,
+        next: completed,
+      });
+      if (!completedProgress.success) {
+        await fail(completedProgress.error);
+        return;
+      }
+      state = completedProgress.data;
+      attempt = completed;
+
+      const replaced = await replaceLoopPhases(loopId, {
+        phases: parsed.data.phases,
+        config: resolvedConfig.data,
+        acceptanceCriteria: parsed.data.acceptanceCriteria,
+      });
+      if (!replaced.success) {
+        await fail(replaced.error);
+        return;
+      }
+      emitLoop(replaced.data);
+      for (const phase of replaced.data.phases) emitPhase(phase);
+    } finally {
+      target?.dispose();
+    }
   }
 
   async getLoopsForProject(projectId: string): Promise<Result<LoopWithPhases[], LoopServiceError>> {
@@ -350,11 +622,29 @@ export class LoopService {
   }
 
   async startLoop(loopId: string): Promise<Result<LoopWithPhases, LoopServiceError>> {
-    return this.startOrResume(loopId, 'start');
+    return this.startOrResume(loopId, 'start', (loop) => {
+      const runnable = assertLoopRunnable(loop);
+      if (!runnable.success) return err(serviceError(runnable.error));
+      return ['draft', 'paused', 'failed'].includes(loop.status)
+        ? ok()
+        : err({
+            kind: 'invalid-state',
+            message: `Cannot start loop with status '${loop.status}'`,
+          });
+    });
   }
 
   async resumeLoop(loopId: string): Promise<Result<LoopWithPhases, LoopServiceError>> {
-    return this.startOrResume(loopId, 'resume');
+    return this.startOrResume(loopId, 'resume', (loop) => {
+      if (loop.status !== 'paused') {
+        return err({
+          kind: 'invalid-state',
+          message: `Cannot resume loop with status '${loop.status}'`,
+        });
+      }
+      const runnable = assertLoopRunnable(loop);
+      return runnable.success ? ok() : err(serviceError(runnable.error));
+    });
   }
 
   async pauseLoop(loopId: string): Promise<Result<LoopWithPhases, LoopServiceError>> {
@@ -436,7 +726,8 @@ export class LoopService {
 
   private async startOrResume(
     loopId: string,
-    action: 'start' | 'resume'
+    action: 'start' | 'resume',
+    validate: (loop: LoopWithPhases) => Result<void, LoopServiceError>
   ): Promise<Result<LoopWithPhases, LoopServiceError>> {
     const enabled = this.requireEnabled();
     if (!enabled.success) return enabled;
@@ -458,16 +749,8 @@ export class LoopService {
       const stoppedAfterLoad = this.preLaunchStop(handle, action);
       if (stoppedAfterLoad) return stoppedAfterLoad;
 
-      const allowed =
-        action === 'start'
-          ? ['draft', 'paused', 'failed'].includes(loopResult.data.status)
-          : loopResult.data.status === 'paused';
-      if (!allowed) {
-        return err({
-          kind: 'invalid-state',
-          message: `Cannot ${action} loop with status '${loopResult.data.status}'`,
-        });
-      }
+      const valid = validate(loopResult.data);
+      if (!valid.success) return valid;
 
       const resolvedTarget = await resolveExecutionTarget(loopResult.data);
       if (!resolvedTarget.success) return resolvedTarget;
@@ -592,6 +875,13 @@ export class LoopService {
         const loop = await getLoopOperation(loopId);
         if (!loop) return;
         if (loop.status !== 'running') return;
+
+        if (loop.phases.length === 0) {
+          const failed = await updateLoop(loopId, { status: 'failed' });
+          if (failed.success) emitLoop(failed.data);
+          handle.recordRunFailure('A running Loop cannot have zero phases');
+          return;
+        }
 
         const phase = loop.phases.find((candidate) => candidate.idx === loop.currentPhaseIndex);
         if (!phase) {
