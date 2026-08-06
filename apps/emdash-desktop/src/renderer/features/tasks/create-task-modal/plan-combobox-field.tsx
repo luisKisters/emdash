@@ -12,7 +12,6 @@ type PlanOption = { value: string; label: string };
 
 export function PlanComboboxField({
   projectId,
-  workspaceId,
   selectedPath,
   planSource,
   onSelect,
@@ -26,13 +25,10 @@ export function PlanComboboxField({
   const [pasteMode, setPasteMode] = useState(selectedPath === null && planSource.length > 0);
   const [error, setError] = useState<string | null>(null);
   const query = useQuery({
-    queryKey: ['create-task', 'plan-files', projectId, workspaceId],
+    queryKey: ['create-task', 'plan-files', projectId],
     enabled: Boolean(projectId),
     queryFn: async () => {
       if (!projectId) return [];
-      if (workspaceId) {
-        return rpc.search.searchWorkspaceFiles({ workspaceId, query: '', limit: 200 });
-      }
       const result = await rpc.loops.listProjectPlanFiles(projectId);
       if (!result.success) throw new Error(result.error.message);
       return result.data;
@@ -48,29 +44,13 @@ export function PlanComboboxField({
   const selectFile = async (item: PlanOption): Promise<void> => {
     if (!projectId) return;
     setError(null);
-    let content: string;
-    if (workspaceId) {
-      const result = await rpc.workspace.files.readFile(
-        projectId,
-        workspaceId,
-        item.value,
-        1_000_000
-      );
-      if (!result.success) {
-        setError('Could not read this plan file.');
-        return;
-      }
-      content = result.data.content;
-    } else {
-      const result = await rpc.loops.readProjectPlanFile(projectId, item.value, 1_000_000);
-      if (!result.success) {
-        setError('Could not read this plan file.');
-        return;
-      }
-      content = result.data;
+    const result = await rpc.loops.readProjectPlanFile(projectId, item.value, 1_000_000);
+    if (!result.success) {
+      setError('Could not read this plan file.');
+      return;
     }
     setPasteMode(false);
-    onSelect(item.value, content);
+    onSelect(item.value, result.data);
   };
 
   if (pasteMode) {

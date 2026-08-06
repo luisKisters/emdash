@@ -1,3 +1,4 @@
+import { when } from 'mobx';
 import { useCallback } from 'react';
 import { getTaskManagerStore, getTaskView } from '@renderer/features/tasks/stores/task-selectors';
 import type { InitialConversationState } from '@renderer/features/tasks/task-config/initial-conversation-section';
@@ -106,8 +107,21 @@ export function useCreateTaskCallback({
           task,
           loop: { ...loopInput, id: loopId },
         });
-        getTaskView(selectedProjectId, id)?.paneLayout.open('loop', { loopId }, { preview: false });
         navigate('task', { projectId: selectedProjectId, taskId: id });
+        when(
+          () => !!getTaskView(selectedProjectId, id),
+          () => {
+            getTaskView(selectedProjectId, id)?.paneLayout.open(
+              'loop',
+              { loopId },
+              { preview: false }
+            );
+          },
+          {
+            timeout: 10_000,
+            onError: (error) => log.error('open optimistic Loop tab failed', error),
+          }
+        );
         onClose();
         await creation;
       } else {

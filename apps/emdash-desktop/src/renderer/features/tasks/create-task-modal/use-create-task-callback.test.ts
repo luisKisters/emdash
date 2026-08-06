@@ -129,7 +129,7 @@ describe('useCreateTaskCallback', () => {
     return { navigate, onClose };
   }
 
-  it('starts atomic creation and opens the optimistic Loop tab before creation settles', async () => {
+  it('starts atomic creation and opens the optimistic Loop tab after navigation', async () => {
     let finishCreation: ((value: { id: string }) => void) | undefined;
     mocks.createTaskWithLoop.mockReturnValueOnce(
       new Promise((resolve) => {
@@ -156,6 +156,9 @@ describe('useCreateTaskCallback', () => {
       mocks.open.mock.invocationCallOrder[0]
     );
     expect(navigate).toHaveBeenCalledWith('task', { projectId: 'project-1', taskId: 'task-1' });
+    expect(navigate.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.open.mock.invocationCallOrder[0]
+    );
     expect(onClose).toHaveBeenCalledOnce();
 
     finishCreation?.({ id: 'loop-1' });

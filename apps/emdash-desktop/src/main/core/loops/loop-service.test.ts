@@ -217,7 +217,7 @@ describe('LoopService project-root plan files', () => {
 
     await expect(service.listProjectPlanFiles('project-1')).resolves.toEqual({
       success: true,
-      data: [{ path: '/remote/repo/docs/plan.md', filename: 'plan.md' }],
+      data: [{ path: 'docs/plan.md', filename: 'plan.md' }],
     });
     await expect(
       service.readProjectPlanFile('project-1', 'docs/plan.md', 1_000_000)
@@ -227,6 +227,7 @@ describe('LoopService project-root plan files', () => {
       maxBytes: 512 * 1024 + 1,
     });
     expect(onWorkspaceDeactivatedMock).toHaveBeenCalledWith('project-plan:project-1');
+    expect(searchFilesMock).toHaveBeenCalledWith('project-plan:project-1', 'md', 200);
   });
 
   it('deactivates the project index when activation or search fails', async () => {

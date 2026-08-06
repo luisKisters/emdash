@@ -1,5 +1,6 @@
 import { Buffer } from 'node:buffer';
 import { randomUUID } from 'node:crypto';
+import { relative } from 'node:path';
 import { getPlugin } from '@main/core/agents/plugin-registry';
 import { conversationEvents } from '@main/core/conversations/conversation-events';
 import { projectManager } from '@main/core/projects/project-manager';
@@ -380,8 +381,9 @@ export class LoopService {
       });
       return ok(
         workspaceFileIndexService
-          .searchFiles(indexId, '', 200)
+          .searchFiles(indexId, 'md', 200)
           .filter((file) => /\.md$/i.test(file.path))
+          .map((file) => ({ ...file, path: relative(project.repoPath, file.path) }))
       );
     } finally {
       workspaceFileIndexService.onWorkspaceDeactivated(indexId);
