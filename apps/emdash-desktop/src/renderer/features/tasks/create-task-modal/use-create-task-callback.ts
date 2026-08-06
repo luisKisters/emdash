@@ -99,20 +99,20 @@ export function useCreateTaskCallback({
       workspaceConfig: state.workspaceConfig.resolvedConfig,
     };
 
-    navigate('task', { projectId: selectedProjectId, taskId: id });
-    onClose();
     try {
       if (loopInput) {
-        const loop = await taskManager.createTaskWithLoop({
+        const loopId = crypto.randomUUID();
+        const creation = taskManager.createTaskWithLoop({
           task,
-          loop: loopInput,
+          loop: { ...loopInput, id: loopId },
         });
-        getTaskView(selectedProjectId, id)?.paneLayout.open(
-          'loop',
-          { loopId: loop.id },
-          { preview: false }
-        );
+        getTaskView(selectedProjectId, id)?.paneLayout.open('loop', { loopId }, { preview: false });
+        navigate('task', { projectId: selectedProjectId, taskId: id });
+        onClose();
+        await creation;
       } else {
+        navigate('task', { projectId: selectedProjectId, taskId: id });
+        onClose();
         await taskManager.createTask(task);
       }
     } catch (error) {

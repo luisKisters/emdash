@@ -82,7 +82,7 @@ describe('buildInitialConversation', () => {
       ...createDefaultLoopPlanDraft(),
       enabled: true,
       goal: 'Ship it',
-      planSource: '## Build',
+      planSource: '  ## Build  ',
       validationCommands: [' pnpm test ', ''],
       acceptanceCriteria: [],
       workPhases: [],
@@ -118,6 +118,7 @@ describe('buildInitialConversation', () => {
       ],
       verifiers: [],
       provider: 'codex',
+      planningInput: { goal: 'Feature', plan: '## Build' },
     });
   });
 });

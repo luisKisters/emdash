@@ -95,6 +95,7 @@ describe('VerifierPicker', () => {
     });
     expect(container.textContent).toContain('Project 1 browser');
     expect(container.textContent).not.toContain('Project 2');
+    expect(container.querySelector('[aria-label="Project 1 browser"]')).not.toBeNull();
     expect(latest.terminalGates.e2e).toBe(true);
     expect(latest.validationCommands).toEqual([]);
 
@@ -121,5 +122,37 @@ describe('VerifierPicker', () => {
       name: 'Manual QA',
       command: null,
     });
+    expect(container.querySelector('[aria-label="Manual QA"]')).not.toBeNull();
+  });
+
+  it('keeps custom verifiers usable and retries after detector errors', async () => {
+    mocks.detectVerifiers.mockRejectedValueOnce(new Error('Detector unavailable'));
+    await act(async () => {
+      root.render(
+        React.createElement(QueryClientProvider, { client }, React.createElement(Harness))
+      );
+    });
+    await act(async () => {
+      await vi.waitFor(() => expect(container.textContent).toContain('Detector unavailable'));
+    });
+
+    const customButton = Array.from(container.querySelectorAll('button')).find((button) =>
+      button.textContent?.includes('Custom verifier')
+    );
+    await act(async () =>
+      customButton?.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+    );
+    expect(container.querySelector('[aria-label="Custom verifier name"]')).not.toBeNull();
+
+    const retryButton = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent?.trim() === 'Retry'
+    );
+    await act(async () =>
+      retryButton?.dispatchEvent(new dom.window.MouseEvent('click', { bubbles: true }))
+    );
+    await act(async () => {
+      await vi.waitFor(() => expect(container.textContent).toContain('Project 1 browser'));
+    });
+    expect(mocks.detectVerifiers).toHaveBeenCalledTimes(2);
   });
 });
