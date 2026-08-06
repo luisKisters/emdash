@@ -1,5 +1,6 @@
 import z from 'zod';
 import type { SelectedVerifier } from '@shared/core/loops/verifier-catalog';
+import { serializePromptJson } from './handoff-builder';
 
 export const LOOP_PLAN_BEGIN = '<<<LOOP:PLAN>>>';
 export const LOOP_PLAN_END = '<<<LOOP:PLAN_END>>>';
@@ -50,7 +51,7 @@ export function buildLoopPlanPrompt(input: {
   plan: string;
   verifierPlan: readonly SelectedVerifier[];
 }): string {
-  const data = JSON.stringify({
+  const data = serializePromptJson({
     goal: input.goal,
     plan: input.plan,
     selectedVerifiers: input.verifierPlan,

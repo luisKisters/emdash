@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import { randomUUID } from 'node:crypto';
 import { getPlugin } from '@main/core/agents/plugin-registry';
 import { conversationEvents } from '@main/core/conversations/conversation-events';
@@ -24,7 +25,7 @@ import {
 } from '@shared/core/loops/loops';
 import type { DetectedVerifier, SelectedVerifier } from '@shared/core/loops/verifier-catalog';
 import type { WorkspaceFileHit } from '@shared/core/search';
-import { resolveWorkspacePath as resolveWorkspaceFilePath } from '../files/file-system/workspace-file-policy';
+import { assertWorkspaceReadAllowed } from '../files/file-system/workspace-file-policy';
 import { detectVerifiers as detectRepoVerifiers } from './detection/detect-verifiers';
 import { getLoopSessionDriver } from './drivers/driver-registry';
 import {
@@ -52,6 +53,7 @@ import {
   settlePreparingLoopsForBoot,
   updateLoop,
   updatePhase,
+  MAX_LOOP_PLAN_SOURCE_BYTES,
 } from './operations/loop-operations';
 import { replaceLoopPhases } from './operations/replace-loop-phases';
 import { commitSessionAttempt } from './operations/session-progress';
@@ -196,6 +198,17 @@ function emitLoop(loop: Loop): void {
 
 function emitPhase(phase: LoopPhase): void {
   events.emit(loopPhaseUpdatedChannel, { loopId: phase.loopId, phase });
+}
+
+function notifyAfterLoopCreate(loopId: string, description: string, notify: () => void): void {
+  try {
+    notify();
+  } catch (error) {
+    log.warn(`Loop post-create ${description} failed`, {
+      loopId,
+      error: safeMessage(error, 'Unknown notification error'),
+    });
+  }
 }
 
 function serviceError(error: LoopOperationError): LoopServiceError {
@@ -378,7 +391,7 @@ export class LoopService {
   async readProjectPlanFile(
     projectId: string,
     filePath: string,
-    maxBytes?: number
+    _maxBytes?: number
   ): Promise<Result<string, LoopServiceError>> {
     const enabled = this.requireEnabled();
     if (!enabled.success) return enabled;
@@ -386,13 +399,25 @@ export class LoopService {
     if (!project) {
       return err({ kind: 'workspace-unavailable', message: 'Project is not mounted' });
     }
-    const target = resolveWorkspaceFilePath(project.repoPath, filePath);
+    const target = await assertWorkspaceReadAllowed(project.fileSystem, project.repoPath, filePath);
     if (!target.success) {
       return err({ kind: 'invalid-state', message: target.error.message });
     }
-    const result = await project.fileSystem.readText(target.data.path, { maxBytes });
+    const result = await project.fileSystem.readText(target.data.path, {
+      maxBytes: MAX_LOOP_PLAN_SOURCE_BYTES + 1,
+    });
     if (!result.success) {
       return err({ kind: 'workspace-unavailable', message: result.error.message });
+    }
+    if (
+      result.data.truncated ||
+      result.data.totalSize > MAX_LOOP_PLAN_SOURCE_BYTES ||
+      Buffer.byteLength(result.data.content, 'utf8') > MAX_LOOP_PLAN_SOURCE_BYTES
+    ) {
+      return err({
+        kind: 'invalid-state',
+        message: `Loop plan input exceeds the ${MAX_LOOP_PLAN_SOURCE_BYTES}-byte limit`,
+      });
     }
     return ok(result.data.content);
   }
@@ -413,17 +438,31 @@ export class LoopService {
     const result = await createTaskWithLoopOperation(params);
     if (!result.success) return result;
 
-    taskService.notifyTaskCreated(result.data.task.task, params.task);
-    if (result.data.planningConversation) {
-      conversationEvents._emit('conversation:created', result.data.planningConversation);
-      events.emit(conversationCreatedChannel, {
-        conversation: result.data.planningConversation,
-      });
-    }
-    emitLoop(result.data.loop);
-    for (const phase of result.data.loop.phases) emitPhase(phase);
     if (result.data.loop.status === 'preparing') {
       this.launchPreparation(result.data.loop.id);
+    }
+
+    notifyAfterLoopCreate(result.data.loop.id, 'task notification', () => {
+      taskService.notifyTaskCreated(result.data.task.task, params.task);
+    });
+    if (result.data.planningConversation) {
+      const planningConversation = result.data.planningConversation;
+      notifyAfterLoopCreate(result.data.loop.id, 'conversation notification', () => {
+        conversationEvents._emit('conversation:created', planningConversation);
+      });
+      notifyAfterLoopCreate(result.data.loop.id, 'conversation event', () => {
+        events.emit(conversationCreatedChannel, {
+          conversation: planningConversation,
+        });
+      });
+    }
+    notifyAfterLoopCreate(result.data.loop.id, 'loop event', () => {
+      emitLoop(result.data.loop);
+    });
+    for (const phase of result.data.loop.phases) {
+      notifyAfterLoopCreate(result.data.loop.id, 'phase event', () => {
+        emitPhase(phase);
+      });
     }
     return result;
   }

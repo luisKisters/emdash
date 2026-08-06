@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import { randomUUID } from 'node:crypto';
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db, type DrizzleTx } from '@main/db/client';
@@ -42,6 +43,8 @@ export type NewLoopWorkPhaseInput = {
   name: string;
   goal: string;
 };
+
+export const MAX_LOOP_PLAN_SOURCE_BYTES = 512 * 1024;
 
 export type NewLoopAuthoringInput = {
   id?: string;
@@ -122,6 +125,13 @@ export function prepareLoopShell(
   const planningInput = params.planningInput
     ? { goal: params.planningInput.goal.trim(), plan: params.planningInput.plan.trim() }
     : undefined;
+  const planSource = planningInput?.plan ?? params.planSource.trim();
+  if (Buffer.byteLength(planSource, 'utf8') > MAX_LOOP_PLAN_SOURCE_BYTES) {
+    return err({
+      kind: 'invalid-input',
+      message: `Loop plan input exceeds the ${MAX_LOOP_PLAN_SOURCE_BYTES}-byte limit`,
+    });
+  }
   if (planningInput && (!planningInput.goal || !planningInput.plan)) {
     return err({
       kind: 'invalid-input',
@@ -193,7 +203,7 @@ export function prepareLoopShell(
     config: createLoopConfigV2({
       model,
       validationCommands,
-      planSource: planningInput?.plan ?? params.planSource.trim(),
+      planSource,
       terminalGates: params.terminalGates,
       browserPreview: params.browserPreview,
       verifierPlan: parsedVerifierPlan.data,
