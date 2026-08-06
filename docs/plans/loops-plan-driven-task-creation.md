@@ -14,12 +14,17 @@ workspace.
   conversation, Preparing/Retry states, and optimistic task/Loop-tab opening.
 - Hardened after review: read-only ACP planning, permission denial, realpath containment, a fixed
   512 KiB plan limit, delimiter-safe prompt data, and isolated post-create notifications.
-- Pending proof: final built Electron runs for Summario and notetakr, screenshot comparison, and
-  replacement of the local Emdash Dev app.
+- Verified in the built Electron app: Summario and notetakr detection, Plan file selection,
+  full-screen Verification, disabled reason, Preparing, live planning chat, and final phases.
+- HTML and app screenshots are stored next to the mockup. The local Emdash Dev app is replaced only
+  after the final package smoke check.
 - Known database gap: Drizzle Kit 0.24.2 does not generate a migration when only the SQLite Loop
   status `CHECK` changes. The application schema and lifecycle support the new statuses, but the DB
   constraint cannot be updated without a manual migration or a dependency upgrade. Do not hand-edit
   generated Drizzle files.
+- Known transcript gap: the planning prompt and live thought state appear during Preparing. The
+  provider replay does not restore the final assistant JSON after completion. Phase generation and
+  Loop state are not affected. Do not add a second transcript system to solve this in this slice.
 
 This change extends the existing Create Task modal and Loop engine. It must not create a second
 task-creation flow, chat system, workspace resolver, file-system abstraction, verifier runner, or
@@ -215,20 +220,14 @@ and E2E terminal-gate fields. Do not add provider capabilities or a new runner.
 - Compare these screenshots with the HTML mockup at the same viewport. Fix material structure,
   spacing, theme, text, state, or navigation differences before handoff.
 
-## Validation Commands
+## Validation policy
 
-Run a focused adjacent unit or renderer test after each implementation task. After all phases merge,
-run the broad commands once:
-
-```bash
-pnpm run format:check
-pnpm run typecheck
-pnpm run lint
-pnpm run test
-cd apps/emdash-desktop && pnpm run db:fixtures && pnpm run test:migrations
-```
-
-Run the built Electron harness and manual agent-browser pass only once at the end.
+- During implementation, run only the smallest adjacent test file for the changed behavior.
+- Do not execute long generated test plans or repeat the full workspace suite.
+- Use one small built-Electron smoke flow at the end. Cover Summario and notetakr in the same app
+  session where possible.
+- Run broad static checks only once when the change scope requires them. The completed integration
+  already passed format, typecheck, and lint.
 
 ## Acceptance evidence
 
@@ -242,22 +241,17 @@ Run the built Electron harness and manual agent-browser pass only once at the en
 - Headless Chrome screenshots for every HTML panel.
 - Real Electron screenshots and an agent-browser action log for summario and notetakr.
 
-## Required verification
+## Focused verification set
 
-- Detector fixtures for summario and notetakr, including aggregate suppression and deterministic
-  ordering.
-- Detector boundary tests for malformed files, nested paths with spaces, ignored generated trees,
-  project-root operation without a workspace, and an SSH-backed `IFileSystem`.
-- Parser tests for valid, missing, duplicate, oversized, and schema-invalid replies.
-- Backward-compatible reads of old Loop config and state rows.
-- Migration fixture, regenerated baseline and empty databases, and migration tests.
-- State-machine tests for success, provisioning failure, timeout, invalid reply, restart during
-  preparation, repeated Retry, task deletion, and concurrent Retry.
-- Transaction tests proving no partial phase/config replacement and no duplicate conversation or
-  phase rows.
-- Renderer tests proving that Continue closes the modal and opens a full-screen surface, plus
-  Back/Continue/Create state preservation, stale detection responses, loading, empty/error states,
-  every disabled reason, tooltip accessibility, and optimistic Loop-tab opening.
+- Detector fixtures cover Summario, notetakr, aggregate suppression, generated-tree exclusion, and
+  deterministic ordering.
+- Parser tests cover valid, missing, duplicate, oversized, and schema-invalid replies.
+- Lifecycle tests cover shell creation, runnable guards, zero phases, preparation, retry, and atomic
+  replacement.
+- Renderer tests cover full-screen navigation, state preservation, disabled reasons, and Loop-tab
+  opening.
+- One Agent Browser pass supplies the final UI evidence. Do not turn this list into a long plan that
+  executes application work or repository verifiers.
 - Real Electron proof for summario and notetakr through the existing Loops harness.
 - Final repository format, lint, typecheck, test, migration, and fixture gates.
 
