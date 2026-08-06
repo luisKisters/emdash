@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   startLoop: vi.fn(),
   pauseLoop: vi.fn(),
   resumeLoop: vi.fn(),
+  retryLoopPreparation: vi.fn(),
   retryPhase: vi.fn(),
   listeners: new Map<string, (value: never) => void>(),
 }));
@@ -19,6 +20,7 @@ vi.mock('@renderer/lib/ipc', () => ({
       startLoop: mocks.startLoop,
       pauseLoop: mocks.pauseLoop,
       resumeLoop: mocks.resumeLoop,
+      retryLoopPreparation: mocks.retryLoopPreparation,
       retryPhase: mocks.retryPhase,
     },
   },
@@ -137,8 +139,19 @@ describe('RpcLoopAuthoringPort', () => {
   });
 
   it('maps only bounded handoff and evidence metadata into the task tab', () => {
-    const snapshot = mapLoopTabSnapshot(makeLoop());
+    const loop = makeLoop();
+    loop.status = 'prepare-failed';
+    if (loop.state?.version === '2') {
+      loop.state.preparationConversationId = 'planning-conversation-1';
+      loop.state.preparationError = 'Planning failed';
+    }
+    const snapshot = mapLoopTabSnapshot(loop);
 
+    expect(snapshot).toMatchObject({
+      status: 'prepare-failed',
+      preparationConversationId: 'planning-conversation-1',
+      preparationError: 'Planning failed',
+    });
     expect(snapshot.browser).toEqual({
       kind: 'waiting',
       message: 'Waiting for the clean-room E2E phase.',
@@ -178,5 +191,15 @@ describe('RpcLoopAuthoringPort', () => {
       status: 'running',
     });
     expect(mocks.startLoop).toHaveBeenCalledWith('loop-1');
+  });
+
+  it('retries preparation through the existing production RPC', async () => {
+    mocks.retryLoopPreparation.mockResolvedValue({ success: true, data: makeLoop() });
+    const port = new RpcLoopAuthoringPort();
+
+    await expect(port.retryPreparation('loop-1')).resolves.toMatchObject({
+      loopId: 'loop-1',
+    });
+    expect(mocks.retryLoopPreparation).toHaveBeenCalledWith('loop-1');
   });
 });

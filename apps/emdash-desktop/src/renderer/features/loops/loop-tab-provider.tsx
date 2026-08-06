@@ -1,4 +1,4 @@
-import { Pause, Play, RefreshCw, Repeat2 } from 'lucide-react';
+import { MessageSquare, Pause, Play, RefreshCw, Repeat2 } from 'lucide-react';
 import { observer } from 'mobx-react-lite';
 import { useEffect } from 'react';
 import { getAppSettingValueSnapshot } from '@renderer/features/settings/app-settings-client';
@@ -19,6 +19,7 @@ import {
 } from '@renderer/features/tabs/tab-bar/generic-tab-item';
 import { Button } from '@renderer/lib/ui/button';
 import { cn } from '@renderer/utils/utils';
+import { isLoopBusyStatus } from '@shared/core/loops/loops';
 import type {
   LoopAuthoringPort,
   LoopTabBrowserState,
@@ -253,10 +254,14 @@ export const LoopTabPanel = observer(function LoopTabPanel({
   const loopMeta = loopStatusMeta(snapshot.status);
   const pending = resource.action.kind === 'pending';
   const phases = [...snapshot.phases].sort((a, b) => a.index - b.index);
+  const isPreparing = snapshot.status === 'preparing';
+  const preparationFailed = snapshot.status === 'prepare-failed';
+  const planningConversationId = snapshot.preparationConversationId;
 
   return (
     <section
       aria-label={snapshot.name}
+      aria-busy={isLoopBusyStatus(snapshot.status)}
       className="h-full min-h-0 overflow-y-auto bg-background text-foreground"
     >
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-5 px-8 py-8">
@@ -266,11 +271,25 @@ export const LoopTabPanel = observer(function LoopTabPanel({
               <h1 className="text-xl font-normal text-foreground">{snapshot.name}</h1>
               <StatusChip {...loopMeta} />
             </div>
-            <p className="mt-2 text-sm text-foreground-muted">
-              Phase {Math.min(snapshot.currentPhaseIndex + 1, Math.max(phases.length, 1))} of{' '}
-              {phases.length}
-            </p>
+            {!isPreparing && !preparationFailed ? (
+              <p className="mt-2 text-sm text-foreground-muted">
+                Phase {Math.min(snapshot.currentPhaseIndex + 1, Math.max(phases.length, 1))} of{' '}
+                {phases.length}
+              </p>
+            ) : null}
           </div>
+          {planningConversationId ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              aria-label="Open planning conversation"
+              onClick={() => resource.openPlanningConversation(planningConversationId)}
+            >
+              <MessageSquare className="size-3.5" />
+              Planning conversation
+            </Button>
+          ) : null}
           {snapshot.status === 'draft' || snapshot.status === 'failed' ? (
             <Button
               type="button"
@@ -322,12 +341,48 @@ export const LoopTabPanel = observer(function LoopTabPanel({
           </div>
         ) : null}
 
-        <BrowserState browser={snapshot.browser} />
-        <div className="grid gap-3">
-          {phases.map((phase) => (
-            <PhaseCard key={phase.id} phase={phase} resource={resource} />
-          ))}
-        </div>
+        {isPreparing ? (
+          <div
+            role="status"
+            aria-live="polite"
+            className="flex items-center gap-2 rounded-md border border-border bg-background p-3 text-sm text-foreground-muted"
+          >
+            <RefreshCw className="size-3.5 animate-spin" />
+            Preparing Loop phases…
+          </div>
+        ) : null}
+
+        {preparationFailed ? (
+          <div
+            role="alert"
+            className="flex flex-wrap items-center justify-between gap-3 rounded-md bg-background-destructive p-3 text-sm text-foreground-destructive"
+          >
+            <span>{snapshot.preparationError ?? 'Loop preparation failed.'}</span>
+            <Button
+              type="button"
+              size="sm"
+              variant="secondary"
+              aria-label="Retry Loop preparation"
+              aria-busy={pending}
+              disabled={pending}
+              onClick={() => void resource.retryPreparation()}
+            >
+              <RefreshCw className="size-3.5" />
+              Retry
+            </Button>
+          </div>
+        ) : null}
+
+        {!isPreparing && !preparationFailed ? (
+          <>
+            <BrowserState browser={snapshot.browser} />
+            <div className="grid gap-3">
+              {phases.map((phase) => (
+                <PhaseCard key={phase.id} phase={phase} resource={resource} />
+              ))}
+            </div>
+          </>
+        ) : null}
       </div>
     </section>
   );
@@ -383,10 +438,12 @@ export function createLoopTabProvider(
     },
     initialize(
       entry: TabEntry<LoopTabState>,
-      _handle: TabHandle,
+      handle: TabHandle,
       _ctx: TabViewContext
     ): LoopTabResource {
-      return new LoopTabResource(entry.state.loopId, port);
+      return new LoopTabResource(entry.state.loopId, port, (kind, args) =>
+        handle.open(kind, args, { preview: false })
+      );
     },
     dispose(_entry: TabEntry<LoopTabState>, resource: LoopTabResource): void {
       resource.dispose();

@@ -26,6 +26,9 @@ const getTasksMock = vi.hoisted(() => vi.fn());
 const getPluginMock = vi.hoisted(() => vi.fn());
 const getProjectMock = vi.hoisted(() => vi.fn());
 const getVerifierMock = vi.hoisted(() => vi.fn());
+const onWorkspaceActivatedMock = vi.hoisted(() => vi.fn());
+const onWorkspaceDeactivatedMock = vi.hoisted(() => vi.fn());
+const searchFilesMock = vi.hoisted(() => vi.fn());
 
 vi.mock('@main/lib/events', () => ({
   events: { emit: emitMock },
@@ -85,6 +88,21 @@ vi.mock('@main/core/projects/project-manager', () => ({
   projectManager: { getProject: getProjectMock },
 }));
 
+vi.mock('@main/core/search/workspace-file-index-service', () => ({
+  workspaceFileIndexService: {
+    onWorkspaceActivated: onWorkspaceActivatedMock,
+    onWorkspaceDeactivated: onWorkspaceDeactivatedMock,
+    searchFiles: searchFilesMock,
+  },
+}));
+
+vi.mock('../files/file-system/workspace-file-policy', () => ({
+  resolveWorkspacePath: (rootPath: string, filePath: string) =>
+    filePath.startsWith('../')
+      ? err({ type: 'invalid-path', path: filePath, message: 'Path must be inside the workspace' })
+      : ok({ path: `${rootPath}/${filePath}` }),
+}));
+
 vi.mock('./verifiers/registry', () => ({ getVerifier: getVerifierMock }));
 
 const loop: Loop = {
@@ -101,6 +119,7 @@ const loop: Loop = {
 };
 
 beforeEach(() => {
+  pauseRunningLoopsForBootMock.mockResolvedValue([]);
   settlePreparingLoopsForBootMock.mockResolvedValue([]);
   getProjectMock.mockReturnValue({
     repoPath: '/project',
@@ -174,6 +193,83 @@ describe('LoopService verifier detection', () => {
     });
     expect(checkedCwds).toEqual([repoPath, repoPath, repoPath]);
     expect(resolveTaskWorkspaceTargetMock).not.toHaveBeenCalled();
+  });
+});
+
+describe('LoopService project-root plan files', () => {
+  it('lists and reads plans through the mounted project filesystem without a workspace', async () => {
+    const enumerate = vi.fn(() =>
+      ok(
+        (async function* () {
+          yield '/remote/repo/docs/plan.md';
+        })()
+      )
+    );
+    const readText = vi.fn(async () => ok({ content: '# Plan', truncated: false, totalSize: 6 }));
+    getProjectMock.mockReturnValue({
+      repoPath: '/remote/repo',
+      fileSystem: { enumerate, readText },
+    });
+    onWorkspaceActivatedMock.mockImplementation(async (_id, source) => {
+      source.enumerate(source.rootPath, {});
+    });
+    searchFilesMock.mockReturnValue([{ path: '/remote/repo/docs/plan.md', filename: 'plan.md' }]);
+    const service = new LoopService();
+    await service.initialize(true);
+
+    await expect(service.listProjectPlanFiles('project-1')).resolves.toEqual({
+      success: true,
+      data: [{ path: '/remote/repo/docs/plan.md', filename: 'plan.md' }],
+    });
+    await expect(
+      service.readProjectPlanFile('project-1', 'docs/plan.md', 1_000_000)
+    ).resolves.toEqual({ success: true, data: '# Plan' });
+    expect(enumerate).toHaveBeenCalledWith('/remote/repo', expect.any(Object));
+    expect(readText).toHaveBeenCalledWith('/remote/repo/docs/plan.md', {
+      maxBytes: 1_000_000,
+    });
+    expect(onWorkspaceDeactivatedMock).toHaveBeenCalledWith('project-plan:project-1');
+  });
+
+  it('deactivates the project index when activation or search fails', async () => {
+    onWorkspaceDeactivatedMock.mockClear();
+    getProjectMock.mockReturnValue({
+      repoPath: '/remote/repo',
+      fileSystem: { enumerate: vi.fn() },
+    });
+    const service = new LoopService();
+    await service.initialize(true);
+
+    onWorkspaceActivatedMock.mockRejectedValueOnce(new Error('index failed'));
+    await expect(service.listProjectPlanFiles('project-1')).rejects.toThrow('index failed');
+
+    onWorkspaceActivatedMock.mockResolvedValueOnce(undefined);
+    searchFilesMock.mockImplementationOnce(() => {
+      throw new Error('search failed');
+    });
+    await expect(service.listProjectPlanFiles('project-1')).rejects.toThrow('search failed');
+
+    expect(onWorkspaceDeactivatedMock).toHaveBeenCalledTimes(2);
+    expect(onWorkspaceDeactivatedMock).toHaveBeenNthCalledWith(1, 'project-plan:project-1');
+    expect(onWorkspaceDeactivatedMock).toHaveBeenNthCalledWith(2, 'project-plan:project-1');
+  });
+
+  it('rejects project-root plan paths outside the repository', async () => {
+    const readText = vi.fn();
+    getProjectMock.mockReturnValue({
+      repoPath: '/remote/repo',
+      fileSystem: { readText },
+    });
+    const service = new LoopService();
+    await service.initialize(true);
+
+    const result = await service.readProjectPlanFile('project-1', '../secret.md');
+
+    expect(result).toMatchObject({
+      success: false,
+      error: { kind: 'invalid-state' },
+    });
+    expect(readText).not.toHaveBeenCalled();
   });
 });
 

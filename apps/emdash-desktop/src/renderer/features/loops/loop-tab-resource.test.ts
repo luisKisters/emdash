@@ -13,6 +13,8 @@ function snapshot(patch: Partial<LoopTabSnapshot> = {}): LoopTabSnapshot {
     taskId: 'task-1',
     name: 'Native Loop',
     status: 'running',
+    preparationConversationId: null,
+    preparationError: null,
     currentPhaseIndex: 0,
     phases: [],
     browser: { kind: 'waiting', message: 'Waiting for a preview server.' },
@@ -37,6 +39,7 @@ function fakePort(initial = snapshot()): {
           unsubscribe();
         };
       }),
+      retryPreparation: vi.fn(async () => snapshot({ status: 'preparing' })),
       startLoop: vi.fn(async () => snapshot({ status: 'running' })),
       pauseLoop: vi.fn(async () => snapshot({ status: 'paused' })),
       resumeLoop: vi.fn(async () => snapshot({ status: 'running' })),

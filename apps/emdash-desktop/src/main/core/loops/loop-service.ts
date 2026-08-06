@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { getPlugin } from '@main/core/agents/plugin-registry';
 import { conversationEvents } from '@main/core/conversations/conversation-events';
 import { projectManager } from '@main/core/projects/project-manager';
+import { workspaceFileIndexService } from '@main/core/search/workspace-file-index-service';
 import { getTasks } from '@main/core/tasks/operations/getTasks';
 import { taskService } from '@main/core/tasks/task-service';
 import { resolveTaskWorkspaceTarget } from '@main/core/workspaces/resolve-task-workspace-target';
@@ -22,6 +23,8 @@ import {
   newLoopConfigV2Schema,
 } from '@shared/core/loops/loops';
 import type { DetectedVerifier, SelectedVerifier } from '@shared/core/loops/verifier-catalog';
+import type { WorkspaceFileHit } from '@shared/core/search';
+import { resolveWorkspacePath as resolveWorkspaceFilePath } from '../files/file-system/workspace-file-policy';
 import { detectVerifiers as detectRepoVerifiers } from './detection/detect-verifiers';
 import { getLoopSessionDriver } from './drivers/driver-registry';
 import {
@@ -344,6 +347,54 @@ export class LoopService {
     }
 
     return result;
+  }
+
+  async listProjectPlanFiles(
+    projectId: string
+  ): Promise<Result<WorkspaceFileHit[], LoopServiceError>> {
+    const enabled = this.requireEnabled();
+    if (!enabled.success) return enabled;
+    const project = projectManager.getProject(projectId);
+    if (!project) {
+      return err({ kind: 'workspace-unavailable', message: 'Project is not mounted' });
+    }
+
+    const indexId = `project-plan:${projectId}`;
+    try {
+      await workspaceFileIndexService.onWorkspaceActivated(indexId, {
+        rootPath: project.repoPath,
+        enumerate: (rootPath, options) => project.fileSystem.enumerate(rootPath, options),
+      });
+      return ok(
+        workspaceFileIndexService
+          .searchFiles(indexId, '', 200)
+          .filter((file) => /\.md$/i.test(file.path))
+      );
+    } finally {
+      workspaceFileIndexService.onWorkspaceDeactivated(indexId);
+    }
+  }
+
+  async readProjectPlanFile(
+    projectId: string,
+    filePath: string,
+    maxBytes?: number
+  ): Promise<Result<string, LoopServiceError>> {
+    const enabled = this.requireEnabled();
+    if (!enabled.success) return enabled;
+    const project = projectManager.getProject(projectId);
+    if (!project) {
+      return err({ kind: 'workspace-unavailable', message: 'Project is not mounted' });
+    }
+    const target = resolveWorkspaceFilePath(project.repoPath, filePath);
+    if (!target.success) {
+      return err({ kind: 'invalid-state', message: target.error.message });
+    }
+    const result = await project.fileSystem.readText(target.data.path, { maxBytes });
+    if (!result.success) {
+      return err({ kind: 'workspace-unavailable', message: result.error.message });
+    }
+    return ok(result.data.content);
   }
 
   async createTaskWithLoop(
