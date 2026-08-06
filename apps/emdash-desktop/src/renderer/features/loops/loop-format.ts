@@ -18,6 +18,8 @@ export type ParsedVerifierEvidence = {
 };
 
 const loopStatusMetaByStatus: Record<LoopStatus, StatusMeta> = {
+  preparing: { label: 'Preparing', tone: 'info' },
+  'prepare-failed': { label: 'Preparation failed', tone: 'danger' },
   draft: { label: 'Draft', tone: 'neutral' },
   running: { label: 'Running', tone: 'info' },
   paused: { label: 'Paused', tone: 'warning' },

@@ -34,6 +34,8 @@ function readySnapshot(status: LoopTabSnapshot['status'] = 'running'): LoopTabSn
     taskId: 'task-1',
     name: 'Ship native Loops',
     status,
+    preparationConversationId: null,
+    preparationError: null,
     currentPhaseIndex: 0,
     phases: [
       {
@@ -93,6 +95,7 @@ function port(snapshot = readySnapshot()): LoopAuthoringPort {
   return {
     loadLoop: vi.fn(async () => snapshot),
     subscribeToLoop: vi.fn(() => () => {}),
+    retryPreparation: vi.fn(async () => readySnapshot('preparing')),
     startLoop: vi.fn(async () => readySnapshot('running')),
     pauseLoop: vi.fn(async () => readySnapshot('paused')),
     resumeLoop: vi.fn(async () => readySnapshot('running')),
@@ -130,9 +133,10 @@ describe('native Loop tab', () => {
   it('creates a single-mount provider around the injected port', () => {
     const fake = port();
     const provider = createLoopTabProvider(fake);
+    const open = vi.fn();
     const resource = provider.initialize(
       { kind: 'loop', tabId: 'tab-1', isPreview: false, state: { loopId: 'loop-1' } },
-      { tabId: 'tab-1', pin: vi.fn(), close: vi.fn(async () => true), open: vi.fn() },
+      { tabId: 'tab-1', pin: vi.fn(), close: vi.fn(async () => true), open },
       { viewId: 'task-1' }
     );
 
@@ -140,6 +144,12 @@ describe('native Loop tab', () => {
     expect(provider.mount).toBe('single');
     expect(provider.resourceKey({ loopId: 'loop-1' })).toBe('loop-1');
     expect(resource).toBeInstanceOf(LoopTabResource);
+    resource.openPlanningConversation('planning-conversation-1');
+    expect(open).toHaveBeenCalledWith(
+      'acp-chat',
+      { conversationId: 'planning-conversation-1' },
+      { preview: false }
+    );
   });
 
   it('rejects Loop tab activation while the experiment is disabled', () => {
@@ -170,6 +180,48 @@ describe('native Loop tab', () => {
     );
     expect(container.querySelector('button[aria-label="Pause Loop"]')).not.toBeNull();
     expect(container.querySelector('button[aria-label="Retry Review"]')).not.toBeNull();
+  });
+
+  it('renders preparation states, durable errors, planning chat, and preparation retry', async () => {
+    const preparing = readySnapshot('preparing');
+    preparing.preparationConversationId = 'planning-conversation-1';
+    const preparingResource = new LoopTabResource('loop-1', port(preparing));
+    await preparingResource.load();
+    act(() => root.render(React.createElement(LoopTabPanel, { resource: preparingResource })));
+
+    expect(container.querySelector('section')?.getAttribute('aria-busy')).toBe('true');
+    expect(container.querySelector('[role="status"]')?.textContent).toContain(
+      'Preparing Loop phases'
+    );
+
+    const failed = readySnapshot('prepare-failed');
+    failed.preparationConversationId = 'planning-conversation-1';
+    failed.preparationError = 'The planning response was invalid.';
+    const fake = port(failed);
+    const openTab = vi.fn();
+    const failedResource = new LoopTabResource('loop-1', fake, openTab);
+    await failedResource.load();
+    act(() => root.render(React.createElement(LoopTabPanel, { resource: failedResource })));
+
+    expect(container.querySelector('section')?.getAttribute('aria-busy')).toBe('false');
+    expect(container.querySelector('[role="alert"]')?.textContent).toContain(
+      'The planning response was invalid.'
+    );
+    await act(async () =>
+      container
+        .querySelector('button[aria-label="Open planning conversation"]')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    );
+    expect(openTab).toHaveBeenCalledWith('acp-chat', {
+      conversationId: 'planning-conversation-1',
+    });
+
+    await act(async () =>
+      container
+        .querySelector('button[aria-label="Retry Loop preparation"]')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    );
+    expect(fake.retryPreparation).toHaveBeenCalledWith('loop-1');
   });
 
   it('presents pause, resume, and retry controls through the resource', async () => {

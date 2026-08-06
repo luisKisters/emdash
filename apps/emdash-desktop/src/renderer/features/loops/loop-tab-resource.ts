@@ -11,8 +11,12 @@ export type LoopTabResourceState =
 
 export type LoopTabActionState =
   | { kind: 'idle' }
-  | { kind: 'pending'; action: 'start' | 'pause' | 'resume' | 'retry' }
-  | { kind: 'error'; action: 'start' | 'pause' | 'resume' | 'retry'; message: string };
+  | { kind: 'pending'; action: 'start' | 'pause' | 'resume' | 'retry' | 'retry-preparation' }
+  | {
+      kind: 'error';
+      action: 'start' | 'pause' | 'resume' | 'retry' | 'retry-preparation';
+      message: string;
+    };
 
 function messageFromUnknown(error: unknown): string {
   if (error instanceof Error && error.message.trim()) return error.message;
@@ -34,10 +38,12 @@ export class LoopTabResource implements TabResource {
 
   constructor(
     readonly loopId: string,
-    private readonly port: LoopAuthoringPort
+    private readonly port: LoopAuthoringPort,
+    private readonly openTab: (kind: string, args: Record<string, unknown>) => void = () => {}
   ) {
-    makeAutoObservable<this, 'port' | 'unsubscribe' | 'disposed'>(this, {
+    makeAutoObservable<this, 'port' | 'openTab' | 'unsubscribe' | 'disposed'>(this, {
       port: false,
+      openTab: false,
       unsubscribe: false,
       disposed: false,
       loading: false,
@@ -120,6 +126,14 @@ export class LoopTabResource implements TabResource {
     return this.runAction('retry', () => this.port.retryPhase(this.loopId, phaseId));
   }
 
+  retryPreparation(): Promise<void> {
+    return this.runAction('retry-preparation', () => this.port.retryPreparation(this.loopId));
+  }
+
+  openPlanningConversation(conversationId: string): void {
+    this.openTab('acp-chat', { conversationId });
+  }
+
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;
@@ -147,7 +161,7 @@ export class LoopTabResource implements TabResource {
   }
 
   private async runAction(
-    action: 'start' | 'pause' | 'resume' | 'retry',
+    action: 'start' | 'pause' | 'resume' | 'retry' | 'retry-preparation',
     request: () => Promise<LoopTabSnapshot>
   ): Promise<void> {
     if (this.disposed || this.action.kind === 'pending') return;
@@ -165,7 +179,12 @@ export class LoopTabResource implements TabResource {
       });
     } catch (error) {
       if (this.disposed) return;
-      const verb = action === 'retry' ? 'retry the phase' : `${action} the Loop`;
+      const verb =
+        action === 'retry'
+          ? 'retry the phase'
+          : action === 'retry-preparation'
+            ? 'retry Loop preparation'
+            : `${action} the Loop`;
       runInAction(() => {
         if (this.eventVersion !== versionAtStart) {
           this.action = { kind: 'idle' };

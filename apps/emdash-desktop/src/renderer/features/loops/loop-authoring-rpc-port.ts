@@ -107,6 +107,9 @@ export function mapLoopTabSnapshot(loop: LoopWithPhases): LoopTabSnapshot {
     taskId: loop.taskId,
     name: loop.name,
     status: loop.status,
+    preparationConversationId:
+      loop.state?.version === '2' ? (loop.state.preparationConversationId ?? null) : null,
+    preparationError: loop.state?.version === '2' ? (loop.state.preparationError ?? null) : null,
     currentPhaseIndex: loop.currentPhaseIndex,
     phases: [...loop.phases].sort((a, b) => a.idx - b.idx).map(mapPhase),
     browser: browserState(loop),
@@ -168,6 +171,11 @@ export class RpcLoopAuthoringPort implements LoopAuthoringPort {
   async startLoop(loopId: string): Promise<LoopTabSnapshot> {
     const { rpc } = await import('@renderer/lib/ipc');
     return unwrapLoop(rpc.loops.startLoop(loopId));
+  }
+
+  async retryPreparation(loopId: string): Promise<LoopTabSnapshot> {
+    const { rpc } = await import('@renderer/lib/ipc');
+    return unwrapLoop(rpc.loops.retryLoopPreparation(loopId));
   }
 
   async pauseLoop(loopId: string): Promise<LoopTabSnapshot> {

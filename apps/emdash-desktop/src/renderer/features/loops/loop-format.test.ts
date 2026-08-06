@@ -27,6 +27,11 @@ function makeLoop(phases: LoopWithPhases['phases']): LoopWithPhases {
 
 describe('loop-format', () => {
   it('maps loop and phase statuses to labels and tones', () => {
+    expect(loopStatusMeta('preparing')).toEqual({ label: 'Preparing', tone: 'info' });
+    expect(loopStatusMeta('prepare-failed')).toEqual({
+      label: 'Preparation failed',
+      tone: 'danger',
+    });
     expect(loopStatusMeta('running')).toEqual({ label: 'Running', tone: 'info' });
     expect(loopStatusMeta('completed')).toEqual({ label: 'Completed', tone: 'success' });
     expect(phaseStatusMeta('verifying')).toEqual({ label: 'Verifying', tone: 'info' });

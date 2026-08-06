@@ -48,6 +48,8 @@ export type LoopTabSnapshot = {
   taskId: string;
   name: string;
   status: LoopStatus;
+  preparationConversationId: string | null;
+  preparationError: string | null;
   currentPhaseIndex: number;
   phases: LoopTabPhaseSnapshot[];
   browser: LoopTabBrowserState;
@@ -61,6 +63,7 @@ export type LoopTabEvent =
 export interface LoopAuthoringPort {
   loadLoop(loopId: string): Promise<LoopTabSnapshot>;
   subscribeToLoop(loopId: string, listener: (event: LoopTabEvent) => void): () => void;
+  retryPreparation(loopId: string): Promise<LoopTabSnapshot>;
   startLoop(loopId: string): Promise<LoopTabSnapshot>;
   pauseLoop(loopId: string): Promise<LoopTabSnapshot>;
   resumeLoop(loopId: string): Promise<LoopTabSnapshot>;

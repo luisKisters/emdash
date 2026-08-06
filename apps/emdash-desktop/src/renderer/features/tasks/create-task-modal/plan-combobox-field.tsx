@@ -27,9 +27,16 @@ export function PlanComboboxField({
   const [error, setError] = useState<string | null>(null);
   const query = useQuery({
     queryKey: ['create-task', 'plan-files', projectId, workspaceId],
-    enabled: Boolean(projectId && workspaceId),
-    queryFn: () =>
-      rpc.search.searchWorkspaceFiles({ workspaceId: workspaceId!, query: '', limit: 200 }),
+    enabled: Boolean(projectId),
+    queryFn: async () => {
+      if (!projectId) return [];
+      if (workspaceId) {
+        return rpc.search.searchWorkspaceFiles({ workspaceId, query: '', limit: 200 });
+      }
+      const result = await rpc.loops.listProjectPlanFiles(projectId);
+      if (!result.success) throw new Error(result.error.message);
+      return result.data;
+    },
     select: (files): PlanOption[] =>
       files
         .filter((file) => /\.md$/i.test(file.path))
@@ -39,20 +46,31 @@ export function PlanComboboxField({
   const selected = query.data?.find((item) => item.value === selectedPath) ?? null;
 
   const selectFile = async (item: PlanOption): Promise<void> => {
-    if (!projectId || !workspaceId) return;
+    if (!projectId) return;
     setError(null);
-    const result = await rpc.workspace.files.readFile(
-      projectId,
-      workspaceId,
-      item.value,
-      1_000_000
-    );
-    if (!result.success) {
-      setError('Could not read this plan file.');
-      return;
+    let content: string;
+    if (workspaceId) {
+      const result = await rpc.workspace.files.readFile(
+        projectId,
+        workspaceId,
+        item.value,
+        1_000_000
+      );
+      if (!result.success) {
+        setError('Could not read this plan file.');
+        return;
+      }
+      content = result.data.content;
+    } else {
+      const result = await rpc.loops.readProjectPlanFile(projectId, item.value, 1_000_000);
+      if (!result.success) {
+        setError('Could not read this plan file.');
+        return;
+      }
+      content = result.data;
     }
     setPasteMode(false);
-    onSelect(item.value, result.data);
+    onSelect(item.value, content);
   };
 
   if (pasteMode) {
@@ -91,9 +109,6 @@ export function PlanComboboxField({
           </ComboboxTrigger>
         }
       />
-      {!workspaceId ? (
-        <FieldError>Plan files are unavailable until the project workspace is mounted.</FieldError>
-      ) : null}
       {query.isError ? <FieldError>Could not list plan files.</FieldError> : null}
       {error ? <FieldError>{error}</FieldError> : null}
     </div>
