@@ -4,7 +4,9 @@ import type { AcpRuntime } from '@emdash/runtime/acp-agents';
 import { createConversation } from '@main/core/conversations/createConversation';
 import { getConversationsForTask } from '@main/core/conversations/getConversationsForTask';
 import { setSessionId } from '@main/core/conversations/set-session-id';
+import { events } from '@main/lib/events';
 import { err, ok, type Result } from '@main/lib/result';
+import { conversationChangedChannel } from '@shared/core/conversations/conversationEvents';
 import type { Conversation } from '@shared/core/conversations/conversations';
 import { resolveLoopModel, resolveLoopProvider } from '@shared/core/loops/loops';
 import { getLoopAcpRuntime } from './acp-loop-runtime';
@@ -119,6 +121,13 @@ async function startRuntime(
       message: errorMessage(persisted.error, 'Failed to persist targeted ACP session'),
     });
   }
+
+  events.emit(conversationChangedChannel, {
+    conversationId: conversation.id,
+    taskId: conversation.taskId,
+    projectId: conversation.projectId,
+    changes: { sessionId: started.data.sessionId },
+  });
 
   activeSessions.set(conversation.id, { runtime });
   return ok();
@@ -383,7 +392,9 @@ export const acpLoopSessionDriver: LoopSessionDriver = {
         message: errorMessage(result.error, 'ACP planning prompt failed'),
       });
     }
-    return ok({ finalText: finalAssistantText(active.runtime, conversationId) });
+    const finalText = finalAssistantText(active.runtime, conversationId);
+    stopActiveSession(conversationId, active);
+    return ok({ finalText });
   },
 
   async sendPrompt(

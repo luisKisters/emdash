@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createConversation } from '@main/core/conversations/createConversation';
 import { getConversationsForTask } from '@main/core/conversations/getConversationsForTask';
 import { setSessionId } from '@main/core/conversations/set-session-id';
+import { events } from '@main/lib/events';
 import type { Loop, LoopPhase } from '@shared/core/loops/loops';
 import { acpLoopSessionDriver } from './acp-driver';
 import { getLoopAcpRuntime } from './acp-loop-runtime';
@@ -24,6 +25,7 @@ vi.mock('@main/core/conversations/getConversationsForTask', () => ({
   getConversationsForTask: vi.fn(),
 }));
 vi.mock('@main/core/conversations/set-session-id', () => ({ setSessionId: vi.fn() }));
+vi.mock('@main/lib/events', () => ({ events: { emit: vi.fn() } }));
 
 describe('acpLoopSessionDriver', () => {
   beforeEach(() => {
@@ -115,6 +117,13 @@ describe('acpLoopSessionDriver', () => {
       env: context.taskEnvironment,
     });
     expect(setSessionId).toHaveBeenCalledWith('conv-loop', 'agent-1');
+    expect(events.emit).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({
+        conversationId: 'conv-loop',
+        changes: { sessionId: 'agent-1' },
+      })
+    );
   });
 
   it('uses the configured provider and model', async () => {
@@ -251,6 +260,7 @@ describe('acpLoopSessionDriver', () => {
       'permission-plan',
       'reject'
     );
+    expect(runtimeMock.stopSession).toHaveBeenCalledWith(saved.id);
   });
 
   it('fails planning before prompting when read-only mode is unavailable', async () => {
