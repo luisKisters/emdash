@@ -179,6 +179,7 @@ describe('loop plan model', () => {
         },
       ],
       terminalGates: { review: false, e2e: false },
+      verifierPlan: [],
     });
 
     const base = normalizeLoopPlan({

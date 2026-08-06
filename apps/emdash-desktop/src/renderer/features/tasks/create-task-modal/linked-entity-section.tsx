@@ -1,5 +1,6 @@
 import { ToggleGroup, ToggleGroupItem } from '@renderer/lib/ui/toggle-group';
 import { IssueComboboxField } from './issue-combobox-field';
+import { PlanComboboxField } from './plan-combobox-field';
 import { PrComboboxField } from './pr-combobox-field';
 import type { LinkedType, CreateTaskState } from './use-create-task-state';
 
@@ -10,6 +11,7 @@ interface LinkedEntitySectionProps {
   projectId?: string;
   repositoryUrl?: string;
   projectPath?: string;
+  repositoryWorkspaceId?: string | null;
 }
 
 export function LinkedEntitySection({
@@ -19,6 +21,7 @@ export function LinkedEntitySection({
   projectId,
   repositoryUrl,
   projectPath,
+  repositoryWorkspaceId,
 }: LinkedEntitySectionProps) {
   return (
     <div className="flex w-full flex-col justify-between overflow-hidden rounded-lg border">
@@ -47,6 +50,9 @@ export function LinkedEntitySection({
           >
             Pull Request
           </ToggleGroupItem>
+          <ToggleGroupItem className="h-6! min-w-0! rounded-lg! px-2! py-0.5! text-xs" value="plan">
+            Plan file
+          </ToggleGroupItem>
         </ToggleGroup>
       </div>
       {state.linkedType === 'issue' && (
@@ -64,6 +70,15 @@ export function LinkedEntitySection({
           onValueChange={state.setLinkedPR}
           projectId={projectId}
           repositoryUrl={repositoryUrl}
+        />
+      )}
+      {state.linkedType === 'plan' && (
+        <PlanComboboxField
+          projectId={projectId}
+          workspaceId={repositoryWorkspaceId}
+          selectedPath={state.selectedPlanPath}
+          planSource={state.loopPlan.planSource}
+          onSelect={state.setPlanSource}
         />
       )}
     </div>

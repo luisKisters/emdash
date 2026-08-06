@@ -84,9 +84,18 @@ describe('buildInitialConversation', () => {
       goal: 'Ship it',
       planSource: '## Build',
       validationCommands: [' pnpm test ', ''],
-      acceptanceCriteria: [' The page renders ', ''],
-      workPhases: [{ id: 'work-1', kind: 'work' as const, name: ' Build ', goal: ' Ship it ' }],
+      acceptanceCriteria: [],
+      workPhases: [],
       terminalGates: { review: true, e2e: true },
+      verifierPlan: [
+        {
+          kind: 'detected' as const,
+          id: 'test',
+          class: 'unit-test' as const,
+          label: 'Tests',
+          command: 'pnpm test',
+        },
+      ],
     };
 
     expect(buildLoopTaskAuthoringInput(' Feature ', draft, ' gpt-5.6-sol ')).toEqual({
@@ -96,8 +105,19 @@ describe('buildInitialConversation', () => {
       validationCommands: ['pnpm test'],
       terminalGates: { review: true, e2e: true },
       browserPreview: { enabled: true },
-      workPhases: [{ name: 'Build', goal: 'Ship it' }],
-      acceptanceCriteria: ['The page renders'],
+      workPhases: [],
+      acceptanceCriteria: [],
+      verifierPlan: [
+        {
+          kind: 'detected',
+          id: 'test',
+          class: 'unit-test',
+          label: 'Tests',
+          command: 'pnpm test',
+        },
+      ],
+      verifiers: [],
+      provider: 'codex',
     });
   });
 });

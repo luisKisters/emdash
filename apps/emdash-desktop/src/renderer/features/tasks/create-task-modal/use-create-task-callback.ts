@@ -18,19 +18,55 @@ interface UseCreateTaskCallbackParams {
   onClose: () => void;
 }
 
+export type CreateTaskBlockers = {
+  projectId?: string;
+  taskName: string;
+  taskNamePending: boolean;
+  loopEnabled: boolean;
+  provider: string | null;
+  model: string | null;
+  workspaceReason: string | null;
+};
+
+export function getCreateTaskDisabledReason(blockers: CreateTaskBlockers): string | null {
+  if (!blockers.projectId) return 'Select a project.';
+  if (blockers.taskNamePending) return 'Wait for the task name to finish generating.';
+  if (!blockers.taskName.trim()) return 'Enter a task name.';
+  if (blockers.loopEnabled && !blockers.provider) return 'Loops require the Codex provider.';
+  if (blockers.loopEnabled && blockers.provider !== 'codex') {
+    return 'Loops require the Codex provider.';
+  }
+  if (blockers.loopEnabled && !blockers.model?.trim()) return 'Select a Codex model.';
+  return blockers.workspaceReason;
+}
+
 export function useCreateTaskCallback({
   selectedProjectId,
   state,
   initialConversation,
   navigate,
   onClose,
-}: UseCreateTaskCallbackParams): { handleCreateTask: () => Promise<void>; canCreate: boolean } {
+}: UseCreateTaskCallbackParams): {
+  handleCreateTask: () => Promise<void>;
+  canCreate: boolean;
+  disabledReason: string | null;
+} {
   const resolvedLoopModel =
     initialConversation.provider === 'codex'
       ? initialConversation.model?.trim() || undefined
       : undefined;
-  const hasResolvedLoopModel = !state.loopPlan.enabled || Boolean(resolvedLoopModel);
-  const canCreate = !!selectedProjectId && state.isValid && hasResolvedLoopModel;
+  const disabledReason = getCreateTaskDisabledReason({
+    projectId: selectedProjectId,
+    taskName: state.taskName.effectiveTaskName,
+    taskNamePending: state.taskName.isPending,
+    loopEnabled: state.loopPlan.enabled,
+    provider: initialConversation.provider,
+    model: initialConversation.model,
+    workspaceReason: state.workspaceConfig.invalidReason,
+  });
+  const resolvedDisabledReason =
+    disabledReason ?? (!state.isValid ? 'Complete all required task settings.' : null);
+  const canCreate = resolvedDisabledReason === null;
 
   const handleCreateTask = useCallback(async () => {
     if (!selectedProjectId || !canCreate) return;
@@ -92,5 +128,5 @@ export function useCreateTaskCallback({
     resolvedLoopModel,
   ]);
 
-  return { handleCreateTask, canCreate };
+  return { handleCreateTask, canCreate, disabledReason: resolvedDisabledReason };
 }

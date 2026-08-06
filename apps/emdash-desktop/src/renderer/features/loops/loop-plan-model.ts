@@ -1,4 +1,5 @@
 import type { LoopPhaseKind, LoopTerminalGates } from '@shared/core/loops/loops';
+import type { SelectedVerifier } from '@shared/core/loops/verifier-catalog';
 
 export type LoopWorkPhaseDraft = {
   id: string;
@@ -24,6 +25,7 @@ export type LoopPlanDraft = {
   acceptanceCriteria: string[];
   workPhases: LoopWorkPhaseDraft[];
   terminalGates: LoopTerminalGates;
+  verifierPlan: SelectedVerifier[];
 };
 
 type NormalizeLoopPlanInput = {
@@ -64,6 +66,7 @@ export function createDefaultLoopPlanDraft(): LoopPlanDraft {
     acceptanceCriteria: [''],
     workPhases: [workPhase(1, 'Phase 1', '')],
     terminalGates: { ...defaultTerminalGates },
+    verifierPlan: [],
   };
 }
 
@@ -145,6 +148,7 @@ export function normalizeLoopPlan(input: NormalizeLoopPlanInput): LoopPlanDraft 
     acceptanceCriteria: input.acceptanceCriteria ?? [''],
     workPhases: structured.length > 0 ? structured : [workPhase(1, 'Phase 1', goal)],
     terminalGates: { ...(input.terminalGates ?? defaultTerminalGates) },
+    verifierPlan: [],
   };
 }
 
