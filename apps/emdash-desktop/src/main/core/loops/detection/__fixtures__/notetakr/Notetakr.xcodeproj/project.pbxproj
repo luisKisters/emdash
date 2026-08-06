@@ -1,0 +1,5 @@
+AAFADE00000000000000A010 /* NoteTakrUITests */ = {
+	isa = PBXNativeTarget;
+	name = NoteTakrUITests;
+	productType = "com.apple.product-type.bundle.ui-testing";
+};

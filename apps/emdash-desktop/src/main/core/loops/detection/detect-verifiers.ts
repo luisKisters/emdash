@@ -48,6 +48,7 @@ const DETECTION_PATTERNS = [
   '**/convex/schema.ts',
   '**/scripts/verify*.sh',
   '**/e2e-smoke.sh',
+  '**/Tools/design-diff',
   '.github/workflows/*.{yml,yaml}',
   '.gitlab-ci.yml',
 ] as const;
@@ -285,7 +286,7 @@ function addPackageScripts(
         command: inDirectory(pkg.directory, packageCommand(manager, script.name)),
         source: `${pkg.relative}#scripts.${script.name}`,
         directory: pkg.directory,
-        coverageTerms: [script.name],
+        coverageTerms: script.name === 'typecheck' ? ['typecheck', 'tsc'] : [script.name],
       });
     }
   }
@@ -325,11 +326,6 @@ function packageExec(manager: PackageManager, command: string): string {
   if (manager === 'yarn') return `yarn exec ${command}`;
   if (manager === 'bun') return `bun x ${command}`;
   return `pnpm exec ${command}`;
-}
-
-function convexCommand(manager: PackageManager): string {
-  if (manager === 'npm') return 'npx convex deploy --dry-run';
-  return packageExec(manager, 'convex deploy --dry-run');
 }
 
 function packageId(directory: string, script: string): string {
@@ -463,7 +459,7 @@ async function addToolSignals(
       fileSet.has(atDirectory(pkg.directory, 'convex.json')) ||
       fileSet.has(atDirectory(pkg.directory, 'convex/schema.ts'))
     ) {
-      add('db', 'convex', 'Convex', pkg.directory, convexCommand(manager), pkg.relative);
+      add('db', 'convex', 'Convex', pkg.directory, 'npx convex deploy --dry-run', pkg.relative);
     }
   }
 
@@ -518,6 +514,19 @@ async function addToolSignals(
           file.relative,
           ['e2e-smoke']
         );
+      }
+    } else if (name === 'design-diff' && directory === 'Tools') {
+      const stat = await fileSystem.stat(file.absolute);
+      if (stat.success && stat.data.type === 'file' && (stat.data.mode & 0o111) !== 0) {
+        addCandidate(candidates, aggregates, {
+          id: 'tool:root:design-diff',
+          class: 'custom',
+          label: 'Design diff',
+          command: './Tools/design-diff',
+          source: file.relative,
+          directory: '.',
+          coverageTerms: ['design-diff'],
+        });
       }
     }
   }
