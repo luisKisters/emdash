@@ -72,6 +72,7 @@ export type LoopTaskAuthoringInput = {
   verifierPlan: SelectedVerifier[];
   verifiers: [];
   provider: 'codex';
+  planningInput: { goal: string; plan: string };
 };
 
 export function buildLoopTaskAuthoringInput(
@@ -96,6 +97,7 @@ export function buildLoopTaskAuthoringInput(
     verifierPlan: draft.verifierPlan.map((verifier) => ({ ...verifier })),
     verifiers: [],
     provider: 'codex',
+    planningInput: { goal: taskName.trim(), plan: draft.planSource.trim() },
   };
 }
 

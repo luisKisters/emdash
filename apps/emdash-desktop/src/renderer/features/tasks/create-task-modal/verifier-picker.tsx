@@ -73,13 +73,16 @@ export function VerifierPicker({
       </div>
     );
   }
-  if (query.isError) {
-    return <FieldError>{query.error.message || 'Could not detect verifiers.'}</FieldError>;
-  }
-
   return (
     <div className="flex flex-col gap-5">
-      {groups.length === 0 ? (
+      {query.isError ? (
+        <div className="flex items-center gap-3">
+          <FieldError>{query.error.message || 'Could not detect verifiers.'}</FieldError>
+          <Button type="button" size="sm" variant="secondary" onClick={() => void query.refetch()}>
+            Retry
+          </Button>
+        </div>
+      ) : groups.length === 0 ? (
         <p className="text-sm text-foreground-muted">No verifiers were detected.</p>
       ) : (
         groups.map(([verifierClass, verifiers]) => (
@@ -100,7 +103,11 @@ export function VerifierPicker({
                   orientation="horizontal"
                   className="rounded-md border border-border bg-background-1 p-3"
                 >
-                  <Checkbox checked={checked} onCheckedChange={(next) => toggle(verifier, next)} />
+                  <Checkbox
+                    aria-label={verifier.label}
+                    checked={checked}
+                    onCheckedChange={(next) => toggle(verifier, next)}
+                  />
                   <div className="min-w-0 flex-1">
                     <FieldLabel>{verifier.label}</FieldLabel>
                     {verifier.class !== 'browser' ? (
@@ -131,6 +138,7 @@ export function VerifierPicker({
             className="rounded-md border border-border bg-background-1 p-3"
           >
             <Checkbox
+              aria-label={verifier.name}
               checked
               onCheckedChange={(checked) => {
                 if (checked) return;

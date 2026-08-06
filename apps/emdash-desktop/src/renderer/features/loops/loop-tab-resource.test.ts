@@ -67,6 +67,21 @@ describe('LoopTabResource', () => {
     expect(resource.state).toEqual({ kind: 'ready', snapshot: snapshot() });
   });
 
+  it('recovers when the Loop is not persisted before the optimistic tab loads', async () => {
+    const fake = fakePort();
+    vi.mocked(fake.port.loadLoop).mockRejectedValueOnce(new Error('Loop not found'));
+    const resource = new LoopTabResource('loop-1', fake.port);
+
+    await resource.load();
+    expect(resource.state).toEqual({ kind: 'error', message: 'Loop not found' });
+
+    fake.emit({ type: 'snapshot', snapshot: snapshot({ status: 'preparing' }) });
+    expect(resource.state).toEqual({
+      kind: 'ready',
+      snapshot: snapshot({ status: 'preparing' }),
+    });
+  });
+
   it('stays inert while disabled and releases subscriptions on live opt-out', async () => {
     settings.loops = false;
     const fake = fakePort();

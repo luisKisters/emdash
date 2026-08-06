@@ -14,6 +14,7 @@ import type { CreateTaskState } from './use-create-task-state';
 const mocks = vi.hoisted(() => ({
   createTask: vi.fn(),
   createTaskWithLoop: vi.fn(),
+  getTaskView: vi.fn(),
   open: vi.fn(),
 }));
 
@@ -22,7 +23,7 @@ vi.mock('@renderer/features/tasks/stores/task-selectors', () => ({
     createTask: mocks.createTask,
     createTaskWithLoop: mocks.createTaskWithLoop,
   }),
-  getTaskView: () => ({ paneLayout: { open: mocks.open } }),
+  getTaskView: mocks.getTaskView,
 }));
 
 vi.mock('@renderer/utils/logger', () => ({ log: { error: vi.fn() } }));
@@ -79,11 +80,14 @@ describe('useCreateTaskCallback', () => {
     vi.stubGlobal('Element', dom.window.Element);
     vi.stubGlobal('Node', dom.window.Node);
     vi.stubGlobal('IS_REACT_ACT_ENVIRONMENT', true);
-    vi.stubGlobal('crypto', { randomUUID: () => 'task-1' });
+    vi.stubGlobal('crypto', {
+      randomUUID: vi.fn().mockReturnValueOnce('task-1').mockReturnValueOnce('loop-1'),
+    });
     container = dom.window.document.getElementById('root')!;
     root = createRoot(container);
     mocks.createTask.mockResolvedValue(undefined);
     mocks.createTaskWithLoop.mockResolvedValue({ id: 'loop-1' });
+    mocks.getTaskView.mockReturnValue({ paneLayout: { open: mocks.open } });
   });
 
   afterEach(() => {
@@ -93,7 +97,7 @@ describe('useCreateTaskCallback', () => {
     dom.window.close();
   });
 
-  async function renderAndCreate(
+  async function renderCreateCallback(
     loopEnabled: boolean,
     conversation: InitialConversationState = initialConversation()
   ) {
@@ -113,12 +117,28 @@ describe('useCreateTaskCallback', () => {
     }
 
     await act(async () => root.render(React.createElement(Harness)));
+    return { create, navigate, onClose };
+  }
+
+  async function renderAndCreate(
+    loopEnabled: boolean,
+    conversation: InitialConversationState = initialConversation()
+  ) {
+    const { create, navigate, onClose } = await renderCreateCallback(loopEnabled, conversation);
     await act(async () => create());
     return { navigate, onClose };
   }
 
-  it('uses atomic creation, suppresses the ordinary prompt, and pins the Loop tab', async () => {
-    const { navigate, onClose } = await renderAndCreate(true);
+  it('starts atomic creation and opens the optimistic Loop tab before creation settles', async () => {
+    let finishCreation: ((value: { id: string }) => void) | undefined;
+    mocks.createTaskWithLoop.mockReturnValueOnce(
+      new Promise((resolve) => {
+        finishCreation = resolve;
+      })
+    );
+    const { create, navigate, onClose } = await renderCreateCallback(true);
+
+    const pending = create();
 
     expect(mocks.createTask).not.toHaveBeenCalled();
     expect(mocks.createTaskWithLoop).toHaveBeenCalledWith(
@@ -127,11 +147,19 @@ describe('useCreateTaskCallback', () => {
           id: 'task-1',
           taskConfig: expect.objectContaining({ initialConversation: undefined }),
         }),
+        loop: expect.objectContaining({ id: 'loop-1' }),
       })
     );
+    expect(mocks.getTaskView).toHaveBeenCalledWith('project-1', 'task-1');
     expect(mocks.open).toHaveBeenCalledWith('loop', { loopId: 'loop-1' }, { preview: false });
+    expect(mocks.createTaskWithLoop.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.open.mock.invocationCallOrder[0]
+    );
     expect(navigate).toHaveBeenCalledWith('task', { projectId: 'project-1', taskId: 'task-1' });
     expect(onClose).toHaveBeenCalledOnce();
+
+    finishCreation?.({ id: 'loop-1' });
+    await act(async () => pending);
   });
 
   it('leaves ordinary task creation unchanged when Loop mode is off', async () => {
