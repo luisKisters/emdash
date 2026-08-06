@@ -31,16 +31,18 @@ export async function sendPromptWithTimeout(input: {
   failureMessage: string;
   timeoutLabel: string;
   cancelOnTimeout?: boolean;
+  sendPrompt?: LoopSessionDriver['sendPrompt'];
 }): Promise<Result<PromptResult, LoopSessionDriverError>> {
   let timeout: ReturnType<typeof setTimeout> | undefined;
-  const promptPromise = input.driver
-    .sendPrompt(input.conversationId, input.prompt)
-    .catch((error): Result<PromptResult, LoopSessionDriverError> => {
+  const sendPrompt = input.sendPrompt ?? input.driver.sendPrompt.bind(input.driver);
+  const promptPromise = sendPrompt(input.conversationId, input.prompt).catch(
+    (error): Result<PromptResult, LoopSessionDriverError> => {
       return err({
         kind: 'prompt-failed',
         message: safeMessage(error, input.failureMessage),
       });
-    });
+    }
+  );
 
   const timeoutPromise = new Promise<Result<PromptResult, LoopSessionDriverError>>((resolve) => {
     timeout = setTimeout(() => {

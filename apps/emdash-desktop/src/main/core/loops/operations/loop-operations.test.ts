@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { prepareNewLoop } from './loop-operations';
+import { assertLoopRunnable, prepareLoopShell, prepareNewLoop } from './loop-operations';
 
 vi.mock('@main/db/client', () => ({ db: {} }));
 
@@ -7,6 +7,7 @@ const baseInput = {
   projectId: 'project-1',
   taskId: 'task-1',
   name: 'Ship Loops',
+  provider: 'codex' as const,
   model: 'gpt-5.6-sol',
   planSource: '# Implement',
   validationCommands: ['pnpm run test'],
@@ -102,5 +103,63 @@ describe('prepareNewLoop', () => {
     const result = prepareNewLoop({ ...baseInput, ...patch });
 
     expect(result).toMatchObject({ success: false, error: { kind: 'invalid-input' } });
+  });
+});
+
+describe('planning and runnable boundaries', () => {
+  it('accepts zero phases only with explicit valid planning input', () => {
+    const result = prepareLoopShell({
+      ...baseInput,
+      workPhases: [],
+      validationCommands: [],
+      planningInput: { goal: 'Ship Loops', plan: 'Split the work into safe phases.' },
+    });
+
+    expect(result).toMatchObject({
+      success: true,
+      data: { status: 'preparing', phases: [], config: { verifierPlan: [] } },
+    });
+  });
+
+  it.each([
+    ['zero phases', { phases: [] }],
+    [
+      'an unresolved custom command',
+      {
+        phases: [{ goal: 'Implement it.' }],
+        config: {
+          version: '2',
+          provider: 'codex',
+          model: 'gpt-5.6-sol',
+          validationCommands: ['pnpm test'],
+          planSource: 'Plan',
+          terminalGates: { review: false, e2e: false },
+          browserPreview: { enabled: false },
+          reviewEnabled: false,
+          verifiers: [],
+          verifierPlan: [{ kind: 'custom', name: 'Focused tests', command: null }],
+        },
+      },
+    ],
+  ])('rejects %s at the runnable boundary', (_name, patch) => {
+    const runnable = Object.assign(
+      {
+        phases: [{ goal: 'Implement it.' }],
+        config: {
+          version: '1',
+          provider: 'codex',
+          validationCommands: ['pnpm test'],
+          planSource: 'Plan',
+          reviewEnabled: false,
+          verifiers: [],
+        },
+      },
+      patch
+    ) as never;
+
+    expect(assertLoopRunnable(runnable)).toMatchObject({
+      success: false,
+      error: { kind: 'invalid-input' },
+    });
   });
 });

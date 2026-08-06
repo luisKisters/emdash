@@ -53,7 +53,8 @@ export async function commitSessionAttempt(input: {
           attempts.some(
             (attempt) =>
               attempt.attemptId === parsed.data.attemptId ||
-              attempt.conversationId === parsed.data.conversationId
+              (attempt.conversationId === parsed.data.conversationId &&
+                (attempt.purpose !== 'planning' || parsed.data.purpose !== 'planning'))
           )
         ) {
           conflict = true;

@@ -16,6 +16,7 @@ import {
   type LoopSessionInfo,
   type PromptResult,
   type RestartVerificationSessionContext,
+  type StartPlanningSessionContext,
   type StartPhaseSessionContext,
   type StartVerificationSessionContext,
 } from './session-driver';
@@ -69,7 +70,7 @@ function finalAssistantText(runtime: AcpRuntime, conversationId: string): string
 
 async function startRuntime(
   conversation: Conversation,
-  ctx: StartPhaseSessionContext | StartVerificationSessionContext
+  ctx: Pick<StartPlanningSessionContext, 'target' | 'taskEnvironment'>
 ): Promise<Result<void, LoopSessionDriverError>> {
   let runtime: AcpRuntime;
   try {
@@ -110,6 +111,41 @@ async function startRuntime(
 
   activeSessions.set(conversation.id, { runtime });
   return ok();
+}
+
+async function startPlanningConversation(
+  ctx: StartPlanningSessionContext
+): Promise<Result<LoopSessionInfo, LoopSessionDriverError>> {
+  const title = 'Loop planning';
+  if (activeSessions.has(ctx.conversationId)) {
+    return ok({ conversationId: ctx.conversationId, title });
+  }
+
+  let conversation: Conversation | undefined;
+  try {
+    const conversations = await getConversationsForTask(ctx.projectId, ctx.taskId);
+    conversation = conversations.find((candidate) => candidate.id === ctx.conversationId);
+  } catch (error) {
+    return err({
+      kind: 'hydrate-failed',
+      message: errorMessage(error, 'Failed to load persisted Loop planning conversation'),
+    });
+  }
+  if (
+    !conversation ||
+    conversation.type !== 'acp' ||
+    conversation.providerId !== ctx.provider ||
+    conversation.model !== ctx.model
+  ) {
+    return err({
+      kind: 'hydrate-failed',
+      message: 'Persisted Loop planning conversation does not match its provider and model',
+    });
+  }
+
+  const started = await startRuntime(conversation, ctx);
+  if (!started.success) return started;
+  return ok({ conversationId: conversation.id, title });
 }
 
 async function startConversation(
@@ -225,6 +261,29 @@ export const acpLoopSessionDriver: LoopSessionDriver = {
   },
 
   restartVerificationSession: restartVerificationConversation,
+
+  startPlanningSession: startPlanningConversation,
+
+  async sendPlanningPrompt(
+    conversationId: string,
+    text: string
+  ): Promise<Result<PromptResult, LoopSessionDriverError>> {
+    const active = activeSessions.get(conversationId);
+    if (!active) {
+      return err({
+        kind: 'prompt-failed',
+        message: 'ACP planning conversation is not running in its targeted Loop runtime',
+      });
+    }
+    const result = await active.runtime.sendPrompt(conversationId, { text });
+    if (!result.success) {
+      return err({
+        kind: 'prompt-failed',
+        message: errorMessage(result.error, 'ACP planning prompt failed'),
+      });
+    }
+    return ok({ finalText: finalAssistantText(active.runtime, conversationId) });
+  },
 
   async sendPrompt(
     conversationId: string,

@@ -1,6 +1,6 @@
 import type { Result } from '@main/lib/result';
 import type { LoopSessionPurpose, LoopSessionTarget } from '@shared/core/loops/loop-state';
-import type { Loop, LoopPhase } from '@shared/core/loops/loops';
+import type { Loop, LoopPhase, LoopProviderId } from '@shared/core/loops/loops';
 
 export type LoopSessionKind = 'acp' | 'pty';
 
@@ -36,6 +36,16 @@ export type RestartVerificationSessionContext = Omit<
   conversationId: string;
 };
 
+export type StartPlanningSessionContext = {
+  conversationId: string;
+  projectId: string;
+  taskId: string;
+  provider: LoopProviderId;
+  model: string;
+  target: LoopSessionTarget;
+  taskEnvironment: Readonly<Record<string, string>>;
+};
+
 export type LoopSessionInfo = {
   conversationId: string;
   title: string;
@@ -57,6 +67,14 @@ export interface LoopSessionDriver {
   restartVerificationSession?(
     ctx: RestartVerificationSessionContext
   ): Promise<Result<LoopSessionInfo, LoopSessionDriverError>>;
+  /** Starts one already-persisted, read-only planning conversation on its exact target. */
+  startPlanningSession?(
+    ctx: StartPlanningSessionContext
+  ): Promise<Result<LoopSessionInfo, LoopSessionDriverError>>;
+  sendPlanningPrompt?(
+    conversationId: string,
+    text: string
+  ): Promise<Result<PromptResult, LoopSessionDriverError>>;
   sendPrompt(
     conversationId: string,
     text: string

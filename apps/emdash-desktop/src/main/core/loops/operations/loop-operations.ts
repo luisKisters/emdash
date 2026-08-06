@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { and, asc, desc, eq, inArray, sql } from 'drizzle-orm';
 import { db, type DrizzleTx } from '@main/db/client';
-import { loopPhases, loops, tasks } from '@main/db/schema';
+import { conversations, loopPhases, loops, tasks, type ConversationRow } from '@main/db/schema';
 import { err, ok, type Result } from '@main/lib/result';
 import type { LoopPhaseState } from '@shared/core/loops/loop-phase-state';
 import type { LoopStateV2 } from '@shared/core/loops/loop-state';
@@ -14,9 +14,12 @@ import {
   type LoopPhase,
   type LoopPhaseCriteria,
   type LoopPhaseKind,
-  orderedLoopPhaseKinds,
+  type LoopProviderId,
   type LoopWithPhases,
+  newLoopConfigV2Schema,
+  orderedLoopPhaseKinds,
 } from '@shared/core/loops/loops';
+import type { SelectedVerifier } from '@shared/core/loops/verifier-catalog';
 import {
   mapLoopPhaseRow,
   mapLoopRow,
@@ -45,6 +48,7 @@ export type NewLoopAuthoringInput = {
   projectId: string;
   taskId: string;
   name: string;
+  provider: LoopProviderId;
   model: string;
   planSource: string;
   validationCommands: readonly string[];
@@ -52,6 +56,9 @@ export type NewLoopAuthoringInput = {
   browserPreview: { enabled: boolean };
   workPhases: readonly NewLoopWorkPhaseInput[];
   acceptanceCriteria: readonly string[];
+  verifierPlan?: readonly SelectedVerifier[];
+  /** Explicitly selects planning. Empty phases alone never select this lifecycle. */
+  planningInput?: { goal: string; plan: string };
 };
 
 type PreparedNewLoopPhase = {
@@ -74,6 +81,8 @@ export type PreparedNewLoop = {
   config: ReturnType<typeof createLoopConfigV2>;
   state: LoopStateV2;
   phases: PreparedNewLoopPhase[];
+  status: 'preparing' | 'draft';
+  planningInput?: { goal: string; plan: string };
 };
 
 function initialPhaseState(): LoopPhaseState {
@@ -86,7 +95,7 @@ function initialPhaseState(): LoopPhaseState {
   };
 }
 
-export function prepareNewLoop(
+export function prepareLoopShell(
   params: NewLoopAuthoringInput
 ): Result<PreparedNewLoop, LoopOperationError> {
   const name = params.name.trim();
@@ -103,12 +112,30 @@ export function prepareNewLoop(
     .filter(Boolean);
 
   if (!name) return err({ kind: 'invalid-input', message: 'Loop name is required' });
-  if (!model) return err({ kind: 'invalid-input', message: 'Loop model is required' });
-  if (validationCommands.length === 0) {
-    return err({ kind: 'invalid-input', message: 'At least one validation command is required' });
+  if (params.provider !== DEFAULT_LOOP_PROVIDER) {
+    return err({ kind: 'invalid-input', message: 'New Loop provider must be explicit Codex' });
   }
-  if (workPhases.length === 0 || workPhases.some((phase) => !phase.goal)) {
+  if (!model) return err({ kind: 'invalid-input', message: 'Loop model is required' });
+  if (workPhases.some((phase) => !phase.goal)) {
+    return err({ kind: 'invalid-input', message: 'Every supplied work phase needs a goal' });
+  }
+  const planningInput = params.planningInput
+    ? { goal: params.planningInput.goal.trim(), plan: params.planningInput.plan.trim() }
+    : undefined;
+  if (planningInput && (!planningInput.goal || !planningInput.plan)) {
+    return err({
+      kind: 'invalid-input',
+      message: 'Planning requires an explicit goal and plan input',
+    });
+  }
+  if (planningInput && workPhases.length > 0) {
+    return err({ kind: 'invalid-input', message: 'Planning requires an empty phase list' });
+  }
+  if (!planningInput && workPhases.length === 0) {
     return err({ kind: 'invalid-input', message: 'At least one complete work phase is required' });
+  }
+  if (!planningInput && validationCommands.length === 0) {
+    return err({ kind: 'invalid-input', message: 'At least one validation command is required' });
   }
   if (params.browserPreview.enabled !== params.terminalGates.e2e) {
     return err({
@@ -116,8 +143,14 @@ export function prepareNewLoop(
       message: 'Browser preview and the E2E terminal gate must be enabled together',
     });
   }
-  if (params.terminalGates.e2e && acceptanceCriteria.length === 0) {
+  if (params.terminalGates.e2e && !planningInput && acceptanceCriteria.length === 0) {
     return err({ kind: 'invalid-input', message: 'E2E acceptance criteria are required' });
+  }
+
+  const verifierPlan = params.verifierPlan ?? [];
+  const parsedVerifierPlan = newLoopConfigV2Schema.shape.verifierPlan.safeParse(verifierPlan);
+  if (!parsedVerifierPlan.success) {
+    return err({ kind: 'invalid-input', message: 'Loop verifier plan is invalid' });
   }
 
   const loopId = params.id ?? randomUUID();
@@ -160,9 +193,10 @@ export function prepareNewLoop(
     config: createLoopConfigV2({
       model,
       validationCommands,
-      planSource: params.planSource.trim(),
+      planSource: planningInput?.plan ?? params.planSource.trim(),
       terminalGates: params.terminalGates,
       browserPreview: params.browserPreview,
+      verifierPlan: parsedVerifierPlan.data,
     }),
     state: {
       version: '2',
@@ -172,9 +206,106 @@ export function prepareNewLoop(
       e2eAttemptsConsumed: 0,
       sessionAttempts: [],
       verification: null,
+      ...(planningInput
+        ? {
+            preparationConversationId: randomUUID(),
+            preparationGoal: planningInput.goal,
+          }
+        : {}),
     },
     phases,
+    status: planningInput ? 'preparing' : 'draft',
+    ...(planningInput ? { planningInput } : {}),
   });
+}
+
+export function commitPreparedPlanningConversation(
+  prepared: PreparedNewLoop,
+  tx: DrizzleTx
+): ConversationRow | undefined {
+  const conversationId = prepared.state.preparationConversationId;
+  if (!prepared.planningInput || !conversationId) return undefined;
+
+  const [row] = tx
+    .insert(conversations)
+    .values({
+      id: conversationId,
+      projectId: prepared.projectId,
+      taskId: prepared.taskId,
+      title: `${prepared.slug}-planning`,
+      provider: DEFAULT_LOOP_PROVIDER,
+      config: {
+        version: '1',
+        type: 'acp',
+        model: prepared.config.model,
+      },
+      sessionId: null,
+      isInitialConversation: false,
+      type: 'acp',
+      lastInteractedAt: new Date().toISOString(),
+      updatedAt: sql`CURRENT_TIMESTAMP`,
+    })
+    .returning()
+    .all();
+  return row;
+}
+
+/** Compatibility wrapper for callers that still use the former operation name. */
+export function prepareNewLoop(
+  params: NewLoopAuthoringInput
+): Result<PreparedNewLoop, LoopOperationError> {
+  return prepareLoopShell(params);
+}
+
+/** Validates the execution boundary. Draft and preparing Loops may remain incomplete. */
+export function assertLoopRunnable(
+  loop: LoopWithPhases
+): Result<LoopWithPhases, LoopOperationError> {
+  if (loop.phases.length === 0) {
+    return err({ kind: 'invalid-input', message: 'A Loop needs at least one phase before start' });
+  }
+  if (loop.phases.some((phase) => !phase.goal.trim())) {
+    return err({ kind: 'invalid-input', message: 'Every Loop phase needs a goal before start' });
+  }
+  if (!loop.config) {
+    return err({ kind: 'invalid-input', message: 'Loop configuration is required before start' });
+  }
+  if (
+    loop.config.validationCommands.map((command) => command.trim()).filter(Boolean).length === 0
+  ) {
+    return err({ kind: 'invalid-input', message: 'A validation command is required before start' });
+  }
+
+  if (loop.config.version === '2') {
+    const config = newLoopConfigV2Schema.strict().safeParse(loop.config);
+    if (!config.success) {
+      return err({ kind: 'invalid-input', message: 'Loop v2 configuration is not runnable' });
+    }
+    if (config.data.browserPreview.enabled !== config.data.terminalGates.e2e) {
+      return err({
+        kind: 'invalid-input',
+        message: 'Browser preview and the E2E terminal gate must be enabled together',
+      });
+    }
+    if (
+      config.data.terminalGates.e2e &&
+      !loop.phases.some(
+        (phase) => phase.kind === 'e2e' && (phase.criteria?.criteria.length ?? 0) > 0
+      )
+    ) {
+      return err({ kind: 'invalid-input', message: 'E2E acceptance criteria are required' });
+    }
+    if (
+      config.data.verifierPlan?.some((verifier) => verifier.kind === 'custom' && !verifier.command)
+    ) {
+      return err({
+        kind: 'invalid-input',
+        message: 'Custom verifier commands must be resolved before start',
+      });
+    }
+  }
+
+  return ok(loop);
 }
 
 export function commitPreparedLoop(prepared: PreparedNewLoop, tx: DrizzleTx): LoopWithPhases {
@@ -186,7 +317,7 @@ export function commitPreparedLoop(prepared: PreparedNewLoop, tx: DrizzleTx): Lo
       taskId: prepared.taskId,
       name: prepared.name,
       slug: prepared.slug,
-      status: 'draft',
+      status: prepared.status,
       currentPhaseIndex: 0,
       config: prepared.config,
       isPrimary: true,
@@ -477,4 +608,98 @@ export async function pauseRunningLoopsForBoot(): Promise<Loop[]> {
     .where(eq(loops.status, 'running'))
     .returning();
   return rows.map(mapLoopRow);
+}
+
+export async function settlePreparingLoopsForBoot(): Promise<Loop[]> {
+  const interruptedAt = new Date().toISOString();
+  const message = 'Loop planning was interrupted by application restart';
+  return db.transaction((tx) => {
+    const rows = tx.select().from(loops).where(eq(loops.status, 'preparing')).all();
+    return rows.map((row) => {
+      const state =
+        row.state?.version === '2'
+          ? {
+              ...row.state,
+              preparationError: message,
+              sessionAttempts: row.state.sessionAttempts.map((attempt) =>
+                attempt.purpose === 'planning' &&
+                (attempt.status === 'starting' || attempt.status === 'running')
+                  ? {
+                      ...attempt,
+                      status: 'interrupted' as const,
+                      finishedAt: interruptedAt,
+                      error: message,
+                    }
+                  : attempt
+              ),
+            }
+          : row.state;
+      const [updated] = tx
+        .update(loops)
+        .set({
+          status: 'prepare-failed',
+          state,
+          updatedAt: sql`CURRENT_TIMESTAMP`,
+        })
+        .where(eq(loops.id, row.id))
+        .returning()
+        .all();
+      return mapLoopRow(updated);
+    });
+  });
+}
+
+export async function beginLoopPreparationRetry(
+  loopId: string
+): Promise<Result<LoopWithPhases, LoopOperationError>> {
+  try {
+    const claimed = db.transaction((tx): Result<void, LoopOperationError> => {
+      const [loop] = tx.select().from(loops).where(eq(loops.id, loopId)).limit(1).all();
+      if (!loop) return err({ kind: 'not-found', message: 'Loop not found' });
+      if (
+        loop.status !== 'prepare-failed' ||
+        loop.state?.version !== '2' ||
+        !loop.state.preparationConversationId
+      ) {
+        return err({ kind: 'conflict', message: 'Loop is not ready to retry planning' });
+      }
+      const result = tx
+        .update(loops)
+        .set({
+          status: 'preparing',
+          state: { ...loop.state, preparationError: undefined },
+          updatedAt: sql`CURRENT_TIMESTAMP`,
+        })
+        .where(and(eq(loops.id, loopId), eq(loops.status, 'prepare-failed')))
+        .run();
+      return result.changes === 1
+        ? ok()
+        : err({ kind: 'conflict', message: 'Loop preparation changed concurrently' });
+    });
+    if (!claimed.success) return claimed;
+    const loop = await getLoop(loopId);
+    return loop
+      ? ok(loop)
+      : err({ kind: 'not-found', message: 'Loop disappeared after preparation retry' });
+  } catch (error) {
+    return err({
+      kind: 'db-error',
+      message: error instanceof Error ? error.message : String(error),
+    });
+  }
+}
+
+export async function failLoopPreparation(
+  loopId: string,
+  message: string
+): Promise<Result<Loop, LoopOperationError>> {
+  const loop = await getLoop(loopId);
+  if (!loop) return err({ kind: 'not-found', message: 'Loop not found' });
+  if (loop.status !== 'preparing' || loop.state?.version !== '2') {
+    return err({ kind: 'conflict', message: 'Loop preparation changed concurrently' });
+  }
+  return updateLoop(loopId, {
+    status: 'prepare-failed',
+    state: { ...loop.state, preparationError: message.slice(0, 4_096) },
+  });
 }

@@ -32,6 +32,39 @@ describe('Loop E2E attempt budget authority', () => {
     ).toBe(false);
   });
 
+  it('allows one planning conversation to record retry attempts only for planning', () => {
+    const target = { workspaceId: 'workspace-1', path: '/tmp/task', machine: { kind: 'local' } };
+    const planningAttempt = {
+      attemptId: 'planning-1',
+      conversationId: 'planning-conversation',
+      purpose: 'planning',
+      target,
+      status: 'failed',
+      startedAt: '2026-08-06T10:00:00.000Z',
+      finishedAt: '2026-08-06T10:01:00.000Z',
+    };
+    const current = {
+      ...state(),
+      version: '2',
+      e2eAttemptsConsumed: 0,
+      sessionAttempts: [
+        planningAttempt,
+        { ...planningAttempt, attemptId: 'planning-2', status: 'running' },
+      ],
+    };
+
+    expect(loopStateV2Schema.safeParse(current).success).toBe(true);
+    expect(
+      loopStateV2Schema.safeParse({
+        ...current,
+        sessionAttempts: [
+          planningAttempt,
+          { ...planningAttempt, attemptId: 'work-1', purpose: 'work' },
+        ],
+      }).success
+    ).toBe(false);
+  });
+
   it('upgrades historical v1 reads to current v2 with a conservative zero counter', () => {
     const parsed = loopState.safeParse(state());
 

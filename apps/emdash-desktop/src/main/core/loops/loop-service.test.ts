@@ -15,6 +15,11 @@ import { commitSessionAttempt } from './operations/session-progress';
 
 const emitMock = vi.hoisted(() => vi.fn());
 const pauseRunningLoopsForBootMock = vi.hoisted(() => vi.fn());
+const settlePreparingLoopsForBootMock = vi.hoisted(() => vi.fn());
+const assertLoopRunnableMock = vi.hoisted(() => vi.fn());
+const beginLoopPreparationRetryMock = vi.hoisted(() => vi.fn());
+const failLoopPreparationMock = vi.hoisted(() => vi.fn());
+const replaceLoopPhasesMock = vi.hoisted(() => vi.fn());
 const resolveTaskWorkspaceTargetMock = vi.hoisted(() => vi.fn());
 const resolveLoopExecutionTargetMock = vi.hoisted(() => vi.fn());
 const getTasksMock = vi.hoisted(() => vi.fn());
@@ -29,14 +34,22 @@ vi.mock('@main/lib/events', () => ({
 vi.mock('@main/core/agents/plugin-registry', () => ({ getPlugin: getPluginMock }));
 
 vi.mock('./operations/loop-operations', () => ({
+  assertLoopRunnable: assertLoopRunnableMock,
+  beginLoopPreparationRetry: beginLoopPreparationRetryMock,
   createLoop: vi.fn(),
   deleteLoop: vi.fn(),
+  failLoopPreparation: failLoopPreparationMock,
   getLoop: vi.fn(),
   getLoopsForProject: vi.fn(),
   pauseRunningLoopsForBoot: pauseRunningLoopsForBootMock,
   resetPhaseForRetry: vi.fn(),
+  settlePreparingLoopsForBoot: settlePreparingLoopsForBootMock,
   updateLoop: vi.fn(),
   updatePhase: vi.fn(),
+}));
+
+vi.mock('./operations/replace-loop-phases', () => ({
+  replaceLoopPhases: replaceLoopPhasesMock,
 }));
 
 vi.mock('./operations/create-task-with-loop', () => ({
@@ -51,7 +64,7 @@ vi.mock('./operations/terminal-phase-progress', () => ({
 }));
 
 vi.mock('@main/core/tasks/task-service', () => ({
-  taskService: { notifyTaskCreated: vi.fn() },
+  taskService: { notifyTaskCreated: vi.fn(), provisionWorkspace: vi.fn() },
 }));
 
 vi.mock('./drivers/driver-registry', () => ({
@@ -88,6 +101,7 @@ const loop: Loop = {
 };
 
 beforeEach(() => {
+  settlePreparingLoopsForBootMock.mockResolvedValue([]);
   getProjectMock.mockReturnValue({
     repoPath: '/project',
     fileSystem: {
@@ -166,6 +180,9 @@ describe('LoopService verifier detection', () => {
 describe('LoopService boot recovery', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    pauseRunningLoopsForBootMock.mockResolvedValue([]);
+    settlePreparingLoopsForBootMock.mockResolvedValue([]);
+    assertLoopRunnableMock.mockImplementation((value) => ok(value));
   });
 
   it('marks running loops paused on initialize and emits loop updates', async () => {
@@ -176,11 +193,24 @@ describe('LoopService boot recovery', () => {
     expect(pauseRunningLoopsForBoot).toHaveBeenCalledOnce();
     expect(emitMock).toHaveBeenCalledWith(loopUpdatedChannel, { loop });
   });
+
+  it('settles interrupted preparation to its durable error twin on initialize', async () => {
+    const interrupted = { ...loop, status: 'prepare-failed' as const };
+    settlePreparingLoopsForBootMock.mockResolvedValue([interrupted]);
+
+    await new LoopService().initialize(true);
+
+    expect(settlePreparingLoopsForBootMock).toHaveBeenCalledOnce();
+    expect(emitMock).toHaveBeenCalledWith(loopUpdatedChannel, { loop: interrupted });
+  });
 });
 
 describe('LoopService atomic task creation', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    pauseRunningLoopsForBootMock.mockResolvedValue([]);
+    settlePreparingLoopsForBootMock.mockResolvedValue([]);
+    assertLoopRunnableMock.mockImplementation((value) => ok(value));
     getPluginMock.mockReturnValue({
       capabilities: {
         models: {
@@ -274,6 +304,9 @@ describe('LoopService atomic task creation', () => {
 describe('LoopService start and resume workspace resolution', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    pauseRunningLoopsForBootMock.mockResolvedValue([]);
+    settlePreparingLoopsForBootMock.mockResolvedValue([]);
+    assertLoopRunnableMock.mockImplementation((value) => ok(value));
     resolveTaskWorkspaceTargetMock.mockResolvedValue({
       success: true,
       data: { workspaceId: 'workspace-1', path: '/tmp/worktree', machine: { kind: 'local' } },
@@ -606,6 +639,8 @@ describe('LoopService experiment enforcement', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     pauseRunningLoopsForBootMock.mockResolvedValue([]);
+    settlePreparingLoopsForBootMock.mockResolvedValue([]);
+    assertLoopRunnableMock.mockImplementation((value) => ok(value));
   });
 
   it('rejects starts while the default-off feature is disabled', async () => {
