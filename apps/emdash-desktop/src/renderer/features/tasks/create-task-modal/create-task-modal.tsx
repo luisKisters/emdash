@@ -1,6 +1,7 @@
 import { observer } from 'mobx-react-lite';
 import { useMemo } from 'react';
 import { useConnectedIssueProviders } from '@renderer/features/integrations/use-connected-issue-providers';
+import { CreateTaskLoopSection } from '@renderer/features/loops/create-task-loop-section';
 import {
   getProjectManagerStore,
   getGitRepositoryStore,
@@ -24,6 +25,8 @@ import {
   DialogTitle,
 } from '@renderer/lib/ui/dialog';
 import type { PullRequest } from '@shared/core/pull-requests/pull-requests';
+import { snapshotCreateTaskDraft, type CreateTaskDraft } from './create-task-draft';
+import { continueToLoopVerification } from './create-task-flow';
 import { LinkedEntitySection } from './linked-entity-section';
 import { TaskNameField } from './task-name-field';
 import { useCreateTaskCallback } from './use-create-task-callback';
@@ -54,13 +57,15 @@ export const CreateTaskModal = observer(function CreateTaskModal({
   projectId,
   strategy: initialStrategy = 'from-branch',
   initialPR,
+  draft,
   onClose,
 }: BaseModalProps & {
   projectId?: string;
   strategy?: 'from-branch' | 'from-issue' | 'from-pull-request';
   initialPR?: PullRequest;
+  draft?: CreateTaskDraft;
 }) {
-  const selectedProjectId = useDefaultProjectId(projectId);
+  const selectedProjectId = useDefaultProjectId(draft?.projectId ?? projectId);
 
   const projectData = selectedProjectId
     ? mountedProjectData(getProjectManagerStore().projects.get(selectedProjectId))
@@ -95,25 +100,48 @@ export const CreateTaskModal = observer(function CreateTaskModal({
     currentBranch,
     repositoryWorkspaceId,
     resolvedInitialPR,
-    defaultLinkedType
+    defaultLinkedType,
+    draft
   );
 
   const { autoApproveByDefault, includeIssueContextByDefault } = useTaskSettings();
   const initialConversation = useInitialConversationState(
     selectedProjectId,
-    undefined,
-    autoApproveByDefault
+    draft?.conversation.provider ?? undefined,
+    autoApproveByDefault,
+    { initial: draft?.conversation }
   );
   const isWorkspaceProviderEnabled = useFeatureFlag('workspace-provider');
   const { navigate } = useNavigate();
 
-  const { handleCreateTask, canCreate } = useCreateTaskCallback({
+  const { handleCreateTask, canCreate, disabledReason } = useCreateTaskCallback({
     selectedProjectId,
     state,
     initialConversation,
     navigate,
     onClose,
   });
+  const continueReason = !selectedProjectId
+    ? 'Select a project.'
+    : state.taskName.isPending
+      ? 'Wait for the task name to finish generating.'
+      : !state.taskName.effectiveTaskName.trim()
+        ? 'Enter a task name.'
+        : !state.loopPlan.planSource.trim()
+          ? 'Select or paste a plan.'
+          : null;
+  const isPlanFlow = state.linkedType === 'plan';
+
+  const handleContinue = (): void => {
+    if (!selectedProjectId || continueReason) return;
+    const nextDraft = snapshotCreateTaskDraft(
+      selectedProjectId,
+      state,
+      initialConversation,
+      draft?.verifierSelectionInitialized
+    );
+    continueToLoopVerification(nextDraft, onClose, navigate);
+  };
 
   return (
     <>
@@ -130,7 +158,11 @@ export const CreateTaskModal = observer(function CreateTaskModal({
             projectId={selectedProjectId}
             repositoryUrl={repositoryUrl}
             projectPath={projectPath}
+            repositoryWorkspaceId={repositoryWorkspaceId}
           />
+          {!isPlanFlow ? (
+            <CreateTaskLoopSection value={state.loopPlan} onChange={state.setLoopPlan} />
+          ) : null}
           <TaskStateProvider
             workspaceConfig={state.workspaceConfig}
             initialConversation={initialConversation}
@@ -145,11 +177,15 @@ export const CreateTaskModal = observer(function CreateTaskModal({
           >
             <TaskConfigPanel
               tabs={[
-                {
-                  value: 'conversation',
-                  label: 'Initial Conversation',
-                  content: <ConversationField />,
-                },
+                ...(state.loopPlan.enabled
+                  ? []
+                  : [
+                      {
+                        value: 'conversation',
+                        label: 'Initial Conversation',
+                        content: <ConversationField />,
+                      },
+                    ]),
                 {
                   value: 'workspace',
                   label: 'Workspace Settings',
@@ -163,11 +199,21 @@ export const CreateTaskModal = observer(function CreateTaskModal({
       <DialogFooter>
         <ConfirmButton
           size="sm"
-          onClick={handleCreateTask}
-          disabled={!canCreate || initialConversation.issueContextEditorOpen}
+          onClick={isPlanFlow ? handleContinue : handleCreateTask}
+          disabled={
+            isPlanFlow
+              ? continueReason !== null
+              : !canCreate || initialConversation.issueContextEditorOpen
+          }
+          disabledReason={isPlanFlow ? continueReason : disabledReason}
         >
-          Create
+          {isPlanFlow ? 'Continue' : 'Create'}
         </ConfirmButton>
+        {(isPlanFlow ? continueReason : disabledReason) ? (
+          <span className="text-xs text-foreground-destructive">
+            {isPlanFlow ? continueReason : disabledReason}
+          </span>
+        ) : null}
       </DialogFooter>
     </>
   );

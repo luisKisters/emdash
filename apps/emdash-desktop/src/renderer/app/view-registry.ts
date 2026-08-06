@@ -6,6 +6,7 @@ import { mcpView } from '@renderer/features/mcp/mcp-view';
 import { projectView } from '@renderer/features/projects/view';
 import { settingsView } from '@renderer/features/settings/settings-view';
 import { skillsView } from '@renderer/features/skills/skills-view';
+import { loopVerificationView } from '@renderer/features/tasks/create-task-modal/loop-verification-view';
 import { taskView } from '@renderer/features/tasks/view';
 import type { CommandProvider } from '@renderer/lib/commands/types';
 import { appState } from '@renderer/lib/stores/app-state';
@@ -18,6 +19,7 @@ export const views = {
   skills: skillsView,
   mcp: mcpView,
   project: projectView,
+  loopVerification: loopVerificationView,
   task: taskView,
   settings: settingsView,
   // oxlint-disable-next-line typescript/no-explicit-any

@@ -63,6 +63,12 @@ export type InitialConversationState = {
 
 interface InitialConversationStateOptions {
   resetPromptOnProjectChange?: boolean;
+  initial?: {
+    prompt?: string;
+    model?: string | null;
+    autoApprove?: boolean;
+    useChatUi?: boolean;
+  };
 }
 
 export function useInitialConversationState(
@@ -71,22 +77,22 @@ export function useInitialConversationState(
   autoApproveByDefault = false,
   options: InitialConversationStateOptions = {}
 ): InitialConversationState {
-  const { resetPromptOnProjectChange = true } = options;
+  const { resetPromptOnProjectChange = true, initial } = options;
   const connectionId = projectId ? getProjectSshConnectionId(projectId) : undefined;
   const { providerId, setProviderOverride } = useEffectiveProvider(connectionId, initialProvider);
   const { data: agents } = useAgents();
-  const [prompt, setPrompt] = useState('');
+  const [prompt, setPrompt] = useState(initial?.prompt ?? '');
   const [issueContext, setIssueContext] = useState<string | null>(null);
   const [autoApprovePreference, setAutoApprovePreference] = useLocalStorage(
     'initial-conversation:auto-approve-enabled',
-    autoApproveByDefault
+    initial?.autoApprove ?? autoApproveByDefault
   );
   const [issueContextEditorOpen, setIssueContextEditorOpen] = useState(false);
-  const [model, setModel] = useState<string | null>(null);
+  const [model, setModel] = useState<string | null>(initial?.model ?? null);
   const [issueMentionContexts, setIssueMentionContexts] = useState<Record<string, string>>({});
   const [useChatUiPreference, setUseChatUiPreference] = useLocalStorage(
     'initial-conversation:chat-ui-enabled',
-    false
+    initial?.useChatUi ?? false
   );
 
   const [prevProjectId, setPrevProjectId] = useState(projectId);

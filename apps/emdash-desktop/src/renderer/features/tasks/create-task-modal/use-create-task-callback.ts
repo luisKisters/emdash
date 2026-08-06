@@ -1,9 +1,13 @@
 import { useCallback } from 'react';
-import { getTaskManagerStore } from '@renderer/features/tasks/stores/task-selectors';
+import { getTaskManagerStore, getTaskView } from '@renderer/features/tasks/stores/task-selectors';
 import type { InitialConversationState } from '@renderer/features/tasks/task-config/initial-conversation-section';
 import type { NavigateFnTyped } from '@renderer/lib/layout/navigation-provider';
 import { log } from '@renderer/utils/logger';
-import { buildInitialConversation, deriveInitialStatus } from './build-create-task-params';
+import {
+  buildInitialConversationForTask,
+  buildLoopTaskAuthoringInput,
+  deriveInitialStatus,
+} from './build-create-task-params';
 import type { CreateTaskState } from './use-create-task-state';
 
 interface UseCreateTaskCallbackParams {
@@ -14,39 +18,115 @@ interface UseCreateTaskCallbackParams {
   onClose: () => void;
 }
 
+export type CreateTaskBlockers = {
+  projectId?: string;
+  taskName: string;
+  taskNamePending: boolean;
+  loopEnabled: boolean;
+  provider: string | null;
+  model: string | null;
+  workspaceReason: string | null;
+};
+
+export function getCreateTaskDisabledReason(blockers: CreateTaskBlockers): string | null {
+  if (!blockers.projectId) return 'Select a project.';
+  if (blockers.taskNamePending) return 'Wait for the task name to finish generating.';
+  if (!blockers.taskName.trim()) return 'Enter a task name.';
+  if (blockers.loopEnabled && !blockers.provider) return 'Loops require the Codex provider.';
+  if (blockers.loopEnabled && blockers.provider !== 'codex') {
+    return 'Loops require the Codex provider.';
+  }
+  if (blockers.loopEnabled && !blockers.model?.trim()) return 'Select a Codex model.';
+  return blockers.workspaceReason;
+}
+
 export function useCreateTaskCallback({
   selectedProjectId,
   state,
   initialConversation,
   navigate,
   onClose,
-}: UseCreateTaskCallbackParams): { handleCreateTask: () => void; canCreate: boolean } {
-  const canCreate = !!selectedProjectId && state.isValid;
+}: UseCreateTaskCallbackParams): {
+  handleCreateTask: () => Promise<void>;
+  canCreate: boolean;
+  disabledReason: string | null;
+} {
+  const resolvedLoopModel =
+    initialConversation.provider === 'codex'
+      ? initialConversation.model?.trim() || undefined
+      : undefined;
+  const disabledReason = getCreateTaskDisabledReason({
+    projectId: selectedProjectId,
+    taskName: state.taskName.effectiveTaskName,
+    taskNamePending: state.taskName.isPending,
+    loopEnabled: state.loopPlan.enabled,
+    provider: initialConversation.provider,
+    model: initialConversation.model,
+    workspaceReason: state.workspaceConfig.invalidReason,
+  });
+  const resolvedDisabledReason =
+    disabledReason ?? (!state.isValid ? 'Complete all required task settings.' : null);
+  const canCreate = resolvedDisabledReason === null;
 
-  const handleCreateTask = useCallback(() => {
-    if (!selectedProjectId) return;
+  const handleCreateTask = useCallback(async () => {
+    if (!selectedProjectId || !canCreate) return;
+    const loopInput =
+      state.loopPlan.enabled && resolvedLoopModel
+        ? buildLoopTaskAuthoringInput(
+            state.taskName.effectiveTaskName,
+            state.loopPlan,
+            resolvedLoopModel
+          )
+        : undefined;
+    if (state.loopPlan.enabled && !loopInput) return;
     const taskManager = getTaskManagerStore(selectedProjectId);
     if (!taskManager) return;
 
     const id = crypto.randomUUID();
-    void taskManager
-      .createTask({
-        id,
-        projectId: selectedProjectId,
-        taskConfig: {
-          version: '1',
-          name: state.taskName.effectiveTaskName,
-          linkedIssue: state.linkedType === 'issue' ? (state.linkedIssue ?? undefined) : undefined,
-          initialStatus: deriveInitialStatus(state.linkedType, state.linkedPR),
-          initialConversation: buildInitialConversation(initialConversation),
-        },
-        workspaceConfig: state.workspaceConfig.resolvedConfig,
-      })
-      .catch((e) => log.error('create task failed', e));
+    const task = {
+      id,
+      projectId: selectedProjectId,
+      taskConfig: {
+        version: '1' as const,
+        name: state.taskName.effectiveTaskName,
+        linkedIssue: state.linkedType === 'issue' ? (state.linkedIssue ?? undefined) : undefined,
+        initialStatus: deriveInitialStatus(state.linkedType, state.linkedPR),
+        initialConversation: buildInitialConversationForTask(
+          initialConversation,
+          state.loopPlan.enabled
+        ),
+      },
+      workspaceConfig: state.workspaceConfig.resolvedConfig,
+    };
 
-    navigate('task', { projectId: selectedProjectId, taskId: id });
-    onClose();
-  }, [selectedProjectId, state, initialConversation, navigate, onClose]);
+    try {
+      if (loopInput) {
+        const loopId = crypto.randomUUID();
+        const creation = taskManager.createTaskWithLoop({
+          task,
+          loop: { ...loopInput, id: loopId },
+        });
+        getTaskView(selectedProjectId, id)?.paneLayout.open('loop', { loopId }, { preview: false });
+        navigate('task', { projectId: selectedProjectId, taskId: id });
+        onClose();
+        await creation;
+      } else {
+        navigate('task', { projectId: selectedProjectId, taskId: id });
+        onClose();
+        await taskManager.createTask(task);
+      }
+    } catch (error) {
+      log.error(state.loopPlan.enabled ? 'create Loop task failed' : 'create task failed', error);
+    }
+  }, [
+    selectedProjectId,
+    state,
+    initialConversation,
+    navigate,
+    onClose,
+    canCreate,
+    resolvedLoopModel,
+  ]);
 
-  return { handleCreateTask, canCreate };
+  return { handleCreateTask, canCreate, disabledReason: resolvedDisabledReason };
 }

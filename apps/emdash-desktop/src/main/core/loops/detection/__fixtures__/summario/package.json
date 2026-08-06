@@ -1,0 +1,17 @@
+{
+  "scripts": {
+    "build": "next build",
+    "lint": "eslint .",
+    "test": "vitest run",
+    "test:e2e": "playwright test",
+    "test:phase": "pnpm test:contracts && pnpm test:resumer && pnpm exec tsc --noEmit && pnpm lint && pnpm test && pnpm build && pnpm test:e2e",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@playwright/test": "*",
+    "convex": "*",
+    "eslint": "*",
+    "typescript": "*",
+    "vitest": "*"
+  }
+}
