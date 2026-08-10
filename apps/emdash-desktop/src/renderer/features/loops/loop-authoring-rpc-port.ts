@@ -34,6 +34,7 @@ function mapPhase(phase: LoopPhase): LoopTabPhaseSnapshot {
     goal: phase.goal,
     status: phase.status,
     attempts: phase.attempts,
+    conversationId: phase.conversationId,
     lastError: phase.lastError,
     handoff: handoff
       ? {

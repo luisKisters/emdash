@@ -116,6 +116,7 @@ describe('LoopTabResource', () => {
           goal: 'Build the feature',
           status: 'passed',
           attempts: 1,
+          conversationId: null,
           lastError: null,
           handoff: {
             summary: 'Implementation complete',

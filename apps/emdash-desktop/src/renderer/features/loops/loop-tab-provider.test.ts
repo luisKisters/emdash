@@ -46,6 +46,7 @@ function readySnapshot(status: LoopTabSnapshot['status'] = 'running'): LoopTabSn
         goal: 'Build the native flow',
         status: 'passed',
         attempts: 1,
+        conversationId: 'work-conversation-1',
         lastError: null,
         handoff: {
           summary: 'Native flow implemented',
@@ -70,6 +71,7 @@ function readySnapshot(status: LoopTabSnapshot['status'] = 'running'): LoopTabSn
         goal: 'Review the complete change',
         status: 'failed',
         attempts: 1,
+        conversationId: 'review-conversation-1',
         lastError: 'Review found an accessibility regression.',
         handoff: null,
         evidence: [],
@@ -82,6 +84,7 @@ function readySnapshot(status: LoopTabSnapshot['status'] = 'running'): LoopTabSn
         goal: 'Verify independently',
         status: 'pending',
         attempts: 0,
+        conversationId: null,
         lastError: null,
         handoff: null,
         evidence: [],
@@ -180,6 +183,24 @@ describe('native Loop tab', () => {
     );
     expect(container.querySelector('button[aria-label="Pause Loop"]')).not.toBeNull();
     expect(container.querySelector('button[aria-label="Retry Review"]')).not.toBeNull();
+    expect(
+      container.querySelector('button[aria-label="Open Implementation conversation"]')
+    ).not.toBeNull();
+  });
+
+  it('opens a phase conversation directly from its card', async () => {
+    const fake = port();
+    const openTab = vi.fn();
+    const resource = new LoopTabResource('loop-1', fake, openTab);
+    await resource.load();
+    act(() => root.render(React.createElement(LoopTabPanel, { resource })));
+
+    await act(async () =>
+      container
+        .querySelector('button[aria-label="Open Implementation conversation"]')
+        ?.dispatchEvent(new MouseEvent('click', { bubbles: true }))
+    );
+    expect(openTab).toHaveBeenCalledWith('acp-chat', { conversationId: 'work-conversation-1' });
   });
 
   it('renders preparation states, durable errors, planning chat, and preparation retry', async () => {

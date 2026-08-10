@@ -11,6 +11,7 @@ import {
   newLoopConfigV2Schema,
   orderedLoopPhaseKinds,
 } from '@shared/core/loops/loops';
+import { removeTerminalPhaseDuplicates } from '../plan-prompt';
 import { mapLoopPhaseRow, mapLoopRow, type LoopOperationError } from './types';
 
 export type ReplacementLoopPhase = { name: string; goal: string };
@@ -36,10 +37,13 @@ export async function replaceLoopPhases(
   input: ReplaceLoopPhasesInput
 ): Promise<Result<LoopWithPhases, LoopOperationError>> {
   const config = newLoopConfigV2Schema.strict().safeParse(input.config);
-  const phases = input.phases.map((phase, index) => ({
+  const normalizedPhases = input.phases.map((phase, index) => ({
     name: phase.name.trim() || `Phase ${index + 1}`,
     goal: phase.goal.trim(),
   }));
+  const phases = config.success
+    ? removeTerminalPhaseDuplicates(normalizedPhases, config.data.terminalGates)
+    : normalizedPhases;
   const acceptanceCriteria = input.acceptanceCriteria
     .map((criterion) => criterion.trim())
     .filter(Boolean);

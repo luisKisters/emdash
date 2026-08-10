@@ -159,6 +159,7 @@ describe('RpcLoopAuthoringPort', () => {
     expect(snapshot.phases[0]?.handoff?.artifacts).toEqual([
       { artifactId: 'artifact-1', kind: 'test-report', label: 'Tests', byteLength: 42 },
     ]);
+    expect(snapshot.phases[0]?.conversationId).toBe('conversation-1');
     expect(snapshot.phases[1]?.evidence).toEqual([
       {
         label: 'The page renders',

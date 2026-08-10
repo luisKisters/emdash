@@ -172,6 +172,7 @@ function PhaseCard({
 }) {
   const meta = phaseStatusMeta(phase.status);
   const pending = resource.action.kind === 'pending';
+  const conversationId = phase.conversationId;
   return (
     <article className="grid gap-3 rounded-lg border border-border bg-background-1 p-4">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -199,6 +200,20 @@ function PhaseCard({
           >
             <RefreshCw className="size-3.5" />
             Retry
+          </Button>
+        ) : null}
+        {conversationId ? (
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            aria-label={`Open ${phase.name} conversation`}
+            onClick={() => resource.openPhaseConversation(conversationId)}
+          >
+            <MessageSquare className="size-3.5" />
+            {phase.kind === 'work'
+              ? 'Work conversation'
+              : `${phaseKindLabel(phase.kind)} conversation`}
           </Button>
         ) : null}
       </div>

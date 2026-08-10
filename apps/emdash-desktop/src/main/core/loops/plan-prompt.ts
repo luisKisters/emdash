@@ -1,4 +1,5 @@
 import z from 'zod';
+import type { LoopTerminalGates } from '@shared/core/loops/loops';
 import type { SelectedVerifier } from '@shared/core/loops/verifier-catalog';
 import { serializePromptJson } from './handoff-builder';
 
@@ -46,6 +47,21 @@ export type LoopPlanParseResult =
   | { success: true; data: LoopPlanResult }
   | { success: false; error: LoopPlanParseError };
 
+const REVIEW_PHASE_NAME = /^(?:final\s+|code\s+)?review$/i;
+const E2E_PHASE_NAME = /^(?:e2e|end[\s-]*to[\s-]*end(?:\s+(?:test|tests|testing))?)$/i;
+
+export function removeTerminalPhaseDuplicates<T extends { name: string }>(
+  phases: readonly T[],
+  terminalGates: LoopTerminalGates
+): T[] {
+  return phases.filter((phase) => {
+    const name = phase.name.trim();
+    if (terminalGates.review && REVIEW_PHASE_NAME.test(name)) return false;
+    if (terminalGates.e2e && E2E_PHASE_NAME.test(name)) return false;
+    return true;
+  });
+}
+
 export function buildLoopPlanPrompt(input: {
   goal: string;
   plan: string;
@@ -67,7 +83,7 @@ ${LOOP_PLAN_BEGIN}
 {"goal":"...","phases":[{"name":"...","goal":"..."}],"validationCommands":["..."],"customVerifiers":[{"name":"...","command":"..."}],"acceptanceCriteria":["..."]}
 ${LOOP_PLAN_END}
 
-Do not add another marked payload. Do not add fields. Resolve every selected custom verifier that has a null command. Only the selected verifiers are authoritative. If no verifiers are selected, return empty validationCommands and customVerifiers arrays. Never invent a verifier or validation command. Planning is read-only. Do not edit files, run commands, or request permissions.`;
+Do not add another marked payload. Do not add fields. Do not add generic Review, E2E, or End-to-end phases; Emdash appends configured terminal gates itself. Resolve every selected custom verifier that has a null command. Only the selected verifiers are authoritative. If no verifiers are selected, return empty validationCommands and customVerifiers arrays. Never invent a verifier or validation command. Planning is read-only. Do not edit files, run commands, or request permissions.`;
 }
 
 export function parseLoopPlan(text: string): LoopPlanParseResult {

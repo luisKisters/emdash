@@ -134,6 +134,10 @@ export class LoopTabResource implements TabResource {
     this.openTab('acp-chat', { conversationId });
   }
 
+  openPhaseConversation(conversationId: string): void {
+    this.openTab('acp-chat', { conversationId });
+  }
+
   dispose(): void {
     if (this.disposed) return;
     this.disposed = true;

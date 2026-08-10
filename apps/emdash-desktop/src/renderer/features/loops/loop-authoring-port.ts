@@ -29,6 +29,7 @@ export type LoopTabPhaseSnapshot = {
   goal: string;
   status: PhaseStatus;
   attempts: number;
+  conversationId: string | null;
   lastError: string | null;
   handoff: LoopTabHandoff | null;
   evidence: LoopTabEvidence[];
