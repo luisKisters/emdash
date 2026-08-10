@@ -66,6 +66,7 @@ export class AcpChatStore {
   historyLoading = true;
   loadError: AcpLoadError | null = null;
   messageCount = 0;
+  transcriptRevision = 0;
   draftText = '';
 
   private _view: ChatView | null = null;
@@ -91,6 +92,7 @@ export class AcpChatStore {
       historyLoading: observable,
       loadError: observable,
       messageCount: observable,
+      transcriptRevision: observable,
       draftText: observable,
       model: computed,
       modelOptions: computed,
@@ -430,6 +432,7 @@ export class AcpChatStore {
         this.session?.dispose();
         this.session = clientSession;
         this.chatState.transcript.history.seed(history.data.turns);
+        this.transcriptRevision += 1;
         this._subscribeLiveSession(clientSession);
         this._applyDraftSnapshot(clientSession.draft.current());
         this.historyLoading = false;
@@ -577,7 +580,12 @@ export class AcpChatStore {
           this._syncMessageCount();
         })
       ),
-      session.activeTurn.onChange(() => runInAction(() => this._syncMessageCount())),
+      session.activeTurn.onChange(() =>
+        runInAction(() => {
+          this.transcriptRevision += 1;
+          this._syncMessageCount();
+        })
+      ),
       session.draft.onChange((draft) =>
         runInAction(() => {
           this._applyDraftSnapshot(draft);
@@ -641,6 +649,7 @@ export class AcpChatStore {
     runInAction(() => {
       this.chatState.session.setPendingPrompt(null);
       this.chatState.transcript.history.seed(history.data.turns);
+      this.transcriptRevision += 1;
       this._syncMessageCount();
     });
   }

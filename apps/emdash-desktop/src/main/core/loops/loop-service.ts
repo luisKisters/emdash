@@ -821,19 +821,21 @@ export class LoopService {
 
     const phase = loopResult.data.phases.find((candidate) => candidate.id === phaseId);
     if (!phase) return err({ kind: 'not-found', message: 'Loop phase not found' });
+    if (phase.status !== 'failed') {
+      return err({ kind: 'invalid-state', message: 'Only a failed phase can be retried' });
+    }
 
     const reset = await resetPhaseForRetry(phaseId);
     if (!reset.success) return err(serviceError(reset.error));
     emitPhase(reset.data);
 
     const updated = await updateLoop(loopId, {
-      status: 'paused',
       currentPhaseIndex: phase.idx,
     });
     if (!updated.success) return err(serviceError(updated.error));
     emitLoop(updated.data);
 
-    return loadLoop(loopId);
+    return this.startLoop(loopId);
   }
 
   async deleteLoop(loopId: string): Promise<Result<void, LoopServiceError>> {

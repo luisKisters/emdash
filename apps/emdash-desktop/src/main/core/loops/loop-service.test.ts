@@ -8,6 +8,7 @@ import { createTaskWithLoop } from './operations/create-task-with-loop';
 import {
   getLoop,
   pauseRunningLoopsForBoot,
+  resetPhaseForRetry,
   updateLoop,
   updatePhase,
 } from './operations/loop-operations';
@@ -886,5 +887,58 @@ describe('LoopService experiment enforcement', () => {
 
     expect(pauseRunningLoopsForBootMock).toHaveBeenCalledOnce();
     expect(emitMock).toHaveBeenCalledWith(loopUpdatedChannel, { loop: running });
+  });
+});
+
+describe('LoopService phase retry', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    assertLoopRunnableMock.mockImplementation((value) => ok(value));
+  });
+
+  it('restarts a failed phase immediately without leaving the Loop paused', async () => {
+    const phase = {
+      id: 'phase-1',
+      loopId: loop.id,
+      idx: 0,
+      name: 'Work',
+      goal: 'Implement it',
+      kind: 'work' as const,
+      status: 'failed' as const,
+      attempts: 1,
+      conversationId: 'conversation-1',
+      criteria: null,
+      state: null,
+      lastError: 'Missing sentinel',
+      createdAt: loop.createdAt,
+      updatedAt: loop.updatedAt,
+    };
+    const failedLoop = {
+      ...loop,
+      status: 'failed' as const,
+      phases: [phase],
+    } satisfies LoopWithPhases;
+    const resetPhase = {
+      ...phase,
+      status: 'pending' as const,
+      conversationId: null,
+      lastError: null,
+    };
+    vi.mocked(getLoop).mockResolvedValue(failedLoop);
+    vi.mocked(resetPhaseForRetry).mockResolvedValue(ok(resetPhase));
+    vi.mocked(updateLoop).mockResolvedValue(ok(failedLoop));
+    const service = new LoopService();
+    await service.reconcileEnabledState(true);
+    const start = vi.spyOn(service, 'startLoop').mockResolvedValue(ok(failedLoop));
+
+    const result = await service.retryPhase(loop.id, phase.id);
+
+    expect(result).toEqual(ok(failedLoop));
+    expect(updateLoop).toHaveBeenCalledWith(loop.id, { currentPhaseIndex: 0 });
+    expect(updateLoop).not.toHaveBeenCalledWith(
+      loop.id,
+      expect.objectContaining({ status: 'paused' })
+    );
+    expect(start).toHaveBeenCalledWith(loop.id);
   });
 });

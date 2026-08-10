@@ -17,6 +17,7 @@ import { conversationRegistry } from '@renderer/features/conversations/stores/co
 import { IntegrationIcon } from '@renderer/features/integrations/integration-icon';
 import { useConnectedIssueProviders } from '@renderer/features/integrations/use-connected-issue-providers';
 import { usePromptLibrary } from '@renderer/features/library/prompts/use-prompt-library';
+import { LoopConversationBanner } from '@renderer/features/loops/loop-conversation-banner';
 import {
   asMounted,
   getProjectStore,
@@ -672,6 +673,7 @@ export const AcpChatPanel = observer(function AcpChatPanel() {
 
   const isConversationEmpty = useObserver(() => store?.isEmpty ?? false);
   const activeConversationId = store?.conversationId ?? null;
+  const transcriptRevision = store?.transcriptRevision ?? 0;
 
   useEffect(() => {
     if (!store || !viewRef.current) return;
@@ -878,6 +880,19 @@ export const AcpChatPanel = observer(function AcpChatPanel() {
           </div>,
           overlaySlot
         )}
+
+      {overlaySlot && !store.historyLoading && store.loadError === null
+        ? createPortal(
+            <LoopConversationBanner
+              projectId={store.projectId}
+              conversationId={store.conversationId}
+              chatState={store.chatState}
+              transcriptRevision={transcriptRevision}
+              onOpenLoop={(loopId) => pane.open('loop', { loopId }, { preview: false })}
+            />,
+            overlaySlot
+          )
+        : null}
 
       {showHero &&
         heroSlot &&
