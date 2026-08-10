@@ -161,7 +161,7 @@ export const CreateTaskModal = observer(function CreateTaskModal({
             repositoryWorkspaceId={repositoryWorkspaceId}
           />
           {!isPlanFlow ? (
-            <CreateTaskLoopSection value={state.loopPlan} onChange={state.setLoopPlan} />
+            <CreateTaskLoopSection onEnable={() => state.setLinkedType('plan')} />
           ) : null}
           <TaskStateProvider
             workspaceConfig={state.workspaceConfig}

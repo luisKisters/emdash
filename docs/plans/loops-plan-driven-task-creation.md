@@ -33,7 +33,8 @@ browser automation path.
 ## Product flow
 
 1. The existing Create Task screen adds **Plan file** to **Based on**.
-2. Selecting a plan enables **Create with Loop** and changes the primary action to **Continue**.
+2. Selecting **Create with Loop** switches to **Plan file**. The legacy manual phase editor is not
+   shown. Selecting a plan enables the Loop and changes the primary action to **Continue**.
 3. Continue closes the Create Task modal and opens a dedicated full-screen **Verification** screen
    inside the existing Emdash app shell. Verification is not a modal step or modal-sized card.
 4. Verification shows detected repository checks, preselects the effective checks, and lets the
@@ -184,6 +185,8 @@ and E2E terminal-gate fields. Do not add provider capabilities or a new runner.
 ### Task 3.1: Create Task authoring
 
 - Add Plan file as the third Based-on value and keep paste fallback.
+- Route Create with Loop directly to Plan file. Remove the legacy manual phase and command editor
+  from Create Task.
 - Selecting a plan enables Loop and changes the modal action to Continue.
 - Continue closes the modal and opens one full-screen Verification surface in the existing app shell.
 - Preserve the transient draft and Back behavior in the narrowest existing state owner. Do not add a
