@@ -144,9 +144,6 @@ export function prepareLoopShell(
   if (!planningInput && workPhases.length === 0) {
     return err({ kind: 'invalid-input', message: 'At least one complete work phase is required' });
   }
-  if (!planningInput && validationCommands.length === 0) {
-    return err({ kind: 'invalid-input', message: 'At least one validation command is required' });
-  }
   if (params.browserPreview.enabled !== params.terminalGates.e2e) {
     return err({
       kind: 'invalid-input',
@@ -280,12 +277,6 @@ export function assertLoopRunnable(
   if (!loop.config) {
     return err({ kind: 'invalid-input', message: 'Loop configuration is required before start' });
   }
-  if (
-    loop.config.validationCommands.map((command) => command.trim()).filter(Boolean).length === 0
-  ) {
-    return err({ kind: 'invalid-input', message: 'A validation command is required before start' });
-  }
-
   if (loop.config.version === '2') {
     const config = newLoopConfigV2Schema.strict().safeParse(loop.config);
     if (!config.success) {

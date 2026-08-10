@@ -224,7 +224,7 @@ function planningTarget(target: LoopExecutionTarget) {
   };
 }
 
-function resolvePlanningConfig(
+export function resolvePlanningConfig(
   config: ReturnType<typeof newLoopConfigV2Schema.parse>,
   result: LoopPlanResult
 ): Result<ReturnType<typeof newLoopConfigV2Schema.parse>, LoopServiceError> {
@@ -251,12 +251,6 @@ function resolvePlanningConfig(
       })
     )
   );
-  if (validationCommands.length === 0) {
-    return err({
-      kind: 'invalid-state',
-      message: 'Loop planning needs at least one selected command-running verifier',
-    });
-  }
   return ok(newLoopConfigV2Schema.strict().parse({ ...config, verifierPlan, validationCommands }));
 }
 

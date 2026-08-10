@@ -212,7 +212,6 @@ describe('loop plan model', () => {
 
     expect(validateLoopPlanDraft(draft)).toEqual([
       'Add a goal for this Loop.',
-      'Add at least one validation command.',
       'Describe what Phase 1 should complete.',
     ]);
     expect(draft.workPhases).toHaveLength(1);

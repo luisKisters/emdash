@@ -67,7 +67,7 @@ ${LOOP_PLAN_BEGIN}
 {"goal":"...","phases":[{"name":"...","goal":"..."}],"validationCommands":["..."],"customVerifiers":[{"name":"...","command":"..."}],"acceptanceCriteria":["..."]}
 ${LOOP_PLAN_END}
 
-Do not add another marked payload. Do not add fields. Resolve every selected custom verifier that has a null command. Planning is read-only. Do not edit files, run commands, or request permissions.`;
+Do not add another marked payload. Do not add fields. Resolve every selected custom verifier that has a null command. Only the selected verifiers are authoritative. If no verifiers are selected, return empty validationCommands and customVerifiers arrays. Never invent a verifier or validation command. Planning is read-only. Do not edit files, run commands, or request permissions.`;
 }
 
 export function parseLoopPlan(text: string): LoopPlanParseResult {

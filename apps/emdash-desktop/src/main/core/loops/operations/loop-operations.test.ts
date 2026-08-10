@@ -87,7 +87,6 @@ describe('prepareNewLoop', () => {
   });
 
   it.each([
-    ['empty validation commands', { validationCommands: ['  '] }],
     [
       'missing E2E acceptance criteria',
       {
@@ -108,6 +107,19 @@ describe('prepareNewLoop', () => {
     const result = prepareNewLoop({ ...baseInput, ...patch });
 
     expect(result).toMatchObject({ success: false, error: { kind: 'invalid-input' } });
+  });
+
+  it('accepts no validation commands when no command verifier is selected', () => {
+    const result = prepareNewLoop({
+      ...baseInput,
+      validationCommands: [],
+      verifierPlan: [],
+    });
+
+    expect(result).toMatchObject({
+      success: true,
+      data: { config: { validationCommands: [], verifierPlan: [] } },
+    });
   });
 });
 
@@ -180,5 +192,25 @@ describe('planning and runnable boundaries', () => {
       success: false,
       error: { kind: 'invalid-input' },
     });
+  });
+
+  it('accepts a runnable Loop without validation commands', () => {
+    const runnable = {
+      phases: [{ goal: 'Implement it.' }],
+      config: {
+        version: '2',
+        provider: 'codex',
+        model: 'gpt-5.6-sol',
+        validationCommands: [],
+        planSource: 'Plan',
+        terminalGates: { review: false, e2e: false },
+        browserPreview: { enabled: false },
+        reviewEnabled: false,
+        verifiers: [],
+        verifierPlan: [],
+      },
+    } as never;
+
+    expect(assertLoopRunnable(runnable)).toMatchObject({ success: true });
   });
 });

@@ -178,9 +178,6 @@ export function validateLoopPlanDraft(draft: LoopPlanDraft): string[] {
 
   const errors: string[] = [];
   if (!draft.goal.trim()) errors.push('Add a goal for this Loop.');
-  if (!draft.validationCommands.some((command) => command.trim())) {
-    errors.push('Add at least one validation command.');
-  }
   if (draft.terminalGates.e2e && !draft.acceptanceCriteria.some((criterion) => criterion.trim())) {
     errors.push('Add at least one E2E acceptance criterion.');
   }

@@ -3,7 +3,7 @@ import { err, ok } from '@main/lib/result';
 import { loopPhaseUpdatedChannel, loopUpdatedChannel } from '@shared/core/loops/loopEvents';
 import type { Loop, LoopWithPhases } from '@shared/core/loops/loops';
 import { getLoopSessionDriver } from './drivers/driver-registry';
-import { LoopService } from './loop-service';
+import { LoopService, resolvePlanningConfig } from './loop-service';
 import { createTaskWithLoop } from './operations/create-task-with-loop';
 import {
   getLoop,
@@ -131,6 +131,55 @@ beforeEach(() => {
     settings: { get: vi.fn(async () => ({ defaultBranch: 'main' })) },
   });
   getVerifierMock.mockReturnValue(undefined);
+});
+
+describe('LoopService planning verifier selection', () => {
+  it.each([
+    { name: 'no verifiers', browserEnabled: false, verifierPlan: [] },
+    {
+      name: 'a browser-only verifier',
+      browserEnabled: true,
+      verifierPlan: [
+        {
+          kind: 'detected',
+          id: 'agent-browser',
+          class: 'browser',
+          label: 'Codex computer use',
+          command: 'agent-browser',
+        },
+      ],
+    },
+  ] as const)(
+    'accepts $name without command-running verification',
+    ({ browserEnabled, verifierPlan }) => {
+      const result = resolvePlanningConfig(
+        {
+          version: '2',
+          provider: 'codex',
+          model: 'gpt-5.6-sol',
+          validationCommands: [],
+          planSource: 'Plan',
+          terminalGates: { review: false, e2e: browserEnabled },
+          browserPreview: { enabled: browserEnabled },
+          reviewEnabled: false,
+          verifiers: [],
+          verifierPlan: [...verifierPlan],
+        },
+        {
+          goal: 'Ship the feature',
+          phases: [{ name: 'Implement', goal: 'Implement the feature.' }],
+          validationCommands: [],
+          customVerifiers: [],
+          acceptanceCriteria: [],
+        }
+      );
+
+      expect(result).toMatchObject({
+        success: true,
+        data: { validationCommands: [], verifierPlan },
+      });
+    }
+  );
 });
 
 describe('LoopService verifier detection', () => {
