@@ -12,6 +12,7 @@ import { pxTokens } from '@styles/px-tokens';
 import { assignInlineVars } from '@vanilla-extract/dynamic';
 import { Show, createMemo } from 'solid-js';
 import type { ChatMessage } from '@/model';
+import { displayMessageText } from './loop-sentinel';
 import { attachStripHeight, type MessageVars, userInnerWidth } from './metrics';
 import { UserMessageCard } from './UserMessageCard';
 import {
@@ -38,9 +39,10 @@ export function messageFromItem(item: ChatMessage, ctx: SegmentCtx): ChatMessage
 
 export function measureMessage(item: ChatMessage, ctx: MeasureCtx, vars: MessageVars): number {
   const { userCardPadY, cardBorder, collapsedMaxH, expandedMaxH } = vars;
+  const text = displayMessageText(item);
   const blocks = item.streaming
-    ? ctx.caches.parseBlocksStreaming(item.id, item.text)
-    : ctx.caches.parseBlocks(item.id, item.text);
+    ? ctx.caches.parseBlocksStreaming(item.id, text)
+    : ctx.caches.parseBlocks(item.id, text);
 
   if (item.role === 'user') {
     const innerW = userInnerWidth(ctx.width, vars);
@@ -66,6 +68,7 @@ export function measureMessage(item: ChatMessage, ctx: MeasureCtx, vars: Message
 
 function AssistantRender(props: { data: ChatMessage; ctx: RenderCtx; vars: MessageVars }) {
   const mCtx = () => props.ctx.measureCtx?.();
+  const text = () => displayMessageText(props.data);
 
   // One frontier Map per mounted instance — persists across streaming chunks
   // because the <For> in UnitRow keeps this component alive. Shared by ref with
@@ -78,8 +81,8 @@ function AssistantRender(props: { data: ChatMessage; ctx: RenderCtx; vars: Messa
     const ctx = mCtx();
     if (!ctx) return { blocks: [] as Block[], settledCount: 0 };
     const blocks = props.data.streaming
-      ? ctx.caches.parseBlocksStreaming(props.data.id, props.data.text)
-      : ctx.caches.parseBlocks(props.data.id, props.data.text);
+      ? ctx.caches.parseBlocksStreaming(props.data.id, text())
+      : ctx.caches.parseBlocks(props.data.id, text());
     const settledCount = props.data.streaming
       ? ctx.caches.settledBlockCount(props.data.id)
       : blocks.length;
@@ -108,11 +111,11 @@ function AssistantRender(props: { data: ChatMessage; ctx: RenderCtx; vars: Messa
 
   const plainText = () => {
     const ctx = mCtx();
-    if (!ctx) return props.data.text;
+    if (!ctx) return text();
     // Use the same parse path as the renderer so we don't trigger a full reparse
     // during streaming just for the screen-reader text.
     const parse = props.data.streaming ? ctx.caches.parseBlocksStreaming : ctx.caches.parseBlocks;
-    return parse(props.data.id, props.data.text).map(blockPlainText).join('\n\n');
+    return parse(props.data.id, text()).map(blockPlainText).join('\n\n');
   };
 
   const role = () =>
@@ -134,7 +137,7 @@ function AssistantRender(props: { data: ChatMessage; ctx: RenderCtx; vars: Messa
           aria-hidden={props.data.streaming ? 'true' : undefined}
         >
           <Show when={!props.data.streaming}>
-            <CopyButton text={props.data.text} variant="inline" label="Copy message" />
+            <CopyButton text={text()} variant="inline" label="Copy message" />
           </Show>
         </div>
       </Show>
@@ -176,7 +179,7 @@ export const messageUnitDef = defineUnit<ChatMessage, MessageVars>({
         aH + lines * ctx.theme.fonts.body.lineHeight + 2 * vars.userCardPadY + 2 * vars.cardBorder;
       return Math.min(est, ctx.expandedId === item.id ? vars.expandedMaxH : vars.collapsedMaxH);
     }
-    const lines = Math.max(1, Math.ceil(item.text.length / 60));
+    const lines = Math.max(1, Math.ceil(displayMessageText(item).length / 60));
     const footer = item.role === 'assistant' ? vars.footerH : 0;
     return lines * ctx.theme.fonts.body.lineHeight + footer;
   },
